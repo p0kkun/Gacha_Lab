@@ -43,3 +43,6 @@ next-env.d.ts
 # ngrok認証情報
 ngrok_認証情報.md
 ngrok_MFA設定情報.md
+
+# GitHub認証情報
+github_認証情報.md
