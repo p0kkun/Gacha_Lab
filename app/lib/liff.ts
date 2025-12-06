@@ -62,3 +62,4 @@ export const logout = (): void => {
   liff.logout();
 };
 
+
