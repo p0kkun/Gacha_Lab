@@ -19,14 +19,14 @@ export default function GachaMenu({
           <li key={gacha.id}>
             <button
               onClick={() => onSelect(gacha)}
-              className={`w-full rounded-lg p-3 text-left transition-colors ${
+              className={`w-full overflow-hidden rounded-lg p-3 text-left transition-colors ${
                 selectedGacha.id === gacha.id
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
               }`}
             >
-              <div className="font-semibold">{gacha.name}</div>
-              <div className="text-xs opacity-80">{gacha.description}</div>
+              <div className="truncate font-semibold">{gacha.name}</div>
+              <div className="truncate text-xs opacity-80">{gacha.description}</div>
             </button>
           </li>
         ))}

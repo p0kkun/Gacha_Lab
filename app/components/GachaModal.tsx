@@ -33,6 +33,7 @@ export default function GachaModal({
   userId: string;
 }) {
   const [selectedGacha, setSelectedGacha] = useState<GachaType>(gachaTypes[0]);
+  const [isShowingVideo, setIsShowingVideo] = useState(false);
 
   if (!isOpen) return null;
 
@@ -41,20 +42,23 @@ export default function GachaModal({
       {/* 全画面オーバーレイ */}
       <div className="flex h-full w-full">
         {/* 左側メニュー */}
-        <div className="w-1/4 bg-gray-800 text-white">
-          <GachaMenu
-            gachaTypes={gachaTypes}
-            selectedGacha={selectedGacha}
-            onSelect={setSelectedGacha}
-          />
-        </div>
+        {!isShowingVideo && (
+          <div className="w-1/3 bg-gray-800 text-white">
+            <GachaMenu
+              gachaTypes={gachaTypes}
+              selectedGacha={selectedGacha}
+              onSelect={setSelectedGacha}
+            />
+          </div>
+        )}
 
         {/* 右側メインコンテンツ */}
-        <div className="flex-1 bg-white">
+        <div className={`${isShowingVideo ? 'w-full' : 'flex-1'} bg-white`}>
           <GachaContent
             selectedGacha={selectedGacha}
             userId={userId}
             onClose={onClose}
+            onVideoStateChange={setIsShowingVideo}
           />
         </div>
       </div>

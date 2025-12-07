@@ -18,10 +18,12 @@ export default function GachaContent({
   selectedGacha,
   userId,
   onClose,
+  onVideoStateChange,
 }: {
   selectedGacha: GachaType;
   userId: string;
   onClose: () => void;
+  onVideoStateChange?: (isShowing: boolean) => void;
 }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [result, setResult] = useState<GachaResult | null>(null);
@@ -30,6 +32,7 @@ export default function GachaContent({
   const handleDrawGacha = async () => {
     setIsDrawing(true);
     setShowVideo(true);
+    onVideoStateChange?.(true);
 
     try {
       const response = await fetch('/api/gacha', {
@@ -59,12 +62,15 @@ export default function GachaContent({
 
   const handleVideoEnd = () => {
     setIsDrawing(false);
+    setShowVideo(false);
+    onVideoStateChange?.(false);
     // 動画再生後も結果を表示し続ける
   };
 
   const handleCloseResult = () => {
     setResult(null);
     setShowVideo(false);
+    onVideoStateChange?.(false);
     onClose();
   };
 
@@ -93,21 +99,23 @@ export default function GachaContent({
   return (
     <div className="relative flex h-full flex-col">
       {/* ヘッダー */}
-      <div className="border-b bg-gray-50 p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{selectedGacha.name}</h1>
-          <button
-            onClick={onClose}
-            className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-          >
-            閉じる
-          </button>
+      {!showVideo && (
+        <div className="border-b bg-gray-50 p-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{selectedGacha.name}</h1>
+            <button
+              onClick={onClose}
+              className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
+            >
+              閉じる
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-gray-600">{selectedGacha.description}</p>
         </div>
-        <p className="mt-2 text-sm text-gray-600">{selectedGacha.description}</p>
-      </div>
+      )}
 
       {/* メインコンテンツ */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className={`flex-1 overflow-y-auto ${showVideo ? '' : 'p-6'}`}>
         {showVideo && result ? (
           <VideoPlayer
             videoUrl={result.item.videoUrl}
