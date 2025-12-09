@@ -5,6 +5,7 @@ frontend:
       commands:
         - cd app
         - npm install
+        - npm run db:generate
     build:
       commands:
         - npm run build
