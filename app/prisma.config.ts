@@ -14,6 +14,7 @@ export default defineConfig({
   },
   datasource: {
     // DATABASE_URLが設定されていない場合でもprisma generateは動作する
-    url: process.env.DATABASE_URL || env("DATABASE_URL", { optional: true }),
+    // prisma generate時にはデータベース接続は不要
+    url: process.env.DATABASE_URL || "postgresql://dummy:dummy@localhost:5432/dummy",
   },
 });
