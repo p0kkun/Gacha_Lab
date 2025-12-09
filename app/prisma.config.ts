@@ -13,6 +13,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // DATABASE_URLが設定されていない場合でもprisma generateは動作する
+    url: process.env.DATABASE_URL || env("DATABASE_URL", { optional: true }),
   },
 });
