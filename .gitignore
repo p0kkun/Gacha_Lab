@@ -1,0 +1,65 @@
+# プロジェクトルート .gitignore
+
+# Terraform関連（機密情報を含む）
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfplan
+terraform/*.tfplan.json
+terraform/crash.log
+terraform/crash.*.log
+terraform/aws-credentials
+terraform/*.credentials
+
+# ただし、terraform設定ファイルは含める
+!terraform/*.tf
+!terraform/*.tf.example
+!terraform/README.md
+!terraform/SECURITY.md
+!terraform/variables.tf
+!terraform/main.tf
+!terraform/outputs.tf
+!terraform/terraform.tfvars.example
+!terraform/aws-credentials.example
+
+# 環境変数ファイル
+.env
+.env.local
+.env*.local
+.env.production.local
+
+# 機密情報ファイル
+**/STRIPE_BACKUP_CODE.txt
+**/github_認証情報.md
+**/ngrok_認証情報.md
+**/ngrok_MFA設定情報.md
+
+# OS関連
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# エディタ関連
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ログファイル
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 一時ファイル
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ビルド成果物（app配下はapp/.gitignoreで管理）
+# ここではプロジェクトルートレベルのみ
+

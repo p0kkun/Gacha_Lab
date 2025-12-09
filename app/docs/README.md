@@ -29,6 +29,39 @@ LINE公式アカウントの作成とMessaging APIの有効化
 ### 9. [リッチメニュー実装](./09_リッチメニュー実装.md)
 リッチメニューの作成とLIFFアプリとの連携
 
+### 10. [Stripe決済設定](./10_Stripe決済設定.md)
+Stripeアカウントの作成とテストモードの設定
+
+### 11. [AWSデータベース設定](./11_AWSデータベース設定.md)
+AWS RDS PostgreSQLのセットアップと接続設定
+
+### 12. [ローカルデータベース構築](./12_ローカルデータベース構築.md)
+ローカル開発環境でのPostgreSQLデータベース構築手順
+
+### 13. [AWS環境構築_前提条件確認](./13_AWS環境構築_前提条件確認.md)
+AWS環境構築前に必要な前提条件の確認
+
+### 14. [AWS_AmplifyとRDSの関係](./14_AWS_AmplifyとRDSの関係.md)
+AWS AmplifyとRDS PostgreSQLの関係と構築方法
+
+### 15. [AWS環境構築_手順書](./15_AWS環境構築_手順書.md)
+AWS RDS PostgreSQL構築の詳細手順
+
+### 16. [Terraform手動インストール手順](./16_Terraform手動インストール手順.md)
+Terraformの手動インストール手順（Windows）
+
+### 17. [環境変数の管理方法](./17_環境変数の管理方法.md)
+開発環境と本番環境での環境変数の管理方法
+
+### 18. [AWS無料枠での完結構成](./19_AWS無料枠での完結構成.md)
+AWS無料枠だけで完結する構成の説明
+
+### 19. [AWS_Amplifyデプロイ手順](./20_AWS_Amplifyデプロイ手順.md)
+AWS Amplifyを使用したデプロイ手順
+
+### 20. [AWS_AmplifyとECSの違い](./22_AWS_AmplifyとECSの違い.md)
+AWS AmplifyとECS/EC2の違いと選択基準
+
 ## クイックスタート
 
 ### 初めてセットアップする場合
@@ -37,8 +70,10 @@ LINE公式アカウントの作成とMessaging APIの有効化
 2. [03_プロジェクトセットアップ.md](./03_プロジェクトセットアップ.md) でプロジェクトを作成
 3. [08_LINE公式アカウント設定.md](./08_LINE公式アカウント設定.md) で公式アカウントを作成
 4. [09_リッチメニュー実装.md](./09_リッチメニュー実装.md) でリッチメニューを実装
-5. [05_ローカル開発環境.md](./05_ローカル開発環境.md) で開発環境を構築
-6. [06_動作確認.md](./06_動作確認.md) で動作確認
+5. [10_Stripe決済設定.md](./10_Stripe決済設定.md) でStripeを設定
+6. [11_AWSデータベース設定.md](./11_AWSデータベース設定.md) でデータベースを設定
+7. [05_ローカル開発環境.md](./05_ローカル開発環境.md) で開発環境を構築
+8. [06_動作確認.md](./06_動作確認.md) で動作確認
 
 ### 既存プロジェクトを再開する場合
 
@@ -73,6 +108,8 @@ A: [07_GitHub設定.md](./07_GitHub設定.md) の「GitLens認証」セクショ
 - [Next.js ドキュメント](https://nextjs.org/docs)
 - [ngrok ドキュメント](https://ngrok.com/docs)
 - [GitHub ドキュメント](https://docs.github.com/ja)
+- [Stripe ドキュメント](https://stripe.com/docs/jp)
+- [AWS RDS ドキュメント](https://aws.amazon.com/jp/rds/postgresql/)
 
 ## 更新履歴
 

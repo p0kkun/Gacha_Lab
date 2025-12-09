@@ -1,0 +1,10 @@
+# Terraform変数ファイルの例
+# このファイルをコピーして terraform.tfvars を作成し、実際の値を設定してください
+
+db_password = "YourSecurePassword123!"
+
+# 注意: terraform.tfvars は .gitignore に含めることを推奨します
+
+
+
+

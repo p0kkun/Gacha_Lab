@@ -1,14 +1,189 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider = "prisma-client-js"
+  // デフォルトの生成先を使用（node_modules/.prisma/client）
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ============================================
+// Layer 1: ガチャ基盤（MVP / 2月26日必須）
+// ============================================
+
+// レアリティ（当選結果）
+enum Rarity {
+  FIRST_PRIZE  // 1等: MAIN EVENT 無料 voucher
+  SECOND_PRIZE // 2等: INVITATION 無料 voucher
+  THIRD_PRIZE  // 3等: 5000円 OFF voucher
+  FOURTH_PRIZE // 4等: 3000円 OFF voucher
+  FIFTH_PRIZE  // 5等: 1000円 OFF voucher
+  LOSER        // ハズレ: なし（敗者復活ガチャへ誘導）
+}
+
+// 紹介ステータス
+enum ReferralStatus {
+  PENDING   // 紹介リンク生成済み（被紹介者の登録待ち）
+  COMPLETED // 紹介成立（被紹介者が初回ガチャ実行）
+  INVALID   // 無効（自己紹介、重複紹介など）
+  FRAUD     // 不正検知
+  EXPIRED   // 有効期限切れ
+}
+
+// 無料ガチャ付与タイプ
+enum FreeGachaGrantType {
+  REFERRER // 紹介者への付与
+  REFEREE  // 被紹介者への付与
+}
+
+// ============================================
+// 1. ユーザー（User）
+// ============================================
+model User {
+  userId      String   @id // LINE ユーザー ID
+  displayName String?  // 表示名
+  pictureUrl  String?  // プロフィール画像 URL
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // リレーション
+  gachaHistories      GachaHistory[]      @relation("UserGachaHistories")
+  referralHistoriesAsReferrer ReferralHistory[] @relation("Referrer")
+  referralHistoriesAsReferee  ReferralHistory[] @relation("Referee")
+  freeGachaHistories  FreeGachaHistory[]
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+// ============================================
+// 2. ガチャアイテム（GachaItem）
+// ============================================
+model GachaItem {
+  id        Int      @id @default(autoincrement())
+  name      String   // アイテム名
+  rarity    Rarity   // レアリティ（1等〜5等、ハズレ）
+  videoUrl  String   // 動画ファイルのパス
+  isActive  Boolean  @default(true) // 有効/無効フラグ
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // リレーション
+  gachaHistories GachaHistory[]
+
+  @@index([rarity, isActive])
+  @@index([isActive])
+  @@map("gacha_items")
+}
+
+// ============================================
+// 3. ガチャタイプ（GachaType）
+// ============================================
+model GachaType {
+  id           String   @id // ガチャタイプ ID (例: 'normal', 'premium')
+  name         String   // ガチャ名
+  description  String?  // 説明文
+  isActive     Boolean  @default(true) // 有効/無効フラグ
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 確率設定（%）
+  firstPrizeWeight  Int @default(0)  // 1等確率
+  secondPrizeWeight Int @default(0)  // 2等確率
+  thirdPrizeWeight  Int @default(0)  // 3等確率
+  fourthPrizeWeight Int @default(0)  // 4等確率
+  fifthPrizeWeight  Int @default(0)  // 5等確率
+  loserWeight        Int @default(0)  // ハズレ確率
+
+  // リレーション
+  gachaHistories GachaHistory[]
+
+  @@index([isActive])
+  @@map("gacha_types")
+}
+
+// ============================================
+// 4. 抽選履歴（GachaHistory）
+// ============================================
+model GachaHistory {
+  id          Int      @id @default(autoincrement())
+  userId      String   // LINE ユーザー ID
+  gachaTypeId String   // ガチャタイプ ID
+  itemId      Int      // 獲得アイテム ID
+  createdAt   DateTime @default(now())
+
+  // リレーション
+  user      User      @relation("UserGachaHistories", fields: [userId], references: [userId])
+  gachaType GachaType @relation(fields: [gachaTypeId], references: [id])
+  item      GachaItem @relation(fields: [itemId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([gachaTypeId, createdAt])
+  @@index([itemId])
+  @@index([createdAt])
+  @@map("gacha_histories")
+}
+
+// ============================================
+// 5. 友達紹介履歴（ReferralHistory）
+// ============================================
+model ReferralHistory {
+  id              Int            @id @default(autoincrement())
+  referrerId      String         // 紹介者 ID（LINE ユーザー ID）
+  refereeId       String?        // 被紹介者 ID（LINE ユーザー ID）
+  referralLinkId  String         @unique // 紹介リンク ID（一意、UUID）
+  referralLink    String         // 紹介リンク URL
+  ipAddress       String?        // 紹介リンクアクセス時の IP
+  deviceInfo      String?        // デバイス情報（User-Agent など）
+  status          ReferralStatus @default(PENDING) // 紹介ステータス
+  referredAt      DateTime       @default(now()) // 紹介リンクアクセス日時
+  completedAt     DateTime?      // 紹介成立日時（初回ガチャ実行時）
+  expiresAt       DateTime       // 紹介リンク有効期限
+  isFraudDetected Boolean        @default(false) // 不正検知フラグ
+  fraudReason     String?        // 不正検知理由
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // リレーション
+  referrer User?  @relation("Referrer", fields: [referrerId], references: [userId])
+  referee  User?  @relation("Referee", fields: [refereeId], references: [userId])
+  freeGachaHistories FreeGachaHistory[]
+
+  @@index([referrerId, createdAt])
+  @@index([refereeId])
+  @@index([referralLinkId])
+  @@index([ipAddress, createdAt])
+  @@index([status])
+  @@index([expiresAt])
+  // 重複紹介防止: referrerId + refereeId の組み合わせは一意
+  // 注意: refereeIdがnullの場合は制約が効かないため、アプリケーション側でもチェックが必要
+  @@unique([referrerId, refereeId], name: "unique_referral_pair")
+  @@map("referral_histories")
+}
+
+// ============================================
+// 6. 無料ガチャ付与履歴（FreeGachaHistory）
+// ============================================
+model FreeGachaHistory {
+  id                Int                @id @default(autoincrement())
+  userId            String             // ユーザー ID（LINE ユーザー ID）
+  referralHistoryId Int?               // 紹介履歴 ID
+  grantType         FreeGachaGrantType // 付与タイプ
+  isUsed            Boolean            @default(false) // 使用済みフラグ
+  usedAt            DateTime?         // 使用日時（ガチャ実行時）
+  expiresAt         DateTime?          // 有効期限
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // リレーション
+  user            User             @relation(fields: [userId], references: [userId])
+  referralHistory ReferralHistory? @relation(fields: [referralHistoryId], references: [id])
+
+  @@index([userId, isUsed])
+  @@index([referralHistoryId])
+  @@index([expiresAt])
+  @@map("free_gacha_histories")
 }

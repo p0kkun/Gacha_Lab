@@ -1,0 +1,31 @@
+# Terraform関連ファイル
+
+# 状態ファイル
+*.tfstate
+*.tfstate.*
+
+# クラッシュログ
+crash.log
+crash.*.log
+
+# 変数ファイル（機密情報を含む可能性）
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example
+
+# プラグイン
+.terraform/
+.terraform.lock.hcl
+
+# 出力ファイル
+*.tfplan
+*.tfplan.json
+
+# 環境変数
+.env
+.env.local
+
+# AWS認証情報
+aws-credentials
+*.credentials
+
