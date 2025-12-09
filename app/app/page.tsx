@@ -1,12 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { initLiff, getProfile, isLoggedIn, login, type LiffProfile } from '@/lib/liff';
 import GachaModal from '@/components/GachaModal';
 
-export default function Home() {
+function SearchParamsHandler({
+  onActionChange,
+}: {
+  onActionChange: (action: string | null) => void;
+}) {
   const searchParams = useSearchParams();
+
+  // URLパラメータからアクションを取得して処理
+  useEffect(() => {
+    const action = searchParams.get('action');
+    onActionChange(action);
+  }, [searchParams, onActionChange]);
+
+  return null;
+}
+
+export default function Home() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,10 +60,8 @@ export default function Home() {
     initialize();
   }, []);
 
-  // URLパラメータからアクションを取得して処理
-  useEffect(() => {
-    const action = searchParams.get('action');
-    
+  // URLパラメータからアクションを処理
+  const handleActionChange = (action: string | null) => {
     if (action) {
       switch (action) {
         case 'gacha':
@@ -68,7 +81,7 @@ export default function Home() {
           setActivePage('home');
       }
     }
-  }, [searchParams]);
+  };
 
   if (loading) {
     return (
@@ -92,6 +105,9 @@ export default function Home() {
 
   return (
     <>
+      <Suspense fallback={null}>
+        <SearchParamsHandler onActionChange={handleActionChange} />
+      </Suspense>
       <div className="flex h-screen flex-col bg-gray-100">
         {/* メインコンテンツ領域 */}
         <main className={`overflow-y-auto p-4 ${isMenuOpen ? 'flex-[2]' : 'flex-1'}`}>
