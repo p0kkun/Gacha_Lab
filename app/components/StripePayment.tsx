@@ -1,19 +1,21 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import { useState, useEffect } from "react";
+import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   PaymentElement,
   useStripe,
   useElements,
-} from '@stripe/react-stripe-js';
+} from "@stripe/react-stripe-js";
 
 const getStripeKey = () => {
   const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   if (!key) {
-    console.error('Stripe公開可能キーが設定されていません。.env.localファイルを確認してください。');
-    return '';
+    console.error(
+      "Stripe公開可能キーが設定されていません。.env.localファイルを確認してください。"
+    );
+    return "";
   }
   return key;
 };
@@ -43,9 +45,9 @@ export default function StripePayment({
     // PaymentIntentを作成
     const createIntent = async () => {
       try {
-        const response = await fetch('/api/payment/create-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/payment/create-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: amount,
             userId: userId,
@@ -55,14 +57,16 @@ export default function StripePayment({
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || '決済の準備に失敗しました');
+          throw new Error(errorData.error || "決済の準備に失敗しました");
         }
 
         const data = await response.json();
         setClientSecret(data.clientSecret);
       } catch (err) {
-        console.error('PaymentIntent作成エラー:', err);
-        setError(err instanceof Error ? err.message : '決済の準備に失敗しました');
+        console.error("PaymentIntent作成エラー:", err);
+        setError(
+          err instanceof Error ? err.message : "決済の準備に失敗しました"
+        );
       } finally {
         setLoading(false);
       }
@@ -107,7 +111,8 @@ export default function StripePayment({
     return (
       <div className="rounded-lg bg-red-50 border border-red-200 p-4">
         <p className="text-sm text-red-600 mb-4">
-          ⚠️ Stripe公開可能キーが設定されていません。<br />
+          ⚠️ Stripe公開可能キーが設定されていません。
+          <br />
           .env.localファイルにNEXT_PUBLIC_STRIPE_PUBLISHABLE_KEYを設定してください。
         </p>
         {onCancel && (
@@ -128,7 +133,7 @@ export default function StripePayment({
       options={{
         clientSecret,
         appearance: {
-          theme: 'stripe',
+          theme: "stripe",
         },
       }}
     >
@@ -176,19 +181,19 @@ function CheckoutForm({
         confirmParams: {
           return_url: `${window.location.origin}/payment-success`,
         },
-        redirect: 'if_required',
+        redirect: "if_required",
       });
 
       if (confirmError) {
-        setError(confirmError.message || '決済に失敗しました');
+        setError(confirmError.message || "決済に失敗しました");
         setLoading(false);
       } else {
         // 決済成功
         onSuccess();
       }
     } catch (err) {
-      console.error('決済エラー:', err);
-      setError(err instanceof Error ? err.message : '決済に失敗しました');
+      console.error("決済エラー:", err);
+      setError(err instanceof Error ? err.message : "決済に失敗しました");
       setLoading(false);
     }
   };
@@ -198,10 +203,13 @@ function CheckoutForm({
       <div className="rounded-lg bg-white p-4 sm:p-6 shadow-lg">
         <PaymentElement
           options={{
-            layout: 'accordion', // 縦並びのアコーディオン形式
+            layout: "accordion", // 縦並びのアコーディオン形式
             wallets: {
-              applePay: 'auto',
-              googlePay: 'auto',
+              applePay: "auto",
+              googlePay: "auto",
+            },
+            business: {
+              name: "Gacha Lab",
             },
           }}
         />
@@ -229,17 +237,17 @@ function CheckoutForm({
           disabled={!stripe || loading}
           className="flex-1 rounded-lg bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-3 font-bold text-white shadow-lg transition-all hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 disabled:from-gray-400 disabled:via-gray-500 disabled:to-gray-400 disabled:opacity-50"
         >
-          {loading ? '処理中...' : `¥${amount.toLocaleString()} を支払う`}
+          {loading ? "処理中..." : `¥${amount.toLocaleString()} を支払う`}
         </button>
       </div>
 
       {/* テストモードの説明 */}
       <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
         <p className="text-xs text-blue-700">
-          💳 テストモード: 実際の決済は発生しません。テストカード番号: 4242 4242 4242 4242
+          💳 テストモード: 実際の決済は発生しません。テストカード番号: 4242 4242
+          4242 4242
         </p>
       </div>
     </form>
   );
 }
-
