@@ -3,6 +3,16 @@
 import { useState } from 'react';
 import { GachaType } from './GachaModal';
 import VideoPlayer from './VideoPlayer';
+import HoldemGachaAnimation from './HoldemGachaAnimation';
+import { type Card } from '@/lib/pokerHand';
+
+type PokerHand = {
+  hand: string;
+  handName: string;
+  holeCards: Card[];
+  communityCards: Card[];
+  allCards: Card[];
+};
 
 type GachaResult = {
   item: {
@@ -12,6 +22,7 @@ type GachaResult = {
     videoUrl: string;
   };
   timestamp: string;
+  pokerHand?: PokerHand;
 };
 
 export default function GachaContent({
@@ -28,10 +39,10 @@ export default function GachaContent({
   const [isDrawing, setIsDrawing] = useState(false);
   const [result, setResult] = useState<GachaResult | null>(null);
   const [showVideo, setShowVideo] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   const handleDrawGacha = async () => {
     setIsDrawing(true);
-    setShowVideo(true);
     onVideoStateChange?.(true);
 
     try {
@@ -52,11 +63,19 @@ export default function GachaContent({
 
       const data = await response.json();
       setResult(data);
+
+      // 通常ガチャはポーカー演出、プレミアムは動画演出
+      if (selectedGacha.id === 'normal' && data.pokerHand) {
+        setShowAnimation(true);
+      } else {
+        setShowVideo(true);
+      }
     } catch (error) {
       console.error('ガチャエラー:', error);
       alert('ガチャ抽選に失敗しました');
       setIsDrawing(false);
       setShowVideo(false);
+      setShowAnimation(false);
     }
   };
 
@@ -64,15 +83,45 @@ export default function GachaContent({
     setIsDrawing(false);
     setShowVideo(false);
     onVideoStateChange?.(false);
-    // 動画再生後も結果を表示し続ける
+  };
+
+  const handleAnimationEnd = () => {
+    setIsDrawing(false);
+    setShowAnimation(false);
+    onVideoStateChange?.(false);
   };
 
   const handleCloseResult = () => {
     setResult(null);
     setShowVideo(false);
+    setShowAnimation(false);
     onVideoStateChange?.(false);
     onClose();
   };
+
+  // 演出表示中は全画面
+  if (showAnimation && result && result.pokerHand) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-black">
+        <HoldemGachaAnimation
+          finalResult={result.item}
+          pokerHand={result.pokerHand}
+          onAnimationEnd={handleAnimationEnd}
+        />
+      </div>
+    );
+  }
+
+  if (showVideo && result) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-black">
+        <VideoPlayer
+          videoUrl={result.item.videoUrl}
+          onEnd={handleVideoEnd}
+        />
+      </div>
+    );
+  }
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -97,71 +146,114 @@ export default function GachaContent({
   };
 
   return (
-    <div className="relative flex h-full flex-col">
-      {/* ヘッダー */}
-      {!showVideo && (
-        <div className="border-b bg-gray-50 p-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{selectedGacha.name}</h1>
-            <button
-              onClick={onClose}
-              className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300"
-            >
-              閉じる
-            </button>
+    <div 
+      className="relative flex h-full flex-col"
+      style={{ touchAction: 'none' }}
+      onTouchStart={(e) => e.preventDefault()}
+      onTouchMove={(e) => e.preventDefault()}
+    >
+      {/* ヘッダー - ポーカーテーブル風 */}
+      {!showVideo && !showAnimation && (
+        <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 p-6 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">🂡</div>
+            <div>
+              <h1 className="text-3xl font-bold text-yellow-300 drop-shadow-lg">
+                {selectedGacha.name}
+              </h1>
+              <p className="mt-1 text-sm text-green-200">{selectedGacha.description}</p>
+            </div>
           </div>
-          <p className="mt-2 text-sm text-gray-600">{selectedGacha.description}</p>
         </div>
       )}
 
-      {/* メインコンテンツ */}
-      <div className={`flex-1 overflow-y-auto ${showVideo ? '' : 'p-6'}`}>
-        {showVideo && result ? (
-          <VideoPlayer
-            videoUrl={result.item.videoUrl}
-            onEnd={handleVideoEnd}
-          />
-        ) : (
+      {/* メインコンテンツ - ポーカーテーブル風 */}
+      <div className={`flex-1 overflow-y-auto ${showVideo || showAnimation ? '' : 'p-8'}`}>
+        {!result && (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="mb-8 text-lg text-gray-600">
-                ガチャを引いてアイテムを獲得しましょう！
+              {/* ポーカーチップ風の装飾 */}
+              <div className="mb-8 flex justify-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-600 to-red-800 shadow-xl ring-4 ring-yellow-400"></div>
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-xl ring-4 ring-yellow-400"></div>
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-green-800 shadow-xl ring-4 ring-yellow-400"></div>
+              </div>
+              
+              <p className="mb-4 text-2xl font-bold text-yellow-300 drop-shadow-lg">
+                🎰 ポーカー風ガチャ
               </p>
+              <p className="text-lg text-green-200">
+                カードを引いてアイテムを獲得しましょう！
+              </p>
+              
+              {/* トランプのスーツ装飾 */}
+              <div className="mt-8 flex justify-center gap-6 text-4xl opacity-50">
+                <span className="text-red-400">♥</span>
+                <span className="text-black">♠</span>
+                <span className="text-red-400">♦</span>
+                <span className="text-black">♣</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* 結果表示 */}
-        {result && !showVideo && (
-          <div className="mt-6 rounded-lg border-2 border-blue-500 bg-blue-50 p-6">
-            <h3 className="mb-4 text-center text-xl font-bold">結果</h3>
+        {/* 結果表示 - ポーカー風 */}
+        {result && !showVideo && !showAnimation && (
+          <div className="mx-auto mt-6 max-w-md rounded-2xl border-4 border-yellow-400 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 shadow-2xl ring-4 ring-yellow-500 ring-opacity-50">
+            <h3 className="mb-6 text-center text-2xl font-bold text-yellow-300 drop-shadow-lg">
+              🎉 獲得！
+            </h3>
             <div className="text-center">
-              <div className={`mb-2 text-2xl font-bold ${getRarityColor(result.item.rarity)}`}>
+              <div className={`mb-4 text-3xl font-bold drop-shadow-lg ${
+                result.item.rarity === 'epic' ? 'text-purple-400' :
+                result.item.rarity === 'rare' ? 'text-blue-400' :
+                'text-yellow-300'
+              }`}>
                 {result.item.name}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className={`inline-block rounded-full px-4 py-2 text-sm font-semibold ${
+                result.item.rarity === 'epic' ? 'bg-purple-600 text-white' :
+                result.item.rarity === 'rare' ? 'bg-blue-600 text-white' :
+                'bg-gray-600 text-yellow-200'
+              }`}>
                 レアリティ: {getRarityLabel(result.item.rarity)}
               </div>
             </div>
             <button
               onClick={handleCloseResult}
-              className="mt-4 w-full rounded-lg bg-blue-500 px-6 py-3 text-white hover:bg-blue-600"
+              className="mt-6 w-full rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-3 font-bold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl"
             >
-              閉じる
+              ✓ 閉じる
             </button>
           </div>
         )}
       </div>
 
-      {/* フッター（ガチャを引くボタン） */}
-      {!showVideo && (
-        <div className="border-t bg-gray-50 p-4">
+      {/* フッター（ガチャを引くボタン） - ポーカー風 */}
+      {!showVideo && !showAnimation && (
+        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 p-6 shadow-lg">
           <button
             onClick={handleDrawGacha}
             disabled={isDrawing}
-            className="w-full rounded-lg bg-blue-500 px-6 py-4 text-lg font-bold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
+            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-8 py-5 text-xl font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
           >
-            {isDrawing ? '抽選中...' : 'ガチャを引く'}
+            {/* 光るエフェクト */}
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
+            
+            <span className="relative z-10 flex items-center justify-center gap-3">
+              {isDrawing ? (
+                <>
+                  <span className="animate-spin">🎰</span>
+                  <span>抽選中...</span>
+                </>
+              ) : (
+                <>
+                  <span>🂡</span>
+                  <span>カードを引く</span>
+                  <span>🂡</span>
+                </>
+              )}
+            </span>
           </button>
         </div>
       )}

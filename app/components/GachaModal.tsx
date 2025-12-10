@@ -33,32 +33,33 @@ export default function GachaModal({
   userId: string;
 }) {
   const [selectedGacha, setSelectedGacha] = useState<GachaType>(gachaTypes[0]);
-  const [isShowingVideo, setIsShowingVideo] = useState(false);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-black bg-opacity-50">
+    <div 
+      className="fixed inset-0 z-50 flex bg-black bg-opacity-70"
+      style={{ touchAction: 'none' }}
+      onTouchStart={(e) => e.preventDefault()}
+      onTouchMove={(e) => e.preventDefault()}
+    >
       {/* 全画面オーバーレイ */}
       <div className="flex h-full w-full">
-        {/* 左側メニュー */}
-        {!isShowingVideo && (
-          <div className="w-1/3 bg-gray-800 text-white">
-            <GachaMenu
-              gachaTypes={gachaTypes}
-              selectedGacha={selectedGacha}
-              onSelect={setSelectedGacha}
-            />
-          </div>
-        )}
+        {/* 左側メニュー - ポーカーテーブル風 */}
+        <div className="w-1/4 bg-gradient-to-b from-green-900 via-green-800 to-green-900 text-white shadow-2xl">
+          <GachaMenu
+            gachaTypes={gachaTypes}
+            selectedGacha={selectedGacha}
+            onSelect={setSelectedGacha}
+          />
+        </div>
 
-        {/* 右側メインコンテンツ */}
-        <div className={`${isShowingVideo ? 'w-full' : 'flex-1'} bg-white`}>
+        {/* 右側メインコンテンツ - ポーカーテーブル風 */}
+        <div className="flex-1 bg-gradient-to-br from-green-900 via-green-800 to-green-900">
           <GachaContent
             selectedGacha={selectedGacha}
             userId={userId}
             onClose={onClose}
-            onVideoStateChange={setIsShowingVideo}
           />
         </div>
       </div>

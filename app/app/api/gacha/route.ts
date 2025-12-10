@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateRandomCard, evaluateHand, getHandName, getRarityFromHand, type Card } from '@/lib/pokerHand';
 
 // 仮のガチャアイテム（後でデータベースに移行）
-// 現在はitem1.mp4のみ配置されているため、すべてのアイテムでitem1.mp4を使用
 const gachaItems = [
   { id: 1, name: 'アイテム1', rarity: 'common', videoUrl: '/videos/item1.mp4' },
   { id: 2, name: 'アイテム2', rarity: 'common', videoUrl: '/videos/item1.mp4' },
@@ -10,7 +10,7 @@ const gachaItems = [
   { id: 5, name: 'アイテム5', rarity: 'epic', videoUrl: '/videos/item1.mp4' },
 ];
 
-// レアリティごとの重み
+// レアリティごとの重み（プレミアムガチャ用）
 const rarityWeights = {
   common: 70,
   rare: 25,
@@ -29,7 +29,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ガチャタイプに応じて重みを変更（プレミアムガチャはレアが出やすい）
+    // 通常ガチャはポーカーハンドで判定
+    if (gachaType === 'normal') {
+      // 7枚のカードを生成
+      const allCards: Card[] = Array.from({ length: 7 }, () => generateRandomCard());
+      const holeCards = allCards.slice(0, 2);
+      const communityCards = allCards.slice(2, 7);
+
+      // 役を判定
+      const handRank = evaluateHand(allCards);
+      const handName = getHandName(handRank);
+      const selectedRarity = getRarityFromHand(handRank);
+
+      // 選択されたレアリティのアイテムからランダムに選択
+      const itemsOfRarity = gachaItems.filter(item => item.rarity === selectedRarity);
+      const selectedItem = itemsOfRarity[Math.floor(Math.random() * itemsOfRarity.length)];
+
+      return NextResponse.json({
+        success: true,
+        item: selectedItem,
+        timestamp: new Date().toISOString(),
+        pokerHand: {
+          hand: handRank,
+          handName: handName,
+          holeCards: holeCards,
+          communityCards: communityCards,
+          allCards: allCards,
+        },
+      });
+    }
+
+    // プレミアムガチャは従来通り
     let weights = { ...rarityWeights };
     if (gachaType === 'premium') {
       weights = {
@@ -52,8 +82,6 @@ export async function POST(request: NextRequest) {
     // 選択されたレアリティのアイテムからランダムに選択
     const itemsOfRarity = gachaItems.filter(item => item.rarity === selectedRarity);
     const selectedItem = itemsOfRarity[Math.floor(Math.random() * itemsOfRarity.length)];
-
-    // ここでデータベースに抽選履歴を保存する処理を追加（後で実装）
 
     return NextResponse.json({
       success: true,
