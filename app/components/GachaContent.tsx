@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { GachaType } from './GachaModal';
 import VideoPlayer from './VideoPlayer';
 import HoldemGachaAnimation from './HoldemGachaAnimation';
+import StripePayment from './StripePayment';
 import { type Card } from '@/lib/pokerHand';
 
 type PokerHand = {
@@ -40,8 +41,16 @@ export default function GachaContent({
   const [result, setResult] = useState<GachaResult | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
-  const handleDrawGacha = async () => {
+  const handleDrawGacha = () => {
+    // 決済画面を表示
+    setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    // 決済成功後、ガチャを引く
+    setShowPayment(false);
     setIsDrawing(true);
     onVideoStateChange?.(true);
 
@@ -77,6 +86,10 @@ export default function GachaContent({
       setShowVideo(false);
       setShowAnimation(false);
     }
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPayment(false);
   };
 
   const handleVideoEnd = () => {
@@ -230,7 +243,7 @@ export default function GachaContent({
       </div>
 
       {/* フッター（ガチャを引くボタン） - ポーカー風 */}
-      {!showVideo && !showAnimation && (
+      {!showVideo && !showAnimation && !showPayment && (
         <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 p-6 shadow-lg">
           <button
             onClick={handleDrawGacha}
@@ -249,12 +262,42 @@ export default function GachaContent({
               ) : (
                 <>
                   <span>🂡</span>
-                  <span>カードを引く</span>
+                  <span>カードを引く (¥{selectedGacha.price.toLocaleString()})</span>
                   <span>🂡</span>
                 </>
               )}
             </span>
           </button>
+        </div>
+      )}
+
+      {/* 決済モーダル - 全画面 */}
+      {showPayment && (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-gradient-to-br from-green-900 via-green-800 to-green-900">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="mx-auto max-w-2xl">
+              <h3 className="mb-4 text-2xl sm:text-3xl font-bold text-yellow-300 drop-shadow-lg text-center">
+                💳 決済
+              </h3>
+              <div className="mb-6 text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  {selectedGacha.name}
+                </div>
+                <div className="text-xl sm:text-2xl text-yellow-300">
+                  ¥{selectedGacha.price.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4 sm:p-6">
+                <StripePayment
+                  amount={selectedGacha.price}
+                  userId={userId}
+                  gachaTypeId={selectedGacha.id}
+                  onSuccess={handlePaymentSuccess}
+                  onCancel={handlePaymentCancel}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -8,6 +8,7 @@ export type GachaType = {
   id: string;
   name: string;
   description: string;
+  price: number; // 価格（円）
 };
 
 const gachaTypes: GachaType[] = [
@@ -15,11 +16,13 @@ const gachaTypes: GachaType[] = [
     id: 'normal',
     name: '通常ガチャ',
     description: '基本的なガチャです',
+    price: 100, // 100円
   },
   {
     id: 'premium',
     name: 'プレミアムガチャ',
     description: 'レアアイテムが出やすいガチャです',
+    price: 300, // 300円
   },
 ];
 

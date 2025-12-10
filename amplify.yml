@@ -10,6 +10,16 @@ applications:
         build:
           commands:
             - npm run build
+        postBuild:
+          commands:
+            # デジタルウォレット（Apple Pay、Google Payなど）用ドメインを自動登録（環境変数が設定されている場合のみ）
+            - |
+              if [ -n "$PAYMENT_METHOD_DOMAIN" ] && [ -n "$STRIPE_SECRET_KEY" ]; then
+                echo "📝 デジタルウォレット用ドメインを登録中: $PAYMENT_METHOD_DOMAIN"
+                npx tsx scripts/register-payment-method-domain.ts "$PAYMENT_METHOD_DOMAIN" || echo "⚠️  ドメイン登録に失敗しました（既に登録済みの可能性があります）"
+              else
+                echo "ℹ️  PAYMENT_METHOD_DOMAINまたはSTRIPE_SECRET_KEYが設定されていないため、ドメイン登録をスキップします"
+              fi
       artifacts:
         baseDirectory: .next
         files:
