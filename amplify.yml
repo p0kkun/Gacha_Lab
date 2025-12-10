@@ -9,6 +9,7 @@ applications:
             - npm run db:generate
         build:
           commands:
+            - rm -rf .next
             - npm run build
         postBuild:
           commands:

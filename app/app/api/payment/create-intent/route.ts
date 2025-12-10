@@ -1,12 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-11-17.clover',
-});
+// Stripeインスタンスは関数内で作成（モジュールレベルでは作成しない）
+function getStripeInstance(): Stripe {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!stripeSecretKey || stripeSecretKey === '') {
+    throw new Error('STRIPE_SECRET_KEY環境変数が設定されていません');
+  }
+  return new Stripe(stripeSecretKey, {
+    apiVersion: '2025-11-17.clover',
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // STRIPE_SECRET_KEYの検証
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!stripeSecretKey || stripeSecretKey === '') {
+      console.error('STRIPE_SECRET_KEY環境変数が設定されていません', {
+        hasEnvVar: !!process.env.STRIPE_SECRET_KEY,
+        envVarLength: process.env.STRIPE_SECRET_KEY?.length,
+        envVarPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+      });
+      return NextResponse.json(
+        { error: '決済システムの設定が完了していません。管理者にお問い合わせください。' },
+        { status: 500 }
+      );
+    }
+
+    // Stripeインスタンスを作成（環境変数が設定されている場合のみ）
+    const stripe = getStripeInstance();
+
     const body = await request.json();
     const { amount, userId, gachaTypeId } = body;
 
