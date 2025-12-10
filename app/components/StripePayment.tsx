@@ -148,15 +148,6 @@ export default function StripePayment({
   );
 }
 
-/**
- * LINE内ブラウザかどうかを検出
- */
-function isLineBrowser(): boolean {
-  if (typeof window === "undefined") return false;
-  const userAgent = navigator.userAgent || navigator.vendor || "";
-  return /Line/i.test(userAgent);
-}
-
 function CheckoutForm({
   amount,
   userId,
@@ -174,8 +165,6 @@ function CheckoutForm({
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // LINE内ブラウザかどうかを検出（初期レンダリング時に一度だけ実行）
-  const isLine = typeof window !== "undefined" ? isLineBrowser() : false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,48 +206,13 @@ function CheckoutForm({
             layout: "accordion", // 縦並びのアコーディオン形式
             wallets: {
               applePay: "auto",
-              googlePay: "auto", // LINE内ブラウザでも表示（外部ブラウザで開く案内を表示）
+              googlePay: "auto",
             },
             business: {
               name: "Gacha Lab",
             },
           }}
         />
-        {/* LINE内ブラウザでGoogle Payを使用する場合の案内 */}
-        {isLine && (
-          <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
-            <p className="text-xs text-yellow-800">
-              💡 Google
-              Payを使用する場合は、外部ブラウザ（Chrome）で開く必要があります。
-              <br />
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    // LIFF APIを使用して外部ブラウザで開く
-                    const liff = (await import("@line/liff")).default;
-                    if (liff.isInClient()) {
-                      liff.openWindow({
-                        url: window.location.href,
-                        external: true,
-                      });
-                    } else {
-                      // 既に外部ブラウザの場合は何もしない
-                      window.open(window.location.href, "_blank");
-                    }
-                  } catch (error) {
-                    console.error("外部ブラウザで開くエラー:", error);
-                    // フォールバック: 通常のwindow.openを使用
-                    window.open(window.location.href, "_blank");
-                  }
-                }}
-                className="mt-2 text-xs font-semibold text-yellow-900 underline hover:text-yellow-700"
-              >
-                外部ブラウザで開く
-              </button>
-            </p>
-          </div>
-        )}
       </div>
 
       {error && (
