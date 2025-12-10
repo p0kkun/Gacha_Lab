@@ -14,6 +14,16 @@ function getStripeInstance(): Stripe {
 
 export async function POST(request: NextRequest) {
   try {
+    // デバッグ: すべての環境変数をログに出力（機密情報はマスク）
+    console.log('環境変数の確認:', {
+      hasStripeSecretKey: !!process.env.STRIPE_SECRET_KEY,
+      stripeSecretKeyLength: process.env.STRIPE_SECRET_KEY?.length,
+      stripeSecretKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+      allEnvKeys: Object.keys(process.env).filter(key => 
+        key.includes('STRIPE') || key.includes('STRIPE_SECRET')
+      ),
+    });
+
     // STRIPE_SECRET_KEYの検証
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
     if (!stripeSecretKey || stripeSecretKey === '') {
@@ -21,6 +31,7 @@ export async function POST(request: NextRequest) {
         hasEnvVar: !!process.env.STRIPE_SECRET_KEY,
         envVarLength: process.env.STRIPE_SECRET_KEY?.length,
         envVarPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+        allProcessEnvKeys: Object.keys(process.env).slice(0, 20), // 最初の20個のキーを表示
       });
       return NextResponse.json(
         { error: '決済システムの設定が完了していません。管理者にお問い合わせください。' },
