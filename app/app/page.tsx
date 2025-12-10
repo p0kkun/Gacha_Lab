@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   initLiff,
@@ -28,7 +28,6 @@ function SearchParamsHandler({
 }
 
 export default function Home() {
-  const router = useRouter();
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,95 +36,73 @@ export default function Home() {
   const [isLineBrowser, setIsLineBrowser] = useState(false);
 
   useEffect(() => {
-    const checkLineBrowser = async () => {
+    const initializeLiff = async () => {
       const userAgent = navigator.userAgent || navigator.vendor || "";
       const isLineBrowserByUA = /Line/i.test(userAgent);
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
 
-      if (liffId && isLineBrowserByUA) {
-        try {
-          const liff = (await import("@line/liff")).default;
-          await liff.init({ liffId });
-
-          if (liff.isInClient() || liff.isLoggedIn()) {
-            setIsLineBrowser(true);
-            // LINE内ブラウザの場合は初期化を続行
-            const initialize = async () => {
-              try {
-                await initLiff(liffId);
-
-                if (!isLoggedIn()) {
-                  login();
-                  return;
-                }
-
-                const userProfile = await getProfile();
-                setProfile(userProfile);
-              } catch (err) {
-                setError(
-                  err instanceof Error ? err.message : "エラーが発生しました"
-                );
-              } finally {
-                setLoading(false);
-                setIsChecking(false);
-              }
-            };
-            initialize();
-            return;
-          }
-        } catch {
-          if (isLineBrowserByUA) {
-            setIsLineBrowser(true);
-            // User-Agentで判定して初期化を続行
-            const initialize = async () => {
-              try {
-                await initLiff(liffId);
-
-                if (!isLoggedIn()) {
-                  login();
-                  return;
-                }
-
-                const userProfile = await getProfile();
-                setProfile(userProfile);
-              } catch (err) {
-                setError(
-                  err instanceof Error ? err.message : "エラーが発生しました"
-                );
-              } finally {
-                setLoading(false);
-                setIsChecking(false);
-              }
-            };
-            initialize();
-            return;
-          }
-        }
+      if (!liffId) {
+        setIsChecking(false);
+        setLoading(false);
+        return;
       }
 
-      setIsChecking(false);
-      setLoading(false);
+      // LINE内ブラウザかどうかを設定
+      setIsLineBrowser(isLineBrowserByUA);
+
+      try {
+        // LIFFを初期化（LINE内ブラウザでも外部ブラウザでも）
+        await initLiff(liffId);
+
+        // ログイン状態を確認
+        if (isLoggedIn()) {
+          // ログイン済みの場合はプロフィールを取得
+          const userProfile = await getProfile();
+          setProfile(userProfile);
+        } else {
+          // ログインが必要な場合は、ログインを試みる
+          // LINE内ブラウザの場合は自動的にログイン画面に遷移
+          // 外部ブラウザの場合は、ログインボタンを表示するか、自動的にログインを試みる
+          if (isLineBrowserByUA) {
+            login();
+            return;
+          }
+          // 外部ブラウザの場合は、ログインを試みる（URLパラメータがある場合のみ）
+          const params = new URLSearchParams(window.location.search);
+          const action = params.get("action");
+          if (action === "gacha") {
+            // action=gachaがある場合は、ログインを試みる
+            login();
+          }
+        }
+      } catch (err) {
+        console.error("LIFF初期化エラー:", err);
+        setError(err instanceof Error ? err.message : "エラーが発生しました");
+      } finally {
+        setLoading(false);
+        setIsChecking(false);
+      }
     };
 
-    checkLineBrowser();
+    initializeLiff();
   }, []);
 
   const handleActionChange = (action: string | null) => {
-    if (action === "gacha" && profile) {
+    if (action === "gacha") {
       setIsGachaModalOpen(true);
     }
   };
 
-  // URLパラメータをチェック
+  // URLパラメータをチェック（外部ブラウザでも処理）
   useEffect(() => {
-    if (typeof window !== "undefined" && profile) {
+    if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const action = params.get("action");
       if (action === "gacha") {
         setIsGachaModalOpen(true);
       }
     }
-  }, [profile]);
+  }, []);
 
   // LINE内ブラウザの場合はローディング表示
   if (isChecking || (isLineBrowser && loading)) {
@@ -149,15 +126,21 @@ export default function Home() {
     );
   }
 
-  // LINE内ブラウザの場合はガチャモーダルを表示可能な状態にする
-  if (isLineBrowser && profile) {
+  // profileがある場合（LINE内ブラウザまたは外部ブラウザでログイン済み）、LIFFアプリとして動作
+  if (profile) {
     return (
       <>
         <Suspense fallback={null}>
           <SearchParamsHandler onActionChange={handleActionChange} />
         </Suspense>
-        {/* 背景は透明にしてガチャモーダルのみ表示 */}
-        <div className="min-h-screen bg-transparent">
+        {/* LINE内ブラウザの場合は背景を透明に、外部ブラウザの場合は通常の背景 */}
+        <div
+          className={
+            isLineBrowser
+              ? "min-h-screen bg-transparent"
+              : "min-h-screen bg-gray-100"
+          }
+        >
           <GachaModal
             isOpen={isGachaModalOpen}
             onClose={() => setIsGachaModalOpen(false)}
@@ -169,11 +152,41 @@ export default function Home() {
   }
 
   // 通常のブラウザの場合はランディングページを表示
+  // ただし、action=gachaパラメータがある場合はガチャモーダルも表示
   return (
     <>
       <Suspense fallback={null}>
         <SearchParamsHandler onActionChange={handleActionChange} />
       </Suspense>
+      {/* 外部ブラウザでaction=gachaがあるが、まだログインしていない場合の案内 */}
+      {isGachaModalOpen && !profile && !loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="rounded-lg bg-white p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">ガチャを引く</h2>
+            <p className="text-gray-600 mb-4">
+              LINEアカウントでログインしてください。
+              <br />
+              ログイン後、ガチャを引くことができます。
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setIsGachaModalOpen(false)}
+                className="flex-1 rounded-lg bg-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-400"
+              >
+                閉じる
+              </button>
+              <a
+                href="https://line.me/R/ti/p/@your-line-id"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 rounded-lg bg-green-500 px-4 py-2 font-semibold text-white text-center hover:bg-green-600"
+              >
+                LINE公式アカウントで開く
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
         {/* ヘッダー */}
         <header className="border-b bg-white shadow-sm">
