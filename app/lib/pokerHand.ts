@@ -233,3 +233,4 @@ export function generateRandomCard(): Card {
   return { suit: randomSuit, rank: randomRank };
 }
 
+

@@ -1,0 +1,156 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { Client, WebhookEvent, TextMessage, MessageEvent } from '@line/bot-sdk';
+import crypto from 'crypto';
+
+// LINE Messaging APIクライアントの初期化
+function getLineClient(): Client | null {
+  const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!channelAccessToken) {
+    console.warn('LINE_CHANNEL_ACCESS_TOKENが設定されていません');
+    return null;
+  }
+  return new Client({ channelAccessToken });
+}
+
+// Webhook署名の検証
+function verifySignature(
+  body: string,
+  signature: string | null
+): boolean {
+  const channelSecret = process.env.LINE_CHANNEL_SECRET;
+  if (!channelSecret || !signature) {
+    return false;
+  }
+
+  const hash = crypto
+    .createHmac('sha256', channelSecret)
+    .update(body)
+    .digest('base64');
+
+  return hash === signature;
+}
+
+// 管理者用キーワードをチェック
+function isAdminKeyword(text: string): boolean {
+  const adminKeyword = process.env.ADMIN_ACCESS_KEYWORD;
+  if (!adminKeyword) {
+    console.warn('ADMIN_ACCESS_KEYWORDが設定されていません');
+    return false;
+  }
+  // 大文字小文字を区別せず、前後の空白を無視して比較
+  return text.trim().toLowerCase() === adminKeyword.trim().toLowerCase();
+}
+
+// 管理画面URLを取得
+function getAdminUrl(): string {
+  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL;
+  if (adminUrl) {
+    return adminUrl;
+  }
+  
+  // デフォルト: 相対パス
+  // 本番環境では、環境変数でフルURLを設定することを推奨
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+  return baseUrl ? `${baseUrl}/admin` : '/admin';
+}
+
+// テキストメッセージに返信
+async function replyTextMessage(
+  client: Client,
+  replyToken: string,
+  text: string
+): Promise<void> {
+  try {
+    const message: TextMessage = {
+      type: 'text',
+      text,
+    };
+    
+    // replyMessageは配列でメッセージを受け取る
+    await client.replyMessage(replyToken, [message]);
+    console.log('メッセージ送信成功:', { replyToken: replyToken.substring(0, 10) + '...', text: text.substring(0, 50) + '...' });
+  } catch (error) {
+    console.error('メッセージ送信エラー:', error);
+    if (error && typeof error === 'object' && 'response' in error) {
+      const httpError = error as { response?: { data?: unknown } };
+      console.error('エラー詳細:', JSON.stringify(httpError.response?.data, null, 2));
+    }
+    throw error;
+  }
+}
+
+// Webhookイベントを処理
+async function handleWebhookEvent(
+  client: Client,
+  event: WebhookEvent
+): Promise<void> {
+  // メッセージイベントのみ処理
+  if (event.type !== 'message' || event.message.type !== 'text') {
+    return;
+  }
+
+  const messageEvent = event as MessageEvent;
+  const text = messageEvent.message.text;
+
+  // 管理者用キーワードをチェック
+  if (isAdminKeyword(text)) {
+    const adminUrl = getAdminUrl();
+    const replyText = `🔐 管理画面へのアクセスURL:\n\n${adminUrl}\n\n⚠️ このURLは管理者専用です。`;
+    
+    await replyTextMessage(client, messageEvent.replyToken, replyText);
+    console.log(`管理者用URLを返信しました: ${adminUrl}`);
+  }
+  // その他のメッセージは無視（必要に応じて自動応答を追加可能）
+}
+
+// POST: Webhookリクエストを受信
+export async function POST(request: NextRequest) {
+  try {
+    // リクエストボディを取得（署名検証のため、文字列として取得）
+    const body = await request.text();
+    
+    // 署名を検証
+    const signature = request.headers.get('x-line-signature');
+    if (!verifySignature(body, signature)) {
+      console.error('Webhook署名の検証に失敗しました');
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      );
+    }
+
+    // JSONをパース
+    const events: WebhookEvent[] = JSON.parse(body).events || [];
+
+    // LINEクライアントを取得
+    const client = getLineClient();
+    if (!client) {
+      console.error('LINEクライアントの初期化に失敗しました');
+      return NextResponse.json(
+        { error: 'LINE client initialization failed' },
+        { status: 500 }
+      );
+    }
+
+    // 各イベントを処理
+    const promises = events.map((event) => handleWebhookEvent(client, event));
+    await Promise.all(promises);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Webhook処理エラー:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET: Webhook検証用（LINE Developers ConsoleでWebhook URLを設定する際に必要）
+export async function GET() {
+  return NextResponse.json({
+    message: 'LINE Webhook endpoint is active',
+    timestamp: new Date().toISOString(),
+  });
+}
+

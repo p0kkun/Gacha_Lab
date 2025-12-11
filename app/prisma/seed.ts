@@ -1,7 +1,7 @@
 // Prisma シードファイル
 // 初期データを投入するためのスクリプト
 
-import { PrismaClient, Rarity } from "@prisma/client";
+import { PrismaClient, Rarity, HandRank } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { config } from "dotenv";
@@ -31,7 +31,14 @@ async function main() {
 
   await prisma.gachaType.upsert({
     where: { id: "normal" },
-    update: {},
+    update: {
+      // 既存データにもデフォルトの役を設定（配列形式）
+      firstPrizeHands: [HandRank.ROYAL_FLUSH],
+      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],
+      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],
+      fourthPrizeHands: [HandRank.FULL_HOUSE],
+      fifthPrizeHands: [HandRank.FLUSH],
+    },
     create: {
       id: "normal",
       name: "通常ガチャ",
@@ -42,13 +49,27 @@ async function main() {
       fourthPrizeWeight: 10, // 10%
       fifthPrizeWeight: 20, // 20%
       loserWeight: 62, // 62%
+      // デフォルトの役設定（配列形式）
+      firstPrizeHands: [HandRank.ROYAL_FLUSH],      // 1等: ロイヤルフラッシュ（最強）
+      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],  // 2等: ストレートフラッシュ
+      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],   // 3等: フォーカード
+      fourthPrizeHands: [HandRank.FULL_HOUSE],      // 4等: フルハウス
+      fifthPrizeHands: [HandRank.FLUSH],            // 5等: フラッシュ
+      // ハズレは上位の当たりに設定されていない役すべてが対象
       isActive: true,
     },
   });
 
   await prisma.gachaType.upsert({
     where: { id: "premium" },
-    update: {},
+    update: {
+      // 既存データにもデフォルトの役を設定（配列形式）
+      firstPrizeHands: [HandRank.ROYAL_FLUSH],
+      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],
+      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],
+      fourthPrizeHands: [HandRank.FULL_HOUSE],
+      fifthPrizeHands: [HandRank.FLUSH],
+    },
     create: {
       id: "premium",
       name: "プレミアムガチャ",
@@ -59,6 +80,13 @@ async function main() {
       fourthPrizeWeight: 15, // 15%
       fifthPrizeWeight: 25, // 25%
       loserWeight: 42, // 42%
+      // デフォルトの役設定（配列形式）
+      firstPrizeHands: [HandRank.ROYAL_FLUSH],      // 1等: ロイヤルフラッシュ（最強）
+      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],  // 2等: ストレートフラッシュ
+      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],   // 3等: フォーカード
+      fourthPrizeHands: [HandRank.FULL_HOUSE],      // 4等: フルハウス
+      fifthPrizeHands: [HandRank.FLUSH],            // 5等: フラッシュ
+      // ハズレは上位の当たりに設定されていない役すべてが対象
       isActive: true,
     },
   });

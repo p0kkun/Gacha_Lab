@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -29,12 +30,6 @@ export default function AdminPage() {
     } else {
       setError('パスワードが正しくありません');
     }
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_authenticated');
-    setIsAuthenticated(false);
-    setPassword('');
   };
 
   if (!isAuthenticated) {
@@ -83,40 +78,78 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* ヘッダー */}
-      <header className="bg-white shadow">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">ガチャ管理画面</h1>
-            <button
-              onClick={handleLogout}
-              className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-            >
-              ログアウト
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* メインコンテンツ */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">ガチャアイテム管理</h2>
-          <p className="text-gray-600">
-            ガチャアイテムの追加・編集・削除機能は今後実装予定です。
-          </p>
-          <div className="mt-6">
+    <AdminLayout>
+      <div className="p-6">
+        <h1 className="mb-6 text-2xl font-bold text-gray-800">ダッシュボード</h1>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-2 text-lg font-semibold text-gray-800">ユーザー管理</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              ユーザー一覧と詳細情報を確認できます
+            </p>
             <a
-              href="/"
-              className="text-blue-500 hover:text-blue-700 hover:underline"
+              href="/admin/users"
+              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
             >
-              ← ユーザー画面に戻る
+              ユーザー管理へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-2 text-lg font-semibold text-gray-800">ガチャ設定</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              ガチャタイプの確率設定ができます
+            </p>
+            <a
+              href="/admin/gacha-types"
+              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+            >
+              ガチャ設定へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-2 text-lg font-semibold text-gray-800">アイテム設定</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              ガチャアイテムの追加・編集ができます
+            </p>
+            <a
+              href="/admin/items"
+              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+            >
+              アイテム設定へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-2 text-lg font-semibold text-gray-800">統計・購入状況</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              ガチャごとの課金人数や金額を確認できます
+            </p>
+            <a
+              href="/admin/statistics"
+              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+            >
+              統計へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-2 text-lg font-semibold text-gray-800">ガチャシミュレータ</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              設定したガチャの排出率を確認できます
+            </p>
+            <a
+              href="/admin/simulator"
+              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+            >
+              シミュレータへ
             </a>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
 

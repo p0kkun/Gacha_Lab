@@ -63,20 +63,37 @@ model User {
 // 2. ガチャアイテム（GachaItem）
 // ============================================
 model GachaItem {
-  id        Int      @id @default(autoincrement())
-  name      String   // アイテム名
-  rarity    Rarity   // レアリティ（1等〜5等、ハズレ）
-  videoUrl  String   // 動画ファイルのパス
-  isActive  Boolean  @default(true) // 有効/無効フラグ
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  name        String    // アイテム名
+  rarity      Rarity    // レアリティ（1等〜5等、ハズレ）
+  videoUrl    String    // 動画ファイルのパス
+  gachaTypeId String?   // ガチャタイプ ID（nullの場合は全ガチャタイプで使用可能）
+  isActive    Boolean   @default(true) // 有効/無効フラグ
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // リレーション
+  gachaType   GachaType? @relation(fields: [gachaTypeId], references: [id])
   gachaHistories GachaHistory[]
 
   @@index([rarity, isActive])
   @@index([isActive])
+  @@index([gachaTypeId, rarity, isActive])
   @@map("gacha_items")
+}
+
+// ポーカーの役（HandRank）
+enum HandRank {
+  ROYAL_FLUSH      // ロイヤルフラッシュ
+  STRAIGHT_FLUSH   // ストレートフラッシュ
+  FOUR_OF_A_KIND   // フォーカード
+  FULL_HOUSE       // フルハウス
+  FLUSH            // フラッシュ
+  STRAIGHT         // ストレート
+  THREE_OF_A_KIND  // スリーカード
+  TWO_PAIR         // ツーペア
+  ONE_PAIR         // ワンペア
+  HIGH_CARD        // ハイカード
 }
 
 // ============================================
@@ -98,8 +115,17 @@ model GachaType {
   fifthPrizeWeight  Int @default(0)  // 5等確率
   loserWeight        Int @default(0)  // ハズレ確率
 
+  // ポーカーの役設定（各レアリティに対応する役、複数設定可能）
+  firstPrizeHands  HandRank[] @default([])  // 1等に対応する役（複数可）
+  secondPrizeHands HandRank[] @default([])  // 2等に対応する役（複数可）
+  thirdPrizeHands  HandRank[] @default([])  // 3等に対応する役（複数可）
+  fourthPrizeHands HandRank[] @default([])  // 4等に対応する役（複数可）
+  fifthPrizeHands  HandRank[] @default([])  // 5等に対応する役（複数可）
+  // ハズレは上位の当たりに設定されていない役すべてを対象とするため、明示的な設定は不要
+
   // リレーション
   gachaHistories GachaHistory[]
+  gachaItems     GachaItem[]
 
   @@index([isActive])
   @@map("gacha_types")

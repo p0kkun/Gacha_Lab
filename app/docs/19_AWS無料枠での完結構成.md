@@ -186,3 +186,4 @@ frontend:
 - [AWS RDS 無料枠](https://aws.amazon.com/jp/rds/free/)
 - [AWS AmplifyとRDSの関係](./14_AWS_AmplifyとRDSの関係.md)
 
+

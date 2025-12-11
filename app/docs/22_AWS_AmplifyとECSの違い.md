@@ -314,3 +314,4 @@ Amplifyが自動的に：
 - [AWS Amplify アーキテクチャ](https://docs.aws.amazon.com/amplify/latest/userguide/how-amplify-works.html)
 - [Next.js on AWS Amplify](https://docs.aws.amazon.com/amplify/latest/userguide/deploy-nextjs-app.html)
 
+

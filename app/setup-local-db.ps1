@@ -132,3 +132,4 @@ Write-Host "Prisma Studioが起動し、ブラウザで http://localhost:5555 �
 Write-Host ""
 
 
+
