@@ -1,30 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GachaMenu from './GachaMenu';
 import GachaContent from './GachaContent';
 
 export type GachaType = {
   id: string;
   name: string;
-  description: string;
-  price: number; // 価格（円）
+  description: string | null;
+  pointCost: number; // ポイントコスト
 };
-
-const gachaTypes: GachaType[] = [
-  {
-    id: 'normal',
-    name: '通常ガチャ',
-    description: '基本的なガチャです',
-    price: 100, // 100円
-  },
-  {
-    id: 'premium',
-    name: 'プレミアムガチャ',
-    description: 'レアアイテムが出やすいガチャです',
-    price: 300, // 300円
-  },
-];
 
 export default function GachaModal({
   isOpen,
@@ -35,9 +20,68 @@ export default function GachaModal({
   onClose: () => void;
   userId: string;
 }) {
-  const [selectedGacha, setSelectedGacha] = useState<GachaType>(gachaTypes[0]);
+  const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
+  const [selectedGacha, setSelectedGacha] = useState<GachaType | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchGachaTypes();
+    }
+  }, [isOpen]);
+
+  const fetchGachaTypes = async () => {
+    try {
+      const res = await fetch('/api/gacha/types');
+      if (res.ok) {
+        const data = await res.json();
+        const activeGachaTypes = data.gachaTypes
+          .filter((gt: any) => gt.isActive)
+          .map((gt: any) => ({
+            id: gt.id,
+            name: gt.name,
+            description: gt.description,
+            pointCost: gt.pointCost || 0,
+          }));
+        setGachaTypes(activeGachaTypes);
+        if (activeGachaTypes.length > 0) {
+          setSelectedGacha(activeGachaTypes[0]);
+        }
+      }
+    } catch (error) {
+      console.error('ガチャタイプ取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+        <div className="text-center text-white">
+          <div className="mb-4 text-lg">読み込み中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedGacha || gachaTypes.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+        <div className="text-center text-white">
+          <div className="mb-4 text-lg">利用可能なガチャがありません</div>
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-gray-600 px-6 py-2 text-white"
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { GachaType } from './GachaModal';
 import VideoPlayer from './VideoPlayer';
 import HoldemGachaAnimation from './HoldemGachaAnimation';
-import StripePayment from './StripePayment';
 import { type Card } from '@/lib/pokerHand';
 
 type PokerHand = {
@@ -43,14 +42,8 @@ export default function GachaContent({
   const [showAnimation, setShowAnimation] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
 
-  const handleDrawGacha = () => {
-    // 決済画面を表示
-    setShowPayment(true);
-  };
-
-  const handlePaymentSuccess = async () => {
-    // 決済成功後、ガチャを引く
-    setShowPayment(false);
+  const handleDrawGacha = async () => {
+    // ポイント確認とガチャ実行
     setIsDrawing(true);
     onVideoStateChange?.(true);
 
@@ -62,12 +55,22 @@ export default function GachaContent({
         },
         body: JSON.stringify({
           userId,
-          gachaType: selectedGacha.id,
+          gachaTypeId: selectedGacha.id,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('ガチャ抽選に失敗しました');
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'ガチャ抽選に失敗しました';
+        
+        // ポイント不足の場合は購入ページへリダイレクト
+        if (response.status === 403 && errorMessage.includes('ポイントが不足')) {
+          alert('ポイントが不足しています。ポイント購入ページへ移動します。');
+          window.location.href = '/points';
+          return;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -81,15 +84,11 @@ export default function GachaContent({
       }
     } catch (error) {
       console.error('ガチャエラー:', error);
-      alert('ガチャ抽選に失敗しました');
+      alert(error instanceof Error ? error.message : 'ガチャ抽選に失敗しました');
       setIsDrawing(false);
       setShowVideo(false);
       setShowAnimation(false);
     }
-  };
-
-  const handlePaymentCancel = () => {
-    setShowPayment(false);
   };
 
   const handleVideoEnd = () => {
@@ -195,9 +194,14 @@ export default function GachaContent({
               <p className="mb-4 text-2xl font-bold text-yellow-300 drop-shadow-lg">
                 🎰 ポーカー風ガチャ
               </p>
-              <p className="text-lg text-green-200">
+              <p className="mb-2 text-lg text-green-200">
                 カードを引いてアイテムを獲得しましょう！
               </p>
+              {selectedGacha.pointCost > 0 && (
+                <p className="text-lg font-semibold text-yellow-300">
+                  必要ポイント: {selectedGacha.pointCost.toLocaleString()}ポイント
+                </p>
+              )}
               
               {/* トランプのスーツ装飾 */}
               <div className="mt-8 flex justify-center gap-6 text-4xl opacity-50">
@@ -262,7 +266,14 @@ export default function GachaContent({
               ) : (
                 <>
                   <span>🂡</span>
-                  <span>カードを引く (¥{selectedGacha.price.toLocaleString()})</span>
+                  <span>
+                    カードを引く
+                    {selectedGacha.pointCost > 0 ? (
+                      ` (${selectedGacha.pointCost.toLocaleString()}ポイント)`
+                    ) : (
+                      ' (無料)'
+                    )}
+                  </span>
                   <span>🂡</span>
                 </>
               )}
@@ -271,35 +282,6 @@ export default function GachaContent({
         </div>
       )}
 
-      {/* 決済モーダル - 全画面 */}
-      {showPayment && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-gradient-to-br from-green-900 via-green-800 to-green-900">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="mx-auto max-w-2xl">
-              <h3 className="mb-4 text-2xl sm:text-3xl font-bold text-yellow-300 drop-shadow-lg text-center">
-                💳 決済
-              </h3>
-              <div className="mb-6 text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                  {selectedGacha.name}
-                </div>
-                <div className="text-xl sm:text-2xl text-yellow-300">
-                  ¥{selectedGacha.price.toLocaleString()}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4 sm:p-6">
-                <StripePayment
-                  amount={selectedGacha.price}
-                  userId={userId}
-                  gachaTypeId={selectedGacha.id}
-                  onSuccess={handlePaymentSuccess}
-                  onCancel={handlePaymentCancel}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

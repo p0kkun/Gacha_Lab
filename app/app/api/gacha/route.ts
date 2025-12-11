@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateRandomCard, evaluateHand, getHandName, type Card, type HandRank as PokerHandRank } from '@/lib/pokerHand';
-import { Rarity, HandRank } from '@prisma/client';
+import { Rarity, HandRank, PointTransactionType } from '@prisma/client';
 
 /**
  * ポーカーのHandRank（小文字）をPrismaのHandRank（大文字）に変換
@@ -155,6 +155,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 期間チェック
+    const now = new Date();
+    if (gachaType.startAt && now < gachaType.startAt) {
+      return NextResponse.json(
+        { error: 'このガチャはまだ開始されていません' },
+        { status: 403 }
+      );
+    }
+    if (gachaType.endAt && now > gachaType.endAt) {
+      return NextResponse.json(
+        { error: 'このガチャは終了しました' },
+        { status: 403 }
+      );
+    }
+
+    // ポイントチェック
+    const pointCost = gachaType.pointCost || 0;
+    if (pointCost > 0) {
+      const user = await prisma.user.findUnique({
+        where: { userId },
+        select: { points: true },
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: 'ユーザーが見つかりません' },
+          { status: 404 }
+        );
+      }
+
+      if (user.points < pointCost) {
+        return NextResponse.json(
+          { error: `ポイントが不足しています。必要: ${pointCost}ポイント、所持: ${user.points}ポイント` },
+          { status: 403 }
+        );
+      }
+    }
+
     let selectedRarity: Rarity;
     let pokerHand: {
       hand: PokerHandRank;
@@ -227,13 +265,64 @@ export async function POST(request: NextRequest) {
     // ランダムにアイテムを選択
     const selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
 
-    // ガチャ履歴を保存
-    const gachaHistory = await prisma.gachaHistory.create({
-      data: {
-        userId: userId,
-        gachaTypeId: gachaTypeId,
-        itemId: selectedItem.id,
-      },
+    // ポイント消費とガチャ履歴保存をトランザクションで実行
+    const result = await prisma.$transaction(async (tx) => {
+      // ポイント消費
+      let newBalance = 0;
+      if (pointCost > 0) {
+        const user = await tx.user.findUnique({
+          where: { userId },
+          select: { points: true },
+        });
+
+        if (!user) {
+          throw new Error('ユーザーが見つかりません');
+        }
+
+        newBalance = user.points - pointCost;
+
+        // ポイント残高を更新
+        await tx.user.update({
+          where: { userId },
+          data: { points: newBalance },
+        });
+
+        // ガチャ履歴を保存（ポイント使用情報を含む）
+        const gachaHistory = await tx.gachaHistory.create({
+          data: {
+            userId: userId,
+            gachaTypeId: gachaTypeId,
+            itemId: selectedItem.id,
+            pointsUsed: pointCost,
+          },
+        });
+
+        // ポイント履歴を記録
+        await tx.pointHistory.create({
+          data: {
+            userId,
+            transactionType: PointTransactionType.CONSUME,
+            amount: -pointCost,
+            balanceAfter: newBalance,
+            description: `${gachaType.name}ガチャ実行`,
+            gachaHistoryId: gachaHistory.id,
+          },
+        });
+
+        return { gachaHistory, newBalance };
+      } else {
+        // ポイント不要の場合は通常通り保存
+        const gachaHistory = await tx.gachaHistory.create({
+          data: {
+            userId: userId,
+            gachaTypeId: gachaTypeId,
+            itemId: selectedItem.id,
+            pointsUsed: 0,
+          },
+        });
+
+        return { gachaHistory, newBalance: 0 };
+      }
     });
 
     return NextResponse.json({
@@ -246,7 +335,9 @@ export async function POST(request: NextRequest) {
       },
       timestamp: new Date().toISOString(),
       pokerHand: pokerHand,
-      historyId: gachaHistory.id,
+      historyId: result.gachaHistory.id,
+      pointsUsed: pointCost,
+      pointsRemaining: result.newBalance,
     });
   } catch (error) {
     console.error('ガチャエラー:', error);

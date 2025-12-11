@@ -39,6 +39,14 @@ enum FreeGachaGrantType {
   REFEREE  // 被紹介者への付与
 }
 
+// ポイント取引タイプ
+enum PointTransactionType {
+  PURCHASE  // 購入（Stripe決済）
+  CONSUME   // 消費（ガチャ実行）
+  GRANT     // 付与（管理者による付与、報酬など）
+  REFUND    // 返金
+}
+
 // ============================================
 // 1. ユーザー（User）
 // ============================================
@@ -46,6 +54,7 @@ model User {
   userId      String   @id // LINE ユーザー ID
   displayName String?  // 表示名
   pictureUrl  String?  // プロフィール画像 URL
+  points      Int      @default(0) // ポイント残高
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -54,8 +63,10 @@ model User {
   referralHistoriesAsReferrer ReferralHistory[] @relation("Referrer")
   referralHistoriesAsReferee  ReferralHistory[] @relation("Referee")
   freeGachaHistories  FreeGachaHistory[]
+  pointHistories      PointHistory[]
 
   @@index([createdAt])
+  @@index([points])
   @@map("users")
 }
 
@@ -104,6 +115,9 @@ model GachaType {
   name         String   // ガチャ名
   description  String?  // 説明文
   isActive     Boolean  @default(true) // 有効/無効フラグ
+  startAt      DateTime? // 開始日時（nullの場合は開始日時の制限なし）
+  endAt        DateTime? // 終了日時（nullの場合は終了日時の制限なし）
+  pointCost    Int      @default(0) // ガチャ実行に必要なポイント数
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -139,12 +153,14 @@ model GachaHistory {
   userId      String   // LINE ユーザー ID
   gachaTypeId String   // ガチャタイプ ID
   itemId      Int      // 獲得アイテム ID
+  pointsUsed  Int      @default(0) // 使用したポイント数
   createdAt   DateTime @default(now())
 
   // リレーション
   user      User      @relation("UserGachaHistories", fields: [userId], references: [userId])
   gachaType GachaType @relation(fields: [gachaTypeId], references: [id])
   item      GachaItem @relation(fields: [itemId], references: [id])
+  pointHistories PointHistory[]
 
   @@index([userId, createdAt])
   @@index([gachaTypeId, createdAt])
@@ -212,4 +228,29 @@ model FreeGachaHistory {
   @@index([referralHistoryId])
   @@index([expiresAt])
   @@map("free_gacha_histories")
+}
+
+// ============================================
+// 7. ポイント履歴（PointHistory）
+// ============================================
+model PointHistory {
+  id              Int                 @id @default(autoincrement())
+  userId          String              // ユーザー ID（LINE ユーザー ID）
+  transactionType PointTransactionType // 取引タイプ
+  amount          Int                 // ポイント数（正の値: 増加、負の値: 減少）
+  balanceAfter    Int                 // 取引後の残高
+  description     String?             // 説明（例: "ガチャ実行", "ポイント購入"）
+  stripePaymentId String?             // Stripe決済ID（購入の場合）
+  gachaHistoryId  Int?                // ガチャ履歴ID（消費の場合）
+  createdAt       DateTime            @default(now())
+
+  // リレーション
+  user          User            @relation(fields: [userId], references: [userId])
+  gachaHistory  GachaHistory?   @relation(fields: [gachaHistoryId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([transactionType])
+  @@index([stripePaymentId])
+  @@index([gachaHistoryId])
+  @@map("point_histories")
 }

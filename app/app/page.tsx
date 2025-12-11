@@ -9,6 +9,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGachaModalOpen, setIsGachaModalOpen] = useState(false);
+  const [points, setPoints] = useState<number | null>(null);
+
+  // URLパラメータからactionを取得してガチャモーダルを開く
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      if (action === 'gacha' && profile) {
+        setIsGachaModalOpen(true);
+      }
+    }
+  }, [profile]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -31,6 +43,34 @@ export default function Home() {
 
         const userProfile = await getProfile();
         setProfile(userProfile);
+
+        // ユーザー登録
+        try {
+          await fetch('/api/users/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: userProfile.userId,
+              displayName: userProfile.displayName,
+              pictureUrl: userProfile.pictureUrl,
+            }),
+          });
+        } catch (error) {
+          console.error('ユーザー登録エラー:', error);
+        }
+
+        // ポイント残高を取得
+        try {
+          const res = await fetch(`/api/points/balance?userId=${userProfile.userId}`);
+          if (res.ok) {
+            const data = await res.json();
+            setPoints(data.points);
+          }
+        } catch (error) {
+          console.error('ポイント残高取得エラー:', error);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'エラーが発生しました');
       } finally {
@@ -73,17 +113,25 @@ export default function Home() {
             
             {profile && (
               <div className="mb-4 rounded-lg bg-white p-4 shadow">
-                <div className="flex items-center gap-3">
-                  {profile.pictureUrl && (
-                    <img
-                      src={profile.pictureUrl}
-                      alt={profile.displayName}
-                      className="h-12 w-12 rounded-full"
-                    />
-                  )}
-                  <div>
-                    <div className="font-semibold">{profile.displayName}</div>
-                    <div className="text-xs text-gray-500">ID: {profile.userId}</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {profile.pictureUrl && (
+                      <img
+                        src={profile.pictureUrl}
+                        alt={profile.displayName}
+                        className="h-12 w-12 rounded-full"
+                      />
+                    )}
+                    <div>
+                      <div className="font-semibold">{profile.displayName}</div>
+                      <div className="text-xs text-gray-500">ID: {profile.userId}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">ポイント</div>
+                    <div className="text-xl font-bold text-blue-600">
+                      {points !== null ? points.toLocaleString() : '-'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -114,7 +162,15 @@ export default function Home() {
       {profile && (
         <GachaModal
           isOpen={isGachaModalOpen}
-          onClose={() => setIsGachaModalOpen(false)}
+          onClose={() => {
+            setIsGachaModalOpen(false);
+            // URLパラメータをクリア
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('action');
+              window.history.replaceState({}, '', url.toString());
+            }
+          }}
           userId={profile.userId}
         />
       )}

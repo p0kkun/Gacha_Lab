@@ -12,6 +12,13 @@ applications:
               if [ -n "$DATABASE_URL" ]; then
                 echo "📝 データベースマイグレーションを適用中..."
                 npm run db:deploy || echo "⚠️  マイグレーションに失敗しました（既に適用済みの可能性があります）"
+                # シードデータの投入（環境変数RUN_SEEDが設定されている場合のみ）
+                if [ -n "$RUN_SEED" ] && [ "$RUN_SEED" = "true" ]; then
+                  echo "🌱 シードデータを投入中..."
+                  npm run db:seed || echo "⚠️  シードデータの投入に失敗しました"
+                else
+                  echo "ℹ️  RUN_SEEDが設定されていないため、シードデータの投入をスキップします"
+                fi
               else
                 echo "ℹ️  DATABASE_URLが設定されていないため、マイグレーションをスキップします"
               fi

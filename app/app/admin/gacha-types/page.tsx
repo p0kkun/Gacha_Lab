@@ -45,6 +45,9 @@ type GachaType = {
   name: string;
   description: string | null;
   isActive: boolean;
+  startAt: string | null;
+  endAt: string | null;
+  pointCost: number;
   firstPrizeWeight: number;
   secondPrizeWeight: number;
   thirdPrizeWeight: number;
@@ -233,6 +236,28 @@ export default function GachaTypesPage() {
                     <p className="mb-4 text-sm text-gray-600">{gachaType.description}</p>
                   )}
 
+                  <div className="mb-4 grid grid-cols-1 gap-2 text-sm text-gray-600 md:grid-cols-2">
+                    {gachaType.startAt && (
+                      <div>
+                        <span className="font-medium">開始日時:</span>{' '}
+                        {new Date(gachaType.startAt).toLocaleString('ja-JP')}
+                      </div>
+                    )}
+                    {gachaType.endAt && (
+                      <div>
+                        <span className="font-medium">終了日時:</span>{' '}
+                        {new Date(gachaType.endAt).toLocaleString('ja-JP')}
+                      </div>
+                    )}
+                    {!gachaType.startAt && !gachaType.endAt && (
+                      <div className="text-gray-400">期間制限なし</div>
+                    )}
+                    <div>
+                      <span className="font-medium">ポイントコスト:</span>{' '}
+                      {gachaType.pointCost > 0 ? `${gachaType.pointCost.toLocaleString()}ポイント` : '無料'}
+                    </div>
+                  </div>
+
                   {isEditing ? (
                     <div className="space-y-4">
                       <div>
@@ -275,6 +300,76 @@ export default function GachaTypesPage() {
                           />
                           <span className="text-sm font-medium text-gray-700">有効</span>
                         </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            開始日時（任意）
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={
+                              displayData.startAt
+                                ? new Date(displayData.startAt).toISOString().slice(0, 16)
+                                : ''
+                            }
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                startAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                              })
+                            }
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            未設定の場合は開始日時の制限なし
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            終了日時（任意）
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={
+                              displayData.endAt
+                                ? new Date(displayData.endAt).toISOString().slice(0, 16)
+                                : ''
+                            }
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                endAt: e.target.value ? new Date(e.target.value).toISOString() : null,
+                              })
+                            }
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            未設定の場合は終了日時の制限なし
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          ポイントコスト
+                        </label>
+                        <input
+                          type="number"
+                          value={displayData.pointCost ?? 0}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              pointCost: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                          min="0"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          ガチャ実行に必要なポイント数（0の場合は無料）
+                        </p>
                       </div>
 
                       <div className="space-y-6">

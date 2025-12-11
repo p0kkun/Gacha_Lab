@@ -38,6 +38,11 @@ async function main() {
       thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],
       fourthPrizeHands: [HandRank.FULL_HOUSE],
       fifthPrizeHands: [HandRank.FLUSH],
+      // 開始・終了日時をnullに設定（期間制限なし）
+      startAt: null,
+      endAt: null,
+      // ポイントコストを設定（デフォルト: 100ポイント）
+      pointCost: 100,
     },
     create: {
       id: "normal",
@@ -57,6 +62,11 @@ async function main() {
       fifthPrizeHands: [HandRank.FLUSH],            // 5等: フラッシュ
       // ハズレは上位の当たりに設定されていない役すべてが対象
       isActive: true,
+      // 開始・終了日時をnullに設定（期間制限なし）
+      startAt: null,
+      endAt: null,
+      // ポイントコストを設定（デフォルト: 100ポイント）
+      pointCost: 100,
     },
   });
 
@@ -69,6 +79,11 @@ async function main() {
       thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],
       fourthPrizeHands: [HandRank.FULL_HOUSE],
       fifthPrizeHands: [HandRank.FLUSH],
+      // 開始・終了日時をnullに設定（期間制限なし）
+      startAt: null,
+      endAt: null,
+      // ポイントコストを設定（デフォルト: 300ポイント）
+      pointCost: 300,
     },
     create: {
       id: "premium",
@@ -88,6 +103,11 @@ async function main() {
       fifthPrizeHands: [HandRank.FLUSH],            // 5等: フラッシュ
       // ハズレは上位の当たりに設定されていない役すべてが対象
       isActive: true,
+      // 開始・終了日時をnullに設定（期間制限なし）
+      startAt: null,
+      endAt: null,
+      // ポイントコストを設定（デフォルト: 300ポイント）
+      pointCost: 300,
     },
   });
 
@@ -135,13 +155,37 @@ async function main() {
     },
   ];
 
-  // 既存のアイテムを削除してから作成（開発環境用）
-  await prisma.gachaItem.deleteMany({});
-
+  // ガチャアイテムの作成（既存データを保護）
   for (const item of items) {
-    await prisma.gachaItem.create({
-      data: item,
+    // 既存のアイテムを確認
+    const existingItem = await prisma.gachaItem.findFirst({
+      where: {
+        name: item.name,
+        rarity: item.rarity,
+      },
     });
+
+    if (existingItem) {
+      // 既存データがある場合は更新（必要に応じて）
+      await prisma.gachaItem.update({
+        where: { id: existingItem.id },
+        data: {
+          videoUrl: item.videoUrl,
+          isActive: item.isActive,
+        },
+      });
+    } else {
+      // 存在しない場合は作成
+      await prisma.gachaItem.create({
+        data: {
+          name: item.name,
+          rarity: item.rarity,
+          videoUrl: item.videoUrl,
+          isActive: item.isActive,
+          gachaTypeId: null, // 共通アイテムとして設定
+        },
+      });
+    }
   }
 
   console.log("✅ ガチャアイテムの作成が完了しました");
