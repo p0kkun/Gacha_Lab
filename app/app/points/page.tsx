@@ -272,22 +272,32 @@ export default function PointsPage() {
     
     if ((success === 'true' || paymentIntentId) && profile && stripePromise) {
       // PayPay決済の場合、リダイレクト後に決済状態を確認
-      const checkPaymentStatus = async () => {
-        try {
-          // Stripeインスタンスを取得
-          const stripe = await stripePromise;
-          
-          // payment_intent_client_secretがある場合、決済状態を確認
-          if (paymentIntentClientSecret) {
-            const { paymentIntent } = await stripe.retrievePaymentIntent(paymentIntentClientSecret);
-            
-            console.log('決済状態確認:', {
-              id: paymentIntent.id,
-              status: paymentIntent.status,
-              payment_method: paymentIntent.payment_method,
-            });
-            
-            if (paymentIntent.status === 'succeeded') {
+       const checkPaymentStatus = async () => {
+         try {
+           // Stripeインスタンスを取得
+           const stripe = await stripePromise;
+           
+           if (!stripe) {
+             console.error('Stripeインスタンスの取得に失敗しました');
+             return;
+           }
+           
+           // payment_intent_client_secretがある場合、決済状態を確認
+           if (paymentIntentClientSecret) {
+             const { paymentIntent } = await stripe.retrievePaymentIntent(paymentIntentClientSecret);
+             
+             if (!paymentIntent) {
+               console.error('PaymentIntentの取得に失敗しました');
+               return;
+             }
+             
+             console.log('決済状態確認:', {
+               id: paymentIntent.id,
+               status: paymentIntent.status,
+               payment_method: paymentIntent.payment_method,
+             });
+             
+             if (paymentIntent.status === 'succeeded') {
               console.log('決済成功を確認。Webhookの処理を待機中...');
               
               // 決済成功 - Webhookの処理を待つため、ポーリングでポイント残高を確認

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { prisma } from "@/lib/prisma";
-import { PointTransactionType } from "@prisma/client";
 
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
