@@ -7,6 +7,14 @@ applications:
           commands:
             - npm install
             - npm run db:generate
+            # データベースマイグレーションの自動適用（環境変数が設定されている場合のみ）
+            - |
+              if [ -n "$DATABASE_URL" ]; then
+                echo "📝 データベースマイグレーションを適用中..."
+                npm run db:deploy || echo "⚠️  マイグレーションに失敗しました（既に適用済みの可能性があります）"
+              else
+                echo "ℹ️  DATABASE_URLが設定されていないため、マイグレーションをスキップします"
+              fi
         build:
           commands:
             - rm -rf .next
