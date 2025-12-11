@@ -199,14 +199,6 @@ function CheckoutForm({
         onReady={(e) => {
           console.log('PaymentElement ready:', e);
         }}
-        onChange={(e) => {
-          if (e.error) {
-            console.error('PaymentElement error:', e.error);
-            setError(e.error.message || '決済方法の読み込みに失敗しました');
-          } else {
-            setError(null);
-          }
-        }}
       />
       <div className="flex gap-2">
         <button
