@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   env: {
     // 環境変数を明示的に設定（AWS Amplifyの環境変数から読み込む）
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
     DATABASE_URL: process.env.DATABASE_URL || "",
   },
 };
