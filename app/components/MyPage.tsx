@@ -116,6 +116,12 @@ export default function MyPage({ profile }: MyPageProps) {
               ガチャを引く
             </a>
             <a
+              href="/points"
+              className="block rounded-md bg-green-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-green-600"
+            >
+              ポイント購入
+            </a>
+            <a
               href="?action=history"
               className="block rounded-md bg-gray-200 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-300"
             >

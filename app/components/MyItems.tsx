@@ -134,12 +134,18 @@ export default function MyItems({ userId }: MyItemsProps) {
         )}
 
         {/* メニューリンク */}
-        <div className="mt-6 rounded-lg bg-white p-4 shadow">
+        <div className="mt-6 space-y-2 rounded-lg bg-white p-4 shadow">
           <a
             href="?action=gacha"
             className="block rounded-md bg-blue-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-600"
           >
             ガチャを引く
+          </a>
+          <a
+            href="/points"
+            className="block rounded-md bg-green-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-green-600"
+          >
+            ポイント購入
           </a>
         </div>
       </div>

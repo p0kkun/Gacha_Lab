@@ -15,10 +15,14 @@ export default function GachaModal({
   isOpen,
   onClose,
   userId,
+  currentPoints,
+  onPointsUpdated,
 }: {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
+  currentPoints?: number;
+  onPointsUpdated?: (newPoints: number) => void;
 }) {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [selectedGacha, setSelectedGacha] = useState<GachaType | null>(null);
@@ -107,6 +111,8 @@ export default function GachaModal({
             selectedGacha={selectedGacha}
             userId={userId}
             onClose={onClose}
+            currentPoints={currentPoints}
+            onPointsUpdated={onPointsUpdated}
           />
         </div>
       </div>

@@ -30,11 +30,15 @@ export default function GachaContent({
   userId,
   onClose,
   onVideoStateChange,
+  currentPoints,
+  onPointsUpdated,
 }: {
   selectedGacha: GachaType;
   userId: string;
   onClose: () => void;
   onVideoStateChange?: (isShowing: boolean) => void;
+  currentPoints?: number;
+  onPointsUpdated?: (newPoints: number) => void;
 }) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [result, setResult] = useState<GachaResult | null>(null);
@@ -76,6 +80,11 @@ export default function GachaContent({
       const data = await response.json();
       setResult(data);
 
+      // ポイント残高を更新
+      if (data.pointsRemaining !== undefined && onPointsUpdated) {
+        onPointsUpdated(data.pointsRemaining);
+      }
+
       // 通常ガチャはポーカー演出、プレミアムは動画演出
       if (selectedGacha.id === 'normal' && data.pokerHand) {
         setShowAnimation(true);
@@ -107,8 +116,9 @@ export default function GachaContent({
     setResult(null);
     setShowVideo(false);
     setShowAnimation(false);
+    setIsDrawing(false);
     onVideoStateChange?.(false);
-    onClose();
+    // ガチャモーダルは開いたままにする（onCloseは呼ばない）
   };
 
   // 演出表示中は全画面
