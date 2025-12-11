@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, WebhookEvent, TextMessage, MessageEvent } from '@line/bot-sdk';
+import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage } from '@line/bot-sdk';
 import crypto from 'crypto';
 
 // LINE Messaging APIクライアントの初期化
@@ -90,7 +90,8 @@ async function handleWebhookEvent(
   }
 
   const messageEvent = event as MessageEvent;
-  const text = messageEvent.message.text;
+  const textMessage = messageEvent.message as TextEventMessage;
+  const text = textMessage.text;
 
   // 管理者用キーワードをチェック
   if (isAdminKeyword(text)) {
