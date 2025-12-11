@@ -10,11 +10,12 @@ config();
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/dbname",
   },
   migrations: {
     path: "prisma/migrations",
   },
   // prisma generate時にはデータベース接続は不要
   // DATABASE_URLは実行時に環境変数から取得される
+  // ビルド時にはダミーURLを使用（実際の接続は行われない）
 });
