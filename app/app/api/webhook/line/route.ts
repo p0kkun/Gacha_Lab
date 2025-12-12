@@ -18,7 +18,20 @@ function verifySignature(
   signature: string | null
 ): boolean {
   const channelSecret = process.env.LINE_CHANNEL_SECRET;
+  
+  console.log('署名検証開始:', {
+    hasChannelSecret: !!channelSecret,
+    channelSecretLength: channelSecret?.length || 0,
+    hasSignature: !!signature,
+    signatureLength: signature?.length || 0,
+    bodyLength: body.length,
+  });
+
   if (!channelSecret || !signature) {
+    console.error('署名検証失敗: channelSecretまたはsignatureがありません', {
+      hasChannelSecret: !!channelSecret,
+      hasSignature: !!signature,
+    });
     return false;
   }
 
@@ -27,7 +40,15 @@ function verifySignature(
     .update(body)
     .digest('base64');
 
-  return hash === signature;
+  const isValid = hash === signature;
+  
+  console.log('署名検証結果:', {
+    isValid,
+    expectedHash: hash.substring(0, 20) + '...',
+    receivedSignature: signature.substring(0, 20) + '...',
+  });
+
+  return isValid;
 }
 
 // 管理者用キーワードをチェック
@@ -84,22 +105,43 @@ async function handleWebhookEvent(
   client: Client,
   event: WebhookEvent
 ): Promise<void> {
+  console.log('イベント処理開始:', {
+    eventType: event.type,
+    sourceType: event.source?.type,
+  });
+
   // メッセージイベントのみ処理
-  if (event.type !== 'message' || event.message.type !== 'text') {
+  if (event.type !== 'message') {
+    console.log('メッセージイベントではないためスキップ:', event.type);
     return;
   }
 
   const messageEvent = event as MessageEvent;
+  
+  if (messageEvent.message.type !== 'text') {
+    console.log('テキストメッセージではないためスキップ:', messageEvent.message.type);
+    return;
+  }
+
   const textMessage = messageEvent.message as TextEventMessage;
   const text = textMessage.text;
 
+  console.log('受信メッセージ:', {
+    text,
+    textLength: text.length,
+    adminKeyword: process.env.ADMIN_ACCESS_KEYWORD,
+  });
+
   // 管理者用キーワードをチェック
   if (isAdminKeyword(text)) {
+    console.log('管理者用キーワードが一致しました');
     const adminUrl = getAdminUrl();
     const replyText = `🔐 管理画面へのアクセスURL:\n\n${adminUrl}\n\n⚠️ このURLは管理者専用です。`;
     
     await replyTextMessage(client, messageEvent.replyToken, replyText);
     console.log(`管理者用URLを返信しました: ${adminUrl}`);
+  } else {
+    console.log('管理者用キーワードが一致しませんでした');
   }
   // その他のメッセージは無視（必要に応じて自動応答を追加可能）
 }
@@ -110,6 +152,15 @@ export async function POST(request: NextRequest) {
     // リクエストボディを取得（署名検証のため、文字列として取得）
     const body = await request.text();
     
+    console.log('Webhook受信:', {
+      bodyLength: body.length,
+      bodyPreview: body.substring(0, 200),
+      headers: {
+        'x-line-signature': request.headers.get('x-line-signature')?.substring(0, 20) + '...',
+        'content-type': request.headers.get('content-type'),
+      },
+    });
+    
     // 署名を検証
     const signature = request.headers.get('x-line-signature');
     if (!verifySignature(body, signature)) {
@@ -119,9 +170,21 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    
+    console.log('署名検証成功、イベント処理を開始します');
 
     // JSONをパース
-    const events: WebhookEvent[] = JSON.parse(body).events || [];
+    const parsedBody = JSON.parse(body);
+    const events: WebhookEvent[] = parsedBody.events || [];
+    
+    console.log('イベント解析:', {
+      eventCount: events.length,
+      events: events.map((e) => ({
+        type: e.type,
+        source: e.source?.type,
+        message: e.type === 'message' && 'message' in e ? (e as any).message?.type : null,
+      })),
+    });
 
     // LINEクライアントを取得
     const client = getLineClient();
@@ -137,6 +200,7 @@ export async function POST(request: NextRequest) {
     const promises = events.map((event) => handleWebhookEvent(client, event));
     await Promise.all(promises);
 
+    console.log('Webhook処理完了');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Webhook処理エラー:', error);
