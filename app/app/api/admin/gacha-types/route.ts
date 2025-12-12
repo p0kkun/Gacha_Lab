@@ -16,8 +16,66 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const isActive = searchParams.get('isActive');
+    const isOngoing = searchParams.get('isOngoing'); // 'true' | 'false'
+    const sortBy = searchParams.get('sortBy') || 'createdAt'; // 'createdAt' | 'name' | 'pointCost'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'; // 'asc' | 'desc'
+
+    const now = new Date();
+    const where: any = {};
+
+    // 有効/無効で絞り込み
+    if (isActive !== null) {
+      where.isActive = isActive === 'true';
+    }
+
+    // 開催中で絞り込み
+    if (isOngoing === 'true') {
+      where.AND = [
+        { isActive: true },
+        {
+          OR: [
+            { startAt: null },
+            { startAt: { lte: now } },
+          ],
+        },
+        {
+          OR: [
+            { endAt: null },
+            { endAt: { gte: now } },
+          ],
+        },
+      ];
+    } else if (isOngoing === 'false') {
+      where.OR = [
+        { isActive: false },
+        {
+          AND: [
+            { startAt: { gt: now } },
+          ],
+        },
+        {
+          AND: [
+            { endAt: { lt: now } },
+          ],
+        },
+      ];
+    }
+
+    // ソート条件
+    let orderBy: any = {};
+    if (sortBy === 'name') {
+      orderBy = { name: sortOrder === 'asc' ? 'asc' : 'desc' };
+    } else if (sortBy === 'pointCost') {
+      orderBy = { pointCost: sortOrder === 'asc' ? 'asc' : 'desc' };
+    } else {
+      orderBy = { createdAt: sortOrder === 'asc' ? 'asc' : 'desc' };
+    }
+
     const gachaTypes = await prisma.gachaType.findMany({
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy,
     });
 
     return NextResponse.json({ gachaTypes });

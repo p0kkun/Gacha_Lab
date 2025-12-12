@@ -79,70 +79,70 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <h1 className="mb-6 text-2xl font-bold text-gray-800">ダッシュボード</h1>
+      <div>
+        <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">ダッシュボード</h1>
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-2 text-lg font-semibold text-gray-800">ユーザー管理</h2>
-            <p className="mb-4 text-sm text-gray-600">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">ユーザー管理</h2>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ユーザー一覧と詳細情報を確認できます
             </p>
             <a
               href="/admin/users"
-              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ユーザー管理へ
             </a>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-2 text-lg font-semibold text-gray-800">ガチャ設定</h2>
-            <p className="mb-4 text-sm text-gray-600">
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">ガチャ設定</h2>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャタイプの確率設定ができます
             </p>
             <a
               href="/admin/gacha-types"
-              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ガチャ設定へ
             </a>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-2 text-lg font-semibold text-gray-800">アイテム設定</h2>
-            <p className="mb-4 text-sm text-gray-600">
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">アイテム設定</h2>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャアイテムの追加・編集ができます
             </p>
             <a
               href="/admin/items"
-              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               アイテム設定へ
             </a>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-2 text-lg font-semibold text-gray-800">統計・購入状況</h2>
-            <p className="mb-4 text-sm text-gray-600">
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">統計・購入状況</h2>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャごとの課金人数や金額を確認できます
             </p>
             <a
               href="/admin/statistics"
-              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               統計へ
             </a>
           </div>
 
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-2 text-lg font-semibold text-gray-800">ガチャシミュレータ</h2>
-            <p className="mb-4 text-sm text-gray-600">
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">ガチャシミュレータ</h2>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               設定したガチャの排出率を確認できます
             </p>
             <a
               href="/admin/simulator"
-              className="inline-block rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               シミュレータへ
             </a>

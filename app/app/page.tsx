@@ -1,15 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { initLiff, getProfile, isLoggedIn, login, type LiffProfile } from '@/lib/liff';
-import GachaModal from '@/components/GachaModal';
-import MyPage from '@/components/MyPage';
-import GachaHistory from '@/components/GachaHistory';
-import MyItems from '@/components/MyItems';
-import HelpPage from '@/components/HelpPage';
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  initLiff,
+  getProfile,
+  isLoggedIn,
+  login,
+  type LiffProfile,
+} from "@/lib/liff";
+import GachaModal from "@/components/GachaModal";
+import MyPage from "@/components/MyPage";
+import GachaHistory from "@/components/GachaHistory";
+import MyItems from "@/components/MyItems";
+import HelpPage from "@/components/HelpPage";
 
-type ActivePage = 'home' | 'mypage' | 'history' | 'items' | 'help';
+type ActivePage = "home" | "mypage" | "history" | "items" | "help";
 
 function HomeContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
@@ -17,26 +23,26 @@ function HomeContent() {
   const [error, setError] = useState<string | null>(null);
   const [isGachaModalOpen, setIsGachaModalOpen] = useState(false);
   const [points, setPoints] = useState<number | null>(null);
-  const [activePage, setActivePage] = useState<ActivePage>('home');
+  const [activePage, setActivePage] = useState<ActivePage>("home");
   const searchParams = useSearchParams();
 
   // URLパラメータからactionを取得してページを切り替え
   useEffect(() => {
-    const action = searchParams.get('action');
-    
-    if (action === 'gacha' && profile) {
+    const action = searchParams.get("action");
+
+    if (action === "gacha" && profile) {
       setIsGachaModalOpen(true);
-      setActivePage('home');
-    } else if (action === 'mypage') {
-      setActivePage('mypage');
-    } else if (action === 'history') {
-      setActivePage('history');
-    } else if (action === 'items') {
-      setActivePage('items');
-    } else if (action === 'help') {
-      setActivePage('help');
+      setActivePage("home");
+    } else if (action === "mypage") {
+      setActivePage("mypage");
+    } else if (action === "history") {
+      setActivePage("history");
+    } else if (action === "items") {
+      setActivePage("items");
+    } else if (action === "help") {
+      setActivePage("help");
     } else {
-      setActivePage('home');
+      setActivePage("home");
     }
   }, [searchParams, profile]);
 
@@ -44,10 +50,10 @@ function HomeContent() {
     const initialize = async () => {
       try {
         // LIFF IDは環境変数から取得（後で設定）
-        const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '';
-        
+        const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "";
+
         if (!liffId) {
-          setError('LIFF IDが設定されていません');
+          setError("LIFF IDが設定されていません");
           setLoading(false);
           return;
         }
@@ -64,10 +70,10 @@ function HomeContent() {
 
         // ユーザー登録
         try {
-          await fetch('/api/users/register', {
-            method: 'POST',
+          await fetch("/api/users/register", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               userId: userProfile.userId,
@@ -76,21 +82,23 @@ function HomeContent() {
             }),
           });
         } catch (error) {
-          console.error('ユーザー登録エラー:', error);
+          console.error("ユーザー登録エラー:", error);
         }
 
         // ポイント残高を取得
         try {
-          const res = await fetch(`/api/points/balance?userId=${userProfile.userId}`);
+          const res = await fetch(
+            `/api/points/balance?userId=${userProfile.userId}`
+          );
           if (res.ok) {
             const data = await res.json();
             setPoints(data.points);
           }
         } catch (error) {
-          console.error('ポイント残高取得エラー:', error);
+          console.error("ポイント残高取得エラー:", error);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'エラーが発生しました');
+        setError(err instanceof Error ? err.message : "エラーが発生しました");
       } finally {
         setLoading(false);
       }
@@ -126,15 +134,15 @@ function HomeContent() {
     }
 
     switch (activePage) {
-      case 'mypage':
+      case "mypage":
         return <MyPage profile={profile} />;
-      case 'history':
+      case "history":
         return <GachaHistory userId={profile.userId} />;
-      case 'items':
+      case "items":
         return <MyItems userId={profile.userId} />;
-      case 'help':
+      case "help":
         return <HelpPage />;
-      case 'home':
+      case "home":
       default:
         return (
           <>
@@ -144,7 +152,7 @@ function HomeContent() {
                   <h1 className="mb-4 text-center text-2xl font-bold text-gray-800">
                     Gacha Lab
                   </h1>
-                  
+
                   <div className="mb-4 rounded-lg bg-white p-4 shadow">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -156,14 +164,18 @@ function HomeContent() {
                           />
                         )}
                         <div>
-                          <div className="font-semibold">{profile.displayName}</div>
-                          <div className="text-xs text-gray-500">ID: {profile.userId}</div>
+                          <div className="font-semibold">
+                            {profile.displayName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            ID: {profile.userId}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-gray-500">ポイント</div>
                         <div className="text-xl font-bold text-blue-600">
-                          {points !== null ? points.toLocaleString() : '-'}
+                          {points !== null ? points.toLocaleString() : "-"}
                         </div>
                       </div>
                     </div>
@@ -211,10 +223,10 @@ function HomeContent() {
           onClose={() => {
             setIsGachaModalOpen(false);
             // URLパラメータをクリア
-            if (typeof window !== 'undefined') {
+            if (typeof window !== "undefined") {
               const url = new URL(window.location.href);
-              url.searchParams.delete('action');
-              window.history.replaceState({}, '', url.toString());
+              url.searchParams.delete("action");
+              window.history.replaceState({}, "", url.toString());
             }
           }}
           userId={profile.userId}
@@ -228,13 +240,15 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-lg">読み込み中...</div>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="mb-4 text-lg">読み込み中...</div>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <HomeContent />
     </Suspense>
   );

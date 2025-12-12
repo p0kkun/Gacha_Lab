@@ -17,12 +17,22 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || 'month'; // 'day' | 'month'
+    const period = searchParams.get('period') || 'month'; // 'day' | 'month' | 'custom'
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
 
-    // 期間の開始日を計算
+    // 期間の開始日と終了日を計算
     const now = new Date();
     let startDate: Date;
-    if (period === 'day') {
+    let endDate: Date = now;
+
+    if (period === 'custom' && startDateParam && endDateParam) {
+      // カスタム期間
+      startDate = new Date(startDateParam);
+      endDate = new Date(endDateParam);
+      // 終了日の時刻を23:59:59に設定
+      endDate.setHours(23, 59, 59, 999);
+    } else if (period === 'day') {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     } else {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -34,6 +44,7 @@ export async function GET(request: NextRequest) {
       where: {
         createdAt: {
           gte: startDate,
+          lte: endDate,
         },
       },
       _count: {
@@ -54,6 +65,7 @@ export async function GET(request: NextRequest) {
       where: {
         createdAt: {
           gte: startDate,
+          lte: endDate,
         },
       },
       _count: {
@@ -88,7 +100,7 @@ export async function GET(request: NextRequest) {
         DATE("createdAt") as date,
         COUNT(*)::bigint as count
       FROM "gacha_histories"
-      WHERE "createdAt" >= ${startDate}
+      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
       GROUP BY DATE("createdAt")
       ORDER BY date DESC
       LIMIT 30
@@ -102,6 +114,7 @@ export async function GET(request: NextRequest) {
       where: {
         createdAt: {
           gte: startDate,
+          lte: endDate,
         },
       },
     });
@@ -109,6 +122,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       period,
       startDate,
+      endDate,
       totalUsers,
       totalGachaCount,
       gachaStats: gachaStats.map((stat) => {

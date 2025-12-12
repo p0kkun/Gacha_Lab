@@ -70,16 +70,30 @@ export default function GachaTypesPage() {
   const [formData, setFormData] = useState<Partial<GachaType>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [filterIsActive, setFilterIsActive] = useState<string>('');
+  const [filterIsOngoing, setFilterIsOngoing] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'pointCost'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     fetchGachaTypes();
-  }, []);
+  }, [filterIsActive, filterIsOngoing, sortBy, sortOrder]);
 
   const fetchGachaTypes = async () => {
     setLoading(true);
     try {
+      const params = new URLSearchParams();
+      if (filterIsActive) {
+        params.append('isActive', filterIsActive);
+      }
+      if (filterIsOngoing) {
+        params.append('isOngoing', filterIsOngoing);
+      }
+      params.append('sortBy', sortBy);
+      params.append('sortOrder', sortOrder);
+
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/gacha-types', {
+      const res = await fetch(`/api/admin/gacha-types?${params}`, {
         headers: {
           'X-Admin-Auth': authToken || '',
         },
@@ -175,8 +189,46 @@ export default function GachaTypesPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <h1 className="mb-6 text-2xl font-bold text-gray-800">ガチャ設定</h1>
+      <div>
+        <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">ガチャ設定</h1>
+
+        {/* フィルターとソート */}
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <select
+            value={filterIsActive}
+            onChange={(e) => setFilterIsActive(e.target.value)}
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">すべての状態</option>
+            <option value="true">有効</option>
+            <option value="false">無効</option>
+          </select>
+          <select
+            value={filterIsOngoing}
+            onChange={(e) => setFilterIsOngoing(e.target.value)}
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">すべて</option>
+            <option value="true">開催中</option>
+            <option value="false">開催中以外</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'createdAt' | 'name' | 'pointCost')}
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="createdAt">作成日時</option>
+            <option value="name">名前</option>
+            <option value="pointCost">ポイントコスト</option>
+          </select>
+          <button
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm transition-colors hover:bg-gray-50"
+            title={sortOrder === 'asc' ? '昇順' : '降順'}
+          >
+            ソート: {sortOrder === 'asc' ? '昇順 ↑' : '降順 ↓'}
+          </button>
+        </div>
 
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
@@ -206,12 +258,12 @@ export default function GachaTypesPage() {
               const displayData = isEditing ? formData : gachaType;
 
               return (
-                <div key={gachaType.id} className="rounded-lg bg-white p-6 shadow">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-800">
+                <div key={gachaType.id} className="rounded-lg bg-white p-4 shadow lg:p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 className="text-lg font-semibold text-gray-800 lg:text-xl">
                       {gachaType.name}
                     </h2>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${
                           gachaType.isActive
@@ -649,13 +701,13 @@ export default function GachaTypesPage() {
                       <div className="mb-4 text-sm text-gray-600">
                         重みの合計: {totalWeight}
                       </div>
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <div className="rounded-md bg-gray-50 p-4">
-                          <div className="text-sm font-medium text-gray-700">1等</div>
-                          <div className="mt-1 text-lg font-semibold text-gray-800">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
+                          <div className="text-xs font-medium text-gray-700 lg:text-sm">1等</div>
+                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                             {gachaType.firstPrizeWeight} ({calculatePercentage(gachaType.firstPrizeWeight, totalWeight).toFixed(1)}%)
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                             役: <span className="font-medium">
                               {gachaType.firstPrizeHands && gachaType.firstPrizeHands.length > 0
                                 ? getHandNames(gachaType.firstPrizeHands)
@@ -663,12 +715,12 @@ export default function GachaTypesPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="rounded-md bg-gray-50 p-4">
-                          <div className="text-sm font-medium text-gray-700">2等</div>
-                          <div className="mt-1 text-lg font-semibold text-gray-800">
+                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
+                          <div className="text-xs font-medium text-gray-700 lg:text-sm">2等</div>
+                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                             {gachaType.secondPrizeWeight} ({calculatePercentage(gachaType.secondPrizeWeight, totalWeight).toFixed(1)}%)
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                             役: <span className="font-medium">
                               {gachaType.secondPrizeHands && gachaType.secondPrizeHands.length > 0
                                 ? getHandNames(gachaType.secondPrizeHands)
@@ -676,12 +728,12 @@ export default function GachaTypesPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="rounded-md bg-gray-50 p-4">
-                          <div className="text-sm font-medium text-gray-700">3等</div>
-                          <div className="mt-1 text-lg font-semibold text-gray-800">
+                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
+                          <div className="text-xs font-medium text-gray-700 lg:text-sm">3等</div>
+                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                             {gachaType.thirdPrizeWeight} ({calculatePercentage(gachaType.thirdPrizeWeight, totalWeight).toFixed(1)}%)
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                             役: <span className="font-medium">
                               {gachaType.thirdPrizeHands && gachaType.thirdPrizeHands.length > 0
                                 ? getHandNames(gachaType.thirdPrizeHands)
@@ -689,12 +741,12 @@ export default function GachaTypesPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="rounded-md bg-gray-50 p-4">
-                          <div className="text-sm font-medium text-gray-700">4等</div>
-                          <div className="mt-1 text-lg font-semibold text-gray-800">
+                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
+                          <div className="text-xs font-medium text-gray-700 lg:text-sm">4等</div>
+                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                             {gachaType.fourthPrizeWeight} ({calculatePercentage(gachaType.fourthPrizeWeight, totalWeight).toFixed(1)}%)
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                             役: <span className="font-medium">
                               {gachaType.fourthPrizeHands && gachaType.fourthPrizeHands.length > 0
                                 ? getHandNames(gachaType.fourthPrizeHands)
@@ -702,12 +754,12 @@ export default function GachaTypesPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="rounded-md bg-gray-50 p-4">
-                          <div className="text-sm font-medium text-gray-700">5等</div>
-                          <div className="mt-1 text-lg font-semibold text-gray-800">
+                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
+                          <div className="text-xs font-medium text-gray-700 lg:text-sm">5等</div>
+                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                             {gachaType.fifthPrizeWeight} ({calculatePercentage(gachaType.fifthPrizeWeight, totalWeight).toFixed(1)}%)
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                             役: <span className="font-medium">
                               {gachaType.fifthPrizeHands && gachaType.fifthPrizeHands.length > 0
                                 ? getHandNames(gachaType.fifthPrizeHands)
@@ -715,12 +767,12 @@ export default function GachaTypesPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="rounded-md bg-gray-50 p-4">
-                          <div className="text-sm font-medium text-gray-700">ハズレ</div>
-                          <div className="mt-1 text-lg font-semibold text-gray-800">
+                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
+                          <div className="text-xs font-medium text-gray-700 lg:text-sm">ハズレ</div>
+                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                             {gachaType.loserWeight} ({calculatePercentage(gachaType.loserWeight, totalWeight).toFixed(1)}%)
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                             役: <span className="font-medium">
                               {(() => {
                                 // 上位の当たりに設定されている役を取得

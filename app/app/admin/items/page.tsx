@@ -199,12 +199,12 @@ export default function ItemsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">アイテム設定</h1>
+      <div>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:mb-6">
+          <h1 className="text-xl font-bold text-gray-800 lg:text-2xl">アイテム設定</h1>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+            className="w-full rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 sm:w-auto"
           >
             {showCreateForm ? 'キャンセル' : '新規作成'}
           </button>
@@ -223,11 +223,11 @@ export default function ItemsPage() {
         )}
 
         {/* フィルター */}
-        <div className="mb-4 flex gap-4">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:gap-4">
           <select
             value={gachaTypeFilter}
             onChange={(e) => setGachaTypeFilter(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 lg:text-base"
           >
             <option value="">すべてのガチャタイプ</option>
             <option value="null">共通アイテム（ガチャタイプ未設定）</option>
@@ -240,7 +240,7 @@ export default function ItemsPage() {
           <select
             value={rarityFilter}
             onChange={(e) => setRarityFilter(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 lg:text-base"
           >
             <option value="">すべてのレアリティ</option>
             {RARITY_OPTIONS.map((option) => (
@@ -252,7 +252,7 @@ export default function ItemsPage() {
           <select
             value={isActiveFilter}
             onChange={(e) => setIsActiveFilter(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 lg:text-base"
           >
             <option value="">すべて</option>
             <option value="true">有効</option>
@@ -351,43 +351,108 @@ export default function ItemsPage() {
             アイテムがありません
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg bg-white shadow">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    名前
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    ガチャタイプ
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    レアリティ
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    状態
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    作成日時
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {item.id}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {item.name}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+          <>
+            {/* デスクトップ用テーブル */}
+            <div className="hidden overflow-x-auto rounded-lg bg-white shadow lg:block">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      名前
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      ガチャタイプ
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      レアリティ
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      状態
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      作成日時
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {items.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        {item.id}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        {item.name}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        {item.gachaTypeId ? (
+                          <span className="inline-flex rounded-full bg-purple-200 px-2 py-1 text-xs font-semibold text-purple-900">
+                            {gachaTypes.find((t) => t.id === item.gachaTypeId)?.name || item.gachaTypeId}
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
+                            共通
+                          </span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        <span className="inline-flex rounded-full bg-blue-200 px-2 py-1 text-xs font-semibold text-blue-900">
+                          {getRarityLabel(item.rarity)}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                            item.isActive
+                              ? 'bg-green-200 text-green-900'
+                              : 'bg-gray-200 text-gray-900'
+                          }`}
+                        >
+                          {item.isActive ? '有効' : '無効'}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        {new Date(item.createdAt).toLocaleString('ja-JP')}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-blue-600">
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/admin/items/${item.id}`}
+                            className="hover:underline"
+                          >
+                            編集
+                          </Link>
+                          {item.isActive && (
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="text-red-600 hover:underline"
+                            >
+                              無効化
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* モバイル用カード */}
+            <div className="space-y-4 lg:hidden">
+              {items.map((item) => (
+                <div key={item.id} className="rounded-lg bg-white p-4 shadow">
+                  <div className="mb-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+                      <span className="text-xs text-gray-500">ID: {item.id}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       {item.gachaTypeId ? (
                         <span className="inline-flex rounded-full bg-purple-200 px-2 py-1 text-xs font-semibold text-purple-900">
                           {gachaTypes.find((t) => t.id === item.gachaTypeId)?.name || item.gachaTypeId}
@@ -397,13 +462,9 @@ export default function ItemsPage() {
                           共通
                         </span>
                       )}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                       <span className="inline-flex rounded-full bg-blue-200 px-2 py-1 text-xs font-semibold text-blue-900">
                         {getRarityLabel(item.rarity)}
                       </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
                           item.isActive
@@ -413,33 +474,31 @@ export default function ItemsPage() {
                       >
                         {item.isActive ? '有効' : '無効'}
                       </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {new Date(item.createdAt).toLocaleString('ja-JP')}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-blue-600">
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/admin/items/${item.id}`}
-                          className="hover:underline"
-                        >
-                          編集
-                        </Link>
-                        {item.isActive && (
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="text-red-600 hover:underline"
-                          >
-                            無効化
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                  <div className="mb-3 text-xs text-gray-600">
+                    作成日時: {new Date(item.createdAt).toLocaleString('ja-JP')}
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/admin/items/${item.id}`}
+                      className="flex-1 rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                    >
+                      編集
+                    </Link>
+                    {item.isActive && (
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="flex-1 rounded-md bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
+                      >
+                        無効化
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </AdminLayout>

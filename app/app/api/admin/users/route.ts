@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'createdAt'; // 'createdAt' | 'displayName' | 'gachaCount'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'; // 'asc' | 'desc'
 
     const skip = (page - 1) * limit;
 
@@ -33,13 +35,25 @@ export async function GET(request: NextRequest) {
         }
       : {};
 
+    // ソート条件を設定
+    let orderBy: any = {};
+    if (sortBy === 'gachaCount') {
+      // ガチャ実行回数でソートする場合は、別のクエリが必要
+      // ここでは簡易的にcreatedAtでソートし、フロントエンドでソート
+      orderBy = { createdAt: sortOrder === 'asc' ? 'asc' : 'desc' };
+    } else if (sortBy === 'displayName') {
+      orderBy = { displayName: sortOrder === 'asc' ? 'asc' : 'desc' };
+    } else {
+      orderBy = { createdAt: sortOrder === 'asc' ? 'asc' : 'desc' };
+    }
+
     // ユーザー一覧と総数を取得
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         select: {
           userId: true,
           displayName: true,
@@ -56,8 +70,18 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where }),
     ]);
 
+    // ガチャ実行回数でソートする場合
+    let sortedUsers = users;
+    if (sortBy === 'gachaCount') {
+      sortedUsers = [...users].sort((a, b) => {
+        const countA = a._count.gachaHistories;
+        const countB = b._count.gachaHistories;
+        return sortOrder === 'asc' ? countA - countB : countB - countA;
+      });
+    }
+
     return NextResponse.json({
-      users,
+      users: sortedUsers,
       pagination: {
         page,
         limit,

@@ -13,6 +13,7 @@ type GachaStat = {
 type Statistics = {
   period: string;
   startDate: string;
+  endDate?: string;
   totalUsers: number;
   totalGachaCount: number;
   gachaStats: GachaStat[];
@@ -32,17 +33,26 @@ const RARITY_LABELS: Record<string, string> = {
 export default function StatisticsPage() {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'day' | 'month'>('month');
+  const [period, setPeriod] = useState<'day' | 'month' | 'custom'>('month');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchStatistics();
-  }, [period]);
+  }, [period, startDate, endDate]);
 
   const fetchStatistics = async () => {
     setLoading(true);
     try {
+      const params = new URLSearchParams();
+      params.append('period', period);
+      if (period === 'custom' && startDate && endDate) {
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
+      }
+
       const authToken = getAdminAuthToken();
-      const res = await fetch(`/api/admin/statistics?period=${period}`, {
+      const res = await fetch(`/api/admin/statistics?${params}`, {
         headers: {
           'X-Admin-Auth': authToken || '',
         },
@@ -92,17 +102,46 @@ export default function StatisticsPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">統計・購入状況</h1>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as 'day' | 'month')}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value="day">今日</option>
-            <option value="month">今月</option>
-          </select>
+      <div>
+        <div className="mb-6">
+          <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">統計・購入状況</h1>
+          
+          {/* 期間選択 */}
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <select
+              value={period}
+              onChange={(e) => {
+                setPeriod(e.target.value as 'day' | 'month' | 'custom');
+                if (e.target.value !== 'custom') {
+                  setStartDate('');
+                  setEndDate('');
+                }
+              }}
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="day">今日</option>
+              <option value="month">今月</option>
+              <option value="custom">期間指定</option>
+            </select>
+            {period === 'custom' && (
+              <>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  placeholder="開始日"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  placeholder="終了日"
+                />
+              </>
+            )}
+          </div>
         </div>
 
         {/* サマリー */}
@@ -115,7 +154,7 @@ export default function StatisticsPage() {
           </div>
           <div className="rounded-lg bg-white p-6 shadow">
             <div className="text-sm text-gray-500">
-              {period === 'day' ? '今日の' : '今月の'}ガチャ実行回数
+              {period === 'day' ? '今日の' : period === 'month' ? '今月の' : '期間中の'}ガチャ実行回数
             </div>
             <div className="mt-2 text-3xl font-bold text-gray-800">
               {statistics.totalGachaCount.toLocaleString()}
@@ -125,6 +164,7 @@ export default function StatisticsPage() {
             <div className="text-sm text-gray-500">期間</div>
             <div className="mt-2 text-lg font-semibold text-gray-800">
               {new Date(statistics.startDate).toLocaleDateString('ja-JP')} ～
+              {statistics.endDate ? new Date(statistics.endDate).toLocaleDateString('ja-JP') : '現在'}
             </div>
           </div>
         </div>
