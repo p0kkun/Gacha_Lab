@@ -1,23 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { generateRandomCard, evaluateHand, getHandName, type Card, type HandRank as PokerHandRank } from '@/lib/pokerHand';
-import { Rarity, HandRank, PointTransactionType } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import {
+  generateRandomCard,
+  evaluateHand,
+  getHandName,
+  type Card,
+  type HandRank as PokerHandRank,
+} from "@/lib/pokerHand";
+import { Rarity, HandRank, Prisma } from "@prisma/client";
+
+// PointTransactionTypeの一時的な回避策（Prismaクライアントの型解決問題のため）
+const PointTransactionType = {
+  PURCHASE: "PURCHASE" as const,
+  CONSUME: "CONSUME" as const,
+  GRANT: "GRANT" as const,
+  REFUND: "REFUND" as const,
+} as const;
+import { sendGachaResultMessage } from "@/lib/line-messaging";
 
 /**
  * ポーカーのHandRank（小文字）をPrismaのHandRank（大文字）に変換
  */
 function convertHandRankToPrisma(handRank: PokerHandRank): HandRank {
   const mapping: Record<PokerHandRank, HandRank> = {
-    'royal_flush': HandRank.ROYAL_FLUSH,
-    'straight_flush': HandRank.STRAIGHT_FLUSH,
-    'four_of_a_kind': HandRank.FOUR_OF_A_KIND,
-    'full_house': HandRank.FULL_HOUSE,
-    'flush': HandRank.FLUSH,
-    'straight': HandRank.STRAIGHT,
-    'three_of_a_kind': HandRank.THREE_OF_A_KIND,
-    'two_pair': HandRank.TWO_PAIR,
-    'one_pair': HandRank.ONE_PAIR,
-    'high_card': HandRank.HIGH_CARD,
+    royal_flush: HandRank.ROYAL_FLUSH,
+    straight_flush: HandRank.STRAIGHT_FLUSH,
+    four_of_a_kind: HandRank.FOUR_OF_A_KIND,
+    full_house: HandRank.FULL_HOUSE,
+    flush: HandRank.FLUSH,
+    straight: HandRank.STRAIGHT,
+    three_of_a_kind: HandRank.THREE_OF_A_KIND,
+    two_pair: HandRank.TWO_PAIR,
+    one_pair: HandRank.ONE_PAIR,
+    high_card: HandRank.HIGH_CARD,
   };
   return mapping[handRank];
 }
@@ -131,14 +146,14 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'ユーザーIDが必要です' },
+        { error: "ユーザーIDが必要です" },
         { status: 400 }
       );
     }
 
     if (!gachaTypeId) {
       return NextResponse.json(
-        { error: 'ガチャタイプIDが必要です' },
+        { error: "ガチャタイプIDが必要です" },
         { status: 400 }
       );
     }
@@ -150,44 +165,53 @@ export async function POST(request: NextRequest) {
 
     if (!gachaType || !gachaType.isActive) {
       return NextResponse.json(
-        { error: 'ガチャタイプが見つからないか、無効です' },
+        { error: "ガチャタイプが見つからないか、無効です" },
         { status: 404 }
       );
     }
 
     // 期間チェック
     const now = new Date();
-    if (gachaType.startAt && now < gachaType.startAt) {
+    // 型アサーション: PrismaスキーマにはstartAt/endAt/pointCostが存在するが、型解決の問題で型エラーが出る場合がある
+    const gachaTypeWithDates = gachaType as typeof gachaType & {
+      startAt: Date | null;
+      endAt: Date | null;
+      pointCost: number;
+    };
+
+    if (gachaTypeWithDates.startAt && now < gachaTypeWithDates.startAt) {
       return NextResponse.json(
-        { error: 'このガチャはまだ開始されていません' },
+        { error: "このガチャはまだ開始されていません" },
         { status: 403 }
       );
     }
-    if (gachaType.endAt && now > gachaType.endAt) {
+    if (gachaTypeWithDates.endAt && now > gachaTypeWithDates.endAt) {
       return NextResponse.json(
-        { error: 'このガチャは終了しました' },
+        { error: "このガチャは終了しました" },
         { status: 403 }
       );
     }
 
     // ポイントチェック
-    const pointCost = gachaType.pointCost || 0;
+    const pointCost = gachaTypeWithDates.pointCost || 0;
     if (pointCost > 0) {
       const user = await prisma.user.findUnique({
         where: { userId },
-        select: { points: true },
+        select: { points: true } as Prisma.UserSelect,
       });
 
       if (!user) {
         return NextResponse.json(
-          { error: 'ユーザーが見つかりません' },
+          { error: "ユーザーが見つかりません" },
           { status: 404 }
         );
       }
 
       if (user.points < pointCost) {
         return NextResponse.json(
-          { error: `ポイントが不足しています。必要: ${pointCost}ポイント、所持: ${user.points}ポイント` },
+          {
+            error: `ポイントが不足しています。必要: ${pointCost}ポイント、所持: ${user.points}ポイント`,
+          },
           { status: 403 }
         );
       }
@@ -203,9 +227,11 @@ export async function POST(request: NextRequest) {
     } | null = null;
 
     // 通常ガチャはポーカーハンドで判定
-    if (gachaTypeId === 'normal') {
+    if (gachaTypeId === "normal") {
       // 7枚のカードを生成
-      const allCards: Card[] = Array.from({ length: 7 }, () => generateRandomCard());
+      const allCards: Card[] = Array.from({ length: 7 }, () =>
+        generateRandomCard()
+      );
       const holeCards = allCards.slice(0, 2);
       const communityCards = allCards.slice(2, 7);
 
@@ -257,13 +283,14 @@ export async function POST(request: NextRequest) {
 
     if (availableItems.length === 0) {
       return NextResponse.json(
-        { error: '該当するアイテムが見つかりません' },
+        { error: "該当するアイテムが見つかりません" },
         { status: 404 }
       );
     }
 
     // ランダムにアイテムを選択
-    const selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+    const selectedItem =
+      availableItems[Math.floor(Math.random() * availableItems.length)];
 
     // ポイント消費とガチャ履歴保存をトランザクションで実行
     const result = await prisma.$transaction(async (tx) => {
@@ -272,11 +299,11 @@ export async function POST(request: NextRequest) {
       if (pointCost > 0) {
         const user = await tx.user.findUnique({
           where: { userId },
-          select: { points: true },
+          select: { points: true } as Prisma.UserSelect,
         });
 
         if (!user) {
-          throw new Error('ユーザーが見つかりません');
+          throw new Error("ユーザーが見つかりません");
         }
 
         newBalance = user.points - pointCost;
@@ -284,7 +311,7 @@ export async function POST(request: NextRequest) {
         // ポイント残高を更新
         await tx.user.update({
           where: { userId },
-          data: { points: newBalance },
+          data: { points: newBalance } as Prisma.UserUpdateInput,
         });
 
         // ガチャ履歴を保存（ポイント使用情報を含む）
@@ -294,7 +321,7 @@ export async function POST(request: NextRequest) {
             gachaTypeId: gachaTypeId,
             itemId: selectedItem.id,
             pointsUsed: pointCost,
-          },
+          } as Prisma.GachaHistoryUncheckedCreateInput,
         });
 
         // ポイント履歴を記録
@@ -318,11 +345,35 @@ export async function POST(request: NextRequest) {
             gachaTypeId: gachaTypeId,
             itemId: selectedItem.id,
             pointsUsed: 0,
-          },
+          } as Prisma.GachaHistoryUncheckedCreateInput,
         });
 
         return { gachaHistory, newBalance: 0 };
       }
+    });
+
+    // ガチャ結果をLINEトークに送信（非同期、エラーが発生してもガチャ結果は返す）
+    sendGachaResultMessage(
+      userId,
+      selectedItem.name,
+      selectedItem.rarity,
+      gachaType.name,
+      pokerHand
+        ? {
+            handName: pokerHand.handName,
+            holeCards: pokerHand.holeCards.map((card) => ({
+              suit: card.suit,
+              rank: card.rank,
+            })),
+            communityCards: pokerHand.communityCards.map((card) => ({
+              suit: card.suit,
+              rank: card.rank,
+            })),
+          }
+        : undefined
+    ).catch((error) => {
+      // LINEメッセージ送信のエラーはログに記録するが、ガチャ結果には影響しない
+      console.error("LINEメッセージ送信エラー（ガチャ結果は正常）:", error);
     });
 
     return NextResponse.json({
@@ -340,11 +391,10 @@ export async function POST(request: NextRequest) {
       pointsRemaining: result.newBalance,
     });
   } catch (error) {
-    console.error('ガチャエラー:', error);
+    console.error("ガチャエラー:", error);
     return NextResponse.json(
-      { error: 'ガチャ抽選に失敗しました' },
+      { error: "ガチャ抽選に失敗しました" },
       { status: 500 }
     );
   }
 }
-

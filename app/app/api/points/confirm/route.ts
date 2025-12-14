@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
-import { PointTransactionType } from '@prisma/client';
+// PointTransactionTypeの一時的な回避策（Prismaクライアントの型解決問題のため）
+const PointTransactionType = {
+  PURCHASE: "PURCHASE" as const,
+  CONSUME: "CONSUME" as const,
+  GRANT: "GRANT" as const,
+  REFUND: "REFUND" as const,
+} as const;
 
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
