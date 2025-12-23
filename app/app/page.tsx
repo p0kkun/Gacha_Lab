@@ -228,10 +228,17 @@ function HomeContent() {
               url.searchParams.delete("action");
               window.history.replaceState({}, "", url.toString());
             }
+            // ポイント残高を再取得
+            if (profile) {
+              fetch(`/api/points/balance?userId=${profile.userId}`)
+                .then((res) => res.json())
+                .then((data) => setPoints(data.points))
+                .catch((error) =>
+                  console.error("ポイント残高取得エラー:", error)
+                );
+            }
           }}
           userId={profile.userId}
-          currentPoints={points !== null ? points : 0}
-          onPointsUpdated={(newPoints) => setPoints(newPoints)}
         />
       )}
     </>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage } from '@line/bot-sdk';
+import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage, PostbackEvent, TemplateMessage, CarouselTemplate, CarouselColumn, URIAction } from '@line/bot-sdk';
 import crypto from 'crypto';
+import { prisma } from '@/lib/prisma';
 
 // LINE Messaging APIクライアントの初期化
 function getLineClient(): Client | null {
@@ -100,6 +101,119 @@ async function replyTextMessage(
   }
 }
 
+// LIFFアプリのURLを取得
+function getLiffUrl(params?: Record<string, string>): string {
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '2008642684-d8jPmggE';
+  const baseUrl = `https://liff.line.me/${liffId}`;
+  
+  if (!params || Object.keys(params).length === 0) {
+    return baseUrl;
+  }
+  
+  const queryString = new URLSearchParams(params).toString();
+  return `${baseUrl}?${queryString}`;
+}
+
+// ガチャタイプ一覧を取得
+async function getGachaTypes() {
+  try {
+    const now = new Date();
+    const gachaTypes = await prisma.gachaType.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { startAt: null },
+          { startAt: { lte: now } },
+        ],
+        AND: [
+          {
+            OR: [
+              { endAt: null },
+              { endAt: { gte: now } },
+            ],
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        pointCost: true,
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 10, // カルーセルは最大10個まで
+    });
+    return gachaTypes;
+  } catch (error) {
+    console.error('ガチャタイプ取得エラー:', error);
+    return [];
+  }
+}
+
+// ガチャ選択カードメッセージを送信
+async function sendGachaSelectionCard(
+  client: Client,
+  replyToken: string
+): Promise<void> {
+  try {
+    const gachaTypes = await getGachaTypes();
+    
+    if (gachaTypes.length === 0) {
+      await replyTextMessage(
+        client,
+        replyToken,
+        '🎰 現在開催中のガチャはありません。'
+      );
+      return;
+    }
+
+    // カルーセルカラムを作成
+    const columns: CarouselColumn[] = gachaTypes.map((gachaType) => {
+      const pointCostText = gachaType.pointCost > 0 
+        ? `${gachaType.pointCost}P` 
+        : '無料';
+      
+      return {
+        thumbnailImageUrl: 'https://via.placeholder.com/1024x1024/FF6B6B/FFFFFF?text=GACHA', // プレースホルダー画像
+        title: gachaType.name,
+        text: `${gachaType.description || ''}\n💰 ${pointCostText}`,
+        actions: [
+          {
+            type: 'uri',
+            label: 'このガチャを引く',
+            uri: getLiffUrl({
+              action: 'gacha',
+              gachaTypeId: gachaType.id,
+            }),
+          } as URIAction,
+        ],
+      };
+    });
+
+    // カルーセルテンプレートメッセージを作成
+    const carouselTemplate: CarouselTemplate = {
+      type: 'carousel',
+      columns,
+    };
+
+    const templateMessage: TemplateMessage = {
+      type: 'template',
+      altText: 'ガチャを選択してください',
+      template: carouselTemplate,
+    };
+
+    await client.replyMessage(replyToken, [templateMessage]);
+    console.log('ガチャ選択カードメッセージ送信成功');
+  } catch (error) {
+    console.error('ガチャ選択カードメッセージ送信エラー:', error);
+    await replyTextMessage(
+      client,
+      replyToken,
+      '🎰 ガチャ一覧の取得に失敗しました。しばらくしてから再度お試しください。'
+    );
+  }
+}
+
 // Webhookイベントを処理
 async function handleWebhookEvent(
   client: Client,
@@ -110,40 +224,73 @@ async function handleWebhookEvent(
     sourceType: event.source?.type,
   });
 
-  // メッセージイベントのみ処理
-  if (event.type !== 'message') {
-    console.log('メッセージイベントではないためスキップ:', event.type);
-    return;
-  }
-
-  const messageEvent = event as MessageEvent;
-  
-  if (messageEvent.message.type !== 'text') {
-    console.log('テキストメッセージではないためスキップ:', messageEvent.message.type);
-    return;
-  }
-
-  const textMessage = messageEvent.message as TextEventMessage;
-  const text = textMessage.text;
-
-  console.log('受信メッセージ:', {
-    text,
-    textLength: text.length,
-    adminKeyword: process.env.ADMIN_ACCESS_KEYWORD,
-  });
-
-  // 管理者用キーワードをチェック
-  if (isAdminKeyword(text)) {
-    console.log('管理者用キーワードが一致しました');
-    const adminUrl = getAdminUrl();
-    const replyText = `🔐 管理画面へのアクセスURL:\n\n${adminUrl}\n\n⚠️ このURLは管理者専用です。`;
+  // ポストバックイベントを処理（リッチメニューのボタンが押された時）
+  if (event.type === 'postback') {
+    const postbackEvent = event as PostbackEvent;
+    const data = postbackEvent.postback.data;
     
-    await replyTextMessage(client, messageEvent.replyToken, replyText);
-    console.log(`管理者用URLを返信しました: ${adminUrl}`);
-  } else {
-    console.log('管理者用キーワードが一致しませんでした');
+    console.log('ポストバックイベント受信:', {
+      data,
+      params: postbackEvent.postback.params,
+    });
+
+    // リッチメニューのガチャボタンが押された場合
+    if (data === 'action=gacha' || data.startsWith('gacha')) {
+      await sendGachaSelectionCard(client, postbackEvent.replyToken);
+      return;
+    }
+
+    // その他のポストバックイベントは無視
+    return;
   }
-  // その他のメッセージは無視（必要に応じて自動応答を追加可能）
+
+  // メッセージイベントを処理
+  if (event.type === 'message') {
+    const messageEvent = event as MessageEvent;
+    
+    if (messageEvent.message.type !== 'text') {
+      console.log('テキストメッセージではないためスキップ:', messageEvent.message.type);
+      return;
+    }
+
+    const textMessage = messageEvent.message as TextEventMessage;
+    const text = textMessage.text;
+
+    console.log('受信メッセージ:', {
+      text,
+      textLength: text.length,
+      adminKeyword: process.env.ADMIN_ACCESS_KEYWORD,
+    });
+
+    // ガチャ選択のキーワードをチェック（メッセージアクション用）
+    const gachaKeywords = ['ガチャ', 'gacha', '🎰', 'ガチャを引く', 'ガチャを選ぶ'];
+    const isGachaKeyword = gachaKeywords.some(keyword => 
+      text.trim().toLowerCase().includes(keyword.toLowerCase())
+    );
+
+    if (isGachaKeyword) {
+      console.log('ガチャ選択キーワードが一致しました');
+      await sendGachaSelectionCard(client, messageEvent.replyToken);
+      return;
+    }
+
+    // 管理者用キーワードをチェック
+    if (isAdminKeyword(text)) {
+      console.log('管理者用キーワードが一致しました');
+      const adminUrl = getAdminUrl();
+      const replyText = `🔐 管理画面へのアクセスURL:\n\n${adminUrl}\n\n⚠️ このURLは管理者専用です。`;
+      
+      await replyTextMessage(client, messageEvent.replyToken, replyText);
+      console.log(`管理者用URLを返信しました: ${adminUrl}`);
+      return;
+    }
+
+    // その他のメッセージは無視（必要に応じて自動応答を追加可能）
+    return;
+  }
+
+  // その他のイベントタイプは無視
+  console.log('未対応のイベントタイプ:', event.type);
 }
 
 // POST: Webhookリクエストを受信

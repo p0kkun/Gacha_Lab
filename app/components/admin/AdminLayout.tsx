@@ -1,25 +1,29 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { href: '/admin', label: 'ダッシュボード' },
-    { href: '/admin/users', label: 'ユーザー管理' },
-    { href: '/admin/gacha-types', label: 'ガチャ設定' },
-    { href: '/admin/items', label: 'アイテム設定' },
-    { href: '/admin/statistics', label: '統計・購入状況' },
-    { href: '/admin/simulator', label: 'ガチャシミュレータ' },
+    { href: "/admin", label: "ダッシュボード" },
+    { href: "/admin/users", label: "ユーザー管理" },
+    { href: "/admin/gacha-types", label: "ガチャ設定" },
+    { href: "/admin/items", label: "アイテム設定" },
+    { href: "/admin/statistics", label: "統計・購入状況" },
+    { href: "/admin/simulator", label: "ガチャシミュレータ" },
   ];
 
   const handleLogout = () => {
-    sessionStorage.removeItem('admin_authenticated');
-    window.location.href = '/admin';
+    sessionStorage.removeItem("admin_authenticated");
+    window.location.href = "/admin";
   };
 
   return (
@@ -50,27 +54,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* サイドバー */}
       <aside
         className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-white shadow-lg transition-transform duration-300 lg:relative lg:translate-x-0 ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="border-b p-4">
           <h2 className="text-xl font-bold text-gray-800">管理画面</h2>
         </div>
         <nav className="flex-1 overflow-y-auto">
-          {menuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-4 py-3 transition-colors ${
-                pathname === item.href
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {menuItems.map((item, index) => {
+            const isActive =
+              pathname === item.href || pathname?.startsWith(item.href + "/");
+            const isBsop = item.label.includes("BSOP");
+            const isBsopSub = item.label.startsWith("  ");
+
+            return (
+              <div key={item.href}>
+                {(item as any).divider && index > 0 && (
+                  <div className="my-2 border-t border-gray-200" />
+                )}
+                <Link
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block px-4 py-3 transition-colors ${
+                    isActive
+                      ? isBsop
+                        ? "bg-orange-500 text-white"
+                        : "bg-blue-500 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  } ${isBsopSub ? "pl-8 text-sm" : ""} ${
+                    isBsop && !isBsopSub ? "font-semibold" : ""
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              </div>
+            );
+          })}
         </nav>
         <div className="border-t p-4">
           <button
@@ -97,4 +116,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
-
