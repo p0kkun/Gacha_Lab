@@ -8,6 +8,7 @@ export type GachaType = {
   id: string;
   name: string;
   description: string;
+  pointCost?: number;
 };
 
 const gachaTypes: GachaType[] = [

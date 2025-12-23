@@ -207,9 +207,9 @@ export default function GachaContent({
               <p className="mb-2 text-lg text-green-200">
                 カードを引いてアイテムを獲得しましょう！
               </p>
-              {selectedGacha.pointCost > 0 && (
+              {(selectedGacha.pointCost ?? 0) > 0 && (
                 <p className="text-lg font-semibold text-yellow-300">
-                  必要ポイント: {selectedGacha.pointCost.toLocaleString()}ポイント
+                  必要ポイント: {(selectedGacha.pointCost ?? 0).toLocaleString()}ポイント
                 </p>
               )}
               
@@ -278,8 +278,8 @@ export default function GachaContent({
                   <span>🂡</span>
                   <span>
                     カードを引く
-                    {selectedGacha.pointCost > 0 ? (
-                      ` (${selectedGacha.pointCost.toLocaleString()}ポイント)`
+                    {(selectedGacha.pointCost ?? 0) > 0 ? (
+                      ` (${(selectedGacha.pointCost ?? 0).toLocaleString()}ポイント)`
                     ) : (
                       ' (無料)'
                     )}
