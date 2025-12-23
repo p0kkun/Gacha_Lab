@@ -1,7 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage, PostbackEvent, TemplateMessage, CarouselTemplate, CarouselColumn, URIAction } from '@line/bot-sdk';
+import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage, PostbackEvent } from '@line/bot-sdk';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
+
+// LINE Messaging APIの型定義（@line/bot-sdkに含まれていない型）
+type URIAction = {
+  type: 'uri';
+  label: string;
+  uri: string;
+};
+
+type CarouselColumn = {
+  thumbnailImageUrl: string;
+  title: string;
+  text: string;
+  actions: URIAction[];
+};
+
+type CarouselTemplate = {
+  type: 'carousel';
+  columns: CarouselColumn[];
+};
+
+type TemplateMessage = {
+  type: 'template';
+  altText: string;
+  template: CarouselTemplate;
+};
 
 // LINE Messaging APIクライアントの初期化
 function getLineClient(): Client | null {
