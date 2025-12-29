@@ -223,7 +223,7 @@ model PointHistory {
   @@map("point_histories")
 }
 
-model admin_action_histories {
+model AdminActionHistory {
   id            Int             @id @default(autoincrement())
   actionType    AdminActionType
   adminUserId   String?
@@ -237,6 +237,7 @@ model admin_action_histories {
   @@index([actionType])
   @@index([adminUserId])
   @@index([createdAt])
+  @@map("admin_action_histories")
   @@index([targetUserId])
 }
 
@@ -290,7 +291,7 @@ model tags {
   @@index([name])
 }
 
-model user_tags {
+model UserTag {
   id        Int      @id @default(autoincrement())
   userId    String
   tagId     Int

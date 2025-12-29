@@ -560,8 +560,8 @@ export default function StatisticsPage() {
                       height={80}
                     />
                     <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value} 回`, '実行回数']}
+                    <Tooltip
+                      formatter={(value: number | undefined) => [`${value ?? 0} 回`, '実行回数']}
                       labelFormatter={(label) => {
                         const date = statistics.dailyStats.find((s) => {
                           const d = new Date(s.date);
