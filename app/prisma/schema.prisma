@@ -282,7 +282,7 @@ model PointBalance {
   @@map("point_balances")
 }
 
-model tags {
+model Tag {
   id          Int         @id @default(autoincrement())
   name        String      @unique
   description String?
@@ -291,6 +291,7 @@ model tags {
   userTags    UserTag[]
 
   @@index([name])
+  @@map("tags")
 }
 
 model UserTag {
@@ -299,11 +300,12 @@ model UserTag {
   tagId     Int
   createdAt DateTime @default(now())
   tag       Tag      @relation(fields: [tagId], references: [id])
-  users     User     @relation(fields: [userId], references: [userId])
+  user      User     @relation(fields: [userId], references: [userId])
 
   @@unique([userId, tagId])
   @@index([tagId])
   @@index([userId])
+  @@map("user_tags")
 }
 
 enum Rarity {
