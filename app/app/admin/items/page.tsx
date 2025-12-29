@@ -606,7 +606,7 @@ export default function ItemsPage() {
                     </Link>
                     {item.isActive && (
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDeleteClick(item.id)}
                         className="flex-1 rounded-md bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
                       >
                         無効化
