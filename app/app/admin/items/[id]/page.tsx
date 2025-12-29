@@ -10,6 +10,8 @@ type GachaItem = {
   name: string;
   rarity: string;
   videoUrl: string;
+  imageUrl: string | null;
+  usageType: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -27,6 +29,11 @@ const RARITY_OPTIONS = [
   { value: 'LOSER', label: 'ハズレ' },
 ];
 
+const USAGE_TYPE_OPTIONS = [
+  { value: 'IMAGE', label: '画像' },
+  { value: 'SHOW_TO_STAFF', label: '見せて使用' },
+];
+
 export default function ItemEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -37,6 +44,8 @@ export default function ItemEditPage() {
   const [formData, setFormData] = useState<Partial<GachaItem>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchItem();
@@ -67,7 +76,7 @@ export default function ItemEditPage() {
       setFormData(data.item);
     } catch (error) {
       console.error('アイテム取得エラー:', error);
-      alert('アイテム詳細の取得に失敗しました');
+      setError('アイテム詳細の取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -178,7 +187,7 @@ export default function ItemEditPage() {
                 type="text"
                 value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               />
             </div>
 
@@ -187,7 +196,7 @@ export default function ItemEditPage() {
               <select
                 value={formData.rarity || 'FIRST_PRIZE'}
                 onChange={(e) => setFormData({ ...formData, rarity: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               >
                 {RARITY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -203,10 +212,100 @@ export default function ItemEditPage() {
                 type="text"
                 value={formData.videoUrl || ''}
                 onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 placeholder="https://..."
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">使用方法</label>
+              <select
+                value={formData.usageType || 'IMAGE'}
+                onChange={(e) => setFormData({ ...formData, usageType: e.target.value })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+              >
+                {USAGE_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {formData.usageType === 'IMAGE' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  使用画像
+                </label>
+                <p className="mb-2 text-xs text-gray-500">
+                  アイテム使用時に表示する画像をアップロードしてください
+                </p>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                />
+                {formData.imageUrl && (
+                  <div className="mt-2">
+                    <p className="mb-1 text-xs text-gray-600">現在の画像:</p>
+                    <img
+                      src={formData.imageUrl}
+                      alt="アイテム画像"
+                      className="h-32 w-32 rounded border border-gray-300 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, imageUrl: null })}
+                      className="mt-2 text-xs text-red-600 hover:text-red-800"
+                    >
+                      画像を削除
+                    </button>
+                  </div>
+                )}
+                {imageFile && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!imageFile || !id) return;
+                      try {
+                        setUploadingImage(true);
+                        const uploadFormData = new FormData();
+                        uploadFormData.append('file', imageFile);
+                        uploadFormData.append('itemId', id.toString());
+
+                        const authToken = getAdminAuthToken();
+                        const res = await fetch('/api/admin/items/upload-image', {
+                          method: 'POST',
+                          headers: {
+                            'X-Admin-Auth': authToken || '',
+                          },
+                          body: uploadFormData,
+                        });
+
+                        if (!res.ok) {
+                          const data = await res.json();
+                          throw new Error(data.error || 'アップロードに失敗しました');
+                        }
+
+                        const data = await res.json();
+                        setFormData({ ...formData, imageUrl: data.imageUrl });
+                        setImageFile(null);
+                        setSuccess('画像をアップロードしました');
+                      } catch (error) {
+                        console.error('画像アップロードエラー:', error);
+                        setError(error instanceof Error ? error.message : '画像のアップロードに失敗しました');
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
+                    disabled={uploadingImage}
+                    className="mt-2 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
+                  >
+                    {uploadingImage ? 'アップロード中...' : '画像をアップロード'}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="flex items-center gap-2">

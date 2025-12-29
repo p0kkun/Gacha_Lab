@@ -12,7 +12,10 @@ LINE 上で動作するガチャアプリケーションです。
 - [機能実装](./docs/04_機能実装.md)
 - [ローカル開発環境](./docs/05_ローカル開発環境.md)
 - [動作確認](./docs/06_動作確認.md)
-- [GitHub設定](./docs/07_GitHub設定.md)
+- [GitHub 設定](./docs/07_GitHub設定.md)
+- [AWS S3 動画アップロード設定手順](./docs/66_AWS_S3動画アップロード設定手順.md) ⭐ 新規
+- [AWS CloudFront 構築手順](./docs/70_AWS_CloudFront構築手順.md) ⭐ 新規
+- [ローカル S3 検証環境のセットアップ（LocalStack）](./docs/69_ローカルS3検証環境のセットアップ.md) ⭐ 新規
 
 ## 機能
 
@@ -32,10 +35,19 @@ npm install
 
 ### 2. 環境変数の設定
 
-`.env.local` ファイルを作成し、LIFF ID を設定してください：
+`.env.local` ファイルを作成し、必要な環境変数を設定してください：
 
 ```env
+# LINE LIFF
 NEXT_PUBLIC_LIFF_ID=your_liff_id_here
+
+# AWS S3（動画アップロード機能を使用する場合）
+# 開発環境と本番環境で異なるバケット名を使用することを推奨
+AWS_REGION=ap-northeast-1
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_S3_BUCKET_NAME=gacha-lab-test  # 開発環境: gacha-lab-test, 本番環境: gacha-lab-prod
+AWS_CLOUDFRONT_DOMAIN=your_cloudfront_domain  # オプション（CloudFrontを使用する場合）
 ```
 
 ### 3. 開発サーバーの起動
@@ -49,10 +61,10 @@ npm run dev
 別のターミナルで以下を実行：
 
 ```bash
-npx localtunnel --port 3000
+ngrok http 3000
 ```
 
-表示された URL（例: `https://xxxxx.loca.lt`）を LINE Developers コンソールの LIFF URL に設定してください。
+表示された URL（例: `https://xxxxx.ngrok-free.dev`）を LINE Developers コンソールの LIFF URL に設定してください。
 
 ## プロジェクト構成
 

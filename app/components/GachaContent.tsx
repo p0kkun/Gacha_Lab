@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GachaType } from './GachaModal';
 import VideoPlayer from './VideoPlayer';
+import MultiVideoPlayer from './MultiVideoPlayer';
 import HoldemGachaAnimation from './HoldemGachaAnimation';
 import { type Card } from '@/lib/pokerHand';
 
@@ -21,6 +22,7 @@ type GachaResult = {
     rarity: 'common' | 'rare' | 'epic';
     videoUrl: string;
   };
+  videoUrls?: string[]; // 新しい動画システム（複数動画対応）
   timestamp: string;
   pokerHand?: PokerHand;
 };
@@ -80,9 +82,24 @@ export default function GachaContent({
       const data = await response.json();
       setResult(data);
 
-      // ポイント残高を更新
-      if (data.pointsRemaining !== undefined && onPointsUpdated) {
-        onPointsUpdated(data.pointsRemaining);
+      // ポイント残高を更新（コールバックを呼び出して親コンポーネントに通知）
+      if (onPointsUpdated) {
+        // APIレスポンスにpointsRemainingが含まれている場合はそれを使用
+        // そうでない場合は、再度取得する必要があるが、ここではコールバックを呼び出すだけ
+        if (data.pointsRemaining !== undefined) {
+          onPointsUpdated(data.pointsRemaining);
+        } else {
+          // ポイント残高を再取得してからコールバックを呼び出す
+          try {
+            const balanceRes = await fetch(`/api/points/balance?userId=${userId}`);
+            if (balanceRes.ok) {
+              const balanceData = await balanceRes.json();
+              onPointsUpdated(balanceData.total);
+            }
+          } catch (error) {
+            console.error('ポイント残高取得エラー:', error);
+          }
+        }
       }
 
       // 通常ガチャはポーカー演出、プレミアムは動画演出
@@ -135,12 +152,24 @@ export default function GachaContent({
   }
 
   if (showVideo && result) {
+    // 新しい動画システム（複数動画対応）を使用
+    const videoUrls = result.videoUrls && result.videoUrls.length > 0
+      ? result.videoUrls
+      : [result.item.videoUrl]; // フォールバック
+
     return (
       <div className="fixed inset-0 z-[60] bg-black">
-        <VideoPlayer
-          videoUrl={result.item.videoUrl}
-          onEnd={handleVideoEnd}
-        />
+        {videoUrls.length > 1 ? (
+          <MultiVideoPlayer
+            videoUrls={videoUrls}
+            onEnd={handleVideoEnd}
+          />
+        ) : (
+          <VideoPlayer
+            videoUrl={videoUrls[0]}
+            onEnd={handleVideoEnd}
+          />
+        )}
       </div>
     );
   }
@@ -176,21 +205,33 @@ export default function GachaContent({
     >
       {/* ヘッダー - ポーカーテーブル風 */}
       {!showVideo && !showAnimation && (
-        <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 p-6 shadow-lg">
+        <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <div className="text-3xl">🂡</div>
-            <div>
-              <h1 className="text-3xl font-bold text-yellow-300 drop-shadow-lg">
+            {selectedGacha.iconImageUrl ? (
+              <GachaIconImage
+                src={selectedGacha.iconImageUrl}
+                alt={selectedGacha.name}
+                className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border-2 border-yellow-400"
+              />
+            ) : (
+              <div className="text-2xl flex-shrink-0">🂡</div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-yellow-300 drop-shadow-lg break-words">
                 {selectedGacha.name}
               </h1>
-              <p className="mt-1 text-sm text-green-200">{selectedGacha.description}</p>
+              {selectedGacha.description && (
+                <p className="mt-1 text-sm text-green-200 break-words leading-relaxed">
+                  {selectedGacha.description}
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
-      <div className={`flex-1 overflow-y-auto ${showVideo || showAnimation ? '' : 'p-8'}`}>
+      <div className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${showVideo || showAnimation ? '' : 'p-8'}`}>
         {!result && (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
@@ -201,15 +242,15 @@ export default function GachaContent({
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-green-800 shadow-xl ring-4 ring-yellow-400"></div>
               </div>
               
-              <p className="mb-4 text-2xl font-bold text-yellow-300 drop-shadow-lg">
+              <p className="mb-4 text-2xl font-bold text-yellow-300 drop-shadow-lg whitespace-nowrap">
                 🎰 ポーカー風ガチャ
               </p>
-              <p className="mb-2 text-lg text-green-200">
+              <p className="mb-2 text-lg text-green-200 break-words px-4">
                 カードを引いてアイテムを獲得しましょう！
               </p>
               {(selectedGacha.pointCost ?? 0) > 0 && (
-                <p className="text-lg font-semibold text-yellow-300">
-                  必要ポイント: {(selectedGacha.pointCost ?? 0).toLocaleString()}ポイント
+                <p className="text-lg font-semibold text-yellow-300 whitespace-nowrap">
+                  必要: ${(selectedGacha.pointCost ?? 0).toLocaleString()}
                 </p>
               )}
               
@@ -231,7 +272,7 @@ export default function GachaContent({
               🎉 獲得！
             </h3>
             <div className="text-center">
-              <div className={`mb-4 text-3xl font-bold drop-shadow-lg ${
+              <div className={`mb-4 text-2xl font-bold drop-shadow-lg break-words px-2 ${
                 result.item.rarity === 'epic' ? 'text-purple-400' :
                 result.item.rarity === 'rare' ? 'text-blue-400' :
                 'text-yellow-300'
@@ -258,33 +299,33 @@ export default function GachaContent({
 
       {/* フッター（ガチャを引くボタン） - ポーカー風 */}
       {!showVideo && !showAnimation && !showPayment && (
-        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 p-6 shadow-lg">
+        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
           <button
             onClick={handleDrawGacha}
             disabled={isDrawing}
-            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-8 py-5 text-xl font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
+            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
           >
             {/* 光るエフェクト */}
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
             
-            <span className="relative z-10 flex items-center justify-center gap-3">
+            <span className="relative z-10 flex items-center justify-center gap-2 flex-wrap">
               {isDrawing ? (
                 <>
                   <span className="animate-spin">🎰</span>
-                  <span>抽選中...</span>
+                  <span className="whitespace-nowrap">抽選中...</span>
                 </>
               ) : (
                 <>
-                  <span>🂡</span>
-                  <span>
+                  <span className="flex-shrink-0">🂡</span>
+                  <span className="whitespace-nowrap">
                     カードを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
-                      ` (${(selectedGacha.pointCost ?? 0).toLocaleString()}ポイント)`
+                      <span className="hidden sm:inline"> (${selectedGacha.pointCost.toLocaleString()})</span>
                     ) : (
-                      ' (無料)'
+                      <span className="hidden sm:inline"> (無料)</span>
                     )}
                   </span>
-                  <span>🂡</span>
+                  <span className="flex-shrink-0">🂡</span>
                 </>
               )}
             </span>

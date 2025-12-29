@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage, PostbackEvent } from '@line/bot-sdk';
+import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage, PostbackEvent, FollowEvent, UnfollowEvent } from '@line/bot-sdk';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { ReferralStatus } from '@prisma/client';
 
 // LINE Messaging APIの型定義（@line/bot-sdkに含まれていない型）
 type URIAction = {
@@ -314,9 +315,149 @@ async function handleWebhookEvent(
     return;
   }
 
+  // 友だち追加イベント（follow）を処理
+  if (event.type === 'follow') {
+    const followEvent = event as FollowEvent;
+    const userId = followEvent.source.userId;
+    
+    if (!userId) {
+      console.log('followイベントにuserIdがありません');
+      return;
+    }
+
+    console.log('友だち追加イベント受信:', { userId });
+
+    try {
+      // ユーザープロフィールを取得
+      const profile = await client.getProfile(userId);
+      
+      // ユーザーをDBに登録または更新
+      await prisma.user.upsert({
+        where: { userId },
+        update: {
+          displayName: profile.displayName || null,
+          pictureUrl: profile.pictureUrl || null,
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          displayName: profile.displayName || null,
+          pictureUrl: profile.pictureUrl || null,
+        },
+      });
+
+      console.log(`ユーザー登録/更新完了: ${userId}`);
+
+      // 紹介リンクの処理
+      // 注意: followイベントにはreferralLinkIdが直接含まれないため、
+      // セッションストレージやクッキーから取得する必要がある
+      // 簡易実装として、最近アクセスした紹介リンクを検索して処理
+      await processReferralOnFollow(userId, client);
+
+      // ウェルカムメッセージを送信
+      const welcomeMessage = `ようこそ！🎉\n\nガチャアプリへようこそ！\n\n🎰 ガチャを引いて景品をゲットしよう！\n💰 ポイントを購入してガチャを楽しもう！`;
+      await replyTextMessage(client, followEvent.replyToken, welcomeMessage);
+    } catch (error) {
+      console.error('友だち追加処理エラー:', error);
+    }
+    return;
+  }
+
+  // 友だち解除イベント（unfollow）を処理
+  if (event.type === 'unfollow') {
+    const unfollowEvent = event as UnfollowEvent;
+    const userId = unfollowEvent.source.userId;
+    
+    if (userId) {
+      console.log('友だち解除イベント受信:', { userId });
+      // 必要に応じてユーザーステータスを更新
+      // （現在は特に処理なし）
+    }
+    return;
+  }
+
   // その他のイベントタイプは無視
   console.log('未対応のイベントタイプ:', event.type);
 }
+
+/**
+ * 友だち追加時の紹介処理
+ */
+async function processReferralOnFollow(refereeId: string, client: Client) {
+  try {
+    const { completeReferral } = await import('@/lib/referral-management');
+    
+    // 最近アクセスした紹介リンクを検索（24時間以内）
+    const recentReferrals = await prisma.referralHistory.findMany({
+      where: {
+        status: ReferralStatus.PENDING,
+        expiresAt: { gte: new Date() },
+        referredAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24時間以内
+        },
+      },
+      orderBy: { referredAt: 'desc' },
+      take: 10, // 最近の10件をチェック
+    });
+
+    // 不正検知と紹介成立処理
+    for (const referral of recentReferrals) {
+      // 自己紹介チェック
+      if (referral.referrerId === refereeId) {
+        await prisma.referralHistory.update({
+          where: { id: referral.id },
+          data: {
+            status: ReferralStatus.FRAUD,
+            isFraudDetected: true,
+            fraudReason: '自己紹介が検出されました',
+            refereeId: refereeId,
+          },
+        });
+        continue;
+      }
+
+      // 既に同じ被紹介者で成立済みの紹介がないかチェック
+      const existingCompleted = await prisma.referralHistory.findFirst({
+        where: {
+          refereeId: refereeId,
+          status: ReferralStatus.COMPLETED,
+        },
+      });
+
+      if (existingCompleted) {
+        // 既に他の紹介者から紹介されている
+        await prisma.referralHistory.update({
+          where: { id: referral.id },
+          data: {
+            status: ReferralStatus.INVALID,
+            refereeId: refereeId,
+            fraudReason: '既に他の紹介者から紹介されています',
+          },
+        });
+        continue;
+      }
+
+      // 紹介成立処理
+      const { completeReferral } = await import('@/lib/referral-management');
+      await completeReferral(referral.id, refereeId);
+      
+      // 紹介成立通知を送信
+      try {
+        await client.pushMessage(referral.referrerId, {
+          type: 'text',
+          text: `🎉 友だち紹介が成立しました！\n\n紹介特典として100ポイントを付与しました。\n\n引き続きガチャをお楽しみください！`,
+        });
+      } catch (error) {
+        console.error('紹介成立通知送信エラー:', error);
+      }
+      
+      break; // 最初の有効な紹介のみ処理
+    }
+  } catch (error) {
+    console.error('紹介処理エラー:', error);
+  }
+}
+
 
 // POST: Webhookリクエストを受信
 export async function POST(request: NextRequest) {

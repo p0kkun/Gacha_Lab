@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 import { getAdminAuthToken } from '@/lib/admin-auth';
 
 type GachaItem = {
@@ -10,7 +11,9 @@ type GachaItem = {
   name: string;
   rarity: string;
   videoUrl: string;
+  imageUrl: string | null;
   gachaTypeId: string | null;
+  usageType: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -30,6 +33,11 @@ const RARITY_OPTIONS = [
   { value: 'LOSER', label: 'ハズレ' },
 ];
 
+const USAGE_TYPE_OPTIONS = [
+  { value: 'IMAGE', label: '画像' },
+  { value: 'SHOW_TO_STAFF', label: '見せて使用' },
+];
+
 export default function ItemsPage() {
   const [items, setItems] = useState<GachaItem[]>([]);
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
@@ -42,11 +50,19 @@ export default function ItemsPage() {
     name: '',
     rarity: 'FIRST_PRIZE',
     videoUrl: '',
+    imageUrl: null,
     gachaTypeId: null,
+    usageType: 'IMAGE',
     isActive: true,
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    itemId: number | null;
+  }>({ isOpen: false, itemId: null });
 
   useEffect(() => {
     fetchGachaTypes();
@@ -110,7 +126,7 @@ export default function ItemsPage() {
       setItems(data.items);
     } catch (error) {
       console.error('アイテム取得エラー:', error);
-      alert('アイテム一覧の取得に失敗しました');
+      setError('アイテム一覧の取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -144,15 +160,60 @@ export default function ItemsPage() {
         throw new Error(errorData.error || '作成に失敗しました');
       }
 
+      const data = await res.json();
       setSuccess('アイテムを作成しました');
+      
+      // 画像が選択されている場合はアップロード
+      if (imageFile && data.item?.id) {
+        try {
+          setUploadingImage(true);
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', imageFile);
+          uploadFormData.append('itemId', data.item.id.toString());
+
+          const uploadRes = await fetch('/api/admin/items/upload-image', {
+            method: 'POST',
+            headers: {
+              'X-Admin-Auth': authToken || '',
+            },
+            body: uploadFormData,
+          });
+
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            // アイテムを更新してimageUrlを設定
+            await fetch(`/api/admin/items/${data.item.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Auth': authToken || '',
+              },
+              body: JSON.stringify({
+                ...formData,
+                imageUrl: uploadData.imageUrl,
+              }),
+            });
+            setSuccess('アイテムを作成し、画像をアップロードしました');
+          }
+        } catch (error) {
+          console.error('画像アップロードエラー:', error);
+          setError('アイテムは作成されましたが、画像のアップロードに失敗しました');
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+      
       setShowCreateForm(false);
       setFormData({
         name: '',
         rarity: 'FIRST_PRIZE',
         videoUrl: '',
+        imageUrl: null,
         gachaTypeId: null,
+        usageType: 'IMAGE',
         isActive: true,
       });
+      setImageFile(null);
       await fetchItems();
     } catch (error) {
       console.error('作成エラー:', error);
@@ -160,10 +221,15 @@ export default function ItemsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('このアイテムを無効化しますか？')) {
-      return;
-    }
+  const handleDeleteClick = (id: number) => {
+    setDeleteConfirm({ isOpen: true, itemId: id });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirm.itemId) return;
+
+    const id = deleteConfirm.itemId;
+    setDeleteConfirm({ isOpen: false, itemId: null });
 
     try {
       const authToken = getAdminAuthToken();
@@ -188,7 +254,7 @@ export default function ItemsPage() {
       await fetchItems();
     } catch (error) {
       console.error('削除エラー:', error);
-      alert('削除に失敗しました');
+      setError('削除に失敗しました');
     }
   };
 
@@ -271,7 +337,7 @@ export default function ItemsPage() {
                   type="text"
                   value={formData.name || ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 />
               </div>
               <div>
@@ -314,10 +380,62 @@ export default function ItemsPage() {
                   type="text"
                   value={formData.videoUrl || ''}
                   onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                   placeholder="https://..."
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">使用方法</label>
+                <select
+                  value={formData.usageType || 'IMAGE'}
+                  onChange={(e) => setFormData({ ...formData, usageType: e.target.value })}
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                >
+                  {USAGE_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {formData.usageType === 'IMAGE' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    使用画像
+                  </label>
+                  <p className="mb-2 text-xs text-gray-500">
+                    アイテム使用時に表示する画像をアップロードしてください
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                  />
+                  {formData.imageUrl && (
+                    <div className="mt-2">
+                      <p className="mb-1 text-xs text-gray-600">現在の画像:</p>
+                      <img
+                        src={formData.imageUrl}
+                        alt="アイテム画像"
+                        className="h-32 w-32 rounded border border-gray-300 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, imageUrl: null })}
+                        className="mt-2 text-xs text-red-600 hover:text-red-800"
+                      >
+                        画像を削除
+                      </button>
+                    </div>
+                  )}
+                  {imageFile && (
+                    <p className="mt-2 text-xs text-gray-600">
+                      選択済み: {imageFile.name}（アイテム作成後にアップロードされます）
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="flex items-center gap-2">
                   <input
@@ -429,7 +547,7 @@ export default function ItemsPage() {
                           </Link>
                           {item.isActive && (
                             <button
-                              onClick={() => handleDelete(item.id)}
+                              onClick={() => handleDeleteClick(item.id)}
                               className="text-red-600 hover:underline"
                             >
                               無効化
@@ -500,6 +618,18 @@ export default function ItemsPage() {
             </div>
           </>
         )}
+
+        {/* 削除確認モーダル */}
+        <ConfirmModal
+          isOpen={deleteConfirm.isOpen}
+          title="アイテムの無効化"
+          message="このアイテムを無効化しますか？無効化されたアイテムはガチャで抽選されなくなります。"
+          confirmText="無効化"
+          cancelText="キャンセル"
+          variant="warning"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteConfirm({ isOpen: false, itemId: null })}
+        />
       </div>
     </AdminLayout>
   );

@@ -85,7 +85,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, rarity, videoUrl, gachaTypeId, isActive } = body;
+    const { name, rarity, videoUrl, imageUrl, gachaTypeId, usageType, isActive } = body;
 
     // バリデーション
     if (!name || !rarity) {
@@ -101,7 +101,9 @@ export async function PUT(
         name,
         rarity,
         videoUrl: videoUrl || '',
+        imageUrl: imageUrl || null,
         gachaTypeId: gachaTypeId || null,
+        usageType: usageType || 'IMAGE',
         isActive: isActive ?? true,
       },
     });

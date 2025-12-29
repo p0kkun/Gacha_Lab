@@ -133,6 +133,12 @@ export default function MyPage({ profile }: MyPageProps) {
             >
               マイアイテム
             </a>
+            <a
+              href="?action=referral"
+              className="block rounded-md bg-purple-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-purple-600"
+            >
+              友だち紹介
+            </a>
           </div>
         </div>
       </div>

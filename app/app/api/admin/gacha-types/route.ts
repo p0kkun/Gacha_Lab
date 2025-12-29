@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
       id,
       name,
       description,
+      iconImageUrl,
       isActive,
       startAt,
       endAt,
@@ -122,6 +123,13 @@ export async function POST(request: NextRequest) {
       thirdPrizeHands,
       fourthPrizeHands,
       fifthPrizeHands,
+      commonVideoIds,
+      rarityVideoIds,
+      prizeWeights,
+      prizeHands,
+      prizeOrder,
+      resultMessageTemplate,
+      useDefaultVideos,
     } = body;
 
     // バリデーション
@@ -147,6 +155,7 @@ export async function POST(request: NextRequest) {
       update: {
         name,
         description: description || null,
+        iconImageUrl: iconImageUrl || null,
         isActive: isActive ?? true,
         startAt: startAt ? new Date(startAt) : null,
         endAt: endAt ? new Date(endAt) : null,
@@ -162,11 +171,19 @@ export async function POST(request: NextRequest) {
         thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
         fourthPrizeHands: Array.isArray(fourthPrizeHands) ? fourthPrizeHands : [],
         fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
+        commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
+        rarityVideoIds: rarityVideoIds ? (typeof rarityVideoIds === 'string' ? JSON.parse(rarityVideoIds) : rarityVideoIds) : null,
+        prizeWeights: prizeWeights ? (typeof prizeWeights === 'string' ? JSON.parse(prizeWeights) : prizeWeights) : null,
+        prizeHands: prizeHands ? (typeof prizeHands === 'string' ? JSON.parse(prizeHands) : prizeHands) : null,
+        prizeOrder: prizeOrder ? (typeof prizeOrder === 'string' ? JSON.parse(prizeOrder) : prizeOrder) : null,
+        resultMessageTemplate: resultMessageTemplate || null,
+        useDefaultVideos: useDefaultVideos ?? true,
       },
       create: {
         id,
         name,
         description: description || null,
+        iconImageUrl: iconImageUrl || null,
         isActive: isActive ?? true,
         startAt: startAt ? new Date(startAt) : null,
         endAt: endAt ? new Date(endAt) : null,
@@ -182,6 +199,13 @@ export async function POST(request: NextRequest) {
         thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
         fourthPrizeHands: Array.isArray(fourthPrizeHands) ? fourthPrizeHands : [],
         fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
+        commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
+        rarityVideoIds: rarityVideoIds ? (typeof rarityVideoIds === 'string' ? JSON.parse(rarityVideoIds) : rarityVideoIds) : null,
+        prizeWeights: prizeWeights ? (typeof prizeWeights === 'string' ? JSON.parse(prizeWeights) : prizeWeights) : null,
+        prizeHands: prizeHands ? (typeof prizeHands === 'string' ? JSON.parse(prizeHands) : prizeHands) : null,
+        prizeOrder: prizeOrder ? (typeof prizeOrder === 'string' ? JSON.parse(prizeOrder) : prizeOrder) : null,
+        resultMessageTemplate: resultMessageTemplate || null,
+        useDefaultVideos: useDefaultVideos ?? true,
       },
     });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ItemDetail from './ItemDetail';
 
 type UserItem = {
   id: number;
@@ -8,6 +9,7 @@ type UserItem = {
     id: number;
     name: string;
     rarity: string;
+    usageType: string;
   };
   createdAt: string;
   usedAt: string | null;
@@ -20,6 +22,7 @@ type MyItemsProps = {
 export default function MyItems({ userId }: MyItemsProps) {
   const [items, setItems] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<UserItem | null>(null);
 
   useEffect(() => {
     fetchItems();
@@ -55,6 +58,23 @@ export default function MyItems({ userId }: MyItemsProps) {
   const activeItems = items.filter((item) => !item.usedAt);
   const usedItems = items.filter((item) => item.usedAt);
 
+  // アイテム詳細画面を表示中の場合
+  if (selectedItem) {
+    return (
+      <ItemDetail
+        userItem={selectedItem}
+        userId={userId}
+        onBack={() => {
+          setSelectedItem(null);
+          fetchItems(); // アイテム一覧を再取得
+        }}
+        onUse={() => {
+          fetchItems(); // アイテム一覧を再取得
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="mx-auto max-w-md">
@@ -88,7 +108,11 @@ export default function MyItems({ userId }: MyItemsProps) {
                 <h2 className="mb-3 text-lg font-semibold text-gray-800">使用可能</h2>
                 <div className="space-y-3">
                   {activeItems.map((userItem) => (
-                    <div key={userItem.id} className="rounded-lg bg-white p-4 shadow">
+                    <div
+                      key={userItem.id}
+                      className="cursor-pointer rounded-lg bg-white p-4 shadow transition-shadow hover:shadow-md"
+                      onClick={() => setSelectedItem(userItem)}
+                    >
                       <div className="mb-2 flex items-center justify-between">
                         <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
                           {getRarityLabel(userItem.item.rarity)}
@@ -114,7 +138,8 @@ export default function MyItems({ userId }: MyItemsProps) {
                   {usedItems.map((userItem) => (
                     <div
                       key={userItem.id}
-                      className="rounded-lg bg-gray-100 p-4 opacity-60"
+                      className="cursor-pointer rounded-lg bg-gray-100 p-4 opacity-60 transition-shadow hover:shadow-md"
+                      onClick={() => setSelectedItem(userItem)}
                     >
                       <div className="mb-2 flex items-center justify-between">
                         <span className="inline-flex rounded-full bg-gray-300 px-2 py-1 text-xs font-medium text-gray-600">

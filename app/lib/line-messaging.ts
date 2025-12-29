@@ -13,6 +13,58 @@ function getLineClient(): Client | null {
 }
 
 /**
+ * ガチャ結果メッセージテンプレートの変数を置換
+ */
+function replaceMessageTemplate(
+  template: string,
+  variables: {
+    itemName: string;
+    rarity: string;
+    rarityEmoji: string;
+    rarityLabel: string;
+    gachaTypeName: string;
+    handName?: string;
+    holeCards?: Array<{ suit: string; rank: string }>;
+    communityCards?: Array<{ suit: string; rank: string }>;
+  }
+): string {
+  let message = template;
+
+  // 基本変数
+  message = message.replace(/{itemName}/g, variables.itemName);
+  message = message.replace(/{rarity}/g, variables.rarityLabel);
+  message = message.replace(/{rarityEmoji}/g, variables.rarityEmoji);
+  message = message.replace(/{gachaTypeName}/g, variables.gachaTypeName);
+
+  // ポーカーハンド関連（役が設定されている場合のみ）
+  if (variables.handName) {
+    message = message.replace(/{handName}/g, variables.handName);
+  } else {
+    // 役が設定されていない場合は、役関連の変数を空文字に置換
+    message = message.replace(/{handName}/g, '');
+  }
+
+  // 手札とコミュニティカードは使用しない（常に空文字に置換）
+  message = message.replace(/{holeCards}/g, '');
+  message = message.replace(/{communityCards}/g, '');
+  
+  // 個別の手札カード変数を空文字に置換
+  for (let i = 1; i <= 2; i++) {
+    message = message.replace(new RegExp(`\\{holeCard${i}\\}`, 'g'), '');
+  }
+
+  // 個別のコミュニティカード変数を空文字に置換
+  for (let i = 1; i <= 5; i++) {
+    message = message.replace(
+      new RegExp(`\\{communityCard${i}\\}`, 'g'),
+      ''
+    );
+  }
+
+  return message;
+}
+
+/**
  * ガチャ結果をLINEトークに送信
  */
 export async function sendGachaResultMessage(
@@ -20,6 +72,7 @@ export async function sendGachaResultMessage(
   itemName: string,
   rarity: string,
   gachaTypeName: string,
+  messageTemplate?: string | null,
   pokerHand?: {
     handName: string;
     holeCards: Array<{ suit: string; rank: string }>;
@@ -45,26 +98,33 @@ export async function sendGachaResultMessage(
 
     const rarityData = rarityInfo[rarity] || { emoji: '🎁', label: rarity };
 
+    // デフォルトメッセージテンプレート
+    const DEFAULT_MESSAGE_TEMPLATE = `🎰 ガチャ結果
+
+{rarityEmoji} {itemName}
+レアリティ: {rarity}
+ガチャタイプ: {gachaTypeName}
+
+🃏 ポーカーハンド: {handName}
+
+おめでとうございます！🎉`;
+
     // メッセージ本文を作成
-    let messageText = `🎰 ガチャ結果\n\n`;
-    messageText += `${rarityData.emoji} ${itemName}\n`;
-    messageText += `レアリティ: ${rarityData.label}\n`;
-    messageText += `ガチャタイプ: ${gachaTypeName}\n\n`;
+    let messageText: string;
 
-    // ポーカーハンドがある場合は追加情報
-    if (pokerHand) {
-      messageText += `🃏 ポーカーハンド: ${pokerHand.handName}\n\n`;
-      messageText += `手札:\n`;
-      pokerHand.holeCards.forEach((card, index) => {
-        messageText += `  ${index + 1}. ${card.rank}${card.suit}\n`;
-      });
-      messageText += `\nコミュニティカード:\n`;
-      pokerHand.communityCards.forEach((card, index) => {
-        messageText += `  ${index + 1}. ${card.rank}${card.suit}\n`;
-      });
-    }
-
-    messageText += `\nおめでとうございます！🎉`;
+    // テンプレートが未設定の場合はデフォルトテンプレートを使用
+    const template = messageTemplate || DEFAULT_MESSAGE_TEMPLATE;
+    
+    messageText = replaceMessageTemplate(template, {
+      itemName,
+      rarity,
+      rarityEmoji: rarityData.emoji,
+      rarityLabel: rarityData.label,
+      gachaTypeName,
+      handName: pokerHand?.handName,
+      holeCards: pokerHand?.holeCards,
+      communityCards: pokerHand?.communityCards,
+    });
 
     const message: TextMessage = {
       type: 'text',
@@ -81,6 +141,49 @@ export async function sendGachaResultMessage(
     return { success: true };
   } catch (error: any) {
     console.error('ガチャ結果メッセージ送信エラー:', error);
+
+    // エラーの種類に応じて処理
+    if (error.statusCode === 404) {
+      // ユーザーが友だち追加を解除した
+      console.log(`ユーザー ${userId} は友だち追加されていません`);
+      return { success: false, error: 'not_following' };
+    } else if (error.statusCode === 429) {
+      // レート制限
+      console.log('レート制限に達しました');
+      return { success: false, error: 'rate_limit' };
+    } else {
+      return { success: false, error: 'unknown' };
+    }
+  }
+}
+
+/**
+ * 汎用メッセージ送信関数
+ */
+export async function sendMessage(
+  userId: string,
+  messageText: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getLineClient();
+    if (!client) {
+      console.error('LINEクライアントの初期化に失敗しました');
+      return { success: false, error: 'LINE client initialization failed' };
+    }
+
+    const message: TextMessage = {
+      type: 'text',
+      text: messageText,
+    };
+
+    await client.pushMessage(userId, [message]);
+    console.log('メッセージ送信成功:', {
+      userId: userId.substring(0, 10) + '...',
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('メッセージ送信エラー:', error);
 
     // エラーの種類に応じて処理
     if (error.statusCode === 404) {

@@ -15,10 +15,15 @@ export default function AdminLayout({
   const menuItems = [
     { href: "/admin", label: "ダッシュボード" },
     { href: "/admin/users", label: "ユーザー管理" },
+    { href: "/admin/tags", label: "タグ管理" },
+    { href: "/admin/messages", label: "メッセージ配信" },
+    { href: "/admin/points", label: "ポイント管理" },
     { href: "/admin/gacha-types", label: "ガチャ設定" },
     { href: "/admin/items", label: "アイテム設定" },
+    { href: "/admin/videos", label: "動画管理" },
     { href: "/admin/statistics", label: "統計・購入状況" },
     { href: "/admin/simulator", label: "ガチャシミュレータ" },
+    { href: "/admin/action-history", label: "操作履歴" },
   ];
 
   const handleLogout = () => {
@@ -104,7 +109,7 @@ export default function AdminLayout({
       {/* モバイルメニューのオーバーレイ */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-30 bg-white bg-opacity-70 backdrop-blur-sm lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}

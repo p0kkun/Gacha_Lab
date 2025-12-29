@@ -34,6 +34,7 @@ export default function SimulatorPage() {
   const [iterations, setIterations] = useState<number>(10000);
   const [result, setResult] = useState<SimulatorResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGachaTypes();
@@ -65,18 +66,19 @@ export default function SimulatorPage() {
       }
     } catch (error) {
       console.error('ガチャタイプ取得エラー:', error);
-      alert('ガチャタイプ一覧の取得に失敗しました');
+      setError('ガチャタイプ一覧の取得に失敗しました');
     }
   };
 
   const handleRun = async () => {
     if (!selectedGachaTypeId) {
-      alert('ガチャタイプを選択してください');
+      setError('ガチャタイプを選択してください');
       return;
     }
 
     setLoading(true);
     setResult(null);
+    setError(null);
 
     try {
       const authToken = getAdminAuthToken();
@@ -105,9 +107,10 @@ export default function SimulatorPage() {
 
       const data = await res.json();
       setResult(data);
+      setError(null);
     } catch (error) {
       console.error('シミュレータ実行エラー:', error);
-      alert(error instanceof Error ? error.message : 'シミュレータの実行に失敗しました');
+      setError(error instanceof Error ? error.message : 'シミュレータの実行に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -118,6 +121,12 @@ export default function SimulatorPage() {
       <div className="p-6">
         <h1 className="mb-6 text-2xl font-bold text-gray-800">ガチャシミュレータ</h1>
 
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+
         {/* 設定 */}
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold text-gray-800">シミュレーション設定</h2>
@@ -127,7 +136,7 @@ export default function SimulatorPage() {
               <select
                 value={selectedGachaTypeId}
                 onChange={(e) => setSelectedGachaTypeId(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               >
                 {gachaTypes.map((type) => (
                   <option key={type.id} value={type.id}>
@@ -142,7 +151,7 @@ export default function SimulatorPage() {
                 type="number"
                 value={iterations}
                 onChange={(e) => setIterations(parseInt(e.target.value) || 10000)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 min="100"
                 max="1000000"
                 step="100"

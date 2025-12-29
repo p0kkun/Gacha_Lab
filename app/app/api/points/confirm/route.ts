@@ -96,52 +96,29 @@ export async function POST(request: NextRequest) {
         historyId: existingHistory.id,
       });
       // 既に付与されている場合は、現在のポイント残高を返す
-      const user = await prisma.user.findUnique({
-        where: { userId },
-        select: { points: true },
-      });
+      const { getPointBalances } = await import('@/lib/point-management');
+      const balances = await getPointBalances(userId);
 
       return NextResponse.json({
         success: true,
         alreadyGranted: true,
-        points: user?.points || 0,
+        points: balances.total,
       });
     }
 
-    // トランザクション内でポイントを追加
-    const result = await prisma.$transaction(async (tx) => {
-      // ユーザーの現在のポイント残高を取得
-      const user = await tx.user.findUnique({
-        where: { userId },
-        select: { points: true },
-      });
+    // 有償ポイントを付与（有効期限は最終更新日から1年後）
+    const { grantPaidPoints, getPointBalances } = await import('@/lib/point-management');
+    await grantPaidPoints(
+      userId,
+      points,
+      null, // 有効期限は自動設定（最終更新日から1年後）
+      `${points}ポイント購入`,
+      paymentIntentId
+    );
 
-      if (!user) {
-        throw new Error('ユーザーが見つかりません');
-      }
-
-      const newBalance = user.points + points;
-
-      // ポイント残高を更新
-      await tx.user.update({
-        where: { userId },
-        data: { points: newBalance },
-      });
-
-      // ポイント履歴を記録
-      await tx.pointHistory.create({
-        data: {
-          userId,
-          transactionType: PointTransactionType.PURCHASE,
-          amount: points,
-          balanceAfter: newBalance,
-          description: `${points}ポイント購入`,
-          stripePaymentId: paymentIntentId,
-        },
-      });
-
-      return newBalance;
-    });
+    // 現在のポイント残高を取得
+    const balances = await getPointBalances(userId);
+    const result = balances.total;
 
     console.log(`ポイント付与成功: ユーザー ${userId} に ${points}ポイント付与`, {
       paymentIntentId,

@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
+import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
 import {
   Elements,
   PaymentElement,
@@ -335,6 +336,31 @@ function PointsPageContent() {
     (typeof POINT_PLANS)[0] | null
   >(null);
   const [points, setPoints] = useState<number | null>(null);
+  const [pointBalances, setPointBalances] = useState<{
+    paid: number;
+    free: number;
+    total: number;
+    paidExpiresAt: string | null;
+    freeExpiresAt: string | null;
+    lastUpdated: string | null;
+  } | null>(null);
+
+  // ポイント残高を更新するヘルパー関数
+  const updatePointBalances = async (userId: string) => {
+    const res = await fetch(`/api/points/balance?userId=${userId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setPoints(data.points);
+      setPointBalances({
+        paid: data.paid || 0,
+        free: data.free || 0,
+        total: data.total || 0,
+        paidExpiresAt: data.paidExpiresAt,
+        freeExpiresAt: data.freeExpiresAt,
+        lastUpdated: data.lastUpdated,
+      });
+    }
+  };
 
   useEffect(() => {
     const initialize = async () => {
@@ -356,13 +382,7 @@ function PointsPageContent() {
         setProfile(userProfile);
 
         // ポイント残高を取得
-        const res = await fetch(
-          `/api/points/balance?userId=${userProfile.userId}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setPoints(data.points);
-        }
+        await updatePointBalances(userProfile.userId);
       } catch (err) {
         console.error("初期化エラー:", err);
       } finally {
@@ -493,7 +513,7 @@ function PointsPageContent() {
 
                   // ポイントが増加していたら、決済が成功したと判断
                   if (data.points > previousPoints) {
-                    setPoints(data.points);
+                    await updatePointBalances(profile.userId);
                     setSelectedPlan(null);
                     alert(
                       `ポイント購入が完了しました！\n${points}ポイント → ${data.points}ポイント`
@@ -533,7 +553,7 @@ function PointsPageContent() {
                   if (confirmRes.ok) {
                     const confirmData = await confirmRes.json();
                     if (confirmData.success) {
-                      setPoints(confirmData.points);
+                      await updatePointBalances(profile.userId);
                       setSelectedPlan(null);
                       alert(
                         `ポイント購入が完了しました！\n${
@@ -555,13 +575,7 @@ function PointsPageContent() {
                 }
 
                 // フォールバック処理も失敗した場合
-                const res = await fetch(
-                  `/api/points/balance?userId=${profile.userId}`
-                );
-                if (res.ok) {
-                  const data = await res.json();
-                  setPoints(data.points);
-                }
+                await updatePointBalances(profile.userId);
                 alert(
                   "決済は成功しましたが、ポイントの反映に時間がかかっています。\nしばらくしてからページを更新してください。"
                 );
@@ -596,7 +610,7 @@ function PointsPageContent() {
                 });
 
                 if (data.points > previousPoints) {
-                  setPoints(data.points);
+                  await updatePointBalances(profile.userId);
                   setSelectedPlan(null);
                   alert(
                     `ポイント購入が完了しました！\n${previousPoints}ポイント → ${data.points}ポイント`
@@ -615,13 +629,7 @@ function PointsPageContent() {
               console.warn("Webhookの処理が完了していない可能性があります。");
               // successパラメータのみの場合は、PaymentIntent IDが取得できないため、
               // ユーザーにページを更新してもらう
-              const res = await fetch(
-                `/api/points/balance?userId=${profile.userId}`
-              );
-              if (res.ok) {
-                const data = await res.json();
-                setPoints(data.points);
-              }
+              await updatePointBalances(profile.userId);
               alert(
                 "決済は成功しましたが、ポイントの反映に時間がかかっています。\nページを更新してください。"
               );
@@ -668,9 +676,52 @@ function PointsPageContent() {
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
           <div className="text-center">
             <div className="mb-2 text-sm text-gray-500">現在のポイント</div>
-            <div className="text-3xl font-bold text-blue-600">
+            <div className="mb-4 text-3xl font-bold text-blue-600">
               {points !== null ? points.toLocaleString() : "-"}
             </div>
+            
+            {/* 有償/無償ポイントの詳細 */}
+            {pointBalances && (
+              <div className="mt-4 space-y-2 border-t pt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">有償ポイント</span>
+                  <span className="font-semibold text-gray-800">
+                    {pointBalances.paid.toLocaleString()}pt
+                  </span>
+                </div>
+                {pointBalances.paidExpiresAt && (
+                  <div className="text-xs text-gray-500">
+                    有効期限: {formatExpiryText(pointBalances.paidExpiresAt)}
+                    {formatExpiryDate(pointBalances.paidExpiresAt) && (
+                      <span className="ml-1">
+                        ({formatExpiryDate(pointBalances.paidExpiresAt)})
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">無償ポイント</span>
+                  <span className="font-semibold text-gray-800">
+                    {pointBalances.free.toLocaleString()}pt
+                  </span>
+                </div>
+                {pointBalances.freeExpiresAt && (
+                  <div className="text-xs text-gray-500">
+                    有効期限: {formatExpiryText(pointBalances.freeExpiresAt)}
+                    {formatExpiryDate(pointBalances.freeExpiresAt) && (
+                      <span className="ml-1">
+                        ({formatExpiryDate(pointBalances.freeExpiresAt)})
+                      </span>
+                    )}
+                  </div>
+                )}
+                {pointBalances.lastUpdated && (
+                  <div className="mt-2 text-xs text-gray-400">
+                    最終更新: {new Date(pointBalances.lastUpdated).toLocaleString('ja-JP')}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -705,8 +756,25 @@ function PointsPageContent() {
               setSelectedPlan(null);
             }}
             onCancel={() => setSelectedPlan(null)}
-            onPointsUpdated={(newPoints) => {
+            onPointsUpdated={async (newPoints) => {
               setPoints(newPoints);
+              // ポイント残高の詳細も再取得
+              if (profile) {
+                const res = await fetch(
+                  `/api/points/balance?userId=${profile.userId}`
+                );
+                if (res.ok) {
+                  const data = await res.json();
+                  setPointBalances({
+                    paid: data.paid || 0,
+                    free: data.free || 0,
+                    total: data.total || 0,
+                    paidExpiresAt: data.paidExpiresAt,
+                    freeExpiresAt: data.freeExpiresAt,
+                    lastUpdated: data.lastUpdated,
+                  });
+                }
+              }
             }}
           />
         )}

@@ -19,19 +19,18 @@ export async function GET(
             id: true,
             name: true,
             rarity: true,
+            usageType: true,
+            imageUrl: true,
           },
         },
       },
     });
 
-    // アイテム使用履歴を取得（将来的に実装）
-    // 現在は使用済みフラグがないため、ガチャ履歴から直接取得
-
     const items = histories.map((history) => ({
       id: history.id,
       item: history.item,
       createdAt: history.createdAt,
-      usedAt: null as string | null, // 将来的に実装
+      usedAt: history.usedAt ? history.usedAt.toISOString() : null,
     }));
 
     return NextResponse.json({

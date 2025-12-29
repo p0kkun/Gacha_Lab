@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getPointBalances } from '@/lib/point-management';
 
 /**
  * ユーザーのポイント残高を取得
@@ -17,9 +18,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // ユーザーが存在するか確認
     const user = await prisma.user.findUnique({
       where: { userId },
-      select: { points: true },
+      select: { userId: true },
     });
 
     if (!user) {
@@ -29,8 +31,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // ポイント残高を取得（有償/無償分離、有効期限考慮）
+    const balances = await getPointBalances(userId);
+
     return NextResponse.json({
-      points: user.points,
+      points: balances.total, // 後方互換性のため
+      paid: balances.paid,
+      free: balances.free,
+      total: balances.total,
+      paidExpiresAt: balances.paidExpiresAt,
+      freeExpiresAt: balances.freeExpiresAt,
+      lastUpdated: balances.lastUpdated,
     });
   } catch (error) {
     console.error('ポイント残高取得エラー:', error);

@@ -26,6 +26,7 @@ type Pagination = {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -77,7 +78,7 @@ export default function UsersPage() {
       setPagination(data.pagination);
     } catch (error) {
       console.error('ユーザー取得エラー:', error);
-      alert('ユーザー一覧の取得に失敗しました');
+      setError('ユーザー一覧の取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -87,6 +88,12 @@ export default function UsersPage() {
     <AdminLayout>
       <div>
         <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">ユーザー管理</h1>
+
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
 
         {/* 検索とソート */}
         <div className="mb-4 space-y-3">
@@ -99,7 +106,7 @@ export default function UsersPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="flex gap-2">
               <select
@@ -108,7 +115,7 @@ export default function UsersPage() {
                   setSortBy(e.target.value as 'createdAt' | 'displayName' | 'gachaCount');
                   setPage(1);
                 }}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
               >
                 <option value="createdAt">登録日時</option>
                 <option value="displayName">表示名</option>

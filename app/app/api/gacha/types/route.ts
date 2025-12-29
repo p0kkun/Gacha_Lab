@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         description: true,
+        iconImageUrl: true,
         pointCost: true,
         isActive: true,
         startAt: true,

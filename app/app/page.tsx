@@ -14,8 +14,10 @@ import MyPage from "@/components/MyPage";
 import GachaHistory from "@/components/GachaHistory";
 import MyItems from "@/components/MyItems";
 import HelpPage from "@/components/HelpPage";
+import Referral from "@/components/Referral";
+import PointDisplay from "@/components/PointDisplay";
 
-type ActivePage = "home" | "mypage" | "history" | "items" | "help";
+type ActivePage = "home" | "mypage" | "history" | "items" | "help" | "referral";
 
 function HomeContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
@@ -23,6 +25,14 @@ function HomeContent() {
   const [error, setError] = useState<string | null>(null);
   const [isGachaModalOpen, setIsGachaModalOpen] = useState(false);
   const [points, setPoints] = useState<number | null>(null);
+  const [pointBalances, setPointBalances] = useState<{
+    paid: number;
+    free: number;
+    total: number;
+    paidExpiresAt: string | null;
+    freeExpiresAt: string | null;
+    lastUpdated: string | null;
+  } | null>(null);
   const [activePage, setActivePage] = useState<ActivePage>("home");
   const searchParams = useSearchParams();
 
@@ -41,6 +51,8 @@ function HomeContent() {
       setActivePage("items");
     } else if (action === "help") {
       setActivePage("help");
+    } else if (action === "referral") {
+      setActivePage("referral");
     } else {
       setActivePage("home");
     }
@@ -85,6 +97,32 @@ function HomeContent() {
           console.error("ユーザー登録エラー:", error);
         }
 
+        // 紹介リンクの検証（URLパラメータにrefがある場合）
+        const urlParams = new URLSearchParams(window.location.search);
+        const referralLinkId = urlParams.get('ref');
+        if (referralLinkId) {
+          try {
+            const verifyRes = await fetch("/api/referral/verify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ referralLinkId }),
+            });
+
+            if (verifyRes.ok) {
+              const verifyData = await verifyRes.json();
+              if (verifyData.isValid) {
+                // セッションストレージに保存（友だち追加時に使用）
+                sessionStorage.setItem("referralLinkId", referralLinkId);
+                console.log("紹介リンクが適用されました");
+              }
+            }
+          } catch (error) {
+            console.error("紹介リンク検証エラー:", error);
+          }
+        }
+
         // ポイント残高を取得
         try {
           const res = await fetch(
@@ -93,6 +131,14 @@ function HomeContent() {
           if (res.ok) {
             const data = await res.json();
             setPoints(data.points);
+            setPointBalances({
+              paid: data.paid || 0,
+              free: data.free || 0,
+              total: data.total || 0,
+              paidExpiresAt: data.paidExpiresAt,
+              freeExpiresAt: data.freeExpiresAt,
+              lastUpdated: data.lastUpdated,
+            });
           }
         } catch (error) {
           console.error("ポイント残高取得エラー:", error);
@@ -142,6 +188,8 @@ function HomeContent() {
         return <MyItems userId={profile.userId} />;
       case "help":
         return <HelpPage />;
+      case "referral":
+        return <Referral userId={profile.userId} />;
       case "home":
       default:
         return (
@@ -173,10 +221,12 @@ function HomeContent() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-500">ポイント</div>
-                        <div className="text-xl font-bold text-blue-600">
-                          {points !== null ? points.toLocaleString() : "-"}
-                        </div>
+                        <PointDisplay
+                          pointBalances={pointBalances}
+                          displayMode="combined"
+                          showExpiry={false}
+                          size="medium"
+                        />
                       </div>
                     </div>
                   </div>
@@ -232,7 +282,17 @@ function HomeContent() {
             if (profile) {
               fetch(`/api/points/balance?userId=${profile.userId}`)
                 .then((res) => res.json())
-                .then((data) => setPoints(data.points))
+                .then((data) => {
+                  setPoints(data.points);
+                  setPointBalances({
+                    paid: data.paid || 0,
+                    free: data.free || 0,
+                    total: data.total || 0,
+                    paidExpiresAt: data.paidExpiresAt,
+                    freeExpiresAt: data.freeExpiresAt,
+                    lastUpdated: data.lastUpdated,
+                  });
+                })
                 .catch((error) =>
                   console.error("ポイント残高取得エラー:", error)
                 );

@@ -25,6 +25,9 @@ export default function AdminPage() {
     
     if (password === adminPassword) {
       sessionStorage.setItem('admin_authenticated', 'true');
+      // 管理者情報を保存（簡易的な実装）
+      sessionStorage.setItem('admin_user_id', 'admin');
+      sessionStorage.setItem('admin_name', '管理者');
       setIsAuthenticated(true);
       setError('');
     } else {
@@ -49,7 +52,7 @@ export default function AdminPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="パスワードを入力"
                 required
               />

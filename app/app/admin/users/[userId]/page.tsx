@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import AdminLayout from '@/components/admin/AdminLayout';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 import { getAdminAuthToken } from '@/lib/admin-auth';
 
 type GachaHistory = {
@@ -35,16 +36,38 @@ type UserDetail = {
   rarityStats: Record<string, number>;
 };
 
+type Tag = {
+  id: number;
+  name: string;
+  description: string | null;
+};
+
+type UserTag = {
+  id: number;
+  tag: Tag;
+  createdAt: string;
+};
+
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
 
   const [user, setUser] = useState<UserDetail | null>(null);
   const [gachaHistories, setGachaHistories] = useState<GachaHistory[]>([]);
+  const [userTags, setUserTags] = useState<UserTag[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteTagConfirm, setDeleteTagConfirm] = useState<{
+    isOpen: boolean;
+    tagId: number | null;
+  }>({ isOpen: false, tagId: null });
 
   useEffect(() => {
     fetchUserDetail();
+    fetchUserTags();
+    fetchAllTags();
   }, [userId]);
 
   const fetchUserDetail = async () => {
@@ -72,9 +95,119 @@ export default function UserDetailPage() {
       setGachaHistories(data.gachaHistories);
     } catch (error) {
       console.error('ユーザー詳細取得エラー:', error);
-      alert('ユーザー詳細の取得に失敗しました');
+      setError('ユーザー詳細の取得に失敗しました');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserTags = async () => {
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch(`/api/admin/users/${userId}/tags`, {
+        headers: {
+          'X-Admin-Auth': authToken || '',
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUserTags(data.userTags);
+      }
+    } catch (error) {
+      console.error('ユーザータグ取得エラー:', error);
+    }
+  };
+
+  const fetchAllTags = async () => {
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch('/api/admin/tags', {
+        headers: {
+          'X-Admin-Auth': authToken || '',
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAllTags(data.tags);
+      }
+    } catch (error) {
+      console.error('タグ一覧取得エラー:', error);
+    }
+  };
+
+  const handleAddTag = async (tagId: number) => {
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch(`/api/admin/users/${userId}/tags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Auth': authToken || '',
+        },
+        body: JSON.stringify({
+          tagId,
+          adminUserId: sessionStorage.getItem('admin_user_id') || null,
+          adminName: sessionStorage.getItem('admin_name') || null,
+        }),
+      });
+
+      if (res.status === 401) {
+        sessionStorage.removeItem('admin_authenticated');
+        window.location.href = '/admin';
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        setError(errorData.error || 'タグの付与に失敗しました');
+        return;
+      }
+
+      await fetchUserTags();
+      setShowTagModal(false);
+    } catch (error) {
+      console.error('タグ付与エラー:', error);
+      setError('タグの付与に失敗しました');
+    }
+  };
+
+  const handleRemoveTagClick = (tagId: number) => {
+    setDeleteTagConfirm({ isOpen: true, tagId });
+  };
+
+  const handleRemoveTag = async () => {
+    if (!deleteTagConfirm.tagId) return;
+
+    const tagId = deleteTagConfirm.tagId;
+    setDeleteTagConfirm({ isOpen: false, tagId: null });
+
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch(`/api/admin/users/${userId}/tags/${tagId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Auth': authToken || '',
+        },
+      });
+
+      if (res.status === 401) {
+        sessionStorage.removeItem('admin_authenticated');
+        window.location.href = '/admin';
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        setError(errorData.error || 'タグの削除に失敗しました');
+        return;
+      }
+
+      await fetchUserTags();
+    } catch (error) {
+      console.error('タグ削除エラー:', error);
+      setError('タグの削除に失敗しました');
     }
   };
 
@@ -177,6 +310,78 @@ export default function UserDetailPage() {
           </div>
         </div>
 
+        {/* タグ */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-800">タグ</h2>
+            <button
+              onClick={() => setShowTagModal(true)}
+              className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+            >
+              タグを追加
+            </button>
+          </div>
+          {userTags.length === 0 ? (
+            <div className="text-center text-gray-500">タグがありません</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {userTags.map((userTag) => (
+                <span
+                  key={userTag.id}
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
+                >
+                  {userTag.tag.name}
+                  <button
+                    onClick={() => handleRemoveTagClick(userTag.tag.id)}
+                    className="text-blue-600 hover:text-blue-900"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* タグ追加モーダル */}
+        {showTagModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">タグを追加</h3>
+              <div className="max-h-64 space-y-2 overflow-y-auto">
+                {allTags
+                  .filter((tag) => !userTags.some((ut) => ut.tag.id === tag.id))
+                  .map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => handleAddTag(tag.id)}
+                      className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-left transition-colors hover:bg-gray-50"
+                    >
+                      <div className="font-medium text-gray-900">{tag.name}</div>
+                      {tag.description && (
+                        <div className="text-sm text-gray-500">{tag.description}</div>
+                      )}
+                    </button>
+                  ))}
+                {allTags.filter((tag) => !userTags.some((ut) => ut.tag.id === tag.id))
+                  .length === 0 && (
+                  <div className="text-center text-gray-500">
+                    追加できるタグがありません
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setShowTagModal(false)}
+                  className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* レアリティ別統計 */}
         {Object.keys(user.rarityStats).length > 0 && (
           <div className="mb-6 rounded-lg bg-white p-6 shadow">
@@ -240,6 +445,18 @@ export default function UserDetailPage() {
             </div>
           )}
         </div>
+
+        {/* タグ削除確認モーダル */}
+        <ConfirmModal
+          isOpen={deleteTagConfirm.isOpen}
+          title="タグの削除"
+          message="このタグをユーザーから削除しますか？"
+          confirmText="削除"
+          cancelText="キャンセル"
+          variant="danger"
+          onConfirm={handleRemoveTag}
+          onCancel={() => setDeleteTagConfirm({ isOpen: false, tagId: null })}
+        />
       </div>
     </AdminLayout>
   );
