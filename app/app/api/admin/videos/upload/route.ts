@@ -116,8 +116,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('動画アップロードエラー:', error);
+    const errorMessage = error instanceof Error ? error.message : '動画のアップロードに失敗しました';
     return NextResponse.json(
-      { error: '動画のアップロードに失敗しました' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

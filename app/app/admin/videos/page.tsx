@@ -116,8 +116,27 @@ export default function VideosPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'アップロードに失敗しました');
+        let errorMessage = 'アップロードに失敗しました';
+        try {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+            errorMessage = data.error || errorMessage;
+          } else {
+            const text = await res.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          // JSONパースエラーの場合、ステータステキストを使用
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // 成功時もレスポンスを読み取る（必要に応じて）
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        await res.json(); // レスポンスを消費
       }
 
       // 成功
@@ -200,9 +219,26 @@ export default function VideosPage() {
       });
 
       if (!res.ok) {
-        throw new Error('デフォルト設定の取得に失敗しました');
+        let errorMessage = 'デフォルト設定の取得に失敗しました';
+        try {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+            errorMessage = data.error || errorMessage;
+          } else {
+            const text = await res.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('無効なレスポンス形式です');
+      }
       const data = await res.json();
       setDefaultSettings({
         id: data.settings.id,
@@ -242,8 +278,20 @@ export default function VideosPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || '保存に失敗しました');
+        let errorMessage = '保存に失敗しました';
+        try {
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+            errorMessage = data.error || errorMessage;
+          } else {
+            const text = await res.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();

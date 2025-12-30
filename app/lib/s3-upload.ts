@@ -51,7 +51,13 @@ export async function uploadFileToS3(
     CacheControl: 'max-age=31536000', // 1年間キャッシュ
   });
 
-  await s3Client.send(command);
+  try {
+    await s3Client.send(command);
+  } catch (error) {
+    console.error('S3アップロードエラー:', error);
+    const errorMessage = error instanceof Error ? error.message : 'S3へのアップロードに失敗しました';
+    throw new Error(`S3アップロードエラー: ${errorMessage}`);
+  }
 
   // URLを生成（LocalStackとAWSで異なる）
   let s3Url: string;
