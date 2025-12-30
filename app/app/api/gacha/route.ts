@@ -476,6 +476,7 @@ export async function POST(request: NextRequest) {
         // });
 
         // ポイント履歴を記録
+        const totalBalances = (freeBalance?.amount || 0) + (paidBalance?.amount || 0) - pointCost;
         await tx.pointHistory.create({
           data: {
             userId,
@@ -517,9 +518,9 @@ export async function POST(request: NextRequest) {
       pokerHand && pokerHand.handName
         ? {
             handName: pokerHand.handName,
-            // 手札とコミュニティカードは送信しない
-            holeCards: undefined,
-            communityCards: undefined,
+            // 手札とコミュニティカードは送信しない（空配列として送信）
+            holeCards: [],
+            communityCards: [],
           }
         : undefined
     ).catch((error) => {

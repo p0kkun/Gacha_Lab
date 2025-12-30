@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { getAdminAuthToken } from '@/lib/admin-auth';
-import { AdminActionType } from '@prisma/client';
+import type { AdminActionType } from '.prisma/client';
+import { AdminActionType as AdminActionTypeEnum } from '.prisma/client';
 
 type AdminActionHistory = {
   id: number;

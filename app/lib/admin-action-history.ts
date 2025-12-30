@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
-import { AdminActionType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { AdminActionType } from '.prisma/client';
+import { AdminActionType as AdminActionTypeEnum } from '.prisma/client';
 
 /**
  * 管理画面操作履歴を記録
@@ -11,7 +13,7 @@ export async function recordAdminAction(params: {
   targetUserId?: string;
   targetUserIds?: string[];
   description: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }) {
   try {
     await prisma.adminActionHistory.create({
@@ -20,9 +22,9 @@ export async function recordAdminAction(params: {
         adminUserId: params.adminUserId || null,
         adminName: params.adminName || null,
         targetUserId: params.targetUserId || null,
-        targetUserIds: params.targetUserIds && params.targetUserIds.length > 0 ? params.targetUserIds : null,
+        targetUserIds: params.targetUserIds && params.targetUserIds.length > 0 ? params.targetUserIds : Prisma.JsonNull,
         description: params.description,
-        metadata: params.metadata || null,
+        metadata: params.metadata ? (params.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     });
   } catch (error) {
@@ -43,7 +45,7 @@ export async function recordPointGrantAction(params: {
   description?: string;
 }) {
   await recordAdminAction({
-    actionType: AdminActionType.POINT_GRANT,
+    actionType: AdminActionTypeEnum.POINT_GRANT,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     targetUserIds: params.targetUserIds,
@@ -68,7 +70,7 @@ export async function recordMessageSendAction(params: {
   tagIds?: number[];
 }) {
   await recordAdminAction({
-    actionType: AdminActionType.MESSAGE_SEND,
+    actionType: AdminActionTypeEnum.MESSAGE_SEND,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     targetUserIds: params.targetUserIds,
@@ -93,7 +95,7 @@ export async function recordTagAssignAction(params: {
   isBulk: boolean;
 }) {
   await recordAdminAction({
-    actionType: params.isBulk ? AdminActionType.TAG_BULK_ASSIGN : AdminActionType.TAG_ASSIGN,
+    actionType: params.isBulk ? AdminActionTypeEnum.TAG_BULK_ASSIGN : AdminActionTypeEnum.TAG_ASSIGN,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     targetUserIds: params.targetUserIds,
@@ -119,7 +121,7 @@ export async function recordGachaProbabilityUpdateAction(params: {
   newProbabilities: Record<string, number>;
 }) {
   await recordAdminAction({
-    actionType: AdminActionType.GACHA_PROBABILITY_UPDATE,
+    actionType: AdminActionTypeEnum.GACHA_PROBABILITY_UPDATE,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `ガチャタイプ「${params.gachaTypeName}」の確率を変更`,
@@ -149,7 +151,7 @@ export async function recordVideoUploadAction(params: {
     ? `（${params.rarity}）`
     : '';
   await recordAdminAction({
-    actionType: AdminActionType.VIDEO_UPLOAD,
+    actionType: AdminActionTypeEnum.VIDEO_UPLOAD,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `動画をアップロード: ${params.videoType}${rarityLabel} - ${params.fileName}`,
@@ -174,13 +176,13 @@ export async function recordVideoUpdateAction(params: {
   videoType: string;
   rarity?: string | null;
   fileName: string;
-  changes: Record<string, any>;
+  changes: Record<string, unknown>;
 }) {
   const rarityLabel = params.rarity 
     ? `（${params.rarity}）`
     : '';
   await recordAdminAction({
-    actionType: AdminActionType.VIDEO_UPDATE,
+    actionType: AdminActionTypeEnum.VIDEO_UPDATE,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `動画を更新: ${params.videoType}${rarityLabel} - ${params.fileName}`,
@@ -209,7 +211,7 @@ export async function recordVideoDeleteAction(params: {
     ? `（${params.rarity}）`
     : '';
   await recordAdminAction({
-    actionType: AdminActionType.VIDEO_DELETE,
+    actionType: AdminActionTypeEnum.VIDEO_DELETE,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `動画を削除: ${params.videoType}${rarityLabel} - ${params.fileName}`,

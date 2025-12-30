@@ -41,7 +41,7 @@ export async function uploadFileToS3(
   }
 
   const fileBuffer = file instanceof File ? await file.arrayBuffer() : file;
-  const buffer = Buffer.from(fileBuffer);
+  const buffer = Buffer.from(fileBuffer instanceof ArrayBuffer ? new Uint8Array(fileBuffer) : fileBuffer);
 
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,

@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
         description: description || null,
         isActive: true,
         displayOrder: 0,
+        updatedAt: new Date(),
       },
     });
 

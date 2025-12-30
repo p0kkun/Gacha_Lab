@@ -208,10 +208,14 @@ export default function GachaContent({
         <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
           <div className="flex items-center gap-3">
             {selectedGacha.iconImageUrl ? (
-              <GachaIconImage
+              <img
                 src={selectedGacha.iconImageUrl}
                 alt={selectedGacha.name}
                 className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border-2 border-yellow-400"
+                onError={(e) => {
+                  // 画像読み込みエラー時は非表示
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
               />
             ) : (
               <div className="text-2xl flex-shrink-0">🂡</div>
@@ -320,7 +324,7 @@ export default function GachaContent({
                   <span className="whitespace-nowrap">
                     カードを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
-                      <span className="hidden sm:inline"> (${selectedGacha.pointCost.toLocaleString()})</span>
+                      <span className="hidden sm:inline"> (${(selectedGacha.pointCost ?? 0).toLocaleString()})</span>
                     ) : (
                       <span className="hidden sm:inline"> (無料)</span>
                     )}

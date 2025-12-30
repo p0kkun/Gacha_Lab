@@ -10,6 +10,7 @@ type UserItem = {
     name: string;
     rarity: string;
     usageType: string;
+    imageUrl: string | null;
   };
   createdAt: string;
   usedAt: string | null;

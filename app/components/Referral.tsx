@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getProfile, type LiffProfile } from '@line/liff';
+import liff from '@line/liff';
+
+type LiffProfile = {
+  userId: string;
+  displayName: string;
+  pictureUrl?: string;
+  statusMessage?: string;
+};
 import QRCode from 'qrcode';
 
 type ReferralHistory = {

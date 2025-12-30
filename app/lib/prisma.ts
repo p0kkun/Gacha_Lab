@@ -143,6 +143,6 @@ if (!globalForPrisma.prisma) {
   }
 }
 
-export const prisma = globalForPrisma.prisma;
+export const prisma = globalForPrisma.prisma!;
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

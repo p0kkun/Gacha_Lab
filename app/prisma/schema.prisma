@@ -287,7 +287,7 @@ model Tag {
   name        String      @unique
   description String?
   createdAt   DateTime    @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime    @updatedAt
   userTags    UserTag[]
 
   @@index([name])

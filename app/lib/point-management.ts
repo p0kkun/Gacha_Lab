@@ -106,6 +106,7 @@ export async function grantPaidPoints(
     // });
 
     // ポイント履歴を記録
+    const totalBalances = await getTotalBalances(tx, userId);
     await tx.pointHistory.create({
       data: {
         userId,
@@ -186,6 +187,7 @@ export async function grantFreePoints(
     // });
 
     // ポイント履歴を記録
+    const totalBalances = await getTotalBalances(tx, userId);
     await tx.pointHistory.create({
       data: {
         userId,
@@ -302,6 +304,7 @@ export async function consumePoints(
     // });
 
     // ポイント履歴を記録
+    const totalBalances = await getTotalBalances(tx, userId);
     await tx.pointHistory.create({
       data: {
         userId,
