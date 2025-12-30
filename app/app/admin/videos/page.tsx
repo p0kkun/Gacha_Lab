@@ -96,57 +96,78 @@ export default function VideosPage() {
       setUploading(true);
       setError(null);
 
-      const formData = new FormData();
-      formData.append('file', uploadFile);
-      formData.append('videoType', selectedVideoType);
-      if (selectedVideoType === 'RARITY') {
-        formData.append('rarity', selectedRarity);
-      }
-      if (description) {
-        formData.append('description', description);
-      }
-
       const token = getAdminAuthToken();
-      const res = await fetch('/api/admin/videos/upload', {
+
+      // ステップ1: Presigned URLを取得
+      const presignedRes = await fetch('/api/admin/videos/presigned-url', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'X-Admin-Auth': token || '',
         },
-        body: formData,
+        body: JSON.stringify({
+          fileName: uploadFile.name,
+          videoType: selectedVideoType,
+          rarity: selectedVideoType === 'RARITY' ? selectedRarity : null,
+          contentType: uploadFile.type,
+          fileSize: uploadFile.size,
+        }),
       });
 
-      if (!res.ok) {
-        let errorMessage = 'アップロードに失敗しました';
-        let errorDetails = '';
-        try {
-          const contentType = res.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await res.json();
-            errorMessage = data.error || errorMessage;
-            errorDetails = data.details || data.message || '';
-          } else {
-            const text = await res.text();
-            errorMessage = text || errorMessage;
-            errorDetails = text;
-          }
-        } catch (parseError) {
-          // JSONパースエラーの場合、ステータステキストを使用
-          errorMessage = res.statusText || errorMessage;
-          errorDetails = `ステータス: ${res.status} ${res.statusText}`;
-        }
-        console.error('動画アップロードエラー:', {
-          status: res.status,
-          statusText: res.statusText,
-          error: errorMessage,
-          details: errorDetails,
-        });
-        throw new Error(errorMessage + (errorDetails ? ` (詳細: ${errorDetails})` : ''));
+      if (!presignedRes.ok) {
+        const errorData = await presignedRes.json().catch(() => ({ error: 'Presigned URLの取得に失敗しました' }));
+        throw new Error(errorData.error || 'Presigned URLの取得に失敗しました');
       }
 
-      // 成功時もレスポンスを読み取る（必要に応じて）
-      const contentType = res.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        await res.json(); // レスポンスを消費
+      const { presignedUrl, s3Key } = await presignedRes.json();
+
+      // ステップ2: 直接S3にアップロード
+      let uploadRes: Response;
+      try {
+        uploadRes = await fetch(presignedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': uploadFile.type,
+          },
+          body: uploadFile,
+        });
+      } catch (fetchError) {
+        console.error('S3アップロードエラー（fetch）:', fetchError);
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'S3へのアップロードに失敗しました';
+        throw new Error(`S3へのアップロードに失敗しました: ${errorMessage}`);
+      }
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text().catch(() => uploadRes.statusText);
+        console.error('S3アップロードエラー:', {
+          status: uploadRes.status,
+          statusText: uploadRes.statusText,
+          errorText,
+          presignedUrl: presignedUrl.substring(0, 100) + '...', // URLの最初の100文字のみログ
+        });
+        throw new Error(`S3へのアップロードに失敗しました: ${uploadRes.status} ${uploadRes.statusText} - ${errorText}`);
+      }
+
+      // ステップ3: DBに登録
+      const registerRes = await fetch('/api/admin/videos/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Auth': token || '',
+        },
+        body: JSON.stringify({
+          s3Key,
+          fileName: uploadFile.name,
+          fileSize: uploadFile.size,
+          videoType: selectedVideoType,
+          rarity: selectedVideoType === 'RARITY' ? selectedRarity : null,
+          description: description || null,
+        }),
+      });
+
+      if (!registerRes.ok) {
+        const errorData = await registerRes.json().catch(() => ({ error: '動画の登録に失敗しました' }));
+        throw new Error(errorData.error || '動画の登録に失敗しました');
       }
 
       // 成功

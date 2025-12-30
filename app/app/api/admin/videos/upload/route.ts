@@ -1,47 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminAuth } from '@/lib/admin-auth';
-import { uploadVideoToS3, generateS3Key } from '@/lib/s3-upload';
-import { prisma } from '@/lib/prisma';
-import { GachaVideoType, Rarity } from '@prisma/client';
-import { recordVideoUploadAction } from '@/lib/admin-action-history';
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth } from "@/lib/admin-auth";
+import { uploadVideoToS3, generateS3Key } from "@/lib/s3-upload";
+import { prisma } from "@/lib/prisma";
+import type { GachaVideoType, Rarity } from ".prisma/client";
+import { recordVideoUploadAction } from "@/lib/admin-action-history";
 
 /**
  * 動画ファイルをS3にアップロードし、DBに登録
  * POST /api/admin/videos/upload
+ *
+ * 注意: AWS Amplifyのリクエストサイズ制限（約4MB）を超える場合は、
+ * Presigned URL方式の実装を検討してください。
  */
 export async function POST(request: NextRequest) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const videoType = formData.get('videoType') as string;
-    const rarity = formData.get('rarity') as string | null;
-    const description = formData.get('description') as string | null;
+    const file = formData.get("file") as File;
+    const videoType = formData.get("videoType") as string;
+    const rarity = formData.get("rarity") as string | null;
+    const description = formData.get("description") as string | null;
 
     if (!file) {
       return NextResponse.json(
-        { error: 'ファイルが指定されていません' },
+        { error: "ファイルが指定されていません" },
         { status: 400 }
       );
     }
 
-    if (!videoType || (videoType !== 'COMMON' && videoType !== 'RARITY')) {
+    if (!videoType || (videoType !== "COMMON" && videoType !== "RARITY")) {
       return NextResponse.json(
-        { error: '動画タイプが不正です' },
+        { error: "動画タイプが不正です" },
         { status: 400 }
       );
     }
 
-    if (videoType === 'RARITY' && !rarity) {
+    if (videoType === "RARITY" && !rarity) {
       return NextResponse.json(
-        { error: '等級別動画の場合は等級を指定してください' },
+        { error: "等級別動画の場合は等級を指定してください" },
         { status: 400 }
       );
     }
@@ -50,24 +50,27 @@ export async function POST(request: NextRequest) {
     const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'ファイルサイズが100MBを超えています' },
+        { error: "ファイルサイズが100MBを超えています" },
         { status: 400 }
       );
     }
 
     // ファイルタイプチェック
-    const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const allowedTypes = ["video/mp4", "video/webm", "video/quicktime"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'サポートされていないファイル形式です。MP4、WebM、MOVのみ対応しています' },
+        {
+          error:
+            "サポートされていないファイル形式です。MP4、WebM、MOVのみ対応しています",
+        },
         { status: 400 }
       );
     }
 
     // S3キーを生成（動画ファイルとして）
     const s3Key = generateS3Key(
-      'video',
-      videoType as 'COMMON' | 'RARITY',
+      "video",
+      videoType as "COMMON" | "RARITY",
       rarity,
       file.name
     );
@@ -115,24 +118,27 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('動画アップロードエラー:', error);
-    const errorMessage = error instanceof Error ? error.message : '動画のアップロードに失敗しました';
+    console.error("動画アップロードエラー:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "動画のアップロードに失敗しました";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-    
+
     // エラーの詳細をログに記録（本番環境でも確認できるように）
-    console.error('動画アップロードエラー詳細:', {
+    console.error("動画アップロードエラー詳細:", {
       message: errorMessage,
       details: errorDetails,
       errorType: error instanceof Error ? error.constructor.name : typeof error,
     });
-    
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+        details:
+          process.env.NODE_ENV === "development" ? errorDetails : undefined,
       },
       { status: 500 }
     );
   }
 }
-

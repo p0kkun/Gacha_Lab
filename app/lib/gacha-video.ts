@@ -1,5 +1,6 @@
-import { prisma } from '@/lib/prisma';
-import { Rarity, GachaVideoType } from '@prisma/client';
+import { prisma } from "@/lib/prisma";
+import type { Rarity } from ".prisma/client";
+import { Rarity as RarityEnum } from ".prisma/client";
 
 /**
  * ガチャタイプの動画設定に基づいて動画を選択
@@ -12,14 +13,9 @@ export async function getGachaVideoUrls(
   gachaTypeId: string,
   itemRarity: Rarity
 ): Promise<string[]> {
-  // ガチャタイプを取得
+  // ガチャタイプを取得（全フィールドを取得）
   const gachaType = await prisma.gachaType.findUnique({
     where: { id: gachaTypeId },
-    select: {
-      useDefaultVideos: true,
-      commonVideoIds: true,
-      rarityVideoIds: true,
-    },
   });
 
   if (!gachaType) {
@@ -32,23 +28,27 @@ export async function getGachaVideoUrls(
   let rarityVideoIdsObj: Record<string, number[]> | null = null;
 
   // 動画設定の取得（個別設定 or デフォルト設定）
-  if (gachaType.useDefaultVideos === false && gachaType.commonVideoIds && gachaType.commonVideoIds.length > 0) {
+  if (
+    gachaType.useDefaultVideos === false &&
+    gachaType.commonVideoIds &&
+    gachaType.commonVideoIds.length > 0
+  ) {
     // 個別設定を使用
     commonVideoIds = gachaType.commonVideoIds;
     if (gachaType.rarityVideoIds) {
       try {
         rarityVideoIdsObj =
-          typeof gachaType.rarityVideoIds === 'string'
+          typeof gachaType.rarityVideoIds === "string"
             ? JSON.parse(gachaType.rarityVideoIds)
             : (gachaType.rarityVideoIds as Record<string, number[]>);
       } catch (error) {
-        console.error('等級別動画IDの解析エラー:', error);
+        console.error("等級別動画IDの解析エラー:", error);
       }
     }
   } else {
     // デフォルト設定を使用
     const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (defaultSettings) {
@@ -56,11 +56,11 @@ export async function getGachaVideoUrls(
       if (defaultSettings.rarityVideoIds) {
         try {
           rarityVideoIdsObj =
-            typeof defaultSettings.rarityVideoIds === 'string'
+            typeof defaultSettings.rarityVideoIds === "string"
               ? JSON.parse(defaultSettings.rarityVideoIds)
               : (defaultSettings.rarityVideoIds as Record<string, number[]>);
         } catch (error) {
-          console.error('デフォルト等級別動画IDの解析エラー:', error);
+          console.error("デフォルト等級別動画IDの解析エラー:", error);
         }
       }
     }
@@ -84,7 +84,7 @@ export async function getGachaVideoUrls(
   }
 
   // 2. 等級別動画を取得（あたりの場合のみ）
-  if (itemRarity !== Rarity.LOSER && rarityVideoIdsObj) {
+  if (itemRarity !== RarityEnum.LOSER && rarityVideoIdsObj) {
     const rarityKey = itemRarity as string;
     const rarityVideoIds: number[] = rarityVideoIdsObj[rarityKey] || [];
 
@@ -107,4 +107,3 @@ export async function getGachaVideoUrls(
 
   return urls;
 }
-

@@ -206,3 +206,35 @@ export function generateItemImageS3Key(
   return `images/items/${itemId}/${timestamp}_${sanitizedFileName}`;
 }
 
+/**
+ * S3へのPresigned URLを生成（直接アップロード用）
+ * @param key S3キー
+ * @param contentType コンテンツタイプ
+ * @param expiresIn 有効期限（秒、デフォルト: 1時間）
+ */
+export async function generatePresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  if (!BUCKET_NAME) {
+    throw new Error('S3_BUCKET_NAMEまたはAWS_S3_BUCKET_NAME環境変数が設定されていません');
+  }
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+    CacheControl: 'max-age=31536000', // 1年間キャッシュ
+  });
+
+  try {
+    const url = await getSignedUrl(s3Client, command, { expiresIn });
+    return url;
+  } catch (error) {
+    console.error('Presigned URL生成エラー:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Presigned URLの生成に失敗しました';
+    throw new Error(`Presigned URL生成エラー: ${errorMessage}`);
+  }
+}
+
