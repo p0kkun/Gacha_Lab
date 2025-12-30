@@ -117,8 +117,20 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('動画アップロードエラー:', error);
     const errorMessage = error instanceof Error ? error.message : '動画のアップロードに失敗しました';
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    
+    // エラーの詳細をログに記録（本番環境でも確認できるように）
+    console.error('動画アップロードエラー詳細:', {
+      message: errorMessage,
+      details: errorDetails,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+    });
+    
     return NextResponse.json(
-      { error: errorMessage },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+      },
       { status: 500 }
     );
   }

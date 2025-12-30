@@ -37,8 +37,25 @@ export async function uploadFileToS3(
   contentType: string
 ): Promise<{ s3Key: string; s3Url: string }> {
   if (!BUCKET_NAME) {
+    console.error('S3環境変数チェック:', {
+      S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
+      AWS_S3_BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME,
+      BUCKET_NAME,
+    });
     throw new Error('S3_BUCKET_NAMEまたはAWS_S3_BUCKET_NAME環境変数が設定されていません');
   }
+  
+  // 環境変数の確認（デバッグ用）
+  console.log('S3アップロード設定:', {
+    bucket: BUCKET_NAME,
+    region: process.env.S3_REGION || process.env.AWS_REGION || 'ap-northeast-1',
+    useLocalStack: USE_LOCALSTACK,
+    hasAccessKey: !!(process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID),
+    hasSecretKey: !!(process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY),
+    cloudfrontDomain: CLOUDFRONT_DOMAIN,
+    key,
+    contentType,
+  });
 
   const fileBuffer = file instanceof File ? await file.arrayBuffer() : file;
   const buffer = Buffer.from(fileBuffer instanceof ArrayBuffer ? new Uint8Array(fileBuffer) : fileBuffer);
@@ -56,7 +73,20 @@ export async function uploadFileToS3(
   } catch (error) {
     console.error('S3アップロードエラー:', error);
     const errorMessage = error instanceof Error ? error.message : 'S3へのアップロードに失敗しました';
-    throw new Error(`S3アップロードエラー: ${errorMessage}`);
+    const errorCode = (error as any)?.$metadata?.httpStatusCode || (error as any)?.code || 'UNKNOWN';
+    const errorName = (error as any)?.name || 'Error';
+    
+    console.error('S3アップロードエラー詳細:', {
+      name: errorName,
+      code: errorCode,
+      message: errorMessage,
+      bucket: BUCKET_NAME,
+      key: key,
+      region: process.env.S3_REGION || process.env.AWS_REGION || 'ap-northeast-1',
+      useLocalStack: USE_LOCALSTACK,
+    });
+    
+    throw new Error(`S3アップロードエラー [${errorName}: ${errorCode}]: ${errorMessage}`);
   }
 
   // URLを生成（LocalStackとAWSで異なる）

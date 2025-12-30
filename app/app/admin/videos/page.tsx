@@ -117,20 +117,30 @@ export default function VideosPage() {
 
       if (!res.ok) {
         let errorMessage = 'アップロードに失敗しました';
+        let errorDetails = '';
         try {
           const contentType = res.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await res.json();
             errorMessage = data.error || errorMessage;
+            errorDetails = data.details || data.message || '';
           } else {
             const text = await res.text();
             errorMessage = text || errorMessage;
+            errorDetails = text;
           }
         } catch (parseError) {
           // JSONパースエラーの場合、ステータステキストを使用
           errorMessage = res.statusText || errorMessage;
+          errorDetails = `ステータス: ${res.status} ${res.statusText}`;
         }
-        throw new Error(errorMessage);
+        console.error('動画アップロードエラー:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorMessage,
+          details: errorDetails,
+        });
+        throw new Error(errorMessage + (errorDetails ? ` (詳細: ${errorDetails})` : ''));
       }
 
       // 成功時もレスポンスを読み取る（必要に応じて）
