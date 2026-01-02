@@ -65,8 +65,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { commonVideoIds, rarityVideoIds } = body;
 
+    console.log('[デフォルト設定保存] リクエスト受信:', {
+      commonVideoIds: commonVideoIds?.length || 0,
+      rarityVideoIds: rarityVideoIds ? Object.keys(rarityVideoIds).length : 0,
+    });
+
     // バリデーション
     if (!Array.isArray(commonVideoIds)) {
+      console.error('[デフォルト設定保存] バリデーションエラー: commonVideoIdsが配列ではありません');
       return NextResponse.json(
         { error: 'commonVideoIdsは配列である必要があります' },
         { status: 400 }
@@ -79,6 +85,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingSettings) {
+      console.log('[デフォルト設定保存] 既存設定を更新:', existingSettings.id);
       // 既存の設定を更新
       const updated = await prisma.defaultGachaVideoSettings.update({
         where: { id: existingSettings.id },
@@ -86,6 +93,12 @@ export async function POST(request: NextRequest) {
           commonVideoIds: commonVideoIds || [],
           rarityVideoIds: rarityVideoIds || null,
         },
+      });
+
+      console.log('[デフォルト設定保存] 更新成功:', {
+        id: updated.id,
+        commonVideoIds: updated.commonVideoIds?.length || 0,
+        rarityVideoIds: updated.rarityVideoIds ? Object.keys(updated.rarityVideoIds as Record<string, number[]>).length : 0,
       });
 
       return NextResponse.json({
@@ -97,12 +110,19 @@ export async function POST(request: NextRequest) {
         },
       });
     } else {
+      console.log('[デフォルト設定保存] 新規作成');
       // 新規作成
       const created = await prisma.defaultGachaVideoSettings.create({
         data: {
           commonVideoIds: commonVideoIds || [],
           rarityVideoIds: rarityVideoIds || null,
         },
+      });
+
+      console.log('[デフォルト設定保存] 作成成功:', {
+        id: created.id,
+        commonVideoIds: created.commonVideoIds?.length || 0,
+        rarityVideoIds: created.rarityVideoIds ? Object.keys(created.rarityVideoIds as Record<string, number[]>).length : 0,
       });
 
       return NextResponse.json({
@@ -115,7 +135,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('デフォルト動画設定更新エラー:', error);
+    console.error('[デフォルト設定保存] エラー:', error);
     return NextResponse.json(
       { error: 'デフォルト動画設定の更新に失敗しました' },
       { status: 500 }

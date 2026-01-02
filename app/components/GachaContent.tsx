@@ -1,30 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GachaType } from './GachaModal';
-import VideoPlayer from './VideoPlayer';
 import MultiVideoPlayer from './MultiVideoPlayer';
-import HoldemGachaAnimation from './HoldemGachaAnimation';
-import { type Card } from '@/lib/pokerHand';
-
-type PokerHand = {
-  hand: string;
-  handName: string;
-  holeCards: Card[];
-  communityCards: Card[];
-  allCards: Card[];
-};
 
 type GachaResult = {
   item: {
     id: number;
     name: string;
     rarity: 'common' | 'rare' | 'epic';
-    videoUrl: string;
   };
   videoUrls?: string[]; // 新しい動画システム（複数動画対応）
   timestamp: string;
-  pokerHand?: PokerHand;
 };
 
 export default function GachaContent({
@@ -45,8 +32,7 @@ export default function GachaContent({
   const [isDrawing, setIsDrawing] = useState(false);
   const [result, setResult] = useState<GachaResult | null>(null);
   const [showVideo, setShowVideo] = useState(false);
-  const [showAnimation, setShowAnimation] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   const handleDrawGacha = async () => {
     // ポイント確認とガチャ実行
@@ -80,8 +66,7 @@ export default function GachaContent({
       }
 
       const data = await response.json();
-      setResult(data);
-
+      
       // ポイント残高を更新（コールバックを呼び出して親コンポーネントに通知）
       if (onPointsUpdated) {
         // APIレスポンスにpointsRemainingが含まれている場合はそれを使用
@@ -97,81 +82,106 @@ export default function GachaContent({
               onPointsUpdated(balanceData.total);
             }
           } catch (error) {
-            console.error('ポイント残高取得エラー:', error);
+            // エラーは無視（ポイント残高の更新は重要ではない）
           }
         }
       }
 
-      // 通常ガチャはポーカー演出、プレミアムは動画演出
-      if (selectedGacha.id === 'normal' && data.pokerHand) {
-        setShowAnimation(true);
+      // まずresultを設定
+      setResult(data);
+
+      // 動画URLがある場合は動画を再生、ない場合は結果画面を表示
+      if (data.videoUrls && Array.isArray(data.videoUrls) && data.videoUrls.length > 0) {
+        // 動画URLを検証（空文字列や無効なURLを除外）
+        const validVideoUrls = data.videoUrls.filter((url: string) => url && url.trim() !== '');
+        
+        if (validVideoUrls.length > 0) {
+          // 有効な動画URLがある場合は動画を再生
+          setIsDrawing(false);
+          setShowVideo(true);
+          setVideoError(false);
+        } else {
+          // 動画URLが無効な場合は結果画面を表示
+          setShowVideo(false);
+          setVideoError(false);
+          setIsDrawing(false);
+        }
       } else {
-        setShowVideo(true);
+        // 動画がない場合は結果画面を直接表示
+        setShowVideo(false);
+        setVideoError(false);
+        setIsDrawing(false);
       }
     } catch (error) {
       console.error('ガチャエラー:', error);
       alert(error instanceof Error ? error.message : 'ガチャ抽選に失敗しました');
       setIsDrawing(false);
       setShowVideo(false);
-      setShowAnimation(false);
+      setVideoError(false);
     }
   };
 
   const handleVideoEnd = () => {
     setIsDrawing(false);
     setShowVideo(false);
+    setVideoError(false);
     onVideoStateChange?.(false);
   };
 
-  const handleAnimationEnd = () => {
+  const handleVideoError = () => {
+    // モバイルアプリではアラートを表示しない（ユーザー体験を損なうため）
+    // 代わりに結果画面を表示
+    setVideoError(true);
     setIsDrawing(false);
-    setShowAnimation(false);
+    setShowVideo(false);
     onVideoStateChange?.(false);
   };
 
   const handleCloseResult = () => {
     setResult(null);
     setShowVideo(false);
-    setShowAnimation(false);
+    setVideoError(false);
     setIsDrawing(false);
     onVideoStateChange?.(false);
     // ガチャモーダルは開いたままにする（onCloseは呼ばない）
   };
 
-  // 演出表示中は全画面
-  if (showAnimation && result && result.pokerHand) {
-    return (
-      <div className="fixed inset-0 z-[60] bg-black">
-        <HoldemGachaAnimation
-          finalResult={result.item}
-          pokerHand={result.pokerHand}
-          onAnimationEnd={handleAnimationEnd}
-        />
-      </div>
-    );
-  }
+  // resultが設定され、動画URLがある場合にshowVideoを設定
+  useEffect(() => {
+    console.log('[GachaContent] useEffect実行:', {
+      hasResult: !!result,
+      hasVideoUrls: !!result?.videoUrls,
+      videoUrlsLength: result?.videoUrls?.length || 0,
+      showVideo,
+    });
+    
+    if (result && result.videoUrls && result.videoUrls.length > 0 && !showVideo) {
+      console.log('[GachaContent] useEffect: 動画を表示します:', result.videoUrls);
+      setShowVideo(true);
+      setVideoError(false);
+    }
+  }, [result, showVideo]);
 
-  if (showVideo && result) {
-    // 新しい動画システム（複数動画対応）を使用
-    const videoUrls = result.videoUrls && result.videoUrls.length > 0
-      ? result.videoUrls
-      : [result.item.videoUrl]; // フォールバック
-
-    return (
-      <div className="fixed inset-0 z-[60] bg-black">
-        {videoUrls.length > 1 ? (
+  // 動画再生中は全画面
+  if (showVideo && result && result.videoUrls && Array.isArray(result.videoUrls) && result.videoUrls.length > 0) {
+    // 動画URLを検証（空文字列や無効なURLを除外）
+    const validVideoUrls = result.videoUrls.filter((url: string) => url && url.trim() !== '');
+    
+    if (validVideoUrls.length > 0) {
+      return (
+        <div className="fixed inset-0 z-[60] bg-black">
           <MultiVideoPlayer
-            videoUrls={videoUrls}
+            videoUrls={validVideoUrls}
             onEnd={handleVideoEnd}
+            onError={handleVideoError}
           />
-        ) : (
-          <VideoPlayer
-            videoUrl={videoUrls[0]}
-            onEnd={handleVideoEnd}
-          />
-        )}
-      </div>
-    );
+        </div>
+      );
+    } else {
+      // 動画URLが無効な場合は結果画面を表示
+      setShowVideo(false);
+      setVideoError(false);
+    }
   }
 
   const getRarityColor = (rarity: string) => {
@@ -204,7 +214,7 @@ export default function GachaContent({
       onTouchMove={(e) => e.preventDefault()}
     >
       {/* ヘッダー - ポーカーテーブル風 */}
-      {!showVideo && !showAnimation && (
+      {!showVideo && (
         <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
           <div className="flex items-center gap-3">
             {selectedGacha.iconImageUrl ? (
@@ -235,7 +245,7 @@ export default function GachaContent({
       )}
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
-      <div className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${showVideo || showAnimation ? '' : 'p-8'}`}>
+      <div className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${showVideo ? '' : 'p-8'}`}>
         {!result && (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
@@ -270,8 +280,14 @@ export default function GachaContent({
         )}
 
         {/* 結果表示 - ポーカー風 */}
-        {result && !showVideo && !showAnimation && (
+        {result && !showVideo && (
           <div className="mx-auto mt-6 max-w-md rounded-2xl border-4 border-yellow-400 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 shadow-2xl ring-4 ring-yellow-500 ring-opacity-50">
+            {videoError && (
+              <div className="mb-4 rounded-lg bg-red-900 bg-opacity-50 p-4 text-center text-red-200">
+                <p className="font-semibold">⚠️ エラーが発生しました</p>
+                <p className="mt-1 text-sm">動画の再生に失敗しました</p>
+              </div>
+            )}
             <h3 className="mb-6 text-center text-2xl font-bold text-yellow-300 drop-shadow-lg">
               🎉 獲得！
             </h3>
@@ -302,7 +318,7 @@ export default function GachaContent({
       </div>
 
       {/* フッター（ガチャを引くボタン） - ポーカー風 */}
-      {!showVideo && !showAnimation && !showPayment && (
+      {!showVideo && (
         <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
           <button
             onClick={handleDrawGacha}

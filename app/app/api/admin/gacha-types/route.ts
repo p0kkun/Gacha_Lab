@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyAdminAuth } from "@/lib/admin-auth";
+import type { Prisma } from "@prisma/client";
 
 /**
  * ガチャタイプ一覧を取得
@@ -9,68 +10,55 @@ import { verifyAdminAuth } from '@/lib/admin-auth';
 export async function GET(request: NextRequest) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { searchParams } = new URL(request.url);
-    const isActive = searchParams.get('isActive');
-    const isOngoing = searchParams.get('isOngoing'); // 'true' | 'false'
-    const sortBy = searchParams.get('sortBy') || 'createdAt'; // 'createdAt' | 'name' | 'pointCost'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'; // 'asc' | 'desc'
+    const isActive = searchParams.get("isActive");
+    const isOngoing = searchParams.get("isOngoing"); // 'true' | 'false'
+    const sortBy = searchParams.get("sortBy") || "createdAt"; // 'createdAt' | 'name' | 'pointCost'
+    const sortOrder = searchParams.get("sortOrder") || "desc"; // 'asc' | 'desc'
 
     const now = new Date();
-    const where: any = {};
+    const where: Prisma.GachaTypeWhereInput = {};
 
     // 有効/無効で絞り込み
     if (isActive !== null) {
-      where.isActive = isActive === 'true';
+      where.isActive = isActive === "true";
     }
 
     // 開催中で絞り込み
-    if (isOngoing === 'true') {
+    if (isOngoing === "true") {
       where.AND = [
         { isActive: true },
         {
-          OR: [
-            { startAt: null },
-            { startAt: { lte: now } },
-          ],
+          OR: [{ startAt: null }, { startAt: { lte: now } }],
         },
         {
-          OR: [
-            { endAt: null },
-            { endAt: { gte: now } },
-          ],
+          OR: [{ endAt: null }, { endAt: { gte: now } }],
         },
       ];
-    } else if (isOngoing === 'false') {
+    } else if (isOngoing === "false") {
       where.OR = [
         { isActive: false },
         {
-          AND: [
-            { startAt: { gt: now } },
-          ],
+          AND: [{ startAt: { gt: now } }],
         },
         {
-          AND: [
-            { endAt: { lt: now } },
-          ],
+          AND: [{ endAt: { lt: now } }],
         },
       ];
     }
 
     // ソート条件
-    let orderBy: any = {};
-    if (sortBy === 'name') {
-      orderBy = { name: sortOrder === 'asc' ? 'asc' : 'desc' };
-    } else if (sortBy === 'pointCost') {
-      orderBy = { pointCost: sortOrder === 'asc' ? 'asc' : 'desc' };
+    let orderBy: Prisma.GachaTypeOrderByWithRelationInput = {};
+    if (sortBy === "name") {
+      orderBy = { name: sortOrder === "asc" ? "asc" : "desc" };
+    } else if (sortBy === "pointCost") {
+      orderBy = { pointCost: sortOrder === "asc" ? "asc" : "desc" };
     } else {
-      orderBy = { createdAt: sortOrder === 'asc' ? 'asc' : 'desc' };
+      orderBy = { createdAt: sortOrder === "asc" ? "asc" : "desc" };
     }
 
     const gachaTypes = await prisma.gachaType.findMany({
@@ -80,9 +68,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ gachaTypes });
   } catch (error) {
-    console.error('ガチャタイプ一覧取得エラー:', error);
+    console.error("ガチャタイプ一覧取得エラー:", error);
     return NextResponse.json(
-      { error: 'ガチャタイプ一覧の取得に失敗しました' },
+      { error: "ガチャタイプ一覧の取得に失敗しました" },
       { status: 500 }
     );
   }
@@ -95,10 +83,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -135,7 +120,7 @@ export async function POST(request: NextRequest) {
     // バリデーション
     if (!id || !name) {
       return NextResponse.json(
-        { error: 'IDと名前は必須です' },
+        { error: "IDと名前は必須です" },
         { status: 400 }
       );
     }
@@ -167,15 +152,35 @@ export async function POST(request: NextRequest) {
         fifthPrizeWeight: fifthPrizeWeight || 0,
         loserWeight: loserWeight || 0,
         firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
-        secondPrizeHands: Array.isArray(secondPrizeHands) ? secondPrizeHands : [],
+        secondPrizeHands: Array.isArray(secondPrizeHands)
+          ? secondPrizeHands
+          : [],
         thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
-        fourthPrizeHands: Array.isArray(fourthPrizeHands) ? fourthPrizeHands : [],
+        fourthPrizeHands: Array.isArray(fourthPrizeHands)
+          ? fourthPrizeHands
+          : [],
         fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
         commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
-        rarityVideoIds: rarityVideoIds ? (typeof rarityVideoIds === 'string' ? JSON.parse(rarityVideoIds) : rarityVideoIds) : null,
-        prizeWeights: prizeWeights ? (typeof prizeWeights === 'string' ? JSON.parse(prizeWeights) : prizeWeights) : null,
-        prizeHands: prizeHands ? (typeof prizeHands === 'string' ? JSON.parse(prizeHands) : prizeHands) : null,
-        prizeOrder: prizeOrder ? (typeof prizeOrder === 'string' ? JSON.parse(prizeOrder) : prizeOrder) : null,
+        rarityVideoIds: rarityVideoIds
+          ? typeof rarityVideoIds === "string"
+            ? JSON.parse(rarityVideoIds)
+            : rarityVideoIds
+          : null,
+        prizeWeights: prizeWeights
+          ? typeof prizeWeights === "string"
+            ? JSON.parse(prizeWeights)
+            : prizeWeights
+          : null,
+        prizeHands: prizeHands
+          ? typeof prizeHands === "string"
+            ? JSON.parse(prizeHands)
+            : prizeHands
+          : null,
+        prizeOrder: prizeOrder
+          ? typeof prizeOrder === "string"
+            ? JSON.parse(prizeOrder)
+            : prizeOrder
+          : null,
         resultMessageTemplate: resultMessageTemplate || null,
         useDefaultVideos: useDefaultVideos ?? true,
       },
@@ -195,15 +200,35 @@ export async function POST(request: NextRequest) {
         fifthPrizeWeight: fifthPrizeWeight || 0,
         loserWeight: loserWeight || 0,
         firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
-        secondPrizeHands: Array.isArray(secondPrizeHands) ? secondPrizeHands : [],
+        secondPrizeHands: Array.isArray(secondPrizeHands)
+          ? secondPrizeHands
+          : [],
         thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
-        fourthPrizeHands: Array.isArray(fourthPrizeHands) ? fourthPrizeHands : [],
+        fourthPrizeHands: Array.isArray(fourthPrizeHands)
+          ? fourthPrizeHands
+          : [],
         fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
         commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
-        rarityVideoIds: rarityVideoIds ? (typeof rarityVideoIds === 'string' ? JSON.parse(rarityVideoIds) : rarityVideoIds) : null,
-        prizeWeights: prizeWeights ? (typeof prizeWeights === 'string' ? JSON.parse(prizeWeights) : prizeWeights) : null,
-        prizeHands: prizeHands ? (typeof prizeHands === 'string' ? JSON.parse(prizeHands) : prizeHands) : null,
-        prizeOrder: prizeOrder ? (typeof prizeOrder === 'string' ? JSON.parse(prizeOrder) : prizeOrder) : null,
+        rarityVideoIds: rarityVideoIds
+          ? typeof rarityVideoIds === "string"
+            ? JSON.parse(rarityVideoIds)
+            : rarityVideoIds
+          : null,
+        prizeWeights: prizeWeights
+          ? typeof prizeWeights === "string"
+            ? JSON.parse(prizeWeights)
+            : prizeWeights
+          : null,
+        prizeHands: prizeHands
+          ? typeof prizeHands === "string"
+            ? JSON.parse(prizeHands)
+            : prizeHands
+          : null,
+        prizeOrder: prizeOrder
+          ? typeof prizeOrder === "string"
+            ? JSON.parse(prizeOrder)
+            : prizeOrder
+          : null,
         resultMessageTemplate: resultMessageTemplate || null,
         useDefaultVideos: useDefaultVideos ?? true,
       },
@@ -211,12 +236,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ gachaType });
   } catch (error) {
-    console.error('ガチャタイプ作成/更新エラー:', error);
+    console.error("ガチャタイプ作成/更新エラー:", error);
     return NextResponse.json(
-      { error: 'ガチャタイプの作成/更新に失敗しました' },
+      { error: "ガチャタイプの作成/更新に失敗しました" },
       { status: 500 }
     );
   }
 }
-
-

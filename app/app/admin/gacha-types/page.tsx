@@ -5,7 +5,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 import MultiVideoPlayer from "@/components/MultiVideoPlayer";
 
-type HandRank = 
+type HandRank =
   | "ROYAL_FLUSH"
   | "STRAIGHT_FLUSH"
   | "FOUR_OF_A_KIND"
@@ -1283,6 +1283,7 @@ export default function GachaTypesPage() {
                               "THIRD_PRIZE",
                               "FOURTH_PRIZE",
                               "FIFTH_PRIZE",
+                              "LOSER",
                             ].map((rarity) => (
                               <div key={rarity} className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">

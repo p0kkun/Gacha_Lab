@@ -4,6 +4,118 @@ import { prisma } from '@/lib/prisma';
 import { recordVideoUpdateAction, recordVideoDeleteAction } from '@/lib/admin-action-history';
 
 /**
+ * 動画の使用状況を取得
+ * GET /api/admin/videos/[id]/usage
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // 認証チェック
+  if (!verifyAdminAuth(request)) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const { id } = await params;
+    const videoId = parseInt(id);
+
+    // 動画が存在するか確認
+    const video = await prisma.gachaVideo.findUnique({
+      where: { id: videoId },
+    });
+
+    if (!video) {
+      return NextResponse.json(
+        { error: '動画が見つかりません' },
+        { status: 404 }
+      );
+    }
+
+    // 使用状況を確認
+    const usageInfo: {
+      inDefaultSettings: boolean;
+      inGachaTypes: Array<{ id: string; name: string }>;
+    } = {
+      inDefaultSettings: false,
+      inGachaTypes: [],
+    };
+
+    // デフォルト設定で使用されているか確認
+    const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (defaultSettings) {
+      const commonVideoIds = defaultSettings.commonVideoIds || [];
+      if (commonVideoIds.includes(videoId)) {
+        usageInfo.inDefaultSettings = true;
+      } else if (defaultSettings.rarityVideoIds) {
+        try {
+          const rarityVideoIdsObj = typeof defaultSettings.rarityVideoIds === 'string'
+            ? JSON.parse(defaultSettings.rarityVideoIds)
+            : defaultSettings.rarityVideoIds;
+          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+            for (const rarity in rarityVideoIdsObj) {
+              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+                usageInfo.inDefaultSettings = true;
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          // JSON解析エラーは無視
+        }
+      }
+    }
+
+    // 個別設定で使用されているガチャタイプを確認
+    const allGachaTypes = await prisma.gachaType.findMany();
+    for (const gachaType of allGachaTypes) {
+      let isUsed = false;
+      if (gachaType.commonVideoIds && Array.isArray(gachaType.commonVideoIds) && gachaType.commonVideoIds.includes(videoId)) {
+        isUsed = true;
+      } else if (gachaType.rarityVideoIds) {
+        try {
+          const rarityVideoIdsObj = typeof gachaType.rarityVideoIds === 'string'
+            ? JSON.parse(gachaType.rarityVideoIds)
+            : gachaType.rarityVideoIds;
+          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+            for (const rarity in rarityVideoIdsObj) {
+              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+                isUsed = true;
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          // JSON解析エラーは無視
+        }
+      }
+      if (isUsed) {
+        usageInfo.inGachaTypes.push({
+          id: gachaType.id,
+          name: gachaType.name,
+        });
+      }
+    }
+
+    return NextResponse.json({
+      usageInfo,
+    });
+  } catch (error) {
+    console.error('使用状況取得エラー:', error);
+    return NextResponse.json(
+      { error: '使用状況の取得に失敗しました' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * 動画を更新
  * PATCH /api/admin/videos/[id]
  */
@@ -113,6 +225,74 @@ export async function DELETE(
       );
     }
 
+    // 使用状況を確認
+    const usageInfo: {
+      inDefaultSettings: boolean;
+      inGachaTypes: Array<{ id: string; name: string }>;
+    } = {
+      inDefaultSettings: false,
+      inGachaTypes: [],
+    };
+
+    // デフォルト設定で使用されているか確認
+    const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (defaultSettings) {
+      const commonVideoIds = defaultSettings.commonVideoIds || [];
+      if (commonVideoIds.includes(videoId)) {
+        usageInfo.inDefaultSettings = true;
+      } else if (defaultSettings.rarityVideoIds) {
+        try {
+          const rarityVideoIdsObj = typeof defaultSettings.rarityVideoIds === 'string'
+            ? JSON.parse(defaultSettings.rarityVideoIds)
+            : defaultSettings.rarityVideoIds;
+          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+            for (const rarity in rarityVideoIdsObj) {
+              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+                usageInfo.inDefaultSettings = true;
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          // JSON解析エラーは無視
+        }
+      }
+    }
+
+    // 個別設定で使用されているガチャタイプを確認
+    const allGachaTypes = await prisma.gachaType.findMany();
+    for (const gachaType of allGachaTypes) {
+      let isUsed = false;
+      if (gachaType.commonVideoIds && Array.isArray(gachaType.commonVideoIds) && gachaType.commonVideoIds.includes(videoId)) {
+        isUsed = true;
+      } else if (gachaType.rarityVideoIds) {
+        try {
+          const rarityVideoIdsObj = typeof gachaType.rarityVideoIds === 'string'
+            ? JSON.parse(gachaType.rarityVideoIds)
+            : gachaType.rarityVideoIds;
+          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+            for (const rarity in rarityVideoIdsObj) {
+              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+                isUsed = true;
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          // JSON解析エラーは無視
+        }
+      }
+      if (isUsed) {
+        usageInfo.inGachaTypes.push({
+          id: gachaType.id,
+          name: gachaType.name,
+        });
+      }
+    }
+
     // 削除前に操作履歴を記録（削除後に記録するとデータが取得できないため）
     try {
       await recordVideoDeleteAction({
@@ -126,9 +306,143 @@ export async function DELETE(
       console.error('動画削除の操作履歴記録エラー:', historyError);
     }
 
+    // デフォルト設定から動画IDを削除
+    try {
+      const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (defaultSettings) {
+        let needsUpdate = false;
+        const updatedCommonVideoIds = defaultSettings.commonVideoIds || [];
+        const updatedRarityVideoIds = defaultSettings.rarityVideoIds
+          ? (typeof defaultSettings.rarityVideoIds === 'string'
+              ? JSON.parse(defaultSettings.rarityVideoIds)
+              : defaultSettings.rarityVideoIds)
+          : null;
+
+        // 共通動画から削除
+        if (updatedCommonVideoIds.includes(videoId)) {
+          const index = updatedCommonVideoIds.indexOf(videoId);
+          updatedCommonVideoIds.splice(index, 1);
+          needsUpdate = true;
+          console.log(`[動画削除] デフォルト設定の共通動画からID ${videoId} を削除`);
+        }
+
+        // 等級別動画から削除
+        if (updatedRarityVideoIds && typeof updatedRarityVideoIds === 'object') {
+          const rarityVideoIdsObj = updatedRarityVideoIds as Record<string, number[]>;
+          for (const rarity in rarityVideoIdsObj) {
+            if (Array.isArray(rarityVideoIdsObj[rarity])) {
+              const index = rarityVideoIdsObj[rarity].indexOf(videoId);
+              if (index !== -1) {
+                rarityVideoIdsObj[rarity].splice(index, 1);
+                needsUpdate = true;
+                console.log(`[動画削除] デフォルト設定の等級別動画(${rarity})からID ${videoId} を削除`);
+              }
+            }
+          }
+        }
+
+        if (needsUpdate) {
+          await prisma.defaultGachaVideoSettings.update({
+            where: { id: defaultSettings.id },
+            data: {
+              commonVideoIds: updatedCommonVideoIds,
+              rarityVideoIds: updatedRarityVideoIds,
+            },
+          });
+          console.log(`[動画削除] デフォルト設定を更新しました`);
+        }
+      }
+    } catch (defaultSettingsError) {
+      // デフォルト設定の更新失敗はログに記録するが、削除操作は続行
+      console.error('デフォルト設定からの動画ID削除エラー:', defaultSettingsError);
+    }
+
+    // 個別設定（GachaType）から動画IDを削除
+    try {
+      // すべてのガチャタイプを取得して、JavaScriptでフィルタリング
+      const allGachaTypes = await prisma.gachaType.findMany();
+      const gachaTypes = allGachaTypes.filter((gt) => {
+        // 共通動画に含まれているか確認
+        if (gt.commonVideoIds && Array.isArray(gt.commonVideoIds) && gt.commonVideoIds.includes(videoId)) {
+          return true;
+        }
+        // 等級別動画に含まれているか確認
+        if (gt.rarityVideoIds) {
+          try {
+            const rarityVideoIdsObj = typeof gt.rarityVideoIds === 'string'
+              ? JSON.parse(gt.rarityVideoIds)
+              : gt.rarityVideoIds;
+            if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+              for (const rarity in rarityVideoIdsObj) {
+                if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+                  return true;
+                }
+              }
+            }
+          } catch (error) {
+            // JSON解析エラーは無視
+          }
+        }
+        return false;
+      });
+
+      for (const gachaType of gachaTypes) {
+        let needsUpdate = false;
+        const updatedCommonVideoIds = gachaType.commonVideoIds || [];
+        const updatedRarityVideoIds = gachaType.rarityVideoIds
+          ? (typeof gachaType.rarityVideoIds === 'string'
+              ? JSON.parse(gachaType.rarityVideoIds)
+              : gachaType.rarityVideoIds)
+          : null;
+
+        // 共通動画から削除
+        if (updatedCommonVideoIds.includes(videoId)) {
+          const index = updatedCommonVideoIds.indexOf(videoId);
+          updatedCommonVideoIds.splice(index, 1);
+          needsUpdate = true;
+          console.log(`[動画削除] ガチャタイプ ${gachaType.id} の共通動画からID ${videoId} を削除`);
+        }
+
+        // 等級別動画から削除
+        if (updatedRarityVideoIds && typeof updatedRarityVideoIds === 'object') {
+          const rarityVideoIdsObj = updatedRarityVideoIds as Record<string, number[]>;
+          for (const rarity in rarityVideoIdsObj) {
+            if (Array.isArray(rarityVideoIdsObj[rarity])) {
+              const index = rarityVideoIdsObj[rarity].indexOf(videoId);
+              if (index !== -1) {
+                rarityVideoIdsObj[rarity].splice(index, 1);
+                needsUpdate = true;
+                console.log(`[動画削除] ガチャタイプ ${gachaType.id} の等級別動画(${rarity})からID ${videoId} を削除`);
+              }
+            }
+          }
+        }
+
+        if (needsUpdate) {
+          await prisma.gachaType.update({
+            where: { id: gachaType.id },
+            data: {
+              commonVideoIds: updatedCommonVideoIds,
+              rarityVideoIds: updatedRarityVideoIds,
+            },
+          });
+          console.log(`[動画削除] ガチャタイプ ${gachaType.id} の設定を更新しました`);
+        }
+      }
+    } catch (gachaTypeError) {
+      // 個別設定の更新失敗はログに記録するが、削除操作は続行
+      console.error('個別設定からの動画ID削除エラー:', gachaTypeError);
+    }
+
+    // 動画を削除
     await prisma.gachaVideo.delete({
       where: { id: videoId },
     });
+
+    console.log(`[動画削除] 動画ID ${videoId} の削除が完了しました`);
 
     return NextResponse.json({
       success: true,

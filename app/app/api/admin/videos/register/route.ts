@@ -33,12 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (videoType === "RARITY" && !rarity) {
-      return NextResponse.json(
-        { error: "等級別動画の場合は等級を指定してください" },
-        { status: 400 }
-      );
-    }
+    // 等級はガチャ設定側で選択するため、ここではバリデーションしない
 
     // S3 URLを生成
     const s3Url = getVideoUrl(s3Key);

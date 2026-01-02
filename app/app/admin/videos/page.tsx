@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import ConfirmModal from '@/components/admin/ConfirmModal';
-import { getAdminAuthToken } from '@/lib/admin-auth';
-import { Rarity } from '@prisma/client';
+import { useState, useEffect } from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import ConfirmModal from "@/components/admin/ConfirmModal";
+import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaVideo = {
   id: number;
-  videoType: 'COMMON' | 'RARITY';
+  videoType: "COMMON" | "RARITY";
   rarity: string | null;
   s3Url: string;
   fileName: string;
@@ -21,12 +20,12 @@ type GachaVideo = {
 };
 
 const RARITY_LABELS: Record<string, string> = {
-  FIRST_PRIZE: '1等',
-  SECOND_PRIZE: '2等',
-  THIRD_PRIZE: '3等',
-  FOURTH_PRIZE: '4等',
-  FIFTH_PRIZE: '5等',
-  LOSER: 'ハズレ',
+  FIRST_PRIZE: "1等",
+  SECOND_PRIZE: "2等",
+  THIRD_PRIZE: "3等",
+  FOURTH_PRIZE: "4等",
+  FIFTH_PRIZE: "5等",
+  LOSER: "ハズレ",
 };
 
 export default function VideosPage() {
@@ -35,13 +34,28 @@ export default function VideosPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
-  const [selectedVideoType, setSelectedVideoType] = useState<'COMMON' | 'RARITY'>('COMMON');
-  const [selectedRarity, setSelectedRarity] = useState<string>('');
+  const [selectedVideoType, setSelectedVideoType] = useState<
+    "COMMON" | "RARITY"
+  >("COMMON");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [description, setDescription] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; videoId: number | null }>({
+  const [description, setDescription] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    videoId: number | null;
+    usageInfo?: {
+      inDefaultSettings: boolean;
+      inGachaTypes: Array<{ id: string; name: string }>;
+    };
+  }>({
     isOpen: false,
     videoId: null,
+  });
+  const [deleteSuccess, setDeleteSuccess] = useState<{
+    isOpen: boolean;
+    message: string;
+  }>({
+    isOpen: false,
+    message: "",
   });
   const [showDefaultSettings, setShowDefaultSettings] = useState(false);
   const [defaultSettings, setDefaultSettings] = useState<{
@@ -57,20 +71,20 @@ export default function VideosPage() {
     try {
       setLoading(true);
       const token = getAdminAuthToken();
-      const res = await fetch('/api/admin/videos', {
+      const res = await fetch("/api/admin/videos", {
         headers: {
-          'X-Admin-Auth': token || '',
+          "X-Admin-Auth": token || "",
         },
       });
 
       if (!res.ok) {
-        throw new Error('動画一覧の取得に失敗しました');
+        throw new Error("動画一覧の取得に失敗しました");
       }
 
       const data = await res.json();
       setVideos(data.videos || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      setError(err instanceof Error ? err.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
@@ -83,12 +97,7 @@ export default function VideosPage() {
   // 動画をアップロード
   const handleUpload = async () => {
     if (!uploadFile) {
-      setError('ファイルを選択してください');
-      return;
-    }
-
-    if (selectedVideoType === 'RARITY' && !selectedRarity) {
-      setError('等級を選択してください');
+      setError("ファイルを選択してください");
       return;
     }
 
@@ -99,24 +108,26 @@ export default function VideosPage() {
       const token = getAdminAuthToken();
 
       // ステップ1: Presigned URLを取得
-      const presignedRes = await fetch('/api/admin/videos/presigned-url', {
-        method: 'POST',
+      const presignedRes = await fetch("/api/admin/videos/presigned-url", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': token || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
           fileName: uploadFile.name,
           videoType: selectedVideoType,
-          rarity: selectedVideoType === 'RARITY' ? selectedRarity : null,
+          rarity: null, // 等級はガチャ設定側で選択
           contentType: uploadFile.type,
           fileSize: uploadFile.size,
         }),
       });
 
       if (!presignedRes.ok) {
-        const errorData = await presignedRes.json().catch(() => ({ error: 'Presigned URLの取得に失敗しました' }));
-        throw new Error(errorData.error || 'Presigned URLの取得に失敗しました');
+        const errorData = await presignedRes
+          .json()
+          .catch(() => ({ error: "Presigned URLの取得に失敗しました" }));
+        throw new Error(errorData.error || "Presigned URLの取得に失敗しました");
       }
 
       const { presignedUrl, s3Key } = await presignedRes.json();
@@ -125,59 +136,69 @@ export default function VideosPage() {
       let uploadRes: Response;
       try {
         uploadRes = await fetch(presignedUrl, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': uploadFile.type,
+            "Content-Type": uploadFile.type,
           },
           body: uploadFile,
         });
       } catch (fetchError) {
-        console.error('S3アップロードエラー（fetch）:', fetchError);
-        const errorMessage = fetchError instanceof Error ? fetchError.message : 'S3へのアップロードに失敗しました';
+        console.error("S3アップロードエラー（fetch）:", fetchError);
+        const errorMessage =
+          fetchError instanceof Error
+            ? fetchError.message
+            : "S3へのアップロードに失敗しました";
         throw new Error(`S3へのアップロードに失敗しました: ${errorMessage}`);
       }
 
       if (!uploadRes.ok) {
-        const errorText = await uploadRes.text().catch(() => uploadRes.statusText);
-        console.error('S3アップロードエラー:', {
+        const errorText = await uploadRes
+          .text()
+          .catch(() => uploadRes.statusText);
+        console.error("S3アップロードエラー:", {
           status: uploadRes.status,
           statusText: uploadRes.statusText,
           errorText,
-          presignedUrl: presignedUrl.substring(0, 100) + '...', // URLの最初の100文字のみログ
+          presignedUrl: presignedUrl.substring(0, 100) + "...", // URLの最初の100文字のみログ
         });
-        throw new Error(`S3へのアップロードに失敗しました: ${uploadRes.status} ${uploadRes.statusText} - ${errorText}`);
+        throw new Error(
+          `S3へのアップロードに失敗しました: ${uploadRes.status} ${uploadRes.statusText} - ${errorText}`
+        );
       }
 
       // ステップ3: DBに登録
-      const registerRes = await fetch('/api/admin/videos/register', {
-        method: 'POST',
+      const registerRes = await fetch("/api/admin/videos/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': token || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
           s3Key,
           fileName: uploadFile.name,
           fileSize: uploadFile.size,
           videoType: selectedVideoType,
-          rarity: selectedVideoType === 'RARITY' ? selectedRarity : null,
+          rarity: null, // 等級はガチャ設定側で選択
           description: description || null,
         }),
       });
 
       if (!registerRes.ok) {
-        const errorData = await registerRes.json().catch(() => ({ error: '動画の登録に失敗しました' }));
-        throw new Error(errorData.error || '動画の登録に失敗しました');
+        const errorData = await registerRes
+          .json()
+          .catch(() => ({ error: "動画の登録に失敗しました" }));
+        throw new Error(errorData.error || "動画の登録に失敗しました");
       }
 
       // 成功
       setShowUploadForm(false);
       setUploadFile(null);
-      setDescription('');
-      setSelectedRarity('');
+      setDescription("");
       await fetchVideos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'アップロードに失敗しました');
+      setError(
+        err instanceof Error ? err.message : "アップロードに失敗しました"
+      );
     } finally {
       setUploading(false);
     }
@@ -188,10 +209,10 @@ export default function VideosPage() {
     try {
       const token = getAdminAuthToken();
       const res = await fetch(`/api/admin/videos/${videoId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': token || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
           isActive: !currentStatus,
@@ -199,18 +220,45 @@ export default function VideosPage() {
       });
 
       if (!res.ok) {
-        throw new Error('更新に失敗しました');
+        throw new Error("更新に失敗しました");
       }
 
       await fetchVideos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新に失敗しました');
+      setError(err instanceof Error ? err.message : "更新に失敗しました");
     }
   };
 
-  // 動画削除の確認モーダルを開く
-  const handleDeleteClick = (videoId: number) => {
-    setDeleteConfirm({ isOpen: true, videoId });
+  // 動画削除の確認モーダルを開く（使用状況を確認）
+  const handleDeleteClick = async (videoId: number) => {
+    try {
+      const token = getAdminAuthToken();
+      // 使用状況を取得
+      const res = await fetch(`/api/admin/videos/${videoId}`, {
+        method: "GET",
+        headers: {
+          "X-Admin-Auth": token || "",
+        },
+      });
+
+      let usageInfo: {
+        inDefaultSettings: boolean;
+        inGachaTypes: Array<{ id: string; name: string }>;
+      } = {
+        inDefaultSettings: false,
+        inGachaTypes: [],
+      };
+
+      if (res.ok) {
+        const data = await res.json();
+        usageInfo = data.usageInfo || usageInfo;
+      }
+
+      setDeleteConfirm({ isOpen: true, videoId, usageInfo });
+    } catch (error) {
+      console.error("使用状況の取得エラー:", error);
+      setDeleteConfirm({ isOpen: true, videoId });
+    }
   };
 
   // 動画を削除
@@ -220,20 +268,58 @@ export default function VideosPage() {
     try {
       const token = getAdminAuthToken();
       const res = await fetch(`/api/admin/videos/${deleteConfirm.videoId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'X-Admin-Auth': token || '',
+          "X-Admin-Auth": token || "",
         },
       });
 
       if (!res.ok) {
-        throw new Error('削除に失敗しました');
+        const errorData = await res
+          .json()
+          .catch(() => ({ error: "削除に失敗しました" }));
+        throw new Error(errorData.error || "削除に失敗しました");
+      }
+
+      const data = await res.json();
+      const usageInfo = data.usageInfo || {
+        inDefaultSettings: false,
+        inGachaTypes: [],
+      };
+
+      // 使用状況に基づいて警告メッセージを生成
+      let warningMessage = "";
+      if (usageInfo.inDefaultSettings || usageInfo.inGachaTypes.length > 0) {
+        const warnings: string[] = [];
+        if (usageInfo.inDefaultSettings) {
+          warnings.push("デフォルト設定");
+        }
+        if (usageInfo.inGachaTypes.length > 0) {
+          warnings.push(
+            `${
+              usageInfo.inGachaTypes.length
+            }個のガチャタイプ（${usageInfo.inGachaTypes
+              .map((gt: { id: string; name: string }) => gt.name)
+              .join("、")}）`
+          );
+        }
+        warningMessage = `この動画は以下の設定で使用されていましたが、自動的に削除されました：\n${warnings.join(
+          "、"
+        )}`;
       }
 
       setDeleteConfirm({ isOpen: false, videoId: null });
       await fetchVideos();
+
+      // 削除完了モーダルを表示
+      setDeleteSuccess({
+        isOpen: true,
+        message: warningMessage
+          ? `動画を削除しました。\n\n${warningMessage}`
+          : "動画を削除しました。",
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '削除に失敗しました');
+      setError(err instanceof Error ? err.message : "削除に失敗しました");
       setDeleteConfirm({ isOpen: false, videoId: null });
     }
   };
@@ -243,45 +329,49 @@ export default function VideosPage() {
     try {
       setLoadingDefaultSettings(true);
       const token = getAdminAuthToken();
-      const res = await fetch('/api/admin/videos/default-settings', {
+      const res = await fetch("/api/admin/videos/default-settings", {
         headers: {
-          'X-Admin-Auth': token || '',
+          "X-Admin-Auth": token || "",
         },
       });
 
       if (!res.ok) {
-        let errorMessage = 'デフォルト設定の取得に失敗しました';
+        let errorMessage = "デフォルト設定の取得に失敗しました";
         try {
-          const contentType = res.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
             const data = await res.json();
             errorMessage = data.error || errorMessage;
           } else {
             const text = await res.text();
             errorMessage = text || errorMessage;
           }
-        } catch (parseError) {
+        } catch {
           errorMessage = res.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('無効なレスポンス形式です');
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("無効なレスポンス形式です");
       }
       const data = await res.json();
       setDefaultSettings({
         id: data.settings.id,
         commonVideoIds: data.settings.commonVideoIds || [],
         rarityVideoIds: data.settings.rarityVideoIds
-          ? (typeof data.settings.rarityVideoIds === 'string'
-              ? JSON.parse(data.settings.rarityVideoIds)
-              : data.settings.rarityVideoIds)
+          ? typeof data.settings.rarityVideoIds === "string"
+            ? JSON.parse(data.settings.rarityVideoIds)
+            : data.settings.rarityVideoIds
           : null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'デフォルト設定の取得に失敗しました');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "デフォルト設定の取得に失敗しました"
+      );
     } finally {
       setLoadingDefaultSettings(false);
     }
@@ -296,11 +386,11 @@ export default function VideosPage() {
       setError(null);
 
       const token = getAdminAuthToken();
-      const res = await fetch('/api/admin/videos/default-settings', {
-        method: 'POST',
+      const res = await fetch("/api/admin/videos/default-settings", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': token || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
           commonVideoIds: defaultSettings.commonVideoIds,
@@ -309,35 +399,39 @@ export default function VideosPage() {
       });
 
       if (!res.ok) {
-        let errorMessage = '保存に失敗しました';
+        let errorMessage = "保存に失敗しました";
         try {
-          const contentType = res.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
             const data = await res.json();
             errorMessage = data.error || errorMessage;
           } else {
             const text = await res.text();
             errorMessage = text || errorMessage;
           }
-        } catch (parseError) {
+        } catch {
           errorMessage = res.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
       const data = await res.json();
+      console.log("[一括設定保存] 成功:", data);
       setDefaultSettings({
         id: data.settings.id,
         commonVideoIds: data.settings.commonVideoIds || [],
         rarityVideoIds: data.settings.rarityVideoIds
-          ? (typeof data.settings.rarityVideoIds === 'string'
-              ? JSON.parse(data.settings.rarityVideoIds)
-              : data.settings.rarityVideoIds)
+          ? typeof data.settings.rarityVideoIds === "string"
+            ? JSON.parse(data.settings.rarityVideoIds)
+            : data.settings.rarityVideoIds
           : null,
       });
       setShowDefaultSettings(false);
+      // 成功メッセージを表示（エラー表示をクリア）
+      setError(null);
+      alert("一括設定を保存しました");
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存に失敗しました');
+      setError(err instanceof Error ? err.message : "保存に失敗しました");
     } finally {
       setSavingDefaultSettings(false);
     }
@@ -345,15 +439,17 @@ export default function VideosPage() {
 
   // 動画をタイプ別・等級別にグループ化
   const groupedVideos = {
-    COMMON: videos.filter((v) => v.videoType === 'COMMON'),
-    RARITY: videos.filter((v) => v.videoType === 'RARITY').reduce((acc, video) => {
-      const rarity = video.rarity || 'UNKNOWN';
-      if (!acc[rarity]) {
-        acc[rarity] = [];
-      }
-      acc[rarity].push(video);
-      return acc;
-    }, {} as Record<string, GachaVideo[]>),
+    COMMON: videos.filter((v) => v.videoType === "COMMON"),
+    RARITY: videos
+      .filter((v) => v.videoType === "RARITY")
+      .reduce((acc, video) => {
+        const rarity = video.rarity || "UNKNOWN";
+        if (!acc[rarity]) {
+          acc[rarity] = [];
+        }
+        acc[rarity].push(video);
+        return acc;
+      }, {} as Record<string, GachaVideo[]>),
   };
 
   const formatFileSize = (bytes: number) => {
@@ -377,14 +473,14 @@ export default function VideosPage() {
               }}
               className="rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600"
             >
-              {showDefaultSettings ? '一括設定を閉じる' : '一括設定'}
+              {showDefaultSettings ? "一括設定を閉じる" : "一括設定"}
             </button>
             <button
               onClick={() => setShowUploadForm(!showUploadForm)}
               className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
             >
-              {showUploadForm ? 'キャンセル' : '+ 動画をアップロード'}
-          </button>
+              {showUploadForm ? "キャンセル" : "+ 動画をアップロード"}
+            </button>
           </div>
         </div>
 
@@ -394,10 +490,168 @@ export default function VideosPage() {
           </div>
         )}
 
+        {/* 一括設定フォーム */}
+        {showDefaultSettings && (
+          <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow">
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              一括設定（グローバルデフォルト）
+            </h2>
+            <p className="mb-4 text-sm text-gray-600">
+              ここで設定した動画は、個別設定がないすべてのガチャタイプで使用されます。
+            </p>
+            {loadingDefaultSettings ? (
+              <div className="py-8 text-center text-gray-500">
+                読み込み中...
+              </div>
+            ) : defaultSettings ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    共通動画（複数選択可能）
+                  </label>
+                  <div className="max-h-60 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
+                    {videos
+                      .filter((v) => v.videoType === "COMMON" && v.isActive)
+                      .map((video) => (
+                        <label
+                          key={video.id}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={defaultSettings.commonVideoIds.includes(
+                              video.id
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setDefaultSettings({
+                                  ...defaultSettings,
+                                  commonVideoIds: [
+                                    ...defaultSettings.commonVideoIds,
+                                    video.id,
+                                  ],
+                                });
+                              } else {
+                                setDefaultSettings({
+                                  ...defaultSettings,
+                                  commonVideoIds:
+                                    defaultSettings.commonVideoIds.filter(
+                                      (id) => id !== video.id
+                                    ),
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {video.fileName}
+                          </span>
+                        </label>
+                      ))}
+                    {videos.filter(
+                      (v) => v.videoType === "COMMON" && v.isActive
+                    ).length === 0 && (
+                      <p className="text-sm text-gray-500">
+                        共通動画が登録されていません
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    等級別動画（各等級ごとに複数選択可能）
+                  </label>
+                  <div className="space-y-3">
+                    {Object.entries(RARITY_LABELS).map(([key, label]) => (
+                      <div key={key}>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                          {label}
+                        </label>
+                        <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
+                          {videos
+                            .filter(
+                              (v) => v.videoType === "RARITY" && v.isActive
+                            )
+                            .map((video) => (
+                              <label
+                                key={video.id}
+                                className="flex items-center gap-2"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    defaultSettings.rarityVideoIds?.[
+                                      key
+                                    ]?.includes(video.id) || false
+                                  }
+                                  onChange={(e) => {
+                                    const currentIds =
+                                      defaultSettings.rarityVideoIds?.[key] ||
+                                      [];
+                                    const newRarityVideoIds = {
+                                      ...defaultSettings.rarityVideoIds,
+                                      [key]: e.target.checked
+                                        ? [...currentIds, video.id]
+                                        : currentIds.filter(
+                                            (id) => id !== video.id
+                                          ),
+                                    };
+                                    setDefaultSettings({
+                                      ...defaultSettings,
+                                      rarityVideoIds: newRarityVideoIds,
+                                    });
+                                  }}
+                                  className="rounded border-gray-300"
+                                />
+                                <span className="text-sm text-gray-700">
+                                  {video.fileName}
+                                </span>
+                              </label>
+                            ))}
+                          {videos.filter(
+                            (v) => v.videoType === "RARITY" && v.isActive
+                          ).length === 0 && (
+                            <p className="text-sm text-gray-500">
+                              等級別動画が登録されていません
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveDefaultSettings}
+                    disabled={savingDefaultSettings}
+                    className="rounded-lg bg-purple-500 px-6 py-2 text-white transition-colors hover:bg-purple-600 disabled:bg-gray-400"
+                  >
+                    {savingDefaultSettings ? "保存中..." : "保存"}
+                  </button>
+                  <button
+                    onClick={() => setShowDefaultSettings(false)}
+                    className="rounded-lg bg-gray-200 px-6 py-2 text-gray-700 transition-colors hover:bg-gray-300"
+                  >
+                    キャンセル
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                設定を読み込めませんでした
+              </div>
+            )}
+          </div>
+        )}
+
         {/* アップロードフォーム */}
         {showUploadForm && (
           <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-semibold text-gray-800">動画をアップロード</h2>
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              動画をアップロード
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -406,39 +660,20 @@ export default function VideosPage() {
                 <select
                   value={selectedVideoType}
                   onChange={(e) => {
-                    setSelectedVideoType(e.target.value as 'COMMON' | 'RARITY');
-                    if (e.target.value === 'COMMON') {
-                      setSelectedRarity('');
-                    }
+                    setSelectedVideoType(e.target.value as "COMMON" | "RARITY");
                   }}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="COMMON">共通動画（あたりかハズレの判定動画まで）</option>
+                  <option value="COMMON">
+                    共通動画（あたりかハズレの判定動画まで）
+                  </option>
                   <option value="RARITY">等級別動画（あたりの等級別）</option>
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  {selectedVideoType === "RARITY" &&
+                    "等級はガチャ設定画面で選択してください"}
+                </p>
               </div>
-
-              {selectedVideoType === 'RARITY' && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    等級
-                  </label>
-                  <select
-                    value={selectedRarity}
-                    onChange={(e) => setSelectedRarity(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">選択してください</option>
-                    {Object.entries(RARITY_LABELS)
-                      .filter(([key]) => key !== 'LOSER')
-                      .map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -476,14 +711,13 @@ export default function VideosPage() {
                   disabled={uploading || !uploadFile}
                   className="rounded-lg bg-blue-500 px-6 py-2 text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
                 >
-                  {uploading ? 'アップロード中...' : 'アップロード'}
+                  {uploading ? "アップロード中..." : "アップロード"}
                 </button>
                 <button
                   onClick={() => {
                     setShowUploadForm(false);
                     setUploadFile(null);
-                    setDescription('');
-                    setSelectedRarity('');
+                    setDescription("");
                   }}
                   className="rounded-lg bg-gray-200 px-6 py-2 text-gray-700 transition-colors hover:bg-gray-300"
                 >
@@ -521,27 +755,35 @@ export default function VideosPage() {
                             muted
                           />
                           <div>
-                            <div className="font-medium text-gray-900">{video.fileName}</div>
+                            <div className="font-medium text-gray-900">
+                              {video.fileName}
+                            </div>
                             {video.description && (
-                              <div className="text-sm text-gray-500">{video.description}</div>
+                              <div className="text-sm text-gray-500">
+                                {video.description}
+                              </div>
                             )}
                             <div className="mt-1 text-xs text-gray-400">
-                              {formatFileSize(video.fileSize)} •{' '}
-                              {new Date(video.createdAt).toLocaleDateString('ja-JP')}
+                              {formatFileSize(video.fileSize)} •{" "}
+                              {new Date(video.createdAt).toLocaleDateString(
+                                "ja-JP"
+                              )}
                             </div>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => toggleVideoActive(video.id, video.isActive)}
+                          onClick={() =>
+                            toggleVideoActive(video.id, video.isActive)
+                          }
                           className={`rounded px-3 py-1 text-sm ${
                             video.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {video.isActive ? '有効' : '無効'}
+                          {video.isActive ? "有効" : "無効"}
                         </button>
                         <button
                           onClick={() => handleDeleteClick(video.id)}
@@ -582,27 +824,35 @@ export default function VideosPage() {
                               muted
                             />
                             <div>
-                              <div className="font-medium text-gray-900">{video.fileName}</div>
+                              <div className="font-medium text-gray-900">
+                                {video.fileName}
+                              </div>
                               {video.description && (
-                                <div className="text-sm text-gray-500">{video.description}</div>
+                                <div className="text-sm text-gray-500">
+                                  {video.description}
+                                </div>
                               )}
                               <div className="mt-1 text-xs text-gray-400">
-                                {formatFileSize(video.fileSize)} •{' '}
-                                {new Date(video.createdAt).toLocaleDateString('ja-JP')}
+                                {formatFileSize(video.fileSize)} •{" "}
+                                {new Date(video.createdAt).toLocaleDateString(
+                                  "ja-JP"
+                                )}
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => toggleVideoActive(video.id, video.isActive)}
+                            onClick={() =>
+                              toggleVideoActive(video.id, video.isActive)
+                            }
                             className={`rounded px-3 py-1 text-sm ${
                               video.isActive
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                           >
-                            {video.isActive ? '有効' : '無効'}
+                            {video.isActive ? "有効" : "無効"}
                           </button>
                           <button
                             onClick={() => handleDeleteClick(video.id)}
@@ -628,15 +878,49 @@ export default function VideosPage() {
         <ConfirmModal
           isOpen={deleteConfirm.isOpen}
           title="動画の削除"
-          message="この動画を削除しますか？この操作は取り消せません。"
+          message={
+            deleteConfirm.usageInfo &&
+            (deleteConfirm.usageInfo.inDefaultSettings ||
+              deleteConfirm.usageInfo.inGachaTypes.length > 0)
+              ? `この動画を削除しますか？\n\n⚠️ 警告：この動画は以下の設定で使用されています：\n${
+                  deleteConfirm.usageInfo.inDefaultSettings
+                    ? "・デフォルト設定\n"
+                    : ""
+                }${
+                  deleteConfirm.usageInfo.inGachaTypes.length > 0
+                    ? `・${
+                        deleteConfirm.usageInfo.inGachaTypes.length
+                      }個のガチャタイプ（${deleteConfirm.usageInfo.inGachaTypes
+                        .map((gt: { id: string; name: string }) => gt.name)
+                        .join("、")}）\n`
+                    : ""
+                }\n削除すると、これらの設定からも自動的に削除されます。\nこの操作は取り消せません。`
+              : "この動画を削除しますか？この操作は取り消せません。"
+          }
           confirmText="削除"
           cancelText="キャンセル"
-          variant="danger"
+          variant={
+            deleteConfirm.usageInfo &&
+            (deleteConfirm.usageInfo.inDefaultSettings ||
+              deleteConfirm.usageInfo.inGachaTypes.length > 0)
+              ? "warning"
+              : "danger"
+          }
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm({ isOpen: false, videoId: null })}
+        />
+
+        {/* 削除完了モーダル */}
+        <ConfirmModal
+          isOpen={deleteSuccess.isOpen}
+          title="削除完了"
+          message={deleteSuccess.message}
+          confirmText="OK"
+          variant="info"
+          onConfirm={() => setDeleteSuccess({ isOpen: false, message: "" })}
+          onCancel={() => setDeleteSuccess({ isOpen: false, message: "" })}
         />
       </div>
     </AdminLayout>
   );
 }
-
