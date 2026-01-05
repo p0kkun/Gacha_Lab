@@ -45,3 +45,5 @@ Write-Host ""
 Write-Host "3. LocalStackを停止する場合:"
 Write-Host "   docker-compose -f docker-compose.localstack.yml down" -ForegroundColor Yellow
 
+
+

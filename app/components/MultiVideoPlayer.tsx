@@ -2,6 +2,13 @@
 
 import { useRef, useEffect, useState } from "react";
 
+/**
+ * 複数の動画を連続再生するコンポーネント
+ * MDNのベストプラクティスに基づいた実装
+ * - ループを明示的に無効化
+ * - endedイベントで次の動画に切り替え
+ * - 1回のみ再生（ループしない）
+ */
 export default function MultiVideoPlayer({
   videoUrls,
   onEnd,
@@ -14,45 +21,110 @@ export default function MultiVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSkipButton, setShowSkipButton] = useState(false);
+  const isPlayingRef = useRef(false);
+  const hasEndedRef = useRef(false);
+  const eventHandlersRef = useRef<{
+    handleEnded: (() => void) | null;
+    handleError: ((e: Event) => void) | null;
+    handleCanPlay: (() => void) | null;
+  }>({
+    handleEnded: null,
+    handleError: null,
+    handleCanPlay: null,
+  });
+
+  // コールバック関数をrefで保持（最新の値を確実に使用）
+  const onEndRef = useRef(onEnd);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => {
+    onEndRef.current = onEnd;
+    onErrorRef.current = onError;
+  }, [onEnd, onError]);
+
+  // currentIndexが変更されたら動画を再生
+  useEffect(() => {
     const video = videoRef.current;
-    if (!video || videoUrls.length === 0) {
+    if (!video || videoUrls.length === 0 || hasEndedRef.current) {
       return;
     }
 
-    // 動画読み込みタイムアウト（10秒）
-    let loadTimeout: NodeJS.Timeout | undefined = undefined;
-    const LOAD_TIMEOUT_MS = 10000;
+    if (currentIndex >= videoUrls.length) {
+      hasEndedRef.current = true;
+      onEndRef.current();
+      return;
+    }
 
+    const videoUrl = videoUrls[currentIndex];
+    if (!videoUrl || videoUrl.trim() === "") {
+      // 無効なURLの場合は次の動画へ、または終了
+      if (currentIndex < videoUrls.length - 1) {
+        // effect 内での同期的な setState を避けるため、非同期で更新
+        setTimeout(() => {
+          setCurrentIndex((prev) => Math.min(prev + 1, videoUrls.length - 1));
+        }, 0);
+      } else {
+        hasEndedRef.current = true;
+        onEndRef.current();
+      }
+      return;
+    }
+
+    // 動画の設定をリセット（MDNベストプラクティス）
+    video.pause();
+    video.currentTime = 0;
+    video.loop = false; // ループを明示的に無効化
+    video.src = videoUrl;
+    video.load(); // 新しいソースを読み込む
+
+    // 既存のイベントリスナーを削除
+    if (eventHandlersRef.current.handleEnded) {
+      video.removeEventListener("ended", eventHandlersRef.current.handleEnded);
+    }
+    if (eventHandlersRef.current.handleError) {
+      video.removeEventListener("error", eventHandlersRef.current.handleError);
+    }
+    if (eventHandlersRef.current.handleCanPlay) {
+      video.removeEventListener(
+        "canplay",
+        eventHandlersRef.current.handleCanPlay
+      );
+    }
+
+    // イベントハンドラーを定義
     const handleEnded = () => {
-      console.log("[MultiVideoPlayer] 動画再生終了:", currentIndex);
+      // ループを防ぐために確実に停止
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
+
       // 次の動画がある場合は次の動画を再生
       if (currentIndex < videoUrls.length - 1) {
-        setCurrentIndex(currentIndex + 1);
+        isPlayingRef.current = false;
+        // effect 内での同期的な setState を避けるため、非同期で更新
+        setTimeout(() => {
+          setCurrentIndex((prev) => Math.min(prev + 1, videoUrls.length - 1));
+        }, 0);
       } else {
-        // すべての動画が終了したら終了処理
-        console.log("[MultiVideoPlayer] すべての動画が終了しました");
-        onEnd();
+        // すべての動画が終了したら結果画面に遷移
+        hasEndedRef.current = true;
+        isPlayingRef.current = false;
+        onEndRef.current();
       }
     };
 
     const handleError = (e: Event) => {
-      const video = e.target as HTMLVideoElement;
+      const videoElement = e.target as HTMLVideoElement;
       const errorDetails = {
-        error: video.error,
-        code: video.error?.code,
-        message: video.error?.message,
-        videoUrl: videoUrls[currentIndex],
-        networkState: video.networkState,
-        readyState: video.readyState,
-        src: video.src,
-        currentSrc: video.currentSrc,
+        error: videoElement.error,
+        code: videoElement.error?.code,
+        message: videoElement.error?.message,
+        videoUrl: videoUrl,
+        networkState: videoElement.networkState,
+        readyState: videoElement.readyState,
       };
-      console.error("[MultiVideoPlayer] 動画再生エラー:", errorDetails);
-
-      // エラーコードの説明を追加
-      if (video.error) {
+      if (videoElement.error) {
         const errorMessages: Record<number, string> = {
           1: "MEDIA_ERR_ABORTED: 動画の読み込みが中断されました",
           2: "MEDIA_ERR_NETWORK: ネットワークエラーが発生しました",
@@ -60,117 +132,97 @@ export default function MultiVideoPlayer({
           4: "MEDIA_ERR_SRC_NOT_SUPPORTED: 動画形式がサポートされていません",
         };
         const errorMsg =
-          errorMessages[video.error.code] ||
-          `不明なエラー (コード: ${video.error.code})`;
-        console.error(`[MultiVideoPlayer] エラー詳細: ${errorMsg}`);
+          errorMessages[videoElement.error.code] ||
+          `不明なエラー (コード: ${videoElement.error.code})`;
+        // 必要に応じてエラー内容を UI 側で扱えるようにすることも検討してください
       }
 
       // エラーが発生した場合は、エラーハンドラーを呼び出して結果画面へ
-      if (onError) {
-        onError();
+      hasEndedRef.current = true;
+      isPlayingRef.current = false;
+      if (onErrorRef.current) {
+        onErrorRef.current();
       } else {
-        // エラーハンドラーがない場合は終了処理を実行
-        onEnd();
-      }
-    };
-
-    const handleLoadedData = () => {
-      if (loadTimeout) {
-        clearTimeout(loadTimeout);
+        onEndRef.current();
       }
     };
 
     const handleCanPlay = () => {
-      if (loadTimeout) {
-        clearTimeout(loadTimeout);
-      }
-      // canplayイベントで再生を試みる（より確実）
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // 再生に失敗した場合はエラーハンドラーを呼び出す
-          if (onError) {
-            onError();
-          } else {
-            onEnd();
-          }
-        });
+      // 動画が再生可能になったら自動再生
+      if (!isPlayingRef.current && !hasEndedRef.current) {
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              isPlayingRef.current = true;
+            })
+            .catch((error) => {
+              // 自動再生に失敗した場合はエラーハンドラーを呼び出す
+              hasEndedRef.current = true;
+              isPlayingRef.current = false;
+              if (onErrorRef.current) {
+                onErrorRef.current();
+              } else {
+                onEndRef.current();
+              }
+            });
+        }
       }
     };
 
-    const handleLoadedMetadata = () => {
-      if (loadTimeout) {
-        clearTimeout(loadTimeout);
-      }
+    // イベントハンドラーをrefに保存
+    eventHandlersRef.current = {
+      handleEnded,
+      handleError,
+      handleCanPlay,
     };
 
-    // 動画URLを設定
-    const videoUrl = videoUrls[currentIndex];
-    if (!videoUrl || videoUrl.trim() === "") {
-      // 無効なURLの場合はエラーを発生させる
-      if (onError) {
-        onError();
-      } else {
-        onEnd();
+    // イベントリスナーを追加
+    video.addEventListener("ended", handleEnded);
+    video.addEventListener("error", handleError);
+    video.addEventListener("canplay", handleCanPlay);
+
+    // クリーンアップ関数
+    return () => {
+      if (eventHandlersRef.current.handleEnded) {
+        video.removeEventListener(
+          "ended",
+          eventHandlersRef.current.handleEnded
+        );
       }
+      if (eventHandlersRef.current.handleError) {
+        video.removeEventListener(
+          "error",
+          eventHandlersRef.current.handleError
+        );
+      }
+      if (eventHandlersRef.current.handleCanPlay) {
+        video.removeEventListener(
+          "canplay",
+          eventHandlersRef.current.handleCanPlay
+        );
+      }
+      video.pause();
+      video.src = "";
+      video.load();
+      isPlayingRef.current = false;
+    };
+  }, [currentIndex, videoUrls]);
+
+  // コンポーネントがマウントされたら最初の動画を再生
+  useEffect(() => {
+    if (videoUrls.length === 0) {
       return;
     }
 
-    // 動画読み込みタイムアウトを設定
-    loadTimeout = setTimeout(() => {
-      // タイムアウトが発生した場合はエラーハンドラーを呼び出す
-      if (onError) {
-        onError();
-      } else {
-        onEnd();
-      }
-    }, LOAD_TIMEOUT_MS);
-
-    video.src = videoUrl;
-    video.load();
-
-    video.addEventListener("ended", handleEnded);
-    video.addEventListener("error", handleError);
-    video.addEventListener("loadeddata", handleLoadedData);
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    video.addEventListener("canplay", handleCanPlay);
-
-    // 自動再生を試みる（mutedで再生を開始）
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          if (loadTimeout) {
-            clearTimeout(loadTimeout);
-          }
-        })
-        .catch(() => {
-          // 再生に失敗した場合は、canplayイベントで再試行するため、ここではエラーを無視
-          // ただし、一定時間後に再生できない場合はエラーハンドラーを呼び出す
-          setTimeout(() => {
-            if (video.paused && video.readyState < 3) {
-              // 動画が再生できず、読み込みも完了していない場合はエラー
-              if (loadTimeout) {
-                clearTimeout(loadTimeout);
-              }
-              if (onError) {
-                onError();
-              } else {
-                onEnd();
-              }
-            }
-          }, 3000);
-        });
-    }
-
-    return () => {
-      video.removeEventListener("ended", handleEnded);
-      video.removeEventListener("error", handleError);
-      video.removeEventListener("loadeddata", handleLoadedData);
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("canplay", handleCanPlay);
-    };
-  }, [currentIndex, videoUrls, onEnd, onError]);
+    // 初期状態をリセット
+    hasEndedRef.current = false;
+    isPlayingRef.current = false;
+    // effect 内での同期的な setState を避けるため、非同期で更新
+    setTimeout(() => {
+      setCurrentIndex(0);
+    }, 0);
+  }, [videoUrls]);
 
   const handleVideoClick = () => {
     if (showSkipButton) {
@@ -192,7 +244,9 @@ export default function MultiVideoPlayer({
       video.pause();
     }
     // すべての動画をスキップして終了
-    onEnd();
+    hasEndedRef.current = true;
+    isPlayingRef.current = false;
+    onEndRef.current();
   };
 
   if (videoUrls.length === 0) {
@@ -205,9 +259,9 @@ export default function MultiVideoPlayer({
         ref={videoRef}
         className="h-full w-full object-contain"
         controls={false}
-        autoPlay
         muted={true}
         playsInline
+        loop={false}
         onClick={handleVideoClick}
         preload="auto"
       >
@@ -231,11 +285,6 @@ export default function MultiVideoPlayer({
           >
             スキップする
           </button>
-        </div>
-      )}
-      {videoUrls.length > 1 && (
-        <div className="absolute bottom-4 right-4 rounded-full bg-black bg-opacity-50 px-3 py-1 text-sm text-white">
-          {currentIndex + 1} / {videoUrls.length}
         </div>
       )}
     </div>

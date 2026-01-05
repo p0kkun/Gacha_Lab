@@ -31,3 +31,5 @@ echo ""
 echo "3. LocalStackを停止する場合:"
 echo "   docker-compose -f docker-compose.localstack.yml down"
 
+
+

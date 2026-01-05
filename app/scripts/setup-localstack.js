@@ -72,3 +72,5 @@ setTimeout(() => {
   console.log('   npm run localstack:down');
 }, 10000);
 
+
+
