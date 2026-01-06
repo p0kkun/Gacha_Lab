@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getPointPlanById, getPointPlanByLegacyPair } from "@/lib/point-plans";
+import { prisma } from "@/lib/prisma";
 
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
@@ -34,12 +34,32 @@ export async function POST(request: NextRequest) {
     }
 
     // サーバー側で購入プランを確定（クライアントからのamount/pointsは信用しない）
-    const plan =
-      (typeof planId === "string" && planId.trim() !== ""
-        ? getPointPlanById(planId)
-        : null) ?? getPointPlanByLegacyPair(amount, points);
+    // - 基本は planId を使う
+    // - 後方互換のため、planId が無い場合のみ (amount, points) が一致するDBプランを探す
+    const normalizedPlanId =
+      typeof planId === "string" && planId.trim() !== "" ? planId.trim() : null;
 
-    if (!plan) {
+    let plan = normalizedPlanId
+      ? await prisma.pointPurchasePlan.findUnique({
+          where: { id: normalizedPlanId },
+        })
+      : null;
+
+    if (!plan && amount !== undefined && points !== undefined) {
+      const amt = typeof amount === "number" ? amount : Number(amount);
+      const pts = typeof points === "number" ? points : Number(points);
+      if (Number.isFinite(amt) && Number.isFinite(pts) && amt > 0 && pts > 0) {
+        plan = await prisma.pointPurchasePlan.findFirst({
+          where: {
+            isActive: true,
+            price: amt,
+            points: pts,
+          },
+        });
+      }
+    }
+
+    if (!plan || !plan.isActive) {
       return NextResponse.json(
         { error: "無効な購入プランです" },
         { status: 400 }

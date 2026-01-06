@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
+import type { PointPlan } from "@/lib/point-plan-types";
 import {
   Elements,
   PaymentElement,
@@ -17,7 +18,6 @@ import {
   login,
   type LiffProfile,
 } from "@/lib/liff";
-import { POINT_PLANS, type PointPlan } from "@/lib/point-plans";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
@@ -323,6 +323,9 @@ function PointsPageContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<PointPlan | null>(null);
+  const [plans, setPlans] = useState<PointPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState<string | null>(null);
   const [points, setPoints] = useState<number | null>(null);
   const [pointBalances, setPointBalances] = useState<{
     paid: number;
@@ -332,6 +335,31 @@ function PointsPageContent() {
     freeExpiresAt: string | null;
     lastUpdated: string | null;
   } | null>(null);
+
+  // 購入プランを取得（公開API）
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setPlansLoading(true);
+      setPlansError(null);
+      try {
+        const res = await fetch("/api/points/plans");
+        if (!res.ok) {
+          throw new Error("購入プランの取得に失敗しました");
+        }
+        const data = await res.json();
+        setPlans(Array.isArray(data.plans) ? data.plans : []);
+      } catch (e) {
+        console.error("購入プラン取得エラー:", e);
+        setPlans([]);
+        setPlansError(
+          e instanceof Error ? e.message : "購入プランの取得に失敗しました"
+        );
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   // ポイント残高を更新するヘルパー関数
   const updatePointBalances = async (userId: string) => {
@@ -719,22 +747,36 @@ function PointsPageContent() {
             <h2 className="mb-4 text-lg font-semibold text-gray-800">
               プランを選択
             </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {POINT_PLANS.map((plan) => (
-                <button
-                  key={plan.points}
-                  onClick={() => setSelectedPlan(plan)}
-                  className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
-                >
-                  <div className="mb-2 text-lg font-bold text-gray-800">
-                    {plan.label}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    ¥{plan.price.toLocaleString()}
-                  </div>
-                </button>
-              ))}
-            </div>
+            {plansLoading ? (
+              <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+                読み込み中...
+              </div>
+            ) : plansError ? (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+                {plansError}
+              </div>
+            ) : plans.length === 0 ? (
+              <div className="rounded-lg bg-yellow-50 p-4 text-sm text-yellow-800">
+                購入可能なプランがありません（管理画面でプランを設定してください）
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {plans.map((plan) => (
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan)}
+                    className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
+                  >
+                    <div className="mb-2 text-lg font-bold text-gray-800">
+                      {plan.label}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      ¥{plan.price.toLocaleString()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <CheckoutSection

@@ -16,7 +16,18 @@ sleep 10
 BUCKET_NAME=${AWS_S3_BUCKET_NAME:-gacha-lab-test}
 echo "🪣 S3バケットを作成中: $BUCKET_NAME"
 
-aws --endpoint-url=http://localhost:4566 s3 mb s3://$BUCKET_NAME 2>/dev/null || echo "バケットは既に存在します"
+LOCALSTACK_ENDPOINT="${LOCALSTACK_ENDPOINT:-http://127.0.0.1:4566}"
+aws --endpoint-url=$LOCALSTACK_ENDPOINT s3 mb s3://$BUCKET_NAME 2>/dev/null || echo "バケットは既に存在します"
+
+# CORS設定（Presigned PUTのプリフライト対策）
+echo "🌐 S3バケットのCORS設定を適用中..."
+export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
+export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
+export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-ap-northeast-1}
+CORS_FILE="$(cd "$(dirname "$0")" && pwd)/localstack-s3-cors.json"
+aws --endpoint-url=$LOCALSTACK_ENDPOINT s3api put-bucket-cors --bucket "$BUCKET_NAME" --cors-configuration "file://$CORS_FILE" 2>/dev/null \
+  && echo "✅ CORS設定を適用しました" \
+  || echo "⚠️  CORS設定の適用に失敗しました（必要に応じて手動で設定してください）"
 
 echo "✅ LocalStackのセットアップが完了しました！"
 echo ""

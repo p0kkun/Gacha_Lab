@@ -18,6 +18,7 @@ export default function AdminLayout({
     { href: "/admin/tags", label: "タグ管理" },
     { href: "/admin/messages", label: "メッセージ配信" },
     { href: "/admin/points", label: "ポイント管理" },
+    { href: "/admin/point-plans", label: "ポイント購入プラン" },
     { href: "/admin/gacha-types", label: "ガチャ設定" },
     { href: "/admin/items", label: "アイテム設定" },
     { href: "/admin/videos", label: "動画管理" },

@@ -23,11 +23,36 @@ if (-not $awsCliInstalled) {
     Write-Host "   または、以下のコマンドでAWS CLIをインストール:"
     Write-Host "   winget install Amazon.AWSCLI" -ForegroundColor Cyan
 } else {
-    aws --endpoint-url=http://localhost:4566 s3 mb s3://$bucketName 2>$null
+    # LocalStack向けにダミー認証情報を設定（aws configure不要）
+    if (-not $env:AWS_ACCESS_KEY_ID) { $env:AWS_ACCESS_KEY_ID = "test" }
+    if (-not $env:AWS_SECRET_ACCESS_KEY) { $env:AWS_SECRET_ACCESS_KEY = "test" }
+    if (-not $env:AWS_DEFAULT_REGION) { $env:AWS_DEFAULT_REGION = "ap-northeast-1" }
+
+    $endpoint = if ($env:LOCALSTACK_ENDPOINT) { $env:LOCALSTACK_ENDPOINT } else { "http://127.0.0.1:4566" }
+
+    aws --endpoint-url=$endpoint s3 mb s3://$bucketName 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ バケットを作成しました" -ForegroundColor Green
     } else {
         Write-Host "ℹ️  バケットは既に存在するか、作成に失敗しました" -ForegroundColor Yellow
+    }
+
+    # CORS設定（Presigned PUTのプリフライト対策）
+    $corsFile = Join-Path $PSScriptRoot "localstack-s3-cors.json"
+    if (Test-Path $corsFile) {
+        Write-Host "🌐 S3バケットのCORS設定を適用中..." -ForegroundColor Yellow
+        # WindowsのAWS CLIは file:///C:/... をパラメータファイルとして読めない場合があるため
+        # スクリプトディレクトリに移動して相対パスで渡す（スペース/ドライブレター問題を回避）
+        Push-Location $PSScriptRoot
+        aws --endpoint-url=$endpoint s3api put-bucket-cors --bucket $bucketName --cors-configuration "file://localstack-s3-cors.json" 2>$null
+        Pop-Location
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ CORS設定を適用しました" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  CORS設定の適用に失敗しました（必要に応じて手動で設定してください）" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "⚠️  CORS設定ファイルが見つかりません: $corsFile" -ForegroundColor Yellow
     }
 }
 

@@ -3,7 +3,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // LocalStackを使用するかどうか（環境変数で制御）
 const USE_LOCALSTACK = process.env.USE_LOCALSTACK === 'true';
-const LOCALSTACK_ENDPOINT = process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566';
+// Windowsでは localhost がIPv6(::1)に解決され、LocalStackへの接続が不安定になることがあるため
+// デフォルトは IPv4 の 127.0.0.1 を使用する
+const LOCALSTACK_ENDPOINT = process.env.LOCALSTACK_ENDPOINT || 'http://127.0.0.1:4566';
 
 // S3クライアントの初期化
 const s3Client = new S3Client({
@@ -26,7 +28,7 @@ const s3Client = new S3Client({
 // AmplifyではAWS_で始まる環境変数が予約語のため、S3_プレフィックスを使用（後方互換性のためAWS_もサポート）
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || '';
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || process.env.AWS_CLOUDFRONT_DOMAIN || '';
-const LOCALSTACK_BASE_URL = process.env.LOCALSTACK_BASE_URL || 'http://localhost:4566';
+const LOCALSTACK_BASE_URL = process.env.LOCALSTACK_BASE_URL || 'http://127.0.0.1:4566';
 
 /**
  * S3にファイルをアップロード（汎用）

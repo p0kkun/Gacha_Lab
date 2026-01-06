@@ -39,6 +39,26 @@ const prisma = new PrismaClient({
 async function main() {
   console.log("🌱 シードデータの投入を開始します...");
 
+  // 0. ポイント購入プラン（購入画面の表示用）
+  console.log("🧾 ポイント購入プランを作成中...");
+  const planCount = await prisma.pointPurchasePlan.count();
+  if (planCount === 0) {
+    await prisma.pointPurchasePlan.createMany({
+      data: [
+        { id: "p100", points: 100, price: 100, label: "100ポイント", isActive: true, displayOrder: 0 },
+        { id: "p500", points: 500, price: 500, label: "500ポイント", isActive: true, displayOrder: 1 },
+        { id: "p1000", points: 1000, price: 1000, label: "1,000ポイント", isActive: true, displayOrder: 2 },
+        { id: "p3000", points: 3000, price: 3000, label: "3,000ポイント", isActive: true, displayOrder: 3 },
+        { id: "p5000", points: 5000, price: 5000, label: "5,000ポイント", isActive: true, displayOrder: 4 },
+        { id: "p10000", points: 10000, price: 10000, label: "10,000ポイント", isActive: true, displayOrder: 5 },
+      ],
+      skipDuplicates: true,
+    });
+    console.log("✅ ポイント購入プランを作成しました（6件）");
+  } else {
+    console.log("ℹ️ ポイント購入プランは既に存在するためスキップします:", { planCount });
+  }
+
   // 1. ガチャタイプの初期データ
   console.log("📦 ガチャタイプを作成中...");
 
