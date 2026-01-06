@@ -1,4 +1,4 @@
-import { PointType, PointTransactionType } from '@prisma/client';
+import { PointTransactionType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 function calcUnifiedExpiry(from: Date): Date {
@@ -130,6 +130,92 @@ export async function grantPaidPoints(
     });
 
     return updatedBalance;
+  });
+}
+
+/**
+ * 購入ポイントを付与（有償 + おまけ無償を同時付与、Stripeの重複付与対策）
+ *
+ * - 1つのPaymentIntentにつき1回のみ付与されることを担保したい
+ * - 同一stripePaymentIdでpoint_historiesが存在する場合は二重付与しない
+ */
+export async function grantPurchasePoints(
+  userId: string,
+  paidPoints: number,
+  bonusFreePoints: number,
+  stripePaymentId: string
+) {
+  if (!stripePaymentId || stripePaymentId.trim() === "") {
+    throw new Error("stripePaymentId が必要です");
+  }
+  if (paidPoints <= 0) {
+    throw new Error("有償ポイント数は1以上である必要があります");
+  }
+  if (bonusFreePoints < 0) {
+    throw new Error("おまけ無償ポイントは0以上である必要があります");
+  }
+
+  const now = new Date();
+  const unifiedExpiresAt = calcUnifiedExpiry(now);
+
+  return await prisma.$transaction(async (tx) => {
+    // 既に付与済みなら何もしない（idempotent）
+    const existing = await tx.pointHistory.findFirst({
+      where: { stripePaymentId },
+      select: { id: true },
+    });
+    if (existing) {
+      return { alreadyGranted: true };
+    }
+
+    // 残高行を確実に作成
+    const balance = await tx.userPointBalance.findUnique({ where: { userId } });
+    if (!balance) {
+      await tx.userPointBalance.create({
+        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
+      });
+    }
+
+    // 有償+無償を同時に加算（有効期限は統一）
+    const updatedBalance = await tx.userPointBalance.update({
+      where: { userId },
+      data: {
+        paidAmount: { increment: paidPoints },
+        freeAmount: bonusFreePoints > 0 ? { increment: bonusFreePoints } : undefined,
+        expiresAt: unifiedExpiresAt,
+        lastUpdated: now,
+      },
+    });
+
+    // 購入（有償）履歴
+    const totalAfterPurchase = await getTotalBalances(tx, userId);
+    await tx.pointHistory.create({
+      data: {
+        userId,
+        transactionType: PointTransactionType.PURCHASE,
+        amount: paidPoints,
+        balanceAfter: totalAfterPurchase,
+        description: `${paidPoints}ポイント購入`,
+        stripePaymentId,
+      },
+    });
+
+    // おまけ（無償）履歴（任意）
+    if (bonusFreePoints > 0) {
+      const totalAfterBonus = await getTotalBalances(tx, userId);
+      await tx.pointHistory.create({
+        data: {
+          userId,
+          transactionType: PointTransactionType.GRANT,
+          amount: bonusFreePoints,
+          balanceAfter: totalAfterBonus,
+          description: `購入特典（無償） +${bonusFreePoints}pt`,
+          stripePaymentId,
+        },
+      });
+    }
+
+    return { alreadyGranted: false, updatedBalance };
   });
 }
 

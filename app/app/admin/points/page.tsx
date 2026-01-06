@@ -703,6 +703,33 @@ export default function PointsManagementPage() {
               : `選択した${selectedUsers.length}人のユーザーに${amount}ポイント（${pointType === 'PAID' ? '有償' : '無償'}）を付与しますか？`) +
             (sendNotification ? '\n\n通知メッセージも送信します。' : '')
           }
+          changes={[
+            {
+              label: '対象',
+              from: '-',
+              to:
+                grantType === 'all'
+                  ? '全ユーザー'
+                  : grantType === 'tags'
+                  ? `タグ指定（${selectedTagIds.length}個 / 対象 ${tagUserCount}人）`
+                  : `個別指定（${selectedUsers.length}人）`,
+            },
+            {
+              label: 'ポイント種別',
+              from: '-',
+              to: pointType === 'PAID' ? '有償' : '無償',
+            },
+            {
+              label: '付与ポイント',
+              from: '-',
+              to: `${Number(amount || 0).toLocaleString()}pt`,
+            },
+            {
+              label: '通知',
+              from: '送信しない',
+              to: sendNotification ? '送信する' : '送信しない',
+            },
+          ]}
           confirmText="付与"
           cancelText="キャンセル"
           variant="info"

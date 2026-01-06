@@ -45,12 +45,12 @@ async function main() {
   if (planCount === 0) {
     await prisma.pointPurchasePlan.createMany({
       data: [
-        { id: "p100", points: 100, price: 100, label: "100ポイント", isActive: true, displayOrder: 0 },
-        { id: "p500", points: 500, price: 500, label: "500ポイント", isActive: true, displayOrder: 1 },
-        { id: "p1000", points: 1000, price: 1000, label: "1,000ポイント", isActive: true, displayOrder: 2 },
-        { id: "p3000", points: 3000, price: 3000, label: "3,000ポイント", isActive: true, displayOrder: 3 },
-        { id: "p5000", points: 5000, price: 5000, label: "5,000ポイント", isActive: true, displayOrder: 4 },
-        { id: "p10000", points: 10000, price: 10000, label: "10,000ポイント", isActive: true, displayOrder: 5 },
+        { id: "p100", points: 100, bonusFreePoints: 0, price: 100, label: "100ポイント", isActive: true, displayOrder: 0 },
+        { id: "p500", points: 500, bonusFreePoints: 0, price: 500, label: "500ポイント", isActive: true, displayOrder: 1 },
+        { id: "p1000", points: 1000, bonusFreePoints: 0, price: 1000, label: "1,000ポイント", isActive: true, displayOrder: 2 },
+        { id: "p3000", points: 3000, bonusFreePoints: 0, price: 3000, label: "3,000ポイント", isActive: true, displayOrder: 3 },
+        { id: "p5000", points: 5000, bonusFreePoints: 0, price: 5000, label: "5,000ポイント", isActive: true, displayOrder: 4 },
+        { id: "p10000", points: 10000, bonusFreePoints: 0, price: 10000, label: "10,000ポイント", isActive: true, displayOrder: 5 },
       ],
       skipDuplicates: true,
     });

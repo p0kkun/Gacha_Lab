@@ -32,6 +32,7 @@ export default function VideosPage() {
   const [videos, setVideos] = useState<GachaVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [selectedVideoType, setSelectedVideoType] = useState<
@@ -50,15 +51,19 @@ export default function VideosPage() {
     isOpen: false,
     videoId: null,
   });
-  const [deleteSuccess, setDeleteSuccess] = useState<{
+  const [toggleConfirm, setToggleConfirm] = useState<{
     isOpen: boolean;
-    message: string;
-  }>({
-    isOpen: false,
-    message: "",
-  });
+    videoId: number | null;
+    currentStatus: boolean;
+  }>({ isOpen: false, videoId: null, currentStatus: true });
+  const [saveDefaultsConfirm, setSaveDefaultsConfirm] = useState(false);
   const [showDefaultSettings, setShowDefaultSettings] = useState(false);
   const [defaultSettings, setDefaultSettings] = useState<{
+    id: number | null;
+    commonVideoIds: number[];
+    rarityVideoIds: Record<string, number[]> | null;
+  } | null>(null);
+  const [savedDefaultSettings, setSavedDefaultSettings] = useState<{
     id: number | null;
     commonVideoIds: number[];
     rarityVideoIds: Record<string, number[]> | null;
@@ -70,6 +75,7 @@ export default function VideosPage() {
   const fetchVideos = async () => {
     try {
       setLoading(true);
+      setError(null);
       const token = getAdminAuthToken();
       const res = await fetch("/api/admin/videos", {
         headers: {
@@ -205,7 +211,7 @@ export default function VideosPage() {
   };
 
   // 動画の有効/無効を切り替え
-  const toggleVideoActive = async (videoId: number, currentStatus: boolean) => {
+  const toggleVideoActive = async (videoId: number, nextStatus: boolean) => {
     try {
       const token = getAdminAuthToken();
       const res = await fetch(`/api/admin/videos/${videoId}`, {
@@ -215,7 +221,7 @@ export default function VideosPage() {
           "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
-          isActive: !currentStatus,
+          isActive: nextStatus,
         }),
       });
 
@@ -224,9 +230,25 @@ export default function VideosPage() {
       }
 
       await fetchVideos();
+      setSuccess(`動画の状態を「${nextStatus ? "有効" : "無効"}」に変更しました`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "更新に失敗しました");
     }
+  };
+
+  const openToggleConfirm = (videoId: number, currentStatus: boolean) => {
+    setToggleConfirm({ isOpen: true, videoId, currentStatus });
+  };
+
+  const confirmToggle = async () => {
+    if (!toggleConfirm.videoId) {
+      setToggleConfirm({ isOpen: false, videoId: null, currentStatus: true });
+      return;
+    }
+    const videoId = toggleConfirm.videoId;
+    const nextStatus = !toggleConfirm.currentStatus;
+    setToggleConfirm({ isOpen: false, videoId: null, currentStatus: true });
+    await toggleVideoActive(videoId, nextStatus);
   };
 
   // 動画削除の確認モーダルを開く（使用状況を確認）
@@ -311,13 +333,9 @@ export default function VideosPage() {
       setDeleteConfirm({ isOpen: false, videoId: null });
       await fetchVideos();
 
-      // 削除完了モーダルを表示
-      setDeleteSuccess({
-        isOpen: true,
-        message: warningMessage
-          ? `動画を削除しました。\n\n${warningMessage}`
-          : "動画を削除しました。",
-      });
+      setSuccess(
+        warningMessage ? `動画を削除しました。\n\n${warningMessage}` : "動画を削除しました。"
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "削除に失敗しました");
       setDeleteConfirm({ isOpen: false, videoId: null });
@@ -328,6 +346,7 @@ export default function VideosPage() {
   const fetchDefaultSettings = async () => {
     try {
       setLoadingDefaultSettings(true);
+      setError(null);
       const token = getAdminAuthToken();
       const res = await fetch("/api/admin/videos/default-settings", {
         headers: {
@@ -357,7 +376,7 @@ export default function VideosPage() {
         throw new Error("無効なレスポンス形式です");
       }
       const data = await res.json();
-      setDefaultSettings({
+      const nextSettings = {
         id: data.settings.id,
         commonVideoIds: data.settings.commonVideoIds || [],
         rarityVideoIds: data.settings.rarityVideoIds
@@ -365,7 +384,9 @@ export default function VideosPage() {
             ? JSON.parse(data.settings.rarityVideoIds)
             : data.settings.rarityVideoIds
           : null,
-      });
+      };
+      setDefaultSettings(nextSettings);
+      setSavedDefaultSettings(nextSettings);
     } catch (err) {
       setError(
         err instanceof Error
@@ -417,7 +438,7 @@ export default function VideosPage() {
 
       const data = await res.json();
       console.log("[一括設定保存] 成功:", data);
-      setDefaultSettings({
+      const nextSettings = {
         id: data.settings.id,
         commonVideoIds: data.settings.commonVideoIds || [],
         rarityVideoIds: data.settings.rarityVideoIds
@@ -425,16 +446,54 @@ export default function VideosPage() {
             ? JSON.parse(data.settings.rarityVideoIds)
             : data.settings.rarityVideoIds
           : null,
-      });
+      };
+      setDefaultSettings(nextSettings);
+      setSavedDefaultSettings(nextSettings);
       setShowDefaultSettings(false);
       // 成功メッセージを表示（エラー表示をクリア）
       setError(null);
-      alert("一括設定を保存しました");
+      setSuccess("一括設定を保存しました");
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存に失敗しました");
     } finally {
       setSavingDefaultSettings(false);
     }
+  };
+
+  const buildDefaultSettingsChanges = () => {
+    if (!defaultSettings || !savedDefaultSettings) return [];
+    const before = savedDefaultSettings;
+    const after = defaultSettings;
+    const changes: Array<{ label: string; from: string; to: string }> = [];
+
+    const beforeCommon = before.commonVideoIds?.length ?? 0;
+    const afterCommon = after.commonVideoIds?.length ?? 0;
+    if (beforeCommon !== afterCommon) {
+      changes.push({
+        label: "共通動画（選択数）",
+        from: `${beforeCommon}件`,
+        to: `${afterCommon}件`,
+      });
+    }
+
+    const beforeRarityKeys = before.rarityVideoIds
+      ? Object.keys(before.rarityVideoIds).length
+      : 0;
+    const afterRarityKeys = after.rarityVideoIds
+      ? Object.keys(after.rarityVideoIds).length
+      : 0;
+    if (beforeRarityKeys !== afterRarityKeys) {
+      changes.push({
+        label: "等級別動画（設定数）",
+        from: `${beforeRarityKeys}等級`,
+        to: `${afterRarityKeys}等級`,
+      });
+    }
+
+    if (changes.length === 0) {
+      changes.push({ label: "変更", from: "変更なし", to: "変更なし" });
+    }
+    return changes;
   };
 
   // 動画をタイプ別・等級別にグループ化
@@ -487,6 +546,11 @@ export default function VideosPage() {
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
             {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 whitespace-pre-wrap">
+            {success}
           </div>
         )}
 
@@ -624,7 +688,7 @@ export default function VideosPage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={saveDefaultSettings}
+                    onClick={() => setSaveDefaultsConfirm(true)}
                     disabled={savingDefaultSettings}
                     className="rounded-lg bg-purple-500 px-6 py-2 text-white transition-colors hover:bg-purple-600 disabled:bg-gray-400"
                   >
@@ -775,7 +839,7 @@ export default function VideosPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() =>
-                            toggleVideoActive(video.id, video.isActive)
+                            openToggleConfirm(video.id, video.isActive)
                           }
                           className={`rounded px-3 py-1 text-sm ${
                             video.isActive
@@ -844,7 +908,7 @@ export default function VideosPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() =>
-                              toggleVideoActive(video.id, video.isActive)
+                              openToggleConfirm(video.id, video.isActive)
                             }
                             className={`rounded px-3 py-1 text-sm ${
                               video.isActive
@@ -899,6 +963,13 @@ export default function VideosPage() {
           }
           confirmText="削除"
           cancelText="キャンセル"
+          changes={[
+            {
+              label: "対象動画",
+              from: "登録済み",
+              to: `削除（ID: ${deleteConfirm.videoId ?? "-"}）`,
+            },
+          ]}
           variant={
             deleteConfirm.usageInfo &&
             (deleteConfirm.usageInfo.inDefaultSettings ||
@@ -910,15 +981,48 @@ export default function VideosPage() {
           onCancel={() => setDeleteConfirm({ isOpen: false, videoId: null })}
         />
 
-        {/* 削除完了モーダル */}
         <ConfirmModal
-          isOpen={deleteSuccess.isOpen}
-          title="削除完了"
-          message={deleteSuccess.message}
-          confirmText="OK"
+          isOpen={toggleConfirm.isOpen}
+          title="動画の状態変更"
+          message={
+            toggleConfirm.currentStatus
+              ? "この動画を無効にしますか？（ガチャ演出で使用されなくなります）"
+              : "この動画を有効にしますか？"
+          }
+          confirmText={toggleConfirm.currentStatus ? "無効化" : "有効化"}
+          cancelText="キャンセル"
+          variant={toggleConfirm.currentStatus ? "warning" : "info"}
+          changes={[
+            {
+              label: "状態",
+              from: toggleConfirm.currentStatus ? "有効" : "無効",
+              to: toggleConfirm.currentStatus ? "無効" : "有効",
+            },
+            {
+              label: "対象動画ID",
+              from: "-",
+              to: String(toggleConfirm.videoId ?? "-"),
+            },
+          ]}
+          onConfirm={confirmToggle}
+          onCancel={() =>
+            setToggleConfirm({ isOpen: false, videoId: null, currentStatus: true })
+          }
+        />
+
+        <ConfirmModal
+          isOpen={saveDefaultsConfirm}
+          title="一括設定の保存"
+          message="以下の内容に変更して保存します。よろしいですか？"
+          confirmText="保存"
+          cancelText="キャンセル"
           variant="info"
-          onConfirm={() => setDeleteSuccess({ isOpen: false, message: "" })}
-          onCancel={() => setDeleteSuccess({ isOpen: false, message: "" })}
+          changes={buildDefaultSettingsChanges()}
+          onConfirm={async () => {
+            setSaveDefaultsConfirm(false);
+            await saveDefaultSettings();
+          }}
+          onCancel={() => setSaveDefaultsConfirm(false)}
         />
       </div>
     </AdminLayout>

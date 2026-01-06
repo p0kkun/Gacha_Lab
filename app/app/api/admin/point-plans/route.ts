@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     const {
       id,
       points,
+      bonusFreePoints,
       price,
       label,
       isActive,
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
     }: {
       id?: string;
       points?: number;
+      bonusFreePoints?: number;
       price?: number;
       label?: string;
       isActive?: boolean;
@@ -73,10 +75,22 @@ export async function POST(request: NextRequest) {
     }
 
     const pts = typeof points === "number" ? points : Number(points);
+    const bonus =
+      typeof bonusFreePoints === "number"
+        ? bonusFreePoints
+        : bonusFreePoints === undefined
+          ? 0
+          : Number(bonusFreePoints);
     const prc = typeof price === "number" ? price : Number(price);
     if (!Number.isFinite(pts) || pts <= 0) {
       return NextResponse.json(
         { error: "ポイント数は1以上である必要があります" },
+        { status: 400 }
+      );
+    }
+    if (!Number.isFinite(bonus) || bonus < 0) {
+      return NextResponse.json(
+        { error: "おまけ無償ポイントは0以上である必要があります" },
         { status: 400 }
       );
     }
@@ -96,6 +110,7 @@ export async function POST(request: NextRequest) {
       data: {
         id: normalizedId,
         points: Math.trunc(pts),
+        bonusFreePoints: Math.trunc(bonus),
         price: Math.trunc(prc),
         label: lbl,
         isActive: typeof isActive === "boolean" ? isActive : true,

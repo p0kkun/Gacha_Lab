@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
         userId,
         planId: plan.id,
         points: plan.points.toString(),
+        bonusFreePoints: (plan.bonusFreePoints ?? 0).toString(),
         amount: plan.price.toString(),
         type: "point_purchase",
       },

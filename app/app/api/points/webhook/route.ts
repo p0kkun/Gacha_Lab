@@ -81,6 +81,10 @@ export async function POST(request: NextRequest) {
       if (paymentIntent.metadata.type === "point_purchase") {
         const userId = paymentIntent.metadata.userId;
         const points = parseInt(paymentIntent.metadata.points || "0", 10);
+        const bonusFreePoints = parseInt(
+          paymentIntent.metadata.bonusFreePoints || "0",
+          10
+        );
 
         console.log("Webhook: ポイント購入処理開始:", {
           userId,
@@ -88,7 +92,7 @@ export async function POST(request: NextRequest) {
           paymentIntentId: paymentIntent.id,
         });
 
-        if (!userId || points <= 0) {
+        if (!userId || points <= 0 || bonusFreePoints < 0) {
           console.error("Webhook: 無効なメタデータ:", paymentIntent.metadata);
           return NextResponse.json(
             { error: "無効なメタデータ" },
@@ -97,18 +101,12 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          // 有償ポイントを付与（有効期限は最終更新日から1年後）
-          const { grantPaidPoints } = await import('@/lib/point-management');
-          await grantPaidPoints(
-            userId,
-            points,
-            null, // 有効期限は自動設定（最終更新日から1年後）
-            `${points}ポイント購入`,
-            paymentIntent.id
-          );
+          // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
+          const { grantPurchasePoints } = await import('@/lib/point-management');
+          await grantPurchasePoints(userId, points, bonusFreePoints, paymentIntent.id);
 
           console.log(
-            `Webhook: ポイント購入成功: ユーザー ${userId} に ${points}ポイント付与`,
+            `Webhook: ポイント購入成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`,
             {
               paymentIntentId: paymentIntent.id,
               paymentMethod: paymentIntent.payment_method,

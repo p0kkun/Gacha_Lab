@@ -289,6 +289,8 @@ model PointPurchasePlan {
   id           String   @id
   /// 付与ポイント数
   points       Int
+  /// おまけ無償ポイント数（購入特典）
+  bonusFreePoints Int   @default(0)
   /// 価格（JPY, 円単位）
   price        Int
   /// 表示ラベル（例: "100ポイント"）

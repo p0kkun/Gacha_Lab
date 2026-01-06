@@ -24,12 +24,14 @@ export async function PUT(
     const body = await request.json();
     const {
       points,
+      bonusFreePoints,
       price,
       label,
       isActive,
       displayOrder,
     }: {
       points?: number;
+      bonusFreePoints?: number;
       price?: number;
       label?: string;
       isActive?: boolean;
@@ -46,6 +48,19 @@ export async function PUT(
         );
       }
       data.points = Math.trunc(pts);
+    }
+    if (bonusFreePoints !== undefined) {
+      const bonus =
+        typeof bonusFreePoints === "number"
+          ? bonusFreePoints
+          : Number(bonusFreePoints);
+      if (!Number.isFinite(bonus) || bonus < 0) {
+        return NextResponse.json(
+          { error: "おまけ無償ポイントは0以上である必要があります" },
+          { status: 400 }
+        );
+      }
+      data.bonusFreePoints = Math.trunc(bonus);
     }
     if (price !== undefined) {
       const prc = typeof price === "number" ? price : Number(price);
@@ -98,6 +113,42 @@ export async function PUT(
     console.error("管理者: 購入プラン更新エラー:", error);
     return NextResponse.json(
       { error: "購入プランの更新に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * ポイント購入プラン削除（管理者用）
+ * DELETE /api/admin/point-plans/[id]
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!verifyAdminAuth(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { id } = await params;
+    const planId = id;
+    if (!planId || planId.trim() === "") {
+      return NextResponse.json({ error: "無効なIDです" }, { status: 400 });
+    }
+
+    await prisma.pointPurchasePlan.delete({ where: { id: planId } });
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    if (typeof error?.code === "string" && error.code === "P2025") {
+      return NextResponse.json(
+        { error: "プランが見つかりません" },
+        { status: 404 }
+      );
+    }
+    console.error("管理者: 購入プラン削除エラー:", error);
+    return NextResponse.json(
+      { error: "購入プランの削除に失敗しました" },
       { status: 500 }
     );
   }

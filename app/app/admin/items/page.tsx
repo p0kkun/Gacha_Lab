@@ -661,6 +661,16 @@ export default function ItemsPage() {
           isOpen={deleteConfirm.isOpen}
           title="アイテムの無効化"
           message="このアイテムを無効化しますか？無効化されたアイテムはガチャで抽選されなくなります。"
+          changes={
+            (() => {
+              const item = items.find((i) => i.id === deleteConfirm.itemId);
+              if (!item) return [];
+              return [
+                { label: "対象アイテム", from: "登録済み", to: `無効化（${item.name}）` },
+                { label: "状態", from: "有効", to: "無効" },
+              ];
+            })()
+          }
           confirmText="無効化"
           cancelText="キャンセル"
           variant="warning"

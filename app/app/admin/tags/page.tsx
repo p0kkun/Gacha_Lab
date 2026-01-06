@@ -285,6 +285,20 @@ export default function TagsPage() {
           isOpen={deleteConfirm.isOpen}
           title="タグの削除"
           message="このタグを削除しますか？この操作は取り消せません。"
+          changes={
+            (() => {
+              const tag = tags.find((t) => t.id === deleteConfirm.tagId);
+              if (!tag) return [];
+              return [
+                { label: "対象タグ", from: "登録済み", to: `削除（${tag.name}）` },
+                {
+                  label: "対象ユーザー数",
+                  from: `${tag._count.userTags}人`,
+                  to: "（タグ削除により解除されます）",
+                },
+              ];
+            })()
+          }
           confirmText="削除"
           cancelText="キャンセル"
           variant="danger"

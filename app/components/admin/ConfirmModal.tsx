@@ -3,23 +3,35 @@
 type ConfirmModalProps = {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: string | React.ReactNode;
+  /**
+   * 変更内容（何から何へ）を表示したい場合に指定
+   * - from/to は文字列化して渡す
+   */
+  changes?: Array<{
+    label: string;
+    from: string;
+    to: string;
+  }>;
   confirmText?: string;
   cancelText?: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
   variant?: 'danger' | 'warning' | 'info';
+  isConfirmDisabled?: boolean;
 };
 
 export default function ConfirmModal({
   isOpen,
   title,
   message,
+  changes,
   confirmText = 'OK',
   cancelText = 'キャンセル',
   onConfirm,
   onCancel,
   variant = 'info',
+  isConfirmDisabled = false,
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
@@ -44,7 +56,7 @@ export default function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* オーバーレイ */}
       <div
-        className="absolute inset-0 bg-white bg-opacity-70 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onCancel}
       />
 
@@ -76,7 +88,37 @@ export default function ConfirmModal({
 
         {/* メッセージ */}
         <div className="mb-6">
-          <p className="text-sm text-gray-600">{message}</p>
+          {typeof message === 'string' ? (
+            <p className="text-sm text-gray-600 whitespace-pre-wrap">{message}</p>
+          ) : (
+            <div className="text-sm text-gray-600">{message}</div>
+          )}
+
+          {Array.isArray(changes) && changes.length > 0 && (
+            <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
+              <div className="mb-2 text-xs font-semibold text-gray-700">
+                変更内容
+              </div>
+              <div className="space-y-2">
+                {changes.map((c) => (
+                  <div
+                    key={c.label}
+                    className="grid grid-cols-1 gap-1 text-xs text-gray-700"
+                  >
+                    <div className="font-semibold text-gray-800">{c.label}</div>
+                    <div className="text-gray-500">
+                      <span className="font-medium">変更前:</span>{' '}
+                      <span className="font-mono">{c.from}</span>
+                    </div>
+                    <div className="text-gray-700">
+                      <span className="font-medium">変更後:</span>{' '}
+                      <span className="font-mono">{c.to}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ボタン */}
@@ -89,7 +131,8 @@ export default function ConfirmModal({
           </button>
           <button
             onClick={onConfirm}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${currentVariant.button}`}
+            disabled={isConfirmDisabled}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${currentVariant.button}`}
           >
             {confirmText}
           </button>

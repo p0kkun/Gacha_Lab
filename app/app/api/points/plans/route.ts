@@ -13,6 +13,7 @@ export async function GET() {
       select: {
         id: true,
         points: true,
+        bonusFreePoints: true,
         price: true,
         label: true,
         isActive: true,

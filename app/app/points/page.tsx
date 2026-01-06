@@ -770,6 +770,11 @@ function PointsPageContent() {
                     <div className="mb-2 text-lg font-bold text-gray-800">
                       {plan.label}
                     </div>
+                    {plan.bonusFreePoints > 0 && (
+                      <div className="mb-1 text-xs font-semibold text-green-700">
+                        おまけ: +{plan.bonusFreePoints.toLocaleString()}pt（無償）
+                      </div>
+                    )}
                     <div className="text-sm text-gray-600">
                       ¥{plan.price.toLocaleString()}
                     </div>

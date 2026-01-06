@@ -451,6 +451,22 @@ export default function UserDetailPage() {
           isOpen={deleteTagConfirm.isOpen}
           title="タグの削除"
           message="このタグをユーザーから削除しますか？"
+          changes={
+            (() => {
+              const tag = allTags.find((t) => t.id === deleteTagConfirm.tagId);
+              if (!tag) return [];
+              return [
+                {
+                  label: "対象ユーザー",
+                  from: "-",
+                  to: user?.displayName
+                    ? `${user.displayName}（${user.userId}）`
+                    : user?.userId || userId,
+                },
+                { label: "対象タグ", from: "付与済み", to: `削除（${tag.name}）` },
+              ];
+            })()
+          }
           confirmText="削除"
           cancelText="キャンセル"
           variant="danger"

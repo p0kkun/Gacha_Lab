@@ -7,6 +7,7 @@
 export type PointPlan = {
   id: string;
   points: number;
+  bonusFreePoints: number;
   price: number;
   label: string;
   isActive: boolean;

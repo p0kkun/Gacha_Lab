@@ -74,8 +74,9 @@ export async function POST(request: NextRequest) {
     }
 
     const points = parseInt(paymentIntent.metadata.points || '0', 10);
+    const bonusFreePoints = parseInt(paymentIntent.metadata.bonusFreePoints || '0', 10);
 
-    if (points <= 0) {
+    if (points <= 0 || bonusFreePoints < 0) {
       return NextResponse.json(
         { error: '無効なポイント数' },
         { status: 400 }
@@ -86,7 +87,6 @@ export async function POST(request: NextRequest) {
     const existingHistory = await prisma.pointHistory.findFirst({
       where: {
         stripePaymentId: paymentIntentId,
-        transactionType: PointTransactionType.PURCHASE,
       },
     });
 
@@ -106,21 +106,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 有償ポイントを付与（有効期限は最終更新日から1年後）
-    const { grantPaidPoints, getPointBalances } = await import('@/lib/point-management');
-    await grantPaidPoints(
-      userId,
-      points,
-      null, // 有効期限は自動設定（最終更新日から1年後）
-      `${points}ポイント購入`,
-      paymentIntentId
-    );
+    // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
+    const { grantPurchasePoints, getPointBalances } = await import('@/lib/point-management');
+    await grantPurchasePoints(userId, points, bonusFreePoints, paymentIntentId);
 
     // 現在のポイント残高を取得
     const balances = await getPointBalances(userId);
     const result = balances.total;
 
-    console.log(`ポイント付与成功: ユーザー ${userId} に ${points}ポイント付与`, {
+    console.log(`ポイント付与成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`, {
       paymentIntentId,
       newBalance: result,
       timestamp: new Date().toISOString(),
