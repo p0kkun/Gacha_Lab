@@ -60,7 +60,7 @@ export default function GachaContent({
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.error || "ガチャ抽選に失敗しました";
-
+        
         // ポイント不足の場合は購入ページへリダイレクト
         if (
           response.status === 403 &&
@@ -71,12 +71,12 @@ export default function GachaContent({
           window.location.href = "/points";
           return;
         }
-
+        
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-
+      
       // ポイント残高を更新（コールバックを呼び出して親コンポーネントに通知）
       if (onPointsUpdated) {
         // APIレスポンスにpointsRemainingが含まれている場合はそれを使用
@@ -112,7 +112,7 @@ export default function GachaContent({
         const validVideoUrls = data.videoUrls.filter(
           (url: string) => url && url.trim() !== ""
         );
-
+        
         if (validVideoUrls.length > 0) {
           // 有効な動画URLがある場合は動画を再生
           setIsDrawing(false);
@@ -179,15 +179,15 @@ export default function GachaContent({
 
   // 動画再生中は全画面
   if (showVideo && videoUrlsToPlay.length > 0) {
-    return (
-      <div className="fixed inset-0 z-[60] bg-black">
-        <MultiVideoPlayer
+      return (
+        <div className="fixed inset-0 z-[60] bg-black">
+          <MultiVideoPlayer
           videoUrls={videoUrlsToPlay}
-          onEnd={handleVideoEnd}
-          onError={handleVideoError}
-        />
-      </div>
-    );
+            onEnd={handleVideoEnd}
+            onError={handleVideoError}
+          />
+        </div>
+      );
   }
 
   const getRarityColor = (rarity: string) => {
@@ -213,7 +213,7 @@ export default function GachaContent({
   };
 
   return (
-    <div
+    <div 
       className="relative flex h-full flex-col"
       style={{ touchAction: "none" }}
       onTouchStart={(e) => e.preventDefault()}
@@ -265,7 +265,7 @@ export default function GachaContent({
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-xl ring-4 ring-yellow-400"></div>
                 <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-green-800 shadow-xl ring-4 ring-yellow-400"></div>
               </div>
-
+              
               <p className="mb-4 text-2xl font-bold text-yellow-300 drop-shadow-lg whitespace-nowrap">
                 🎰 ポーカー風ガチャ
               </p>
@@ -277,7 +277,7 @@ export default function GachaContent({
                   必要: ${(selectedGacha.pointCost ?? 0).toLocaleString()}
                 </p>
               )}
-
+              
               {/* トランプのスーツ装飾 */}
               <div className="mt-8 flex justify-center gap-6 text-4xl opacity-50">
                 <span className="text-red-400">♥</span>
@@ -345,7 +345,7 @@ export default function GachaContent({
           >
             {/* 光るエフェクト */}
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
-
+            
             <span className="relative z-10 flex items-center justify-center gap-2 flex-wrap">
               {isDrawing ? (
                 <>

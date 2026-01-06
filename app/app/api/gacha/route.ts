@@ -400,83 +400,56 @@ export async function POST(request: NextRequest) {
       // ポイント消費（無償ポイントから優先的に消費）
       let newBalance = 0;
       if (pointCost > 0) {
-        // ポイント消費処理（トランザクション内で実行）
-        const { getPointBalances } = await import('@/lib/point-management');
-        
-        // 有効期限切れのポイントを0に更新
-        const now = new Date();
-        await tx.pointBalance.updateMany({
-          where: {
-            userId,
-            expiresAt: { lte: now },
-            amount: { gt: 0 },
-          },
-          data: { amount: 0 },
-        });
-
-        // 現在のポイント残高を取得
-        const balances = await tx.pointBalance.findMany({
-          where: { userId },
-        });
-
-        const freeBalance = balances.find((b) => b.pointType === 'FREE');
-        const paidBalance = balances.find((b) => b.pointType === 'PAID');
-
-        const freeAmount = freeBalance?.amount || 0;
-        const paidAmount = paidBalance?.amount || 0;
-        let remainingAmount = pointCost;
         const nowDate = new Date();
+        const unifiedExpiresAt = new Date(nowDate);
+        unifiedExpiresAt.setFullYear(unifiedExpiresAt.getFullYear() + 1);
+
+        // 残高行を確実に作成
+        const existing = await tx.userPointBalance.findUnique({ where: { userId } });
+        if (!existing) {
+          await tx.userPointBalance.create({
+            data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: nowDate },
+          });
+        }
+
+        // 期限切れなら同時に失効（lastUpdatedは上書きしない）
+        const before = await tx.userPointBalance.findUnique({ where: { userId } });
+        if (
+          before &&
+          (before.paidAmount + before.freeAmount) > 0 &&
+          before.expiresAt &&
+          before.expiresAt <= nowDate
+        ) {
+          await tx.userPointBalance.update({
+            where: { userId },
+            data: { paidAmount: 0, freeAmount: 0, expiresAt: null },
+          });
+        }
+
+        const balance = await tx.userPointBalance.findUnique({ where: { userId } });
+        const freeAmount = balance?.freeAmount ?? 0;
+        const paidAmount = balance?.paidAmount ?? 0;
 
         // 無償ポイントから優先的に消費
-        if (freeBalance && freeAmount > 0) {
-          const consumeFromFree = Math.min(freeAmount, remainingAmount);
-          const newFreeAmount = freeAmount - consumeFromFree;
+        const consumeFromFree = Math.min(freeAmount, pointCost);
+        const remaining = pointCost - consumeFromFree;
+        const consumeFromPaid = remaining;
 
-          await tx.pointBalance.update({
-            where: { id: freeBalance.id },
-            data: {
-              amount: newFreeAmount,
-              expiresAt: newFreeAmount === 0 ? null : freeBalance.expiresAt,
-              lastUpdated: nowDate,
-            },
-          });
+        const newFreeAmount = freeAmount - consumeFromFree;
+        const newPaidAmount = paidAmount - consumeFromPaid;
+        const totalBalances = newFreeAmount + newPaidAmount;
 
-          remainingAmount -= consumeFromFree;
-        }
-
-        // 有償ポイントから消費（まだ残っている場合）
-        if (remainingAmount > 0 && paidBalance) {
-          const newPaidAmount = paidAmount - remainingAmount;
-
-          await tx.pointBalance.update({
-            where: { id: paidBalance.id },
-            data: {
-              amount: newPaidAmount,
-              expiresAt: newPaidAmount === 0 ? null : paidBalance.expiresAt,
-              lastUpdated: nowDate,
-            },
-          });
-
-          // 有効期限を再設定（最終更新日から1年後）
-          if (newPaidAmount > 0 && paidBalance.expiresAt) {
-            const newExpiresAt = new Date(nowDate);
-            newExpiresAt.setFullYear(newExpiresAt.getFullYear() + 1);
-            await tx.pointBalance.update({
-              where: { id: paidBalance.id },
-              data: { expiresAt: newExpiresAt },
-            });
-          }
-        }
-
-        // User.pointsへの更新は停止（PointBalanceのみで管理）
-        // const totalBalances = (freeBalance?.amount || 0) + (paidBalance?.amount || 0) - pointCost;
-        // await tx.user.update({
-        //   where: { userId },
-        //   data: { points: totalBalances },
-        // });
+        await tx.userPointBalance.update({
+          where: { userId },
+          data: {
+            freeAmount: newFreeAmount,
+            paidAmount: newPaidAmount,
+            expiresAt: totalBalances > 0 ? unifiedExpiresAt : null,
+            lastUpdated: nowDate,
+          },
+        });
 
         // ポイント履歴を記録
-        const totalBalances = (freeBalance?.amount || 0) + (paidBalance?.amount || 0) - pointCost;
         await tx.pointHistory.create({
           data: {
             userId,

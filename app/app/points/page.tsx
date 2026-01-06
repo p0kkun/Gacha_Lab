@@ -17,20 +17,11 @@ import {
   login,
   type LiffProfile,
 } from "@/lib/liff";
+import { POINT_PLANS } from "@/lib/point-plans";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
 );
-
-// ポイント購入プラン
-const POINT_PLANS = [
-  { points: 100, price: 100, label: "100ポイント" },
-  { points: 500, price: 500, label: "500ポイント" },
-  { points: 1000, price: 1000, label: "1,000ポイント" },
-  { points: 3000, price: 3000, label: "3,000ポイント" },
-  { points: 5000, price: 5000, label: "5,000ポイント" },
-  { points: 10000, price: 10000, label: "10,000ポイント" },
-];
 
 // CheckoutSection: clientSecretを管理してElementsに渡す
 function CheckoutSection({
@@ -61,8 +52,7 @@ function CheckoutSection({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: plan.price,
-            points: plan.points,
+            planId: plan.id,
             userId,
           }),
         });

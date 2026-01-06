@@ -1,28 +1,42 @@
 import { PointType, PointTransactionType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
+function calcUnifiedExpiry(from: Date): Date {
+  const d = new Date(from);
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+
+async function ensureUserPointBalance(userId: string) {
+  const existing = await prisma.userPointBalance.findUnique({
+    where: { userId },
+  });
+  if (existing) return existing;
+  return await prisma.userPointBalance.create({
+    data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null },
+  });
+}
+
 /**
  * ポイント残高を取得（有効期限切れを考慮）
  */
 export async function getPointBalances(userId: string) {
+  await ensureUserPointBalance(userId);
   // 有効期限切れのポイントを0に更新
   await expirePoints(userId);
 
-  const balances = await prisma.pointBalance.findMany({
-    where: { userId },
-    orderBy: { pointType: 'asc' },
-  });
-
-  const paidBalance = balances.find((b) => b.pointType === PointType.PAID);
-  const freeBalance = balances.find((b) => b.pointType === PointType.FREE);
+  const balance = await prisma.userPointBalance.findUnique({ where: { userId } });
+  const paid = balance?.paidAmount ?? 0;
+  const free = balance?.freeAmount ?? 0;
 
   return {
-    paid: paidBalance?.amount || 0,
-    free: freeBalance?.amount || 0,
-    total: (paidBalance?.amount || 0) + (freeBalance?.amount || 0),
-    paidExpiresAt: paidBalance?.expiresAt,
-    freeExpiresAt: freeBalance?.expiresAt,
-    lastUpdated: paidBalance?.lastUpdated || freeBalance?.lastUpdated || null,
+    paid,
+    free,
+    total: paid + free,
+    // 後方互換のため paid/free それぞれ返すが、値は同一
+    paidExpiresAt: balance?.expiresAt ?? null,
+    freeExpiresAt: balance?.expiresAt ?? null,
+    lastUpdated: balance?.lastUpdated ?? null,
   };
 }
 
@@ -31,13 +45,23 @@ export async function getPointBalances(userId: string) {
  */
 async function expirePoints(userId: string) {
   const now = new Date();
-  await prisma.pointBalance.updateMany({
-    where: {
-      userId,
-      expiresAt: { lte: now },
-      amount: { gt: 0 },
+  const balance = await prisma.userPointBalance.findUnique({ where: { userId } });
+  if (!balance) return;
+
+  const shouldExpire =
+    (balance.paidAmount + balance.freeAmount) > 0 &&
+    balance.expiresAt &&
+    balance.expiresAt <= now;
+  if (!shouldExpire) return;
+
+  await prisma.userPointBalance.update({
+    where: { userId },
+    data: {
+      paidAmount: 0,
+      freeAmount: 0,
+      expiresAt: null,
+      // lastUpdatedは上書きしない（表示用）
     },
-    data: { amount: 0 },
   });
 }
 
@@ -52,6 +76,7 @@ async function expirePoints(userId: string) {
 export async function grantPaidPoints(
   userId: string,
   amount: number,
+  // NOTE: 互換性のため残すが、要件により expiresAt は常に「最終更新日から1年後」で統一する
   expiresAt: Date | null = null,
   description: string = 'ポイント購入',
   stripePaymentId?: string
@@ -60,41 +85,27 @@ export async function grantPaidPoints(
     throw new Error('ポイント数は1以上である必要があります');
   }
 
-  // 有効期限が指定されていない場合は、最終更新日から1年後
-  if (!expiresAt) {
-    expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-  }
+  // 要件: 有償/無償合計で「最終更新日から1年後」に両方が同時に失効
+  // （有償/無償の切り分け・表示は維持）
+  const now = new Date();
+  const unifiedExpiresAt = calcUnifiedExpiry(now);
 
   return await prisma.$transaction(async (tx) => {
-    // 既存の有償ポイント残高を取得または作成
-    let balance = await tx.pointBalance.findUnique({
-      where: { userId_pointType: { userId, pointType: PointType.PAID } },
-    });
-
-    if (!balance) {
-      balance = await tx.pointBalance.create({
-        data: {
-          userId,
-          pointType: PointType.PAID,
-          amount: 0,
-          expiresAt,
-          lastUpdated: new Date(),
-        },
+    // 残高行を確実に作成
+    const existing = await tx.userPointBalance.findUnique({ where: { userId } });
+    if (!existing) {
+      await tx.userPointBalance.create({
+        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
       });
     }
 
-    // 有効期限を更新（新しいポイントの有効期限に合わせる）
-    const newExpiresAt = expiresAt > balance.expiresAt! ? expiresAt : balance.expiresAt;
-
-    // ポイントを追加
-    const newAmount = balance.amount + amount;
-    const updatedBalance = await tx.pointBalance.update({
-      where: { id: balance.id },
+    // PAIDを加算し、有効期限/最終更新を更新
+    const updatedBalance = await tx.userPointBalance.update({
+      where: { userId },
       data: {
-        amount: newAmount,
-        expiresAt: newExpiresAt,
-        lastUpdated: new Date(),
+        paidAmount: { increment: amount },
+        expiresAt: unifiedExpiresAt,
+        lastUpdated: now,
       },
     });
 
@@ -133,6 +144,7 @@ export async function grantPaidPoints(
 export async function grantFreePoints(
   userId: string,
   amount: number,
+  // NOTE: 互換性のため残すが、要件により expiresAt は常に「最終更新日から1年後」で統一する
   expiresAt: Date | null = null,
   description: string = 'ポイント付与',
   transactionType: PointTransactionType = PointTransactionType.GRANT
@@ -141,41 +153,23 @@ export async function grantFreePoints(
     throw new Error('ポイント数は1以上である必要があります');
   }
 
-  // 有効期限が指定されていない場合は、最終更新日から1年後
-  if (!expiresAt) {
-    expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-  }
+  const now = new Date();
+  const unifiedExpiresAt = calcUnifiedExpiry(now);
 
   return await prisma.$transaction(async (tx) => {
-    // 既存の無償ポイント残高を取得または作成
-    let balance = await tx.pointBalance.findUnique({
-      where: { userId_pointType: { userId, pointType: PointType.FREE } },
-    });
-
-    if (!balance) {
-      balance = await tx.pointBalance.create({
-        data: {
-          userId,
-          pointType: PointType.FREE,
-          amount: 0,
-          expiresAt,
-          lastUpdated: new Date(),
-        },
+    const existing = await tx.userPointBalance.findUnique({ where: { userId } });
+    if (!existing) {
+      await tx.userPointBalance.create({
+        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
       });
     }
 
-    // 有効期限を更新（新しいポイントの有効期限に合わせる）
-    const newExpiresAt = expiresAt > balance.expiresAt! ? expiresAt : balance.expiresAt;
-
-    // ポイントを追加
-    const newAmount = balance.amount + amount;
-    const updatedBalance = await tx.pointBalance.update({
-      where: { id: balance.id },
+    const updatedBalance = await tx.userPointBalance.update({
+      where: { userId },
       data: {
-        amount: newAmount,
-        expiresAt: newExpiresAt,
-        lastUpdated: new Date(),
+        freeAmount: { increment: amount },
+        expiresAt: unifiedExpiresAt,
+        lastUpdated: now,
       },
     });
 
@@ -220,81 +214,56 @@ export async function consumePoints(
   }
 
   return await prisma.$transaction(async (tx) => {
-    // 有効期限切れのポイントを0に更新
     const now = new Date();
-    await tx.pointBalance.updateMany({
-      where: {
-        userId,
-        expiresAt: { lte: now },
-        amount: { gt: 0 },
-      },
-      data: { amount: 0 },
-    });
+    const unifiedExpiresAt = calcUnifiedExpiry(now);
 
-    // 現在のポイント残高を取得
-    const balances = await tx.pointBalance.findMany({
-      where: { userId },
-    });
+    const existing = await tx.userPointBalance.findUnique({ where: { userId } });
+    if (!existing) {
+      await tx.userPointBalance.create({
+        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
+      });
+    }
 
-    const freeBalance = balances.find((b) => b.pointType === PointType.FREE);
-    const paidBalance = balances.find((b) => b.pointType === PointType.PAID);
+    // 有効期限切れなら同時に0へ（lastUpdatedは上書きしない）
+    const before = await tx.userPointBalance.findUnique({ where: { userId } });
+    if (
+      before &&
+      (before.paidAmount + before.freeAmount) > 0 &&
+      before.expiresAt &&
+      before.expiresAt <= now
+    ) {
+      await tx.userPointBalance.update({
+        where: { userId },
+        data: { paidAmount: 0, freeAmount: 0, expiresAt: null },
+      });
+    }
 
-    const freeAmount = freeBalance?.amount || 0;
-    const paidAmount = paidBalance?.amount || 0;
+    const balance = await tx.userPointBalance.findUnique({ where: { userId } });
+    const freeAmount = balance?.freeAmount ?? 0;
+    const paidAmount = balance?.paidAmount ?? 0;
     const totalAmount = freeAmount + paidAmount;
 
     if (totalAmount < amount) {
       throw new Error('ポイントが不足しています');
     }
 
-    let remainingAmount = amount;
-    const nowDate = new Date();
+    const consumeFromFree = Math.min(freeAmount, amount);
+    const remaining = amount - consumeFromFree;
+    const consumeFromPaid = remaining;
 
-    // 無償ポイントから優先的に消費
-    if (freeBalance && freeAmount > 0) {
-      const consumeFromFree = Math.min(freeAmount, remainingAmount);
-      const newFreeAmount = freeAmount - consumeFromFree;
+    const newFree = freeAmount - consumeFromFree;
+    const newPaid = paidAmount - consumeFromPaid;
+    const newTotal = newFree + newPaid;
 
-      // 無償ポイント残高を更新
-      await tx.pointBalance.update({
-        where: { id: freeBalance.id },
-        data: {
-          amount: newFreeAmount,
-          // 残高が0になったら有効期限をクリア
-          expiresAt: newFreeAmount === 0 ? null : freeBalance.expiresAt,
-          lastUpdated: nowDate,
-        },
-      });
-
-      remainingAmount -= consumeFromFree;
-    }
-
-    // 有償ポイントから消費（まだ残っている場合）
-    if (remainingAmount > 0 && paidBalance) {
-      const newPaidAmount = paidAmount - remainingAmount;
-
-      // 有償ポイント残高を更新
-      await tx.pointBalance.update({
-        where: { id: paidBalance.id },
-        data: {
-          amount: newPaidAmount,
-          // 残高が0になったら有効期限をクリア
-          expiresAt: newPaidAmount === 0 ? null : paidBalance.expiresAt,
-          // 消費後の有効期限再設定（最終更新日から1年後）
-          lastUpdated: nowDate,
-        },
-      });
-
-      // 有効期限を再設定（最終更新日から1年後）
-      if (newPaidAmount > 0 && paidBalance.expiresAt) {
-        const newExpiresAt = new Date(nowDate);
-        newExpiresAt.setFullYear(newExpiresAt.getFullYear() + 1);
-        await tx.pointBalance.update({
-          where: { id: paidBalance.id },
-          data: { expiresAt: newExpiresAt },
-        });
-      }
-    }
+    await tx.userPointBalance.update({
+      where: { userId },
+      data: {
+        freeAmount: newFree,
+        paidAmount: newPaid,
+        expiresAt: newTotal > 0 ? unifiedExpiresAt : null,
+        lastUpdated: now,
+      },
+    });
 
     // User.pointsへの更新は停止（PointBalanceのみで管理）
     // const totalBalances = await getTotalBalances(tx, userId);
@@ -324,13 +293,7 @@ export async function consumePoints(
  * 合計ポイント残高を取得（内部用）
  */
 async function getTotalBalances(tx: any, userId: string): Promise<number> {
-  const balances = await tx.pointBalance.findMany({
-    where: { userId },
-  });
-
-  const freeAmount = balances.find((b: any) => b.pointType === PointType.FREE)?.amount || 0;
-  const paidAmount = balances.find((b: any) => b.pointType === PointType.PAID)?.amount || 0;
-
-  return freeAmount + paidAmount;
+  const b = await tx.userPointBalance.findUnique({ where: { userId } });
+  return (b?.freeAmount ?? 0) + (b?.paidAmount ?? 0);
 }
 

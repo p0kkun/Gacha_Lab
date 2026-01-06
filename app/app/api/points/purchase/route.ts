@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { getPointPlanById, getPointPlanByLegacyPair } from "@/lib/point-plans";
 
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
@@ -18,26 +19,29 @@ function getStripeInstance(): Stripe {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { amount, userId, points } = body;
+    const { userId, planId, amount, points } = body as {
+      userId?: string;
+      planId?: string;
+      amount?: number;
+      points?: number;
+    };
 
-    if (!amount || !userId || !points) {
+    if (!userId) {
       return NextResponse.json(
-        { error: "金額、ユーザーID、ポイント数が必要です" },
+        { error: "ユーザーIDが必要です" },
         { status: 400 }
       );
     }
 
-    // ポイントと金額のバリデーション
-    if (points <= 0) {
-      return NextResponse.json(
-        { error: "ポイント数は1以上である必要があります" },
-        { status: 400 }
-      );
-    }
+    // サーバー側で購入プランを確定（クライアントからのamount/pointsは信用しない）
+    const plan =
+      (typeof planId === "string" && planId.trim() !== ""
+        ? getPointPlanById(planId)
+        : null) ?? getPointPlanByLegacyPair(amount, points);
 
-    if (amount <= 0) {
+    if (!plan) {
       return NextResponse.json(
-        { error: "金額は1以上である必要があります" },
+        { error: "無効な購入プランです" },
         { status: 400 }
       );
     }
@@ -47,11 +51,13 @@ export async function POST(request: NextRequest) {
     // PaymentIntentを作成
     // PayPayはリダイレクト型の決済方法なので、allow_redirectsを設定
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount, // 金額（円単位）
+      amount: plan.price, // 金額（円単位）
       currency: "jpy", // PayPayを使用する場合はjpyが必須
       metadata: {
         userId,
-        points: points.toString(),
+        planId: plan.id,
+        points: plan.points.toString(),
+        amount: plan.price.toString(),
         type: "point_purchase",
       },
       automatic_payment_methods: {

@@ -8,6 +8,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Prisma 7: 接続URLは `prisma.config.ts` で管理（schema.prisma の url は非対応）
 }
 
 // ============================================
@@ -22,7 +23,8 @@ model User {
   updatedAt                   DateTime           @updatedAt
   freeGachaHistories          FreeGachaHistory[]
   gachaHistories              GachaHistory[]     @relation("UserGachaHistories")
-  pointBalances               PointBalance[]
+  // 現在のポイント残高（1ユーザーにつき1行）
+  pointBalance                UserPointBalance?
   pointHistories              PointHistory[]
   referralHistoriesAsReferee  ReferralHistory[]  @relation("Referee")
   referralHistoriesAsReferrer ReferralHistory[]  @relation("Referrer")
@@ -263,23 +265,21 @@ model GachaVideo {
   @@map("gacha_videos")
 }
 
-model PointBalance {
-  id          Int       @id @default(autoincrement())
-  userId      String
-  pointType   PointType
-  amount      Int       @default(0)
+// 現在のポイント残高（正）
+// 方針: 履歴(PointHistory)は閲覧/監査用。残高はこのテーブルが正。
+model UserPointBalance {
+  userId      String   @id
+  paidAmount  Int      @default(0)
+  freeAmount  Int      @default(0)
+  // 要件: 有効期限は有償/無償合計で「最終更新日から1年後」に同時失効
   expiresAt   DateTime?
-  lastUpdated DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [userId])
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
 
-  @@unique([userId, pointType])
-  @@index([expiresAt, amount])
+  user User @relation(fields: [userId], references: [userId])
+
   @@index([expiresAt])
-  @@index([pointType])
-  @@index([userId, expiresAt])
-  @@index([userId])
-  @@map("point_balances")
+  @@map("user_point_balances")
 }
 
 model Tag {

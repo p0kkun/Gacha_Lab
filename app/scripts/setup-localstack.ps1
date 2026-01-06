@@ -47,3 +47,4 @@ Write-Host "   docker-compose -f docker-compose.localstack.yml down" -Foreground
 
 
 
+
