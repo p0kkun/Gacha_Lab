@@ -17,7 +17,7 @@ import {
   login,
   type LiffProfile,
 } from "@/lib/liff";
-import { POINT_PLANS } from "@/lib/point-plans";
+import { POINT_PLANS, type PointPlan } from "@/lib/point-plans";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
@@ -31,7 +31,7 @@ function CheckoutSection({
   onCancel,
   onPointsUpdated,
 }: {
-  plan: (typeof POINT_PLANS)[0];
+  plan: PointPlan;
   userId: string;
   onSuccess: () => void;
   onCancel: () => void;
@@ -322,9 +322,7 @@ function PointsPageContent() {
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<
-    (typeof POINT_PLANS)[0] | null
-  >(null);
+  const [selectedPlan, setSelectedPlan] = useState<PointPlan | null>(null);
   const [points, setPoints] = useState<number | null>(null);
   const [pointBalances, setPointBalances] = useState<{
     paid: number;
