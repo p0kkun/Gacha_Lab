@@ -20,19 +20,20 @@ export async function GET(
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          userId: true,
+          gachaTypeId: true,
+          itemId: true,
+          rarity: true,
+          createdAt: true,
+          pointsUsed: true,
+          usedAt: true,
           gachaType: {
-            select: {
-              id: true,
-              name: true,
-            },
+            select: { id: true, name: true },
           },
           item: {
-            select: {
-              id: true,
-              name: true,
-              rarity: true,
-            },
+            select: { id: true, name: true, rarity: true },
           },
         },
       }),
@@ -41,8 +42,17 @@ export async function GET(
       }),
     ]);
 
+    const mapped = histories.map((h) => ({
+      ...h,
+      // 新方式: gacha_histories.rarity を優先（景品マスタ側のrarityに依存しない）
+      item: {
+        ...h.item,
+        rarity: h.rarity ?? h.item?.rarity,
+      },
+    }));
+
     return NextResponse.json({
-      histories,
+      histories: mapped,
       pagination: {
         page,
         limit,

@@ -13,7 +13,11 @@ export async function GET(
     const histories = await prisma.gachaHistory.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        createdAt: true,
+        usedAt: true,
+        rarity: true,
         item: {
           select: {
             id: true,
@@ -21,6 +25,8 @@ export async function GET(
             rarity: true,
             usageType: true,
             imageUrl: true,
+            useStartAt: true,
+            useEndAt: true,
           },
         },
       },
@@ -28,7 +34,10 @@ export async function GET(
 
     const items = histories.map((history) => ({
       id: history.id,
-      item: history.item,
+      item: {
+        ...history.item,
+        rarity: history.rarity ?? history.item?.rarity,
+      },
       createdAt: history.createdAt,
       usedAt: history.usedAt ? history.usedAt.toISOString() : null,
     }));

@@ -46,16 +46,21 @@ model GachaItem {
   gachaTypeId String? // ガチャタイプ ID（nullの場合は全ガチャタイプで使用可能）
   usageType   ItemUsageType @default(IMAGE) // アイテム使用方法
   isActive    Boolean       @default(true) // 有効/無効フラグ
+  useStartAt  DateTime? // 使用開始日時（nullの場合は制限なし）
+  useEndAt    DateTime? // 使用期限（nullの場合は制限なし）
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   // リレーション
   gachaType      GachaType?     @relation(fields: [gachaTypeId], references: [id])
   gachaHistories GachaHistory[]
+  prizeAssignments GachaPrizeAssignment[]
 
   @@index([rarity, isActive])
   @@index([isActive])
   @@index([gachaTypeId, rarity, isActive])
+  @@index([useStartAt])
+  @@index([useEndAt])
   @@map("gacha_items")
 }
 
@@ -117,6 +122,7 @@ model GachaType {
   // リレーション
   gachaHistories GachaHistory[]
   gachaItems     GachaItem[]
+  prizeAssignments GachaPrizeAssignment[]
 
   @@index([isActive])
   @@map("gacha_types")
@@ -127,6 +133,8 @@ model GachaHistory {
   userId         String
   gachaTypeId    String
   itemId         Int
+  /// 抽選された等級（景品のマスタ側のrarityではなく「このガチャでの等級」を保持）
+  rarity         Rarity?
   createdAt      DateTime       @default(now())
   pointsUsed     Int            @default(0)
   usedAt         DateTime?
@@ -142,7 +150,27 @@ model GachaHistory {
   @@index([itemId, usedAt])
   @@index([usedAt])
   @@index([userId, usedAt])
+  @@index([rarity])
   @@map("gacha_histories")
+}
+
+/// ガチャタイプ別の景品割当（同じ景品をガチャによって別の等級に割当可能）
+model GachaPrizeAssignment {
+  id         Int      @id @default(autoincrement())
+  gachaTypeId String
+  rarity     Rarity
+  itemId     Int
+  weight     Int      @default(1)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  gachaType GachaType @relation(fields: [gachaTypeId], references: [id])
+  item      GachaItem @relation(fields: [itemId], references: [id])
+
+  @@unique([gachaTypeId, rarity, itemId])
+  @@index([gachaTypeId, rarity, isActive])
+  @@map("gacha_prize_assignments")
 }
 
 model ReferralHistory {

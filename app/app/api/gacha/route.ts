@@ -18,6 +18,21 @@ const PointTransactionType = {
 } as const;
 import { sendGachaResultMessage } from "@/lib/line-messaging";
 
+function drawByWeights<T extends { weight: number }>(rows: T[]): T {
+  const total = rows.reduce(
+    (sum, r) => sum + (Number.isFinite(r.weight) ? r.weight : 0),
+    0
+  );
+  if (total <= 0) return rows[Math.floor(Math.random() * rows.length)];
+  const rnd = Math.random() * total;
+  let acc = 0;
+  for (const row of rows) {
+    acc += row.weight;
+    if (rnd < acc) return row;
+  }
+  return rows[rows.length - 1];
+}
+
 /**
  * ポーカーのHandRank（小文字）をPrismaのHandRank（大文字）に変換
  */
@@ -361,29 +376,54 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 選択されたレアリティのアイテムを取得
-    // gachaTypeIdでフィルタリング（nullの場合は共通アイテム）
-    const availableItems = await prisma.gachaItem.findMany({
+    // 選択された等級の景品を取得（ガチャタイプ別割当が最優先）
+    const assignments = await prisma.gachaPrizeAssignment.findMany({
       where: {
+        gachaTypeId,
         rarity: selectedRarity,
         isActive: true,
-        OR: [
-          { gachaTypeId: gachaTypeId }, // このガチャタイプ専用
-          { gachaTypeId: null }, // 共通アイテム
-        ],
+        item: { isActive: true },
       },
+      include: { item: true },
     });
 
-    if (availableItems.length === 0) {
-      return NextResponse.json(
-        { error: "該当するアイテムが見つかりません" },
-        { status: 404 }
-      );
-    }
+    // 1) 割当がある場合は、割当（weight）で抽選して景品を決定
+    // 2) 割当がない場合は後方互換として旧ロジックにフォールバック（将来的に廃止予定）
+    let selectedItem =
+      assignments.length > 0
+        ? drawByWeights(
+            assignments.map((a) => ({
+              ...a,
+              weight: typeof a.weight === "number" && Number.isFinite(a.weight) ? a.weight : 1,
+            }))
+          ).item
+        : null;
 
-    // ランダムにアイテムを選択
-    const selectedItem =
-      availableItems[Math.floor(Math.random() * availableItems.length)];
+    if (!selectedItem) {
+      // 旧: GachaItemに等級（rarity）を持たせていた方式
+      const availableItems = await prisma.gachaItem.findMany({
+        where: {
+          rarity: selectedRarity,
+          isActive: true,
+          OR: [
+            { gachaTypeId: gachaTypeId }, // このガチャタイプ専用
+            { gachaTypeId: null }, // 共通アイテム
+          ],
+        },
+      });
+
+      if (availableItems.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "該当する景品が見つかりません（管理画面で景品割当を設定してください）",
+          },
+          { status: 404 }
+        );
+      }
+
+      selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+    }
 
     // ポイント消費とガチャ履歴保存をトランザクションで実行
     const result = await prisma.$transaction(async (tx) => {
@@ -393,6 +433,7 @@ export async function POST(request: NextRequest) {
           userId: userId,
           gachaTypeId: gachaTypeId,
           itemId: selectedItem.id,
+          rarity: selectedRarity,
           pointsUsed: pointCost,
         } as Prisma.GachaHistoryUncheckedCreateInput,
       });
@@ -478,14 +519,14 @@ export async function POST(request: NextRequest) {
 
     // 動画URLを取得（新しい動画システム、ガチャタイプの設定を使用）
     const { getGachaVideoUrls } = await import('@/lib/gacha-video');
-    const videoUrls = await getGachaVideoUrls(gachaTypeId, selectedItem.rarity);
+    const videoUrls = await getGachaVideoUrls(gachaTypeId, selectedRarity);
 
     // ガチャ結果をLINEトークに送信（非同期、エラーが発生してもガチャ結果は返す）
     // 役が設定されている場合のみポーカーハンド情報を送信
     sendGachaResultMessage(
       userId,
       selectedItem.name,
-      selectedItem.rarity,
+      selectedRarity,
       gachaType.name,
       gachaType.resultMessageTemplate || null,
       pokerHand && pokerHand.handName
@@ -506,7 +547,7 @@ export async function POST(request: NextRequest) {
       item: {
         id: selectedItem.id,
         name: selectedItem.name,
-        rarity: selectedItem.rarity,
+        rarity: selectedRarity,
         videoUrl: selectedItem.videoUrl, // 後方互換性のため残す
       },
       videoUrls: videoUrls.length > 0 ? videoUrls : [selectedItem.videoUrl], // 新しい動画システム（フォールバック付き）

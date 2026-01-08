@@ -13,6 +13,8 @@ type GachaItem = {
   imageUrl: string | null;
   usageType: string;
   isActive: boolean;
+  useStartAt: string | null;
+  useEndAt: string | null;
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -46,6 +48,23 @@ export default function ItemEditPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const toDatetimeLocalValue = (iso: string | null | undefined): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+      d.getHours()
+    )}:${pad(d.getMinutes())}`;
+  };
+
+  const fromDatetimeLocalValue = (value: string): string | null => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
 
   useEffect(() => {
     fetchItem();
@@ -319,6 +338,47 @@ export default function ItemEditPage() {
                 />
                 <span className="text-sm font-medium text-gray-700">有効</span>
               </label>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  使用開始日時（任意）
+                </label>
+                <input
+                  type="datetime-local"
+                  value={toDatetimeLocalValue(formData.useStartAt)}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      useStartAt: fromDatetimeLocalValue(e.target.value),
+                    })
+                  }
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  未設定の場合は使用開始の制限なし
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  使用期限（任意）
+                </label>
+                <input
+                  type="datetime-local"
+                  value={toDatetimeLocalValue(formData.useEndAt)}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      useEndAt: fromDatetimeLocalValue(e.target.value),
+                    })
+                  }
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  未設定の場合は使用期限の制限なし
+                </p>
+              </div>
             </div>
 
             {item._count && (

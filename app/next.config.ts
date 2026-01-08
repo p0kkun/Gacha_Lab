@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Turbopack のワークスペースルート誤検知を防ぐ（上位階層の lockfile を拾わないようにする）
+  turbopack: {
+    root: __dirname,
+  },
   // AWS Amplifyで環境変数がLambda関数に正しく渡されるようにする
   env: {
     // 環境変数を明示的に設定（AWS Amplifyの環境変数から読み込む）

@@ -145,37 +145,44 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // レアリティ別の統計
-    const rarityStatsRaw = await prisma.gachaHistory.groupBy({
-      by: ['itemId'],
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(targetGachaTypeIds.length > 0 && {
-          gachaTypeId: { in: targetGachaTypeIds },
-        }),
-      },
-      _count: {
-        id: true,
-      },
-    });
+    // レアリティ別の統計（新方式: gacha_histories.rarity を優先）
+    const whereForPeriod: any = {
+      createdAt: { gte: startDate, lte: endDate },
+      ...(targetGachaTypeIds.length > 0 && { gachaTypeId: { in: targetGachaTypeIds } }),
+    };
 
-    // アイテム情報を取得してレアリティ別に集計
-    const itemIds = rarityStatsRaw.map((stat) => stat.itemId);
-    const items = await prisma.gachaItem.findMany({
-      where: { id: { in: itemIds } },
-      select: { id: true, rarity: true },
-    });
+    const [rarityStatsByHistory, fallbackByItem] = await Promise.all([
+      prisma.gachaHistory.groupBy({
+        by: ['rarity'],
+        where: { ...whereForPeriod, rarity: { not: null } },
+        _count: { id: true },
+      }),
+      prisma.gachaHistory.groupBy({
+        by: ['itemId'],
+        where: { ...whereForPeriod, rarity: null },
+        _count: { id: true },
+      }),
+    ]);
 
     const rarityCounts: Record<string, number> = {};
-    rarityStatsRaw.forEach((stat) => {
-      const item = items.find((i) => i.id === stat.itemId);
-      if (item) {
+    for (const stat of rarityStatsByHistory) {
+      const key = stat.rarity || 'UNKNOWN';
+      rarityCounts[key] = (rarityCounts[key] || 0) + stat._count.id;
+    }
+
+    // 旧データ（rarityがnull）はアイテム側rarityで補完
+    if (fallbackByItem.length > 0) {
+      const itemIds = fallbackByItem.map((s) => s.itemId);
+      const items = await prisma.gachaItem.findMany({
+        where: { id: { in: itemIds } },
+        select: { id: true, rarity: true },
+      });
+      for (const stat of fallbackByItem) {
+        const item = items.find((i) => i.id === stat.itemId);
+        if (!item) continue;
         rarityCounts[item.rarity] = (rarityCounts[item.rarity] || 0) + stat._count.id;
       }
-    });
+    }
 
     // 日別の集計（指定期間のすべての日を1日ずつ表示、データがない日は0）
     // まず、指定期間のすべての日付を生成

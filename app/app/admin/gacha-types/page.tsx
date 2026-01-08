@@ -144,6 +144,16 @@ export default function GachaTypesPage() {
 
 おめでとうございます！🎉`;
 
+  const toDatetimeLocalValue = (iso: string | null | undefined): string => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+      d.getHours()
+    )}:${pad(d.getMinutes())}`;
+  };
+
   // 動的等級管理用のヘルパー関数
   const getDefaultPrizeOrder = (): string[] => {
     return [
@@ -1034,11 +1044,7 @@ export default function GachaTypesPage() {
                           <input
                             type="datetime-local"
                             value={
-                              displayData.startAt
-                                ? new Date(displayData.startAt)
-                                    .toISOString()
-                                    .slice(0, 16)
-                                : ""
+                              toDatetimeLocalValue(displayData.startAt)
                             }
                             onChange={(e) =>
                               setFormData({
@@ -1061,11 +1067,7 @@ export default function GachaTypesPage() {
                           <input
                             type="datetime-local"
                             value={
-                              displayData.endAt
-                                ? new Date(displayData.endAt)
-                                    .toISOString()
-                                    .slice(0, 16)
-                                : ""
+                              toDatetimeLocalValue(displayData.endAt)
                             }
                             onChange={(e) =>
                               setFormData({

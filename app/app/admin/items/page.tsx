@@ -15,6 +15,8 @@ type GachaItem = {
   gachaTypeId: string | null;
   usageType: string;
   isActive: boolean;
+  useStartAt: string | null;
+  useEndAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -54,6 +56,8 @@ export default function ItemsPage() {
     gachaTypeId: null,
     usageType: "IMAGE",
     isActive: true,
+    useStartAt: null,
+    useEndAt: null,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -72,6 +76,23 @@ export default function ItemsPage() {
   useEffect(() => {
     fetchItems();
   }, [rarityFilter, gachaTypeFilter, isActiveFilter]);
+
+  const toDatetimeLocalValue = (iso: string | null | undefined): string => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const fromDatetimeLocalValue = (value: string): string | null => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
 
   const fetchGachaTypes = async () => {
     try {
@@ -214,6 +235,8 @@ export default function ItemsPage() {
         gachaTypeId: null,
         usageType: "IMAGE",
         isActive: true,
+        useStartAt: null,
+        useEndAt: null,
       });
       setImageFile(null);
       await fetchItems();
@@ -480,6 +503,46 @@ export default function ItemsPage() {
                   </span>
                 </label>
               </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    使用開始日時（任意）
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={toDatetimeLocalValue(formData.useStartAt)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        useStartAt: fromDatetimeLocalValue(e.target.value),
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    未設定の場合は使用開始の制限なし
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    使用期限（任意）
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={toDatetimeLocalValue(formData.useEndAt)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        useEndAt: fromDatetimeLocalValue(e.target.value),
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    未設定の場合は使用期限の制限なし
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={handleCreate}
                 className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
@@ -661,16 +724,18 @@ export default function ItemsPage() {
           isOpen={deleteConfirm.isOpen}
           title="アイテムの無効化"
           message="このアイテムを無効化しますか？無効化されたアイテムはガチャで抽選されなくなります。"
-          changes={
-            (() => {
-              const item = items.find((i) => i.id === deleteConfirm.itemId);
-              if (!item) return [];
-              return [
-                { label: "対象アイテム", from: "登録済み", to: `無効化（${item.name}）` },
-                { label: "状態", from: "有効", to: "無効" },
-              ];
-            })()
-          }
+          changes={(() => {
+            const item = items.find((i) => i.id === deleteConfirm.itemId);
+            if (!item) return [];
+            return [
+              {
+                label: "対象アイテム",
+                from: "登録済み",
+                to: `無効化（${item.name}）`,
+              },
+              { label: "状態", from: "有効", to: "無効" },
+            ];
+          })()}
           confirmText="無効化"
           cancelText="キャンセル"
           variant="warning"

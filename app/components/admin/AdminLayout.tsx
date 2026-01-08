@@ -20,6 +20,7 @@ export default function AdminLayout({
     { href: "/admin/points", label: "ポイント管理" },
     { href: "/admin/point-plans", label: "ポイント購入プラン" },
     { href: "/admin/gacha-types", label: "ガチャ設定" },
+    { href: "/admin/prize-assignments", label: "景品割当（ガチャ別）" },
     { href: "/admin/items", label: "アイテム設定" },
     { href: "/admin/videos", label: "動画管理" },
     { href: "/admin/statistics", label: "統計・購入状況" },

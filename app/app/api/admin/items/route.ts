@@ -66,12 +66,37 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, rarity, videoUrl, imageUrl, gachaTypeId, usageType, isActive } = body;
+    const {
+      name,
+      rarity,
+      videoUrl,
+      imageUrl,
+      gachaTypeId,
+      usageType,
+      isActive,
+      useStartAt,
+      useEndAt,
+    } = body;
 
     // バリデーション
     if (!name || !rarity) {
       return NextResponse.json(
         { error: '名前とレアリティは必須です' },
+        { status: 400 }
+      );
+    }
+
+    const start = typeof useStartAt === 'string' && useStartAt ? new Date(useStartAt) : null;
+    const end = typeof useEndAt === 'string' && useEndAt ? new Date(useEndAt) : null;
+    if (start && Number.isNaN(start.getTime())) {
+      return NextResponse.json({ error: '使用開始日時が無効です' }, { status: 400 });
+    }
+    if (end && Number.isNaN(end.getTime())) {
+      return NextResponse.json({ error: '使用期限が無効です' }, { status: 400 });
+    }
+    if (start && end && start > end) {
+      return NextResponse.json(
+        { error: '使用期限は使用開始日時より後である必要があります' },
         { status: 400 }
       );
     }
@@ -85,6 +110,8 @@ export async function POST(request: NextRequest) {
         gachaTypeId: gachaTypeId || null,
         usageType: usageType || 'IMAGE',
         isActive: isActive ?? true,
+        useStartAt: start,
+        useEndAt: end,
       },
     });
 

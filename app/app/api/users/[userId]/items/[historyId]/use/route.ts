@@ -16,6 +16,14 @@ export async function POST(
         id: historyIdNum,
         userId: userId,
       },
+      include: {
+        item: {
+          select: {
+            useStartAt: true,
+            useEndAt: true,
+          },
+        },
+      },
     });
 
     if (!history) {
@@ -29,6 +37,23 @@ export async function POST(
     if (history.usedAt) {
       return NextResponse.json(
         { error: 'このアイテムは既に使用済みです' },
+        { status: 400 }
+      );
+    }
+
+    // 使用可能期間のチェック（任意設定）
+    const now = new Date();
+    const useStartAt = history.item?.useStartAt ?? null;
+    const useEndAt = history.item?.useEndAt ?? null;
+    if (useStartAt && now < useStartAt) {
+      return NextResponse.json(
+        { error: 'このアイテムはまだ使用できません（使用開始前）' },
+        { status: 400 }
+      );
+    }
+    if (useEndAt && now > useEndAt) {
+      return NextResponse.json(
+        { error: 'このアイテムの使用期限が切れています' },
         { status: 400 }
       );
     }
@@ -49,6 +74,8 @@ export async function POST(
             rarity: true,
             usageType: true,
             imageUrl: true,
+            useStartAt: true,
+            useEndAt: true,
           },
         },
       },
