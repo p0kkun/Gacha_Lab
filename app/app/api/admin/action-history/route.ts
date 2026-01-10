@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/admin-auth';
-import type { AdminActionType } from '.prisma/client';
-import { AdminActionType as AdminActionTypeEnum } from '.prisma/client';
 
 /**
  * 管理画面操作履歴を取得
