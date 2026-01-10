@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
 // PointTransactionTypeの一時的な回避策（Prismaクライアントの型解決問題のため）
 const PointTransactionType = {
   PURCHASE: "PURCHASE" as const,
@@ -12,17 +12,17 @@ const PointTransactionType = {
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
   if (!stripeSecretKey) {
-    throw new Error('STRIPE_SECRET_KEY環境変数が設定されていません');
+    throw new Error("STRIPE_SECRET_KEY環境変数が設定されていません");
   }
   return new Stripe(stripeSecretKey, {
-    apiVersion: '2025-11-17.clover',
+    apiVersion: "2025-12-15.clover",
   });
 }
 
 /**
  * 決済成功時のポイント付与（Webhookのフォールバック）
  * POST /api/points/confirm
- * 
+ *
  * このエンドポイントは、Webhookが呼び出されない場合のフォールバックとして使用されます。
  * PaymentIntentの状態を確認し、成功していてまだポイントが付与されていない場合にポイントを付与します。
  */
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     if (!paymentIntentId || !userId) {
       return NextResponse.json(
-        { error: 'PaymentIntent IDとユーザーIDが必要です' },
+        { error: "PaymentIntent IDとユーザーIDが必要です" },
         { status: 400 }
       );
     }
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
     // PaymentIntentの状態を確認
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    console.log('ポイント付与確認:', {
+    console.log("ポイント付与確認:", {
       paymentIntentId: paymentIntent.id,
       status: paymentIntent.status,
       metadata: paymentIntent.metadata,
     });
 
     // 決済が成功していない場合はエラー
-    if (paymentIntent.status !== 'succeeded') {
+    if (paymentIntent.status !== "succeeded") {
       return NextResponse.json(
         { error: `決済が成功していません。状態: ${paymentIntent.status}` },
         { status: 400 }
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
     }
 
     // メタデータを確認
-    if (paymentIntent.metadata.type !== 'point_purchase') {
+    if (paymentIntent.metadata.type !== "point_purchase") {
       return NextResponse.json(
-        { error: 'ポイント購入用の決済ではありません' },
+        { error: "ポイント購入用の決済ではありません" },
         { status: 400 }
       );
     }
@@ -68,29 +68,34 @@ export async function POST(request: NextRequest) {
     // メタデータのuserIdとリクエストのuserIdが一致するか確認
     if (paymentIntent.metadata.userId !== userId) {
       return NextResponse.json(
-        { error: 'ユーザーIDが一致しません' },
+        { error: "ユーザーIDが一致しません" },
         { status: 403 }
       );
     }
 
-    const points = parseInt(paymentIntent.metadata.points || '0', 10);
-    const bonusFreePoints = parseInt(paymentIntent.metadata.bonusFreePoints || '0', 10);
+    const points = parseInt(paymentIntent.metadata.points || "0", 10);
+    const bonusFreePoints = parseInt(
+      paymentIntent.metadata.bonusFreePoints || "0",
+      10
+    );
 
     if (points <= 0 || bonusFreePoints < 0) {
-      return NextResponse.json(
-        { error: '無効なポイント数' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "無効なポイント数" }, { status: 400 });
     }
 
     // 購入ログ（PointPurchaseLog）を作成/再利用（idempotent）
     const prismaAny = prisma as unknown as {
       pointPurchaseLog: {
-        findFirst: (args: { where: { providerPaymentIntentId: string } }) => Promise<{ id: number } | null>;
+        findFirst: (args: {
+          where: { providerPaymentIntentId: string };
+        }) => Promise<{ id: number } | null>;
         create: (args: { data: any }) => Promise<{ id: number }>;
       };
       pointHistory: {
-        findFirst: (args: { where: any; select?: any }) => Promise<{ id: number } | null>;
+        findFirst: (args: {
+          where: any;
+          select?: any;
+        }) => Promise<{ id: number } | null>;
       };
     };
 
@@ -124,12 +129,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingHistory) {
-      console.log('既にポイントが付与されています:', {
+      console.log("既にポイントが付与されています:", {
         paymentIntentId,
         historyId: existingHistory.id,
       });
       // 既に付与されている場合は、現在のポイント残高を返す
-      const { getPointBalances } = await import('@/lib/point-management');
+      const { getPointBalances } = await import("@/lib/point-management");
       const balances = await getPointBalances(userId);
 
       return NextResponse.json({
@@ -140,29 +145,39 @@ export async function POST(request: NextRequest) {
     }
 
     // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
-    const { grantPurchasePoints, getPointBalances } = await import('@/lib/point-management');
-    await grantPurchasePoints(userId, points, bonusFreePoints, paymentIntentId, purchaseLogId);
+    const { grantPurchasePoints, getPointBalances } = await import(
+      "@/lib/point-management"
+    );
+    await grantPurchasePoints(
+      userId,
+      points,
+      bonusFreePoints,
+      paymentIntentId,
+      purchaseLogId
+    );
 
     // 現在のポイント残高を取得
     const balances = await getPointBalances(userId);
     const result = balances.total;
 
-    console.log(`ポイント付与成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`, {
-      paymentIntentId,
-      newBalance: result,
-      timestamp: new Date().toISOString(),
-    });
+    console.log(
+      `ポイント付与成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`,
+      {
+        paymentIntentId,
+        newBalance: result,
+        timestamp: new Date().toISOString(),
+      }
+    );
 
     return NextResponse.json({
       success: true,
       points: result,
     });
   } catch (error) {
-    console.error('ポイント付与エラー:', error);
+    console.error("ポイント付与エラー:", error);
     return NextResponse.json(
-      { error: 'ポイント付与に失敗しました' },
+      { error: "ポイント付与に失敗しました" },
       { status: 500 }
     );
   }
 }
-

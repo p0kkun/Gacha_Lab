@@ -8,7 +8,7 @@ function getStripeInstance(): Stripe {
     throw new Error('STRIPE_SECRET_KEY環境変数が設定されていません');
   }
   return new Stripe(stripeSecretKey, {
-    apiVersion: '2025-11-17.clover',
+    apiVersion: '2025-12-15.clover',
   });
 }
 
