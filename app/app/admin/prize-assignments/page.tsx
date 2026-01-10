@@ -10,11 +10,12 @@ type PrizeItemLite = { id: number; name: string; isActive: boolean };
 
 type Assignment = {
   id: number;
-  gachaTypeId: string;
-  rarity: string;
+  gachaTypeId: number;
+  tierCode: string;
   itemId: number;
   weight: number;
   isActive: boolean;
+  tier?: { code: string; label: string };
   item: {
     id: number;
     name: string;
@@ -43,11 +44,11 @@ export default function PrizeAssignmentsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [newRow, setNewRow] = useState<{
-    rarity: string;
+    tierCode: string;
     itemId: string;
     weight: string;
     isActive: boolean;
-  }>({ rarity: "THIRD_PRIZE", itemId: "", weight: "1", isActive: true });
+  }>({ tierCode: "THIRD_PRIZE", itemId: "", weight: "1", isActive: true });
 
   const [confirm, setConfirm] = useState<{
     isOpen: boolean;
@@ -71,7 +72,8 @@ export default function PrizeAssignmentsPage() {
     if (!res.ok) throw new Error("ガチャタイプ一覧の取得に失敗しました");
     const data = await res.json();
     const list: GachaTypeLite[] = (data.gachaTypes || []).map((gt: any) => ({
-      id: gt.id,
+      // NOTE: 外部参照は code を使う（API/URLの互換のためキー名は id のまま）
+      id: gt.code,
       name: gt.name,
     }));
     setGachaTypes(list);
@@ -140,8 +142,8 @@ export default function PrizeAssignmentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGachaTypeId]);
 
-  const rarityLabel = (rarity: string) =>
-    RARITIES.find((r) => r.value === rarity)?.label || rarity;
+  const tierLabel = (tierCode: string) =>
+    RARITIES.find((r) => r.value === tierCode)?.label || tierCode;
 
   const openConfirm = (args: Omit<NonNullable<typeof confirm>, "isOpen">) =>
     setConfirm({ isOpen: true, ...args });
@@ -174,7 +176,7 @@ export default function PrizeAssignmentsPage() {
       variant: "info",
       changes: [
         { label: "ガチャタイプ", from: "-", to: selectedGachaTypeId },
-        { label: "等級", from: "-", to: rarityLabel(newRow.rarity) },
+        { label: "等級", from: "-", to: tierLabel(newRow.tierCode) },
         { label: "景品", from: "-", to: item ? `${item.name}（ID:${item.id}）` : `ID:${itemId}` },
         { label: "重み", from: "-", to: String(weight) },
         { label: "状態", from: "-", to: newRow.isActive ? "有効" : "無効" },
@@ -190,7 +192,7 @@ export default function PrizeAssignmentsPage() {
             },
             body: JSON.stringify({
               gachaTypeId: selectedGachaTypeId,
-              rarity: newRow.rarity,
+              tierCode: newRow.tierCode,
               itemId,
               weight,
               isActive: newRow.isActive,
@@ -204,7 +206,7 @@ export default function PrizeAssignmentsPage() {
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "景品割当の追加に失敗しました");
           setSuccess("景品割当を追加しました");
-          setNewRow({ rarity: newRow.rarity, itemId: "", weight: "1", isActive: true });
+          setNewRow({ tierCode: newRow.tierCode, itemId: "", weight: "1", isActive: true });
           await fetchAssignments(selectedGachaTypeId);
         } finally {
           setSavingId(null);
@@ -222,7 +224,7 @@ export default function PrizeAssignmentsPage() {
       confirmText: "保存",
       variant: "info",
       changes: [
-        { label: "等級", from: "-", to: rarityLabel(row.rarity) },
+        { label: "等級", from: "-", to: tierLabel(row.tierCode) },
         { label: "景品", from: "-", to: `${row.item.name}（ID:${row.item.id}）` },
         { label: "重み", from: "-", to: String(row.weight) },
         { label: "状態", from: "-", to: row.isActive ? "有効" : "無効" },
@@ -237,7 +239,7 @@ export default function PrizeAssignmentsPage() {
               "X-Admin-Auth": token,
             },
             body: JSON.stringify({
-              rarity: row.rarity,
+              tierCode: row.tierCode,
               itemId: row.itemId,
               weight: row.weight,
               isActive: row.isActive,
@@ -268,7 +270,7 @@ export default function PrizeAssignmentsPage() {
       confirmText: "削除",
       variant: "danger",
       changes: [
-        { label: "等級", from: "割当済み", to: `削除（${rarityLabel(row.rarity)}）` },
+        { label: "等級", from: "割当済み", to: `削除（${tierLabel(row.tierCode)}）` },
         { label: "景品", from: "割当済み", to: `${row.item.name}（ID:${row.item.id}）` },
       ],
       onConfirm: async () => {
@@ -340,8 +342,8 @@ export default function PrizeAssignmentsPage() {
               </label>
               <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
                 <select
-                  value={newRow.rarity}
-                  onChange={(e) => setNewRow((p) => ({ ...p, rarity: e.target.value }))}
+                  value={newRow.tierCode}
+                  onChange={(e) => setNewRow((p) => ({ ...p, tierCode: e.target.value }))}
                   className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
                 >
                   {RARITIES.map((r) => (
@@ -436,11 +438,11 @@ export default function PrizeAssignmentsPage() {
                     <tr key={a.id} className="border-b last:border-b-0">
                       <td className="px-3 py-2 text-sm text-gray-900">
                         <select
-                          value={a.rarity}
+                          value={a.tierCode}
                           onChange={(e) =>
                             setAssignments((prev) =>
                               prev.map((x) =>
-                                x.id === a.id ? { ...x, rarity: e.target.value } : x
+                                x.id === a.id ? { ...x, tierCode: e.target.value } : x
                               )
                             )
                           }

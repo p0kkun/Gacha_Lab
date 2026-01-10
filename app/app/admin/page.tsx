@@ -83,11 +83,23 @@ export default function AdminPage() {
   return (
     <AdminLayout>
       <div>
-        <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">ダッシュボード</h1>
+        <div className="mb-4 flex items-center justify-between lg:mb-6">
+          <h1 className="text-xl font-bold text-gray-800 lg:text-2xl">ダッシュボード</h1>
+          <a
+            href="/admin/help"
+            className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+          >
+            <span>❓</span>
+            <span>ヘルプを見る</span>
+          </a>
+        </div>
         
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
-            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">ユーザー管理</h2>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">👥</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">ユーザー管理</h2>
+            </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ユーザー一覧と詳細情報を確認できます
             </p>
@@ -100,7 +112,74 @@ export default function AdminPage() {
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
-            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">ガチャ設定</h2>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">🏷️</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">タグ管理</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ユーザータグの追加・編集・一括割当ができます
+            </p>
+            <a
+              href="/admin/tags"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              タグ管理へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">💬</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">メッセージ配信</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              LINEユーザーへのメッセージ配信ができます
+            </p>
+            <a
+              href="/admin/messages"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              メッセージ配信へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">💰</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">ポイント管理</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ユーザーへのポイント付与ができます
+            </p>
+            <a
+              href="/admin/points"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              ポイント管理へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">💳</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">ポイント購入プラン</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ポイント購入プランの追加・編集ができます
+            </p>
+            <a
+              href="/admin/point-plans"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              ポイント購入プランへ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">🎰</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">ガチャ設定</h2>
+            </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャタイプの確率設定ができます
             </p>
@@ -113,7 +192,74 @@ export default function AdminPage() {
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
-            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">アイテム設定</h2>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">🎁</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">無料ガチャ設定</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              友達紹介システムの無料ガチャ設定ができます
+            </p>
+            <a
+              href="/admin/free-gacha-settings"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              無料ガチャ設定へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">📝</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">結果メッセージテンプレート</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ガチャ結果メッセージのテンプレートを管理できます
+            </p>
+            <a
+              href="/admin/result-message-templates"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              結果メッセージテンプレートへ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">⭐</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">等級マスタ管理</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ガチャの等級（1等、2等など）を追加・編集できます
+            </p>
+            <a
+              href="/admin/prize-tiers"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              等級マスタ管理へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">🎁</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">景品割当（ガチャ別）</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ガチャタイプごとに景品の等級割当を設定できます
+            </p>
+            <a
+              href="/admin/prize-assignments"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              景品割当へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">📦</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">アイテム設定</h2>
+            </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャアイテムの追加・編集ができます
             </p>
@@ -126,7 +272,26 @@ export default function AdminPage() {
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
-            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">統計・購入状況</h2>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">🎬</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">動画管理</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              ガチャ演出動画のアップロード・管理ができます
+            </p>
+            <a
+              href="/admin/videos"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              動画管理へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">📈</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">統計・購入状況</h2>
+            </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャごとの課金人数や金額を確認できます
             </p>
@@ -139,7 +304,10 @@ export default function AdminPage() {
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
-            <h2 className="mb-2 text-base font-semibold text-gray-800 lg:text-lg">ガチャシミュレータ</h2>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">🎯</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">ガチャシミュレータ</h2>
+            </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               設定したガチャの排出率を確認できます
             </p>
@@ -148,6 +316,38 @@ export default function AdminPage() {
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               シミュレータへ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">👥</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">友達紹介履歴</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              友達紹介システムの履歴と無料ガチャ付与状況を確認できます
+            </p>
+            <a
+              href="/admin/referrals"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              友達紹介履歴へ
+            </a>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">📋</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">操作履歴</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              管理画面での操作履歴を確認できます
+            </p>
+            <a
+              href="/admin/action-history"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              操作履歴へ
             </a>
           </div>
         </div>

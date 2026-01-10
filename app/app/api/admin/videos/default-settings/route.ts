@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         settings: {
           id: null,
-          commonVideoIds: [],
-          rarityVideoIds: null,
+          commonVideoAssetIds: [],
+          tierVideoAssetIds: null,
         },
       });
     }
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       settings: {
         id: settings.id,
-        commonVideoIds: settings.commonVideoIds || [],
-        rarityVideoIds: settings.rarityVideoIds,
+        commonVideoAssetIds: (settings as any).commonVideoAssetIds || [],
+        tierVideoAssetIds: (settings as any).tierVideoAssetIds,
       },
     });
   } catch (error) {
@@ -63,18 +63,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { commonVideoIds, rarityVideoIds } = body;
+    const { commonVideoAssetIds, tierVideoAssetIds } = body;
 
     console.log('[デフォルト設定保存] リクエスト受信:', {
-      commonVideoIds: commonVideoIds?.length || 0,
-      rarityVideoIds: rarityVideoIds ? Object.keys(rarityVideoIds).length : 0,
+      commonVideoAssetIds: commonVideoAssetIds?.length || 0,
+      tierVideoAssetIds: tierVideoAssetIds ? Object.keys(tierVideoAssetIds).length : 0,
     });
 
     // バリデーション
-    if (!Array.isArray(commonVideoIds)) {
+    if (!Array.isArray(commonVideoAssetIds)) {
       console.error('[デフォルト設定保存] バリデーションエラー: commonVideoIdsが配列ではありません');
       return NextResponse.json(
-        { error: 'commonVideoIdsは配列である必要があります' },
+        { error: 'commonVideoAssetIdsは配列である必要があります' },
         { status: 400 }
       );
     }
@@ -90,23 +90,23 @@ export async function POST(request: NextRequest) {
       const updated = await prisma.defaultGachaVideoSettings.update({
         where: { id: existingSettings.id },
         data: {
-          commonVideoIds: commonVideoIds || [],
-          rarityVideoIds: rarityVideoIds || null,
+          commonVideoAssetIds: commonVideoAssetIds || [],
+          tierVideoAssetIds: tierVideoAssetIds || null,
         },
       });
 
       console.log('[デフォルト設定保存] 更新成功:', {
         id: updated.id,
-        commonVideoIds: updated.commonVideoIds?.length || 0,
-        rarityVideoIds: updated.rarityVideoIds ? Object.keys(updated.rarityVideoIds as Record<string, number[]>).length : 0,
+        commonVideoAssetIds: (updated as any).commonVideoAssetIds?.length || 0,
+        tierVideoAssetIds: (updated as any).tierVideoAssetIds ? Object.keys((updated as any).tierVideoAssetIds as Record<string, number[]>).length : 0,
       });
 
       return NextResponse.json({
         success: true,
         settings: {
           id: updated.id,
-          commonVideoIds: updated.commonVideoIds || [],
-          rarityVideoIds: updated.rarityVideoIds,
+          commonVideoAssetIds: (updated as any).commonVideoAssetIds || [],
+          tierVideoAssetIds: (updated as any).tierVideoAssetIds,
         },
       });
     } else {
@@ -114,23 +114,23 @@ export async function POST(request: NextRequest) {
       // 新規作成
       const created = await prisma.defaultGachaVideoSettings.create({
         data: {
-          commonVideoIds: commonVideoIds || [],
-          rarityVideoIds: rarityVideoIds || null,
+          commonVideoAssetIds: commonVideoAssetIds || [],
+          tierVideoAssetIds: tierVideoAssetIds || null,
         },
       });
 
       console.log('[デフォルト設定保存] 作成成功:', {
         id: created.id,
-        commonVideoIds: created.commonVideoIds?.length || 0,
-        rarityVideoIds: created.rarityVideoIds ? Object.keys(created.rarityVideoIds as Record<string, number[]>).length : 0,
+        commonVideoAssetIds: (created as any).commonVideoAssetIds?.length || 0,
+        tierVideoAssetIds: (created as any).tierVideoAssetIds ? Object.keys((created as any).tierVideoAssetIds as Record<string, number[]>).length : 0,
       });
 
       return NextResponse.json({
         success: true,
         settings: {
           id: created.id,
-          commonVideoIds: created.commonVideoIds || [],
-          rarityVideoIds: created.rarityVideoIds,
+          commonVideoAssetIds: (created as any).commonVideoAssetIds || [],
+          tierVideoAssetIds: (created as any).tierVideoAssetIds,
         },
       });
     }

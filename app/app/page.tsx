@@ -100,22 +100,25 @@ function HomeContent() {
         // 紹介リンクの検証（URLパラメータにrefがある場合）
         const urlParams = new URLSearchParams(window.location.search);
         const referralLinkId = urlParams.get('ref');
-        if (referralLinkId) {
+        if (referralLinkId && userProfile.userId) {
           try {
             const verifyRes = await fetch("/api/referral/verify", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ referralLinkId }),
+              body: JSON.stringify({ 
+                referralLinkId,
+                userId: userProfile.userId, // ユーザーIDも送信してUser.lastAccessedReferralLinkIdに記録
+              }),
             });
 
             if (verifyRes.ok) {
               const verifyData = await verifyRes.json();
               if (verifyData.isValid) {
-                // セッションストレージに保存（友だち追加時に使用）
-                sessionStorage.setItem("referralLinkId", referralLinkId);
-                console.log("紹介リンクが適用されました");
+                console.log("紹介リンクが適用されました:", referralLinkId);
+                // 注意: 友だち追加時の判定は、User.lastAccessedReferralLinkIdを参照するため、
+                // セッションストレージへの保存は不要（既にDBに記録されている）
               }
             }
           } catch (error) {

@@ -5,7 +5,8 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { getAdminAuthToken } from '@/lib/admin-auth';
 
 type GachaType = {
-  id: string;
+  id: number; // 内部ID（DB）
+  code: string; // 外部参照用コード（例: "normal"）
   name: string;
 };
 
@@ -62,7 +63,7 @@ export default function SimulatorPage() {
       const data = await res.json();
       setGachaTypes(data.gachaTypes);
       if (data.gachaTypes.length > 0) {
-        setSelectedGachaTypeId(data.gachaTypes[0].id);
+        setSelectedGachaTypeId(data.gachaTypes[0].code);
       }
     } catch (error) {
       console.error('ガチャタイプ取得エラー:', error);
@@ -139,7 +140,7 @@ export default function SimulatorPage() {
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               >
                 {gachaTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
+                  <option key={type.id} value={type.code}>
                     {type.name}
                   </option>
                 ))}

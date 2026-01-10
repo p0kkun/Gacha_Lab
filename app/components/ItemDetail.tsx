@@ -7,9 +7,12 @@ type UserItem = {
   item: {
     id: number;
     name: string;
+    description: string | null;
     rarity: string;
     usageType: string;
     imageUrl: string | null;
+    useStartAt: string | null;
+    useEndAt: string | null;
   };
   createdAt: string;
   usedAt: string | null;
@@ -43,8 +46,50 @@ export default function ItemDetail({
     return labels[rarity] || rarity;
   };
 
+  // MarkdownリンクをHTMLに変換
+  const renderDescription = (text: string | null): JSX.Element => {
+    if (!text) {
+      // 説明文がない場合はアイテム名から生成（後方互換性）
+      const fallback = getItemDescription(userItem.item.name, userItem.item.rarity);
+      return <p className="text-gray-600">{fallback}</p>;
+    }
+
+    // Markdownリンク [テキスト](URL) を検出して変換
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      // リンク前のテキスト
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      // リンク要素
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline hover:text-blue-800"
+        >
+          {match[1]}
+        </a>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    // 残りのテキスト
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return <p className="text-gray-600">{parts.length > 0 ? parts : text}</p>;
+  };
+
   const getItemDescription = (name: string, rarity: string): string => {
-    // アイテム名から説明文を生成
+    // アイテム名から説明文を生成（後方互換性）
     if (name.includes('1000円')) {
       return '1000円オフクーポン券';
     } else if (name.includes('3000円')) {
@@ -86,10 +131,37 @@ export default function ItemDetail({
     }
   };
 
+  // アイテムの状態を判定
+  const getItemStatus = (): 'available' | 'used' | 'expired' | 'notStarted' => {
+    if (userItem.usedAt) {
+      return 'used';
+    }
+
+    const now = new Date();
+    const useStartAt = userItem.item.useStartAt ? new Date(userItem.item.useStartAt) : null;
+    const useEndAt = userItem.item.useEndAt ? new Date(userItem.item.useEndAt) : null;
+
+    if (useStartAt && now < useStartAt) {
+      return 'notStarted';
+    }
+    if (useEndAt && now > useEndAt) {
+      return 'expired';
+    }
+
+    return 'available';
+  };
+
+  const itemStatus = getItemStatus();
+
   // アイテム使用画面を表示
   if (showUsageScreen) {
-    const expirationDate = new Date(userItem.createdAt);
-    expirationDate.setMonth(expirationDate.getMonth() + 3); // 3ヶ月後を有効期限とする
+    const expirationDate = userItem.item.useEndAt
+      ? new Date(userItem.item.useEndAt)
+      : (() => {
+          const d = new Date(userItem.createdAt);
+          d.setMonth(d.getMonth() + 3); // デフォルトは3ヶ月後
+          return d;
+        })();
     const isImage = userItem.item.usageType === 'IMAGE';
 
     return (
@@ -116,7 +188,11 @@ export default function ItemDetail({
                 {userItem.item.name}
               </div>
               <div className="text-sm text-gray-600">
-                {getItemDescription(userItem.item.name, userItem.item.rarity)}
+                {userItem.item.description ? (
+                  renderDescription(userItem.item.description)
+                ) : (
+                  getItemDescription(userItem.item.name, userItem.item.rarity)
+                )}
               </div>
             </div>
 
@@ -238,13 +314,57 @@ export default function ItemDetail({
             <h2 className="mb-2 text-xl font-bold text-gray-800">
               {userItem.item.name}
             </h2>
-            <p className="text-gray-600">
-              {getItemDescription(userItem.item.name, userItem.item.rarity)}
-            </p>
+            {renderDescription(userItem.item.description)}
           </div>
 
+          {/* 使用開始前・使用期限切れの警告 */}
+          {itemStatus === 'notStarted' && userItem.item.useStartAt && (
+            <div className="mb-4 rounded-lg bg-yellow-50 p-4">
+              <div className="text-sm font-semibold text-yellow-800">使用開始前</div>
+              <div className="mt-1 text-xs text-yellow-600">
+                使用開始日時: {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+            </div>
+          )}
+
+          {itemStatus === 'expired' && userItem.item.useEndAt && (
+            <div className="mb-4 rounded-lg bg-red-50 p-4">
+              <div className="text-sm font-semibold text-red-800">使用期限切れ</div>
+              <div className="mt-1 text-xs text-red-600">
+                使用期限: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 使用期限の表示（使用可能な場合のみ） */}
+          {itemStatus === 'available' && userItem.item.useEndAt && (
+            <div className="mb-4 rounded-lg bg-blue-50 p-4">
+              <div className="text-xs text-blue-700">
+                使用期限: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+            </div>
+          )}
+
           {/* 使用ボタン */}
-          {userItem.usedAt ? (
+          {itemStatus === 'used' ? (
             <div className="mt-4">
               <button
                 disabled
@@ -253,8 +373,21 @@ export default function ItemDetail({
                 使用済み
               </button>
               <p className="mt-2 text-center text-sm text-gray-500">
-                使用日: {new Date(userItem.usedAt).toLocaleDateString('ja-JP')}
+                使用日: {new Date(userItem.usedAt!).toLocaleDateString('ja-JP')}
               </p>
+            </div>
+          ) : itemStatus === 'notStarted' || itemStatus === 'expired' ? (
+            <div className="mt-4">
+              <button
+                disabled
+                className={`w-full rounded-md px-4 py-3 font-semibold ${
+                  itemStatus === 'notStarted'
+                    ? 'bg-yellow-300 text-yellow-800'
+                    : 'bg-red-300 text-red-800'
+                }`}
+              >
+                {itemStatus === 'notStarted' ? '使用開始前' : '使用期限切れ'}
+              </button>
             </div>
           ) : (
             <div className="mt-4">

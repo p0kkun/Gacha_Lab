@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
+import { recordAdminAction } from "@/lib/admin-action-history";
+import { AdminActionType } from "@/lib/admin-action-types";
 
 /**
  * ポイント購入プラン更新（管理者用）
@@ -97,9 +99,34 @@ export async function PUT(
       data.displayOrder = Math.trunc(ord);
     }
 
+    // 更新前のデータを取得
+    const oldPlan = await prisma.pointPurchasePlan.findUnique({
+      where: { id: planId },
+    });
+
     const updated = await prisma.pointPurchasePlan.update({
       where: { id: planId },
       data,
+    });
+
+    // 操作履歴を記録
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+    Object.keys(data).forEach((key) => {
+      if (oldPlan && (oldPlan as any)[key] !== data[key as keyof typeof data]) {
+        changes[key] = {
+          from: (oldPlan as any)[key],
+          to: data[key as keyof typeof data],
+        };
+      }
+    });
+
+    await recordAdminAction({
+      actionType: AdminActionType.POINT_PLAN_UPDATE,
+      description: `ポイント購入プラン「${updated.label}」を更新（ID: ${planId}）`,
+      metadata: {
+        planId,
+        changes,
+      },
     });
 
     return NextResponse.json({ plan: updated });
@@ -137,7 +164,25 @@ export async function DELETE(
       return NextResponse.json({ error: "無効なIDです" }, { status: 400 });
     }
 
+    // 削除前のデータを取得
+    const oldPlan = await prisma.pointPurchasePlan.findUnique({
+      where: { id: planId },
+    });
+
     await prisma.pointPurchasePlan.delete({ where: { id: planId } });
+
+    // 操作履歴を記録
+    if (oldPlan) {
+      await recordAdminAction({
+        actionType: AdminActionType.POINT_PLAN_DELETE,
+        description: `ポイント購入プラン「${oldPlan.label}」を削除（ID: ${planId}）`,
+        metadata: {
+          planId,
+          plan: oldPlan,
+        },
+      });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (error: any) {
     if (typeof error?.code === "string" && error.code === "P2025") {

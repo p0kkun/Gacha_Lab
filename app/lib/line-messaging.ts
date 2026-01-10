@@ -26,6 +26,8 @@ function replaceMessageTemplate(
     handName?: string;
     holeCards?: Array<{ suit: string; rank: string }>;
     communityCards?: Array<{ suit: string; rank: string }>;
+    grantedPoints?: number;
+    grantedPointsMessage?: string;
   }
 ): string {
   let message = template;
@@ -61,6 +63,19 @@ function replaceMessageTemplate(
     );
   }
 
+  // ポイント付与関連
+  if (variables.grantedPoints !== undefined) {
+    message = message.replace(/{grantedPoints}/g, String(variables.grantedPoints));
+  } else {
+    message = message.replace(/{grantedPoints}/g, '0');
+  }
+  if (variables.grantedPointsMessage !== undefined) {
+    message = message.replace(/{grantedPointsMessage}/g, variables.grantedPointsMessage);
+  } else {
+    // ポイント付与がない場合は空文字に置換
+    message = message.replace(/{grantedPointsMessage}/g, '');
+  }
+
   return message;
 }
 
@@ -77,7 +92,8 @@ export async function sendGachaResultMessage(
     handName: string;
     holeCards: Array<{ suit: string; rank: string }>;
     communityCards: Array<{ suit: string; rank: string }>;
-  }
+  },
+  grantedPoints?: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getLineClient();
@@ -106,11 +122,17 @@ export async function sendGachaResultMessage(
 ガチャタイプ: {gachaTypeName}
 
 🃏 ポーカーハンド: {handName}
+{grantedPointsMessage}
 
 おめでとうございます！🎉`;
 
     // メッセージ本文を作成
     let messageText: string;
+
+    // ポイント付与メッセージ（付与がある場合のみ）
+    const grantedPointsMessage = grantedPoints && grantedPoints > 0
+      ? `💰 無償ポイント {grantedPoints}ポイントが付与されました！`
+      : '';
 
     // テンプレートが未設定の場合はデフォルトテンプレートを使用
     const template = messageTemplate || DEFAULT_MESSAGE_TEMPLATE;
@@ -121,9 +143,11 @@ export async function sendGachaResultMessage(
       rarityEmoji: rarityData.emoji,
       rarityLabel: rarityData.label,
       gachaTypeName,
-      handName: pokerHand?.handName,
+      handName: pokerHand?.handName || '',
       holeCards: pokerHand?.holeCards,
       communityCards: pokerHand?.communityCards,
+      grantedPoints: grantedPoints || 0,
+      grantedPointsMessage,
     });
 
     const message: TextMessage = {

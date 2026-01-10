@@ -101,9 +101,46 @@ export async function POST(request: NextRequest) {
         }
 
         try {
+          // 購入ログ（PointPurchaseLog）を作成/再利用（idempotent）
+          const prismaAny = prisma as unknown as {
+            pointPurchaseLog: {
+              findFirst: (args: { where: { providerPaymentIntentId: string } }) => Promise<{ id: number } | null>;
+              create: (args: { data: any }) => Promise<{ id: number }>;
+            };
+          };
+          const existingLog = await prismaAny.pointPurchaseLog.findFirst({
+            where: { providerPaymentIntentId: paymentIntent.id },
+          });
+          const purchaseLogId =
+            existingLog?.id ??
+            (
+              await prismaAny.pointPurchaseLog.create({
+                data: {
+                  userId,
+                  provider: "STRIPE",
+                  providerPaymentIntentId: paymentIntent.id,
+                  amountYen: paymentIntent.amount,
+                  planId: paymentIntent.metadata.planId || null,
+                  status: "SUCCEEDED",
+                  raw: {
+                    eventId: event.id,
+                    amount: paymentIntent.amount,
+                    currency: paymentIntent.currency,
+                    metadata: paymentIntent.metadata,
+                  },
+                },
+              })
+            ).id;
+
           // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
           const { grantPurchasePoints } = await import('@/lib/point-management');
-          await grantPurchasePoints(userId, points, bonusFreePoints, paymentIntent.id);
+          await grantPurchasePoints(
+            userId,
+            points,
+            bonusFreePoints,
+            paymentIntent.id,
+            purchaseLogId
+          );
 
           console.log(
             `Webhook: ポイント購入成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`,

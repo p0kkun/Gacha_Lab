@@ -56,12 +56,16 @@ export default function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* オーバーレイ */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 backdrop-blur-sm transition-opacity"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
         onClick={onCancel}
       />
 
       {/* モーダル */}
-      <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+      <div 
+        className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* アイコンとタイトル */}
         <div className="mb-4 flex items-start gap-4">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 ${currentVariant.icon}`}>

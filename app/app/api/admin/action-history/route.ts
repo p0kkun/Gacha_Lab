@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const actionType = searchParams.get('actionType') as AdminActionType | null;
+    const actionType = searchParams.get('actionType');
     const adminUserId = searchParams.get('adminUserId');
     const targetUserId = searchParams.get('targetUserId');
     const startDate = searchParams.get('startDate');
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     // フィルタ条件を構築
     const where: {
-      actionType?: AdminActionType;
+      actionType?: string;
       adminUserId?: string;
       targetUserId?: string;
       createdAt?: {

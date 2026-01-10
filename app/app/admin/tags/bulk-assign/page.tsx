@@ -13,7 +13,8 @@ type Tag = {
 };
 
 type GachaType = {
-  id: string;
+  id: number; // 内部ID（DB）
+  code: string; // 外部参照用コード（例: "normal"）
   name: string;
 };
 
@@ -292,7 +293,7 @@ export default function BulkAssignTagsPage() {
                   >
                     <option value="">指定なし</option>
                     {gachaTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
+                      <option key={type.id} value={type.code}>
                         {type.name}
                       </option>
                     ))}

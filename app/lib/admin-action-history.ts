@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import type { AdminActionType } from '.prisma/client';
-import { AdminActionType as AdminActionTypeEnum } from '.prisma/client';
+import { AdminActionType } from './admin-action-types';
 
 /**
  * 管理画面操作履歴を記録
@@ -45,7 +44,7 @@ export async function recordPointGrantAction(params: {
   description?: string;
 }) {
   await recordAdminAction({
-    actionType: AdminActionTypeEnum.POINT_GRANT,
+    actionType: AdminActionType.POINT_GRANT,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     targetUserIds: params.targetUserIds,
@@ -70,7 +69,7 @@ export async function recordMessageSendAction(params: {
   tagIds?: number[];
 }) {
   await recordAdminAction({
-    actionType: AdminActionTypeEnum.MESSAGE_SEND,
+    actionType: AdminActionType.MESSAGE_SEND,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     targetUserIds: params.targetUserIds,
@@ -95,7 +94,7 @@ export async function recordTagAssignAction(params: {
   isBulk: boolean;
 }) {
   await recordAdminAction({
-    actionType: params.isBulk ? AdminActionTypeEnum.TAG_BULK_ASSIGN : AdminActionTypeEnum.TAG_ASSIGN,
+    actionType: params.isBulk ? AdminActionType.TAG_BULK_ASSIGN : AdminActionType.TAG_ASSIGN,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     targetUserIds: params.targetUserIds,
@@ -121,7 +120,7 @@ export async function recordGachaProbabilityUpdateAction(params: {
   newProbabilities: Record<string, number>;
 }) {
   await recordAdminAction({
-    actionType: AdminActionTypeEnum.GACHA_PROBABILITY_UPDATE,
+    actionType: AdminActionType.GACHA_PROBABILITY_UPDATE,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `ガチャタイプ「${params.gachaTypeName}」の確率を変更`,
@@ -151,7 +150,7 @@ export async function recordVideoUploadAction(params: {
     ? `（${params.rarity}）`
     : '';
   await recordAdminAction({
-    actionType: AdminActionTypeEnum.VIDEO_UPLOAD,
+    actionType: AdminActionType.VIDEO_UPLOAD,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `動画をアップロード: ${params.videoType}${rarityLabel} - ${params.fileName}`,
@@ -182,7 +181,7 @@ export async function recordVideoUpdateAction(params: {
     ? `（${params.rarity}）`
     : '';
   await recordAdminAction({
-    actionType: AdminActionTypeEnum.VIDEO_UPDATE,
+    actionType: AdminActionType.VIDEO_UPDATE,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `動画を更新: ${params.videoType}${rarityLabel} - ${params.fileName}`,
@@ -211,7 +210,7 @@ export async function recordVideoDeleteAction(params: {
     ? `（${params.rarity}）`
     : '';
   await recordAdminAction({
-    actionType: AdminActionTypeEnum.VIDEO_DELETE,
+    actionType: AdminActionType.VIDEO_DELETE,
     adminUserId: params.adminUserId,
     adminName: params.adminName,
     description: `動画を削除: ${params.videoType}${rarityLabel} - ${params.fileName}`,

@@ -345,8 +345,18 @@ export default function UserDetailPage() {
 
         {/* タグ追加モーダル */}
         {showTagModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* オーバーレイ */}
+            <div
+              className="absolute inset-0 backdrop-blur-sm transition-opacity"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+              onClick={() => setShowTagModal(false)}
+            />
+            {/* モーダル */}
+            <div 
+              className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="mb-4 text-lg font-semibold text-gray-800">タグを追加</h3>
               <div className="max-h-64 space-y-2 overflow-y-auto">
                 {allTags
@@ -435,7 +445,7 @@ export default function UserDetailPage() {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                         <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                          {getRarityLabel(history.item.rarity)}
+                          {getRarityLabel((history as any).tierCode || "UNKNOWN")}
                         </span>
                       </td>
                     </tr>

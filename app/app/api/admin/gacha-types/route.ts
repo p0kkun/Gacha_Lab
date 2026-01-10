@@ -64,7 +64,19 @@ export async function GET(request: NextRequest) {
     const gachaTypes = await prisma.gachaType.findMany({
       where,
       orderBy,
-    });
+      include: {
+        // 正: ガチャ別確率（等級×重み）
+        tierWeights: {
+          select: {
+            tierCode: true,
+            weight: true,
+            displayOrder: true,
+            isActive: true,
+          },
+          orderBy: [{ displayOrder: "asc" }, { tierCode: "asc" }],
+        },
+      },
+    } as any);
 
     return NextResponse.json({ gachaTypes });
   } catch (error) {
@@ -89,7 +101,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      id,
+      code,
       name,
       description,
       iconImageUrl,
@@ -113,14 +125,30 @@ export async function POST(request: NextRequest) {
       prizeWeights,
       prizeHands,
       prizeOrder,
-      resultMessageTemplate,
+      resultMessageTemplateId,
+      tierWeights,
+      tierOrder,
       useDefaultVideos,
     } = body;
 
     // バリデーション
-    if (!id || !name) {
+    if (!code || !name) {
       return NextResponse.json(
-        { error: "IDと名前は必須です" },
+        { error: "code と名前は必須です" },
+        { status: 400 }
+      );
+    }
+
+    const normalizedTemplateId =
+      resultMessageTemplateId === null || resultMessageTemplateId === undefined
+        ? null
+        : Number(resultMessageTemplateId);
+    if (
+      normalizedTemplateId !== null &&
+      (!Number.isFinite(normalizedTemplateId) || normalizedTemplateId <= 0)
+    ) {
+      return NextResponse.json(
+        { error: "resultMessageTemplateId が無効です" },
         { status: 400 }
       );
     }
@@ -134,104 +162,152 @@ export async function POST(request: NextRequest) {
       (fifthPrizeWeight || 0) +
       (loserWeight || 0);
 
-    // ガチャタイプを作成または更新
-    const gachaType = await prisma.gachaType.upsert({
-      where: { id },
-      update: {
-        name,
-        description: description || null,
-        iconImageUrl: iconImageUrl || null,
-        isActive: isActive ?? true,
-        startAt: startAt ? new Date(startAt) : null,
-        endAt: endAt ? new Date(endAt) : null,
-        pointCost: pointCost || 0,
-        firstPrizeWeight: firstPrizeWeight || 0,
-        secondPrizeWeight: secondPrizeWeight || 0,
-        thirdPrizeWeight: thirdPrizeWeight || 0,
-        fourthPrizeWeight: fourthPrizeWeight || 0,
-        fifthPrizeWeight: fifthPrizeWeight || 0,
-        loserWeight: loserWeight || 0,
-        firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
-        secondPrizeHands: Array.isArray(secondPrizeHands)
-          ? secondPrizeHands
-          : [],
-        thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
-        fourthPrizeHands: Array.isArray(fourthPrizeHands)
-          ? fourthPrizeHands
-          : [],
-        fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
-        commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
-        rarityVideoIds: rarityVideoIds
-          ? typeof rarityVideoIds === "string"
-            ? JSON.parse(rarityVideoIds)
-            : rarityVideoIds
-          : null,
-        prizeWeights: prizeWeights
-          ? typeof prizeWeights === "string"
-            ? JSON.parse(prizeWeights)
-            : prizeWeights
-          : null,
-        prizeHands: prizeHands
-          ? typeof prizeHands === "string"
-            ? JSON.parse(prizeHands)
-            : prizeHands
-          : null,
-        prizeOrder: prizeOrder
-          ? typeof prizeOrder === "string"
-            ? JSON.parse(prizeOrder)
-            : prizeOrder
-          : null,
-        resultMessageTemplate: resultMessageTemplate || null,
-        useDefaultVideos: useDefaultVideos ?? true,
-      },
-      create: {
-        id,
-        name,
-        description: description || null,
-        iconImageUrl: iconImageUrl || null,
-        isActive: isActive ?? true,
-        startAt: startAt ? new Date(startAt) : null,
-        endAt: endAt ? new Date(endAt) : null,
-        pointCost: pointCost || 0,
-        firstPrizeWeight: firstPrizeWeight || 0,
-        secondPrizeWeight: secondPrizeWeight || 0,
-        thirdPrizeWeight: thirdPrizeWeight || 0,
-        fourthPrizeWeight: fourthPrizeWeight || 0,
-        fifthPrizeWeight: fifthPrizeWeight || 0,
-        loserWeight: loserWeight || 0,
-        firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
-        secondPrizeHands: Array.isArray(secondPrizeHands)
-          ? secondPrizeHands
-          : [],
-        thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
-        fourthPrizeHands: Array.isArray(fourthPrizeHands)
-          ? fourthPrizeHands
-          : [],
-        fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
-        commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
-        rarityVideoIds: rarityVideoIds
-          ? typeof rarityVideoIds === "string"
-            ? JSON.parse(rarityVideoIds)
-            : rarityVideoIds
-          : null,
-        prizeWeights: prizeWeights
-          ? typeof prizeWeights === "string"
-            ? JSON.parse(prizeWeights)
-            : prizeWeights
-          : null,
-        prizeHands: prizeHands
-          ? typeof prizeHands === "string"
-            ? JSON.parse(prizeHands)
-            : prizeHands
-          : null,
-        prizeOrder: prizeOrder
-          ? typeof prizeOrder === "string"
-            ? JSON.parse(prizeOrder)
-            : prizeOrder
-          : null,
-        resultMessageTemplate: resultMessageTemplate || null,
-        useDefaultVideos: useDefaultVideos ?? true,
-      },
+    const parsedTierWeights: Record<string, number> | null =
+      tierWeights
+        ? typeof tierWeights === "string"
+          ? JSON.parse(tierWeights)
+          : tierWeights
+        : null;
+    const parsedTierOrder: string[] | null =
+      tierOrder
+        ? typeof tierOrder === "string"
+          ? JSON.parse(tierOrder)
+          : tierOrder
+        : null;
+
+    // ガチャタイプを作成または更新 + tierWeights を同期（GachaTierWeightを正にする）
+    const gachaType = await prisma.$transaction(async (tx) => {
+      const saved = await tx.gachaType.upsert({
+        where: { code },
+        update: {
+          code,
+          name,
+          description: description || null,
+          iconImageUrl: iconImageUrl || null,
+          isActive: isActive ?? true,
+          startAt: startAt ? new Date(startAt) : null,
+          endAt: endAt ? new Date(endAt) : null,
+          pointCost: pointCost || 0,
+          // legacy（後方互換）: いったん保持
+          firstPrizeWeight: firstPrizeWeight || 0,
+          secondPrizeWeight: secondPrizeWeight || 0,
+          thirdPrizeWeight: thirdPrizeWeight || 0,
+          fourthPrizeWeight: fourthPrizeWeight || 0,
+          fifthPrizeWeight: fifthPrizeWeight || 0,
+          loserWeight: loserWeight || 0,
+          firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
+          secondPrizeHands: Array.isArray(secondPrizeHands)
+            ? secondPrizeHands
+            : [],
+          thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
+          fourthPrizeHands: Array.isArray(fourthPrizeHands)
+            ? fourthPrizeHands
+            : [],
+          fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
+          // legacy（動画旧カラム）: いったん保持（別PRで削除）
+          commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
+          rarityVideoIds: rarityVideoIds
+            ? typeof rarityVideoIds === "string"
+              ? JSON.parse(rarityVideoIds)
+              : rarityVideoIds
+            : null,
+          // legacy（JSON確率）: いったん保持
+          prizeWeights: prizeWeights
+            ? typeof prizeWeights === "string"
+              ? JSON.parse(prizeWeights)
+              : prizeWeights
+            : null,
+          prizeHands: prizeHands
+            ? typeof prizeHands === "string"
+              ? JSON.parse(prizeHands)
+              : prizeHands
+            : null,
+          prizeOrder: prizeOrder
+            ? typeof prizeOrder === "string"
+              ? JSON.parse(prizeOrder)
+              : prizeOrder
+            : null,
+          resultMessageTemplateId: normalizedTemplateId,
+          useDefaultVideos: useDefaultVideos ?? true,
+        },
+        create: {
+          code,
+          name,
+          description: description || null,
+          iconImageUrl: iconImageUrl || null,
+          isActive: isActive ?? true,
+          startAt: startAt ? new Date(startAt) : null,
+          endAt: endAt ? new Date(endAt) : null,
+          pointCost: pointCost || 0,
+          firstPrizeWeight: firstPrizeWeight || 0,
+          secondPrizeWeight: secondPrizeWeight || 0,
+          thirdPrizeWeight: thirdPrizeWeight || 0,
+          fourthPrizeWeight: fourthPrizeWeight || 0,
+          fifthPrizeWeight: fifthPrizeWeight || 0,
+          loserWeight: loserWeight || 0,
+          firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
+          secondPrizeHands: Array.isArray(secondPrizeHands)
+            ? secondPrizeHands
+            : [],
+          thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
+          fourthPrizeHands: Array.isArray(fourthPrizeHands)
+            ? fourthPrizeHands
+            : [],
+          fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
+          commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
+          rarityVideoIds: rarityVideoIds
+            ? typeof rarityVideoIds === "string"
+              ? JSON.parse(rarityVideoIds)
+              : rarityVideoIds
+            : null,
+          prizeWeights: prizeWeights
+            ? typeof prizeWeights === "string"
+              ? JSON.parse(prizeWeights)
+              : prizeWeights
+            : null,
+          prizeHands: prizeHands
+            ? typeof prizeHands === "string"
+              ? JSON.parse(prizeHands)
+              : prizeHands
+            : null,
+          prizeOrder: prizeOrder
+            ? typeof prizeOrder === "string"
+              ? JSON.parse(prizeOrder)
+              : prizeOrder
+            : null,
+          resultMessageTemplateId: normalizedTemplateId,
+          useDefaultVideos: useDefaultVideos ?? true,
+        },
+      });
+
+      if (parsedTierWeights && Object.keys(parsedTierWeights).length > 0) {
+        const order = Array.isArray(parsedTierOrder) && parsedTierOrder.length > 0
+          ? parsedTierOrder
+          : Object.keys(parsedTierWeights);
+
+        for (let i = 0; i < order.length; i++) {
+          const tierCode = order[i];
+          const w = Number((parsedTierWeights as any)[tierCode] ?? 0);
+          if (!Number.isFinite(w) || w < 0) continue;
+          await (tx as any).gachaTierWeight.upsert({
+            where: { gachaTypeId_tierCode: { gachaTypeId: saved.id, tierCode } },
+            update: {
+              weight: Math.trunc(w),
+              displayOrder: (i + 1) * 10,
+              isActive: true,
+            },
+            create: {
+              gachaTypeId: saved.id,
+              tierCode,
+              weight: Math.trunc(w),
+              displayOrder: (i + 1) * 10,
+              isActive: true,
+            },
+          });
+        }
+      }
+
+      return saved;
     });
 
     return NextResponse.json({ gachaType });

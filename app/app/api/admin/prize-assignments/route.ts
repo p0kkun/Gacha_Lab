@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
-import { Rarity } from "@prisma/client";
 
 type CreateBody = {
-  gachaTypeId?: string;
-  rarity?: Rarity;
+  gachaTypeId?: string; // 外部からは code を受け取る（互換のためキー名は維持）
+  tierCode?: string;
   itemId?: number;
   weight?: number;
   isActive?: boolean;
@@ -22,25 +21,36 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const gachaTypeId = searchParams.get("gachaTypeId") || "";
-    if (!gachaTypeId) {
+    const gachaTypeCode = searchParams.get("gachaTypeId") || "";
+    if (!gachaTypeCode) {
       return NextResponse.json(
         { error: "gachaTypeId は必須です" },
         { status: 400 }
       );
     }
 
+    const gachaType = await prisma.gachaType.findUnique({
+      where: { code: gachaTypeCode },
+      select: { id: true },
+    });
+    if (!gachaType) {
+      return NextResponse.json(
+        { error: "ガチャタイプが見つかりません" },
+        { status: 404 }
+      );
+    }
+
     const assignments = await prisma.gachaPrizeAssignment.findMany({
-      where: { gachaTypeId },
-      orderBy: [{ rarity: "asc" }, { id: "asc" }],
+      where: { gachaTypeId: gachaType.id },
+      orderBy: [{ tierCode: "asc" }, { id: "asc" }],
       include: {
+        tier: { select: { code: true, label: true, displayOrder: true, isActive: true } },
         item: {
           select: {
             id: true,
             name: true,
             usageType: true,
             imageUrl: true,
-            videoUrl: true,
             isActive: true,
           },
         },
@@ -68,20 +78,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as CreateBody;
-    const gachaTypeId = typeof body.gachaTypeId === "string" ? body.gachaTypeId : "";
-    const rarity = body.rarity;
+    const gachaTypeCode = typeof body.gachaTypeId === "string" ? body.gachaTypeId : "";
+    const tierCode = typeof body.tierCode === "string" ? body.tierCode : "";
     const itemId = typeof body.itemId === "number" ? body.itemId : Number(body.itemId);
     const weight = typeof body.weight === "number" ? body.weight : Number(body.weight ?? 1);
     const isActive = typeof body.isActive === "boolean" ? body.isActive : true;
 
-    if (!gachaTypeId) {
+    if (!gachaTypeCode) {
       return NextResponse.json(
         { error: "gachaTypeId は必須です" },
         { status: 400 }
       );
     }
-    if (!rarity) {
-      return NextResponse.json({ error: "rarity は必須です" }, { status: 400 });
+    if (!tierCode) {
+      return NextResponse.json({ error: "tierCode は必須です" }, { status: 400 });
     }
     if (!Number.isFinite(itemId) || itemId <= 0) {
       return NextResponse.json(
@@ -96,22 +106,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const gachaType = await prisma.gachaType.findUnique({
+      where: { code: gachaTypeCode },
+      select: { id: true },
+    });
+    if (!gachaType) {
+      return NextResponse.json(
+        { error: "ガチャタイプが見つかりません" },
+        { status: 404 }
+      );
+    }
+
     const created = await prisma.gachaPrizeAssignment.create({
       data: {
-        gachaTypeId,
-        rarity,
+        gachaTypeId: gachaType.id,
+        tierCode,
         itemId: Math.trunc(itemId),
         weight: Math.trunc(weight),
         isActive,
       },
       include: {
+        tier: { select: { code: true, label: true, displayOrder: true, isActive: true } },
         item: {
           select: {
             id: true,
             name: true,
             usageType: true,
             imageUrl: true,
-            videoUrl: true,
             isActive: true,
           },
         },

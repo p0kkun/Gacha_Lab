@@ -9,11 +9,10 @@ import { getAdminAuthToken } from "@/lib/admin-auth";
 type GachaItem = {
   id: number;
   name: string;
-  rarity: string;
-  videoUrl: string;
+  description: string | null;
   imageUrl: string | null;
-  gachaTypeId: string | null;
   usageType: string;
+  grantFreePoints: number;
   isActive: boolean;
   useStartAt: string | null;
   useEndAt: string | null;
@@ -26,14 +25,7 @@ type GachaType = {
   name: string;
 };
 
-const RARITY_OPTIONS = [
-  { value: "FIRST_PRIZE", label: "1等" },
-  { value: "SECOND_PRIZE", label: "2等" },
-  { value: "THIRD_PRIZE", label: "3等" },
-  { value: "FOURTH_PRIZE", label: "4等" },
-  { value: "FIFTH_PRIZE", label: "5等" },
-  { value: "LOSER", label: "ハズレ" },
-];
+// NOTE: 等級（1等/2等…）は「景品割当（ガチャ別）」で管理するため、アイテムマスタ側では管理しない
 
 const USAGE_TYPE_OPTIONS = [
   { value: "IMAGE", label: "画像" },
@@ -44,17 +36,14 @@ export default function ItemsPage() {
   const [items, setItems] = useState<GachaItem[]>([]);
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rarityFilter, setRarityFilter] = useState<string>("");
-  const [gachaTypeFilter, setGachaTypeFilter] = useState<string>("");
   const [isActiveFilter, setIsActiveFilter] = useState<string>("true");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState<Partial<GachaItem>>({
     name: "",
-    rarity: "FIRST_PRIZE",
-    videoUrl: "",
+    description: null,
     imageUrl: null,
-    gachaTypeId: null,
     usageType: "IMAGE",
+    grantFreePoints: 0,
     isActive: true,
     useStartAt: null,
     useEndAt: null,
@@ -67,6 +56,9 @@ export default function ItemsPage() {
     isOpen: boolean;
     itemId: number | null;
   }>({ isOpen: false, itemId: null });
+  const [descriptionTextareaRef, setDescriptionTextareaRef] = useState<HTMLTextAreaElement | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkData, setLinkData] = useState({ text: "", url: "" });
 
   useEffect(() => {
     fetchGachaTypes();
@@ -75,7 +67,7 @@ export default function ItemsPage() {
 
   useEffect(() => {
     fetchItems();
-  }, [rarityFilter, gachaTypeFilter, isActiveFilter]);
+  }, [isActiveFilter]);
 
   const toDatetimeLocalValue = (iso: string | null | undefined): string => {
     if (!iso) return "";
@@ -92,6 +84,43 @@ export default function ItemsPage() {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return null;
     return d.toISOString();
+  };
+
+  // リンク挿入処理
+  const handleInsertLink = () => {
+    if (!descriptionTextareaRef) return;
+
+    const textarea = descriptionTextareaRef;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentText = formData.description || "";
+    const selectedText = currentText.substring(start, end);
+
+    // 選択テキストがある場合はそれをリンクテキストとして使用
+    const linkText = linkData.text || selectedText || "リンク";
+    const linkUrl = linkData.url || "";
+
+    if (!linkUrl) {
+      alert("URLを入力してください");
+      return;
+    }
+
+    const markdownLink = `[${linkText}](${linkUrl})`;
+    const newText =
+      currentText.substring(0, start) +
+      markdownLink +
+      currentText.substring(end);
+
+    setFormData({ ...formData, description: newText });
+    setShowLinkModal(false);
+    setLinkData({ text: "", url: "" });
+
+    // テキストエリアのフォーカスを復帰し、カーソル位置を調整
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + markdownLink.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   const fetchGachaTypes = async () => {
@@ -116,12 +145,6 @@ export default function ItemsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (rarityFilter) {
-        params.append("rarity", rarityFilter);
-      }
-      if (gachaTypeFilter) {
-        params.append("gachaTypeId", gachaTypeFilter);
-      }
       if (isActiveFilter !== "") {
         params.append("isActive", isActiveFilter);
       }
@@ -154,8 +177,8 @@ export default function ItemsPage() {
   };
 
   const handleCreate = async () => {
-    if (!formData.name || !formData.rarity) {
-      setError("名前とレアリティは必須です");
+    if (!formData.name) {
+      setError("名前は必須です");
       return;
     }
 
@@ -229,10 +252,7 @@ export default function ItemsPage() {
       setShowCreateForm(false);
       setFormData({
         name: "",
-        rarity: "FIRST_PRIZE",
-        videoUrl: "",
         imageUrl: null,
-        gachaTypeId: null,
         usageType: "IMAGE",
         isActive: true,
         useStartAt: null,
@@ -283,10 +303,7 @@ export default function ItemsPage() {
     }
   };
 
-  const getRarityLabel = (rarity: string): string => {
-    const option = RARITY_OPTIONS.find((opt) => opt.value === rarity);
-    return option?.label || rarity;
-  };
+  // 等級は「景品割当（ガチャ別）」で管理するため、アイテムマスタ側では表示しない
 
   return (
     <AdminLayout>
@@ -317,31 +334,6 @@ export default function ItemsPage() {
 
         {/* フィルター */}
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:gap-4">
-          <select
-            value={gachaTypeFilter}
-            onChange={(e) => setGachaTypeFilter(e.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 lg:text-base"
-          >
-            <option value="">すべてのガチャタイプ</option>
-            <option value="null">共通アイテム（ガチャタイプ未設定）</option>
-            {gachaTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={rarityFilter}
-            onChange={(e) => setRarityFilter(e.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 lg:text-base"
-          >
-            <option value="">すべてのレアリティ</option>
-            {RARITY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
           <select
             value={isActiveFilter}
             onChange={(e) => setIsActiveFilter(e.target.value)}
@@ -375,59 +367,42 @@ export default function ItemsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  ガチャタイプ
+                  説明文（任意）
                 </label>
-                <select
-                  value={formData.gachaTypeId || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      gachaTypeId: e.target.value || null,
-                    })
-                  }
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
-                >
-                  <option value="">
-                    共通アイテム（全ガチャタイプで使用可能）
-                  </option>
-                  {gachaTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-1 flex gap-2">
+                  <textarea
+                    ref={(el) => setDescriptionTextareaRef(el)}
+                    value={formData.description || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    rows={4}
+                    placeholder="アイテムの説明を入力してください。リンクは[リンク挿入]ボタンから追加できます。"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkModal(true)}
+                    className="h-fit rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                    title="リンクを挿入"
+                  >
+                    リンク挿入
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Markdown形式でリンクを記述できます: [リンクテキスト](URL)
+                </p>
+              </div>
+              <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
+                等級（1等/2等…）は <code>/admin/prize-assignments</code> の「景品割当（ガチャ別）」で設定します。
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  レアリティ
+                  （参考）動画URL
                 </label>
-                <select
-                  value={formData.rarity || "FIRST_PRIZE"}
-                  onChange={(e) =>
-                    setFormData({ ...formData, rarity: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
-                >
-                  {RARITY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  動画URL
-                </label>
-                <input
-                  type="text"
-                  value={formData.videoUrl || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, videoUrl: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="https://..."
-                />
+                <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  ガチャ演出動画は「動画管理」「ガチャ設定」で管理します（アイテムマスタでは管理しません）。
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -576,10 +551,7 @@ export default function ItemsPage() {
                       名前
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      ガチャタイプ
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      レアリティ
+                      等級/ガチャ別の割当
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       状態
@@ -602,20 +574,8 @@ export default function ItemsPage() {
                         {item.name}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                        {item.gachaTypeId ? (
-                          <span className="inline-flex rounded-full bg-purple-200 px-2 py-1 text-xs font-semibold text-purple-900">
-                            {gachaTypes.find((t) => t.id === item.gachaTypeId)
-                              ?.name || item.gachaTypeId}
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
-                            共通
-                          </span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                        <span className="inline-flex rounded-full bg-blue-200 px-2 py-1 text-xs font-semibold text-blue-900">
-                          {getRarityLabel(item.rarity)}
+                        <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
+                          /admin/prize-assignments で設定
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
@@ -670,18 +630,8 @@ export default function ItemsPage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {item.gachaTypeId ? (
-                        <span className="inline-flex rounded-full bg-purple-200 px-2 py-1 text-xs font-semibold text-purple-900">
-                          {gachaTypes.find((t) => t.id === item.gachaTypeId)
-                            ?.name || item.gachaTypeId}
-                        </span>
-                      ) : (
-                        <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
-                          共通
-                        </span>
-                      )}
-                      <span className="inline-flex rounded-full bg-blue-200 px-2 py-1 text-xs font-semibold text-blue-900">
-                        {getRarityLabel(item.rarity)}
+                      <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
+                        /admin/prize-assignments で設定
                       </span>
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
@@ -743,6 +693,75 @@ export default function ItemsPage() {
           onCancel={() => setDeleteConfirm({ isOpen: false, itemId: null })}
         />
       </div>
+
+      {/* リンク挿入モーダル */}
+      {showLinkModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+          onClick={() => setShowLinkModal(false)}
+        >
+          <div
+            className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-lg font-semibold text-gray-800">
+              リンクを挿入
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  リンクテキスト
+                </label>
+                <input
+                  type="text"
+                  value={linkData.text}
+                  onChange={(e) =>
+                    setLinkData({ ...linkData, text: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="例: 詳細はこちら"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  テキストエリアで選択したテキストがある場合は、それがリンクテキストとして使用されます
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  URL *
+                </label>
+                <input
+                  type="url"
+                  value={linkData.url}
+                  onChange={(e) =>
+                    setLinkData({ ...linkData, url: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowLinkModal(false);
+                  setLinkData({ text: "", url: "" });
+                }}
+                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleInsertLink}
+                className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              >
+                挿入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

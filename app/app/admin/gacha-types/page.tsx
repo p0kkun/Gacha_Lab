@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { Button, Select, Card, Alert, Badge, PageHeader, Input } from "@/components/admin/ui";
+import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 import MultiVideoPlayer from "@/components/MultiVideoPlayer";
 
@@ -48,7 +50,8 @@ type PrizeConfig = {
 };
 
 type GachaType = {
-  id: string;
+  id: number; // 内部ID（DB）
+  code: string; // 外部参照用コード（例: "normal"）
   name: string;
   description: string | null;
   iconImageUrl: string | null;
@@ -71,12 +74,27 @@ type GachaType = {
   prizeWeights?: Record<string, number>;
   prizeHands?: Record<string, HandRank[]>;
   prizeOrder?: string[];
+  // 正: 等級確率テーブル（APIで返す）
+  tierWeights?: Array<{
+    tierCode: string;
+    weight: number;
+    displayOrder: number;
+    isActive: boolean;
+  }>;
   commonVideoIds: number[];
   rarityVideoIds: Record<string, number[]> | null;
   useDefaultVideos?: boolean;
-  resultMessageTemplate?: string | null;
+  resultMessageTemplateId?: number | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type ResultMessageTemplate = {
+  id: number;
+  code: string;
+  description: string | null;
+  isActive: boolean;
+  template: string;
 };
 
 type GachaVideo = {
@@ -100,7 +118,7 @@ const RARITY_LABELS: Record<string, string> = {
 export default function GachaTypesPage() {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<GachaType>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -114,11 +132,22 @@ export default function GachaTypesPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [videos, setVideos] = useState<GachaVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [messageTemplates, setMessageTemplates] = useState<ResultMessageTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [prizeTiers, setPrizeTiers] = useState<Array<{ code: string; label: string; isActive: boolean }>>([]);
+  const [loadingPrizeTiers, setLoadingPrizeTiers] = useState(false);
+  const [showAddPrizeModal, setShowAddPrizeModal] = useState(false);
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState<{
+    isOpen: boolean;
+    gachaTypeCode: string;
+    gachaTypeName: string;
+  } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewVideoUrls, setPreviewVideoUrls] = useState<string[]>([]);
   const [previewRarity, setPreviewRarity] = useState<string>("FIRST_PRIZE");
   const [showSimulation, setShowSimulation] = useState(false);
   const [simulationCount, setSimulationCount] = useState<number>(1000);
+  const [showVariableInfo, setShowVariableInfo] = useState(false);
   const [simulationResults, setSimulationResults] = useState<{
     results: Array<{
       rarity: string;
@@ -132,8 +161,9 @@ export default function GachaTypesPage() {
     totalWeight: number;
   } | null>(null);
   const [simulating, setSimulating] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // デフォルトメッセージテンプレート
+  // デフォルトメッセージテンプレート（未設定時の表示用）
   const DEFAULT_MESSAGE_TEMPLATE = `🎰 ガチャ結果
 
 {rarityEmoji} {itemName}
@@ -222,24 +252,24 @@ export default function GachaTypesPage() {
     });
   };
 
-  const addPrize = () => {
+  const addPrize = (selectedTierCode?: string) => {
     const currentConfigs = getPrizeConfigs(formData);
     const existingRarities = new Set(currentConfigs.map((c) => c.rarity));
-    const availableRarities = [
-      "FIRST_PRIZE",
-      "SECOND_PRIZE",
-      "THIRD_PRIZE",
-      "FOURTH_PRIZE",
-      "FIFTH_PRIZE",
-      "LOSER",
-    ].filter((r) => !existingRarities.has(r));
 
-    if (availableRarities.length === 0) {
-      setError("これ以上等級を追加できません");
+    let newRarity: string;
+    if (selectedTierCode) {
+      // モーダルから選択された場合
+      if (existingRarities.has(selectedTierCode)) {
+        setError("この等級は既に追加されています");
+        return;
+      }
+      newRarity = selectedTierCode;
+    } else {
+      // ボタンクリック時はモーダルを表示
+      setShowAddPrizeModal(true);
       return;
     }
 
-    const newRarity = availableRarities[0];
     const newConfig: PrizeConfig = {
       rarity: newRarity,
       weight: 0,
@@ -264,6 +294,7 @@ export default function GachaTypesPage() {
       prizeHands,
       prizeOrder,
     });
+    setShowAddPrizeModal(false);
   };
 
   const removePrize = (index: number) => {
@@ -330,7 +361,59 @@ export default function GachaTypesPage() {
   useEffect(() => {
     fetchGachaTypes();
     fetchVideos();
+    fetchMessageTemplates();
+    fetchPrizeTiers();
   }, [filterIsActive, filterIsOngoing, sortBy, sortOrder]);
+
+  const fetchMessageTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch("/api/admin/result-message-templates", {
+        headers: { "X-Admin-Auth": authToken || "" },
+      });
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setMessageTemplates(Array.isArray(data.templates) ? data.templates : []);
+    } catch (e) {
+      console.error("テンプレート取得エラー:", e);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const fetchPrizeTiers = async () => {
+    setLoadingPrizeTiers(true);
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch("/api/admin/prize-tiers", {
+        headers: { "X-Admin-Auth": authToken || "" },
+      });
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setPrizeTiers(Array.isArray(data.tiers) ? data.tiers.map((t: any) => ({ code: t.code, label: t.label, isActive: t.isActive })) : []);
+    } catch (e) {
+      console.error("等級マスタ取得エラー:", e);
+    } finally {
+      setLoadingPrizeTiers(false);
+    }
+  };
+
+  // 等級コードから表示名を取得（PrizeTierマスタ優先、フォールバックはRARITY_LABELS）
+  const getTierLabel = (tierCode: string): string => {
+    const tier = prizeTiers.find((t) => t.code === tierCode && t.isActive);
+    return tier ? tier.label : (RARITY_LABELS[tierCode] || tierCode);
+  };
 
   const fetchGachaTypes = async () => {
     setLoading(true);
@@ -390,6 +473,24 @@ export default function GachaTypesPage() {
               ? JSON.parse(gt.prizeOrder)
               : gt.prizeOrder
             : undefined,
+          // tierWeights がある場合はそれを prizeWeights/prizeOrder に反映（正を優先）
+          ...(Array.isArray((gt as any).tierWeights) && (gt as any).tierWeights.length > 0
+            ? (() => {
+                const rows = [...(gt as any).tierWeights]
+                  .filter((r: any) => r && r.isActive !== false)
+                  .sort(
+                    (a: any, b: any) =>
+                      (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
+                      String(a.tierCode).localeCompare(String(b.tierCode))
+                  );
+                const order = rows.map((r: any) => String(r.tierCode));
+                const weights: Record<string, number> = {};
+                for (const r of rows) {
+                  weights[String(r.tierCode)] = Number(r.weight) || 0;
+                }
+                return { prizeOrder: order, prizeWeights: weights };
+              })()
+            : {}),
         })
       );
       setGachaTypes(processedGachaTypes);
@@ -423,7 +524,7 @@ export default function GachaTypesPage() {
   };
 
   const handleEdit = (gachaType: GachaType) => {
-    setEditingId(gachaType.id);
+    setEditingCode(gachaType.code);
     // 動的等級設定がない場合は、既存のフィールドから生成
     let prizeWeights = gachaType.prizeWeights;
     let prizeHands = gachaType.prizeHands;
@@ -457,8 +558,7 @@ export default function GachaTypesPage() {
       prizeWeights,
       prizeHands,
       prizeOrder,
-      resultMessageTemplate:
-        gachaType.resultMessageTemplate || DEFAULT_MESSAGE_TEMPLATE,
+      resultMessageTemplateId: gachaType.resultMessageTemplateId ?? null,
     });
     setImagePreview(gachaType.iconImageUrl || null);
     setError(null);
@@ -466,11 +566,61 @@ export default function GachaTypesPage() {
   };
 
   const handleCancel = () => {
-    setEditingId(null);
+    setEditingCode(null);
     setFormData({});
     setImagePreview(null);
     setError(null);
     setSuccess(null);
+  };
+
+  const handleNewGachaType = () => {
+    setEditingCode("__NEW__");
+    setFormData({
+      code: "",
+      name: "",
+      description: "",
+      isActive: true,
+      pointCost: 0,
+      startAt: null,
+      endAt: null,
+      commonVideoIds: [],
+      rarityVideoIds: {},
+      prizeWeights: {},
+      prizeHands: {},
+      prizeOrder: [],
+      resultMessageTemplateId: null,
+      useDefaultVideos: true,
+    });
+    setImagePreview(null);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleDelete = async (code: string) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch(`/api/admin/gacha-types/${code}`, {
+        method: "DELETE",
+        headers: { "X-Admin-Auth": authToken || "" },
+      });
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "削除に失敗しました");
+
+      setSuccess(data.message || "ガチャタイプを削除しました");
+      setConfirmDeleteModal(null);
+      await fetchGachaTypes();
+    } catch (error) {
+      console.error("削除エラー:", error);
+      setError(error instanceof Error ? error.message : "削除に失敗しました");
+      setConfirmDeleteModal(null);
+    }
   };
 
   const handlePreview = async () => {
@@ -530,8 +680,8 @@ export default function GachaTypesPage() {
   };
 
   const handleSimulate = async () => {
-    if (!formData.id) {
-      setError("ガチャタイプIDが設定されていません");
+    if (!formData.code) {
+      setError("ガチャタイプcodeが設定されていません");
       return;
     }
 
@@ -548,7 +698,7 @@ export default function GachaTypesPage() {
           "X-Admin-Auth": authToken || "",
         },
         body: JSON.stringify({
-          gachaTypeId: formData.id,
+          gachaTypeId: formData.code,
           count: simulationCount,
         }),
       });
@@ -580,8 +730,8 @@ export default function GachaTypesPage() {
 
   // アイコン画像をアップロード
   const handleImageUpload = async (file: File) => {
-    if (!formData.id) {
-      setError("ガチャタイプIDが設定されていません");
+    if (!formData.code) {
+      setError("ガチャタイプcodeが設定されていません");
       return;
     }
 
@@ -591,7 +741,7 @@ export default function GachaTypesPage() {
 
       const formDataToSend = new FormData();
       formDataToSend.append("file", file);
-      formDataToSend.append("gachaTypeId", formData.id);
+      formDataToSend.append("gachaTypeId", formData.code);
 
       const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types/upload-icon", {
@@ -630,8 +780,8 @@ export default function GachaTypesPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.id || !formData.name) {
-      setError("IDと名前は必須です");
+    if (!formData.code || !formData.name) {
+      setError("codeと名前は必須です");
       return;
     }
 
@@ -684,6 +834,8 @@ export default function GachaTypesPage() {
     }
 
     try {
+      setSaving(true);
+      setError(null);
       const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types", {
         method: "POST",
@@ -701,7 +853,10 @@ export default function GachaTypesPage() {
           prizeWeights: formData.prizeWeights || null,
           prizeHands: formData.prizeHands || null,
           prizeOrder: formData.prizeOrder || null,
-          resultMessageTemplate: formData.resultMessageTemplate || null,
+          // 正: 等級確率テーブルに同期するための入力
+          tierWeights: formData.prizeWeights || null,
+          tierOrder: formData.prizeOrder || null,
+          resultMessageTemplateId: formData.resultMessageTemplateId ?? null,
           useDefaultVideos: formData.useDefaultVideos ?? true,
         }),
       });
@@ -718,12 +873,14 @@ export default function GachaTypesPage() {
       }
 
       setSuccess("保存しました");
-      setEditingId(null);
+      setEditingCode(null);
       setFormData({});
       await fetchGachaTypes();
     } catch (error) {
       console.error("保存エラー:", error);
       setError(error instanceof Error ? error.message : "保存に失敗しました");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -746,106 +903,359 @@ export default function GachaTypesPage() {
   return (
     <AdminLayout>
       <div>
-        <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">
-          ガチャ設定
-        </h1>
+        <PageHeader
+          title="ガチャ設定"
+          description="ガチャタイプの設定と管理を行います"
+          actions={
+            <Button variant="success" onClick={handleNewGachaType} leftIcon={<span>+</span>}>
+              新規ガチャ追加
+            </Button>
+          }
+        />
 
         {/* フィルターとソート */}
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <select
-            value={filterIsActive}
-            onChange={(e) => setFilterIsActive(e.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-          >
-            <option value="">すべての状態</option>
-            <option value="true">有効</option>
-            <option value="false">無効</option>
-          </select>
-          <select
-            value={filterIsOngoing}
-            onChange={(e) => setFilterIsOngoing(e.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-          >
-            <option value="">すべて</option>
-            <option value="true">開催中</option>
-            <option value="false">開催中以外</option>
-          </select>
-          <select
-            value={sortBy}
-            onChange={(e) =>
-              setSortBy(e.target.value as "createdAt" | "name" | "pointCost")
-            }
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-          >
-            <option value="createdAt">作成日時</option>
-            <option value="name">名前</option>
-            <option value="pointCost">ポイントコスト</option>
-          </select>
-          <button
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm transition-colors hover:bg-gray-50"
-            title={sortOrder === "asc" ? "昇順" : "降順"}
-          >
-            ソート: {sortOrder === "asc" ? "昇順 ↑" : "降順 ↓"}
-          </button>
-        </div>
+        <Card className="mb-6" padding="md">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Select
+              value={filterIsActive}
+              onChange={(e) => setFilterIsActive(e.target.value)}
+              options={[
+                { value: "", label: "すべての状態" },
+                { value: "true", label: "有効" },
+                { value: "false", label: "無効" },
+              ]}
+              fullWidth
+            />
+            <Select
+              value={filterIsOngoing}
+              onChange={(e) => setFilterIsOngoing(e.target.value)}
+              options={[
+                { value: "", label: "すべて" },
+                { value: "true", label: "開催中" },
+                { value: "false", label: "開催中以外" },
+              ]}
+              fullWidth
+            />
+            <Select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "createdAt" | "name" | "pointCost")
+              }
+              options={[
+                { value: "createdAt", label: "作成日時" },
+                { value: "name", label: "名前" },
+                { value: "pointCost", label: "ポイントコスト" },
+              ]}
+              fullWidth
+            />
+            <Button
+              variant="ghost"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              fullWidth
+              title={sortOrder === "asc" ? "昇順" : "降順"}
+              rightIcon={
+                <span>{sortOrder === "asc" ? "↑" : "↓"}</span>
+              }
+            >
+              ソート: {sortOrder === "asc" ? "昇順" : "降順"}
+            </Button>
+          </div>
+        </Card>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+          <Alert variant="error" className="mb-6" onClose={() => setError(null)}>
             {error}
-          </div>
+          </Alert>
         )}
 
         {success && (
-          <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800">
+          <Alert variant="success" className="mb-6" onClose={() => setSuccess(null)}>
             {success}
-          </div>
+          </Alert>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-gray-500">読み込み中...</div>
           </div>
-        ) : gachaTypes.length === 0 ? (
-          <div className="rounded-lg bg-white p-8 text-center text-gray-500">
-            ガチャタイプがありません
-          </div>
         ) : (
           <div className="space-y-6">
+            {/* 新規作成フォーム - 編集フォームと同じ構造を使用 */}
+            {editingCode === "__NEW__" && (
+              <Card
+                title="新規ガチャタイプ"
+                scrollable
+                maxHeight="calc(100vh - 300px)"
+                actions={
+                  <div className="flex gap-2">
+                    <Button
+                      variant="success"
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? "保存中..." : "保存"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleCancel}>
+                      キャンセル
+                    </Button>
+                  </div>
+                }
+              >
+                {/* 新規作成時の編集フォーム - 編集時と同じ構造 */}
+                {(() => {
+                  const isEditing = true;
+                  const displayData = formData;
+                  return (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          ガチャの識別名 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={displayData.code || ""}
+                          onChange={(e) =>
+                            setFormData({ ...formData, code: e.target.value })
+                          }
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                          placeholder="例: normal, premium"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          このガチャをシステム内で区別するための名前です。半角英数字とハイフン（-）、アンダースコア（_）のみ使用できます（例: normal-gacha）。一度設定すると後から変更できません。
+                        </p>
+                      </div>
+
+                      {/* 以下、編集フォームと同じ構造をコピー */}
+                      {(() => {
+                        // 編集フォームと同じ内容を新規作成時にも表示
+                        const editFormContent = (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                名前
+                              </label>
+                              <input
+                                type="text"
+                                value={displayData.name || ""}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, name: e.target.value })
+                                }
+                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                説明
+                              </label>
+                              <textarea
+                                value={displayData.description || ""}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    description: e.target.value,
+                                  })
+                                }
+                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                                rows={2}
+                              />
+                            </div>
+
+                            {/* アイコン画像アップロード */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                アイコン画像
+                              </label>
+                              <div className="mt-2 space-y-2">
+                                {imagePreview && (
+                                  <div className="relative inline-block">
+                                    <img
+                                      src={imagePreview}
+                                      alt="アイコン画像プレビュー"
+                                      className="h-24 w-24 rounded object-cover border border-gray-300"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = "none";
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        setFormData({
+                                          ...formData,
+                                          iconImageUrl: null,
+                                        });
+                                        setImagePreview(null);
+                                      }}
+                                      className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                      type="button"
+                                    >
+                                      <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
+                                <div>
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        handleImageUpload(file);
+                                      }
+                                    }}
+                                    disabled={uploadingImage}
+                                    className="block w-full text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                                  />
+                                  {uploadingImage && (
+                                    <p className="mt-1 text-sm text-gray-500">
+                                      アップロード中...
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={displayData.isActive ?? true}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      isActive: e.target.checked,
+                                    })
+                                  }
+                                  className="rounded border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                  有効
+                                </span>
+                              </label>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  開始日時（任意）
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  value={toDatetimeLocalValue(displayData.startAt)}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      startAt: e.target.value
+                                        ? new Date(e.target.value).toISOString()
+                                        : null,
+                                    })
+                                  }
+                                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                  未設定の場合は開始日時の制限なし
+                                </p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">
+                                  終了日時（任意）
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  value={toDatetimeLocalValue(displayData.endAt)}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      endAt: e.target.value
+                                        ? new Date(e.target.value).toISOString()
+                                        : null,
+                                    })
+                                  }
+                                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                  未設定の場合は終了日時の制限なし
+                                </p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                ポイントコスト
+                              </label>
+                              <input
+                                type="number"
+                                value={displayData.pointCost ?? 0}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    pointCost: parseInt(e.target.value) || 0,
+                                  })
+                                }
+                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                                min="0"
+                              />
+                              <p className="mt-1 text-xs text-gray-500">
+                                ガチャ実行に必要なポイント数（0の場合は無料）
+                              </p>
+                            </div>
+                          </>
+                        );
+                        return editFormContent;
+                      })()}
+                    </div>
+                  );
+                })()}
+              </Card>
+            )}
             {gachaTypes.map((gachaType) => {
-              const isEditing = editingId === gachaType.id;
+              const isEditing = editingCode === gachaType.code;
               const totalWeight = calculateTotalWeight(gachaType);
               const displayData = isEditing ? formData : gachaType;
 
               return (
-                <div
+                <Card
                   key={gachaType.id}
-                  className="rounded-lg bg-white p-4 shadow lg:p-6"
-                >
-                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-lg font-semibold text-gray-800 lg:text-xl">
-                      {gachaType.name}
-                    </h2>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          gachaType.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {gachaType.isActive ? "有効" : "無効"}
-                      </span>
-                      {!isEditing && (
-                        <button
-                          onClick={() => handleEdit(gachaType)}
-                          className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                        >
+                  title={gachaType.name}
+                  scrollable={isEditing}
+                  maxHeight={isEditing ? "calc(100vh - 300px)" : undefined}
+                  actions={
+                    !isEditing ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={gachaType.isActive ? "success" : "gray"}>
+                          {gachaType.isActive ? "有効" : "無効"}
+                        </Badge>
+                        <Button variant="primary" size="sm" onClick={() => handleEdit(gachaType)}>
                           編集
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => {
+                            setConfirmDeleteModal({
+                              isOpen: true,
+                              gachaTypeCode: gachaType.code,
+                              gachaTypeName: gachaType.name,
+                            });
+                          }}
+                        >
+                          削除
+                        </Button>
+                      </div>
+                    ) : undefined
+                  }
+                >
 
                   {gachaType.description && (
                     <p className="mb-4 text-sm text-gray-600">
@@ -1111,23 +1521,71 @@ export default function GachaTypesPage() {
                         <label className="block text-sm font-medium text-gray-700">
                           LINE結果送信メッセージテンプレート
                         </label>
-                        <textarea
-                          value={
-                            formData.resultMessageTemplate ||
-                            DEFAULT_MESSAGE_TEMPLATE
-                          }
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              resultMessageTemplate: e.target.value,
-                            })
-                          }
-                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 font-mono"
-                          rows={8}
-                          placeholder={DEFAULT_MESSAGE_TEMPLATE}
-                        />
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">
+                              テンプレート
+                            </label>
+                            <select
+                              value={formData.resultMessageTemplateId ?? ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  resultMessageTemplateId: e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                })
+                              }
+                              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                              disabled={loadingTemplates}
+                            >
+                              <option value="">
+                                （未設定: デフォルトを使用）
+                              </option>
+                              {messageTemplates
+                                .filter((t) => t.isActive)
+                                .map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.code}
+                                    {t.description ? `（${t.description}）` : ""}
+                                  </option>
+                                ))}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-600">
+                              編集/追加は「結果メッセージテンプレート」画面で行います。
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">
+                              プレビュー（参考）
+                            </label>
+                            <textarea
+                              readOnly
+                              value={
+                                messageTemplates.find(
+                                  (t) => t.id === formData.resultMessageTemplateId
+                                )?.template || DEFAULT_MESSAGE_TEMPLATE
+                              }
+                              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 font-mono"
+                              rows={8}
+                            />
+                          </div>
+                        </div>
                         <div className="mt-2 space-y-1 text-xs text-gray-600">
-                          <p className="font-semibold">使用可能な変数:</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">使用可能な変数:</p>
+                            <button
+                              type="button"
+                              onClick={() => setShowVariableInfo(true)}
+                              className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                              aria-label="変数の詳細を見る"
+                              title="変数の詳細を見る"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
                           <ul className="list-disc list-inside space-y-0.5 ml-2">
                             <li>
                               <code className="bg-white px-1 rounded">
@@ -1523,8 +1981,7 @@ export default function GachaTypesPage() {
                                             className="hover:bg-purple-50"
                                           >
                                             <td className="px-3 py-2 text-gray-900">
-                                              {RARITY_LABELS[result.rarity] ||
-                                                result.rarity}
+                                              {getTierLabel(result.rarity)}
                                             </td>
                                             <td className="px-3 py-2 text-right text-gray-900">
                                               {result.count.toLocaleString()}
@@ -1576,8 +2033,7 @@ export default function GachaTypesPage() {
                               <div className="mb-3 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <label className="block text-sm font-medium text-gray-700">
-                                    {RARITY_LABELS[config.rarity] ||
-                                      config.rarity}
+                                    {getTierLabel(config.rarity)}
                                     の重み
                                   </label>
                                 </div>
@@ -1631,8 +2087,7 @@ export default function GachaTypesPage() {
                                   {otherWeights.toLocaleString()}
                                 </p>
                                 <label className="block text-sm font-medium text-gray-700">
-                                  {RARITY_LABELS[config.rarity] ||
-                                    config.rarity}
+                                  {getTierLabel(config.rarity)}
                                   に対応する役（任意・複数選択可）
                                 </label>
                                 <p className="mb-2 text-xs text-gray-500">
@@ -2065,18 +2520,12 @@ export default function GachaTypesPage() {
                       </div>
 
                       <div className="flex gap-2">
-                        <button
-                          onClick={handleSave}
-                          className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                        >
+                        <Button variant="primary" onClick={handleSave} isLoading={saving} disabled={saving}>
                           保存
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                        >
+                        </Button>
+                        <Button variant="ghost" onClick={handleCancel}>
                           キャンセル
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -2233,37 +2682,145 @@ export default function GachaTypesPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>
         )}
       </div>
 
+      {/* 変数情報モーダル */}
+      <VariableInfoModal
+        isOpen={showVariableInfo}
+        onClose={() => setShowVariableInfo(false)}
+      />
+
+      {/* 削除確認モーダル */}
+      {confirmDeleteModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          {/* オーバーレイ */}
+          <div
+            className="absolute inset-0 backdrop-blur-sm transition-opacity"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+            onClick={() => setConfirmDeleteModal(null)}
+          />
+          {/* モーダル */}
+          <div 
+            className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-lg font-semibold text-red-600">ガチャタイプを削除</h3>
+            <p className="mb-4 text-sm text-gray-700">
+              「{confirmDeleteModal.gachaTypeName}」を削除しますか？
+              <br />
+              <span className="text-xs text-gray-500">
+                使用中の場合は削除できず、無効化されます。
+              </span>
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setConfirmDeleteModal(null)}>
+                キャンセル
+              </Button>
+              <Button variant="danger" onClick={() => handleDelete(confirmDeleteModal.gachaTypeCode)}>
+                削除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 等級追加モーダル */}
+      {showAddPrizeModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          {/* オーバーレイ */}
+          <div
+            className="absolute inset-0 backdrop-blur-sm transition-opacity"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+            onClick={() => setShowAddPrizeModal(false)}
+          />
+          {/* モーダル */}
+          <div 
+            className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-lg font-semibold text-gray-800">等級を追加</h3>
+            <p className="mb-4 text-sm text-gray-600">
+              追加する等級を選択してください
+            </p>
+            <div className="max-h-64 space-y-2 overflow-y-auto">
+              {prizeTiers
+                .filter((t) => t.isActive)
+                .filter((t) => {
+                  const currentConfigs = getPrizeConfigs(formData);
+                  const existingRarities = new Set(currentConfigs.map((c) => c.rarity));
+                  return !existingRarities.has(t.code);
+                })
+                .map((tier) => (
+                  <button
+                    key={tier.code}
+                    type="button"
+                    onClick={() => addPrize(tier.code)}
+                    className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                  >
+                    <div className="font-medium">{tier.label}</div>
+                    <div className="text-xs text-gray-500">システム識別名: {tier.code}</div>
+                  </button>
+                ))}
+            </div>
+            {prizeTiers.filter((t) => t.isActive).filter((t) => {
+              const currentConfigs = getPrizeConfigs(formData);
+              const existingRarities = new Set(currentConfigs.map((c) => c.rarity));
+              return !existingRarities.has(t.code);
+            }).length === 0 && (
+              <p className="mt-4 text-sm text-gray-500">
+                追加できる等級がありません。すべての等級が追加済みです。
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowAddPrizeModal(false)}>
+                キャンセル
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* プレビューモーダル（実際のガチャ実行時と同じ表示） */}
       {showPreview && previewVideoUrls.length > 0 && (
-        <div className="fixed inset-0 z-[60] bg-black">
-          {previewVideoUrls.length > 1 ? (
-            <MultiVideoPlayer
-              videoUrls={previewVideoUrls}
-              onEnd={handlePreviewEnd}
-            />
-          ) : (
-            <div className="relative flex h-full w-full items-center justify-center">
-              <video
-                className="h-full w-full object-contain"
-                controls={false}
-                autoPlay
-                muted={false}
-                playsInline
-                onClick={handlePreviewEnd}
-                onEnded={handlePreviewEnd}
-              >
-                <source src={previewVideoUrls[0]} type="video/mp4" />
-                お使いのブラウザは動画再生に対応していません。
-              </video>
-            </div>
-          )}
+        <div className="fixed inset-0 z-[60]">
+          {/* オーバーレイ */}
+          <div
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+            onClick={handlePreviewEnd}
+          />
+          {/* 動画コンテナ */}
+          <div 
+            className="relative z-10 h-full w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {previewVideoUrls.length > 1 ? (
+              <MultiVideoPlayer
+                videoUrls={previewVideoUrls}
+                onEnd={handlePreviewEnd}
+              />
+            ) : (
+              <div className="relative flex h-full w-full items-center justify-center">
+                <video
+                  className="h-full w-full object-contain"
+                  controls={false}
+                  autoPlay
+                  muted={false}
+                  playsInline
+                  onClick={handlePreviewEnd}
+                  onEnded={handlePreviewEnd}
+                >
+                  <source src={previewVideoUrls[0]} type="video/mp4" />
+                  お使いのブラウザは動画再生に対応していません。
+                </video>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </AdminLayout>

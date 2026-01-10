@@ -16,13 +16,13 @@ export async function GET(
       select: {
         id: true,
         createdAt: true,
-        usedAt: true,
-        rarity: true,
+        tierCode: true,
+        usageLog: { select: { usedAt: true } },
         item: {
           select: {
             id: true,
             name: true,
-            rarity: true,
+            description: true,
             usageType: true,
             imageUrl: true,
             useStartAt: true,
@@ -36,10 +36,10 @@ export async function GET(
       id: history.id,
       item: {
         ...history.item,
-        rarity: history.rarity ?? history.item?.rarity,
+        rarity: history.tierCode ?? 'UNKNOWN',
       },
       createdAt: history.createdAt,
-      usedAt: history.usedAt ? history.usedAt.toISOString() : null,
+      usedAt: history.usageLog?.usedAt ? history.usageLog.usedAt.toISOString() : null,
     }));
 
     return NextResponse.json({

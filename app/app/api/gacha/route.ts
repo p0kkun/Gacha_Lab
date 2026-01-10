@@ -7,7 +7,7 @@ import {
   type Card,
   type HandRank as PokerHandRank,
 } from "@/lib/pokerHand";
-import { Rarity, HandRank, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 // PointTransactionTypeの一時的な回避策（Prismaクライアントの型解決問題のため）
 const PointTransactionType = {
@@ -17,6 +17,39 @@ const PointTransactionType = {
   REFUND: "REFUND" as const,
 } as const;
 import { sendGachaResultMessage } from "@/lib/line-messaging";
+
+type TierWeightRow = { tierCode: string; weight: number };
+type PrizeItemRow = {
+  id: number;
+  name: string;
+  isActive: boolean;
+};
+type AssignmentRow = { weight: number; item: PrizeItemRow };
+
+type PrismaClientForTiers = {
+  gachaTierWeight: {
+    findMany(args: {
+      where: { gachaTypeId: number; isActive: boolean };
+      select: { tierCode: true; weight: true };
+    }): Promise<TierWeightRow[]>;
+  };
+  gachaPrizeAssignment: {
+    findMany(args: {
+      where: {
+        gachaTypeId: number;
+        tierCode: string;
+        isActive: boolean;
+        item: { isActive: boolean };
+      };
+      select: {
+        weight: true;
+        item: {
+          select: { id: true; name: true; isActive: true };
+        };
+      };
+    }): Promise<AssignmentRow[]>;
+  };
+};
 
 function drawByWeights<T extends { weight: number }>(rows: T[]): T {
   const total = rows.reduce(
@@ -33,162 +66,8 @@ function drawByWeights<T extends { weight: number }>(rows: T[]): T {
   return rows[rows.length - 1];
 }
 
-/**
- * ポーカーのHandRank（小文字）をPrismaのHandRank（大文字）に変換
- */
-function convertHandRankToPrisma(handRank: PokerHandRank): HandRank {
-  const mapping: Record<PokerHandRank, HandRank> = {
-    royal_flush: HandRank.ROYAL_FLUSH,
-    straight_flush: HandRank.STRAIGHT_FLUSH,
-    four_of_a_kind: HandRank.FOUR_OF_A_KIND,
-    full_house: HandRank.FULL_HOUSE,
-    flush: HandRank.FLUSH,
-    straight: HandRank.STRAIGHT,
-    three_of_a_kind: HandRank.THREE_OF_A_KIND,
-    two_pair: HandRank.TWO_PAIR,
-    one_pair: HandRank.ONE_PAIR,
-    high_card: HandRank.HIGH_CARD,
-  };
-  return mapping[handRank];
-}
-
-/**
- * ポーカーの役からレアリティを取得（ガチャタイプの設定に基づく）
- */
-function getRarityFromHandRank(
-  handRank: HandRank,
-  gachaType: {
-    firstPrizeHands: HandRank[];
-    secondPrizeHands: HandRank[];
-    thirdPrizeHands: HandRank[];
-    fourthPrizeHands: HandRank[];
-    fifthPrizeHands: HandRank[];
-  }
-): Rarity {
-  // ガチャタイプで設定された役とレアリティのマッピングを使用（複数の役に対応）
-  if (gachaType.firstPrizeHands.includes(handRank)) return Rarity.FIRST_PRIZE;
-  if (gachaType.secondPrizeHands.includes(handRank)) return Rarity.SECOND_PRIZE;
-  if (gachaType.thirdPrizeHands.includes(handRank)) return Rarity.THIRD_PRIZE;
-  if (gachaType.fourthPrizeHands.includes(handRank)) return Rarity.FOURTH_PRIZE;
-  if (gachaType.fifthPrizeHands.includes(handRank)) return Rarity.FIFTH_PRIZE;
-
-  // ハズレ: 上位の当たりに設定されていない役すべてが対象
-  // すべての当たりに設定されている役を取得
-  const assignedHands = new Set([
-    ...gachaType.firstPrizeHands,
-    ...gachaType.secondPrizeHands,
-    ...gachaType.thirdPrizeHands,
-    ...gachaType.fourthPrizeHands,
-    ...gachaType.fifthPrizeHands,
-  ]);
-
-  // 設定されていない役はすべてハズレ
-  if (!assignedHands.has(handRank)) {
-    return Rarity.LOSER;
-  }
-
-  // デフォルトマッピング（設定されていない場合のフォールバック）
-  switch (handRank) {
-    case HandRank.ROYAL_FLUSH:
-    case HandRank.STRAIGHT_FLUSH:
-    case HandRank.FOUR_OF_A_KIND:
-      return Rarity.FIRST_PRIZE;
-    case HandRank.FULL_HOUSE:
-    case HandRank.FLUSH:
-      return Rarity.SECOND_PRIZE;
-    case HandRank.STRAIGHT:
-    case HandRank.THREE_OF_A_KIND:
-      return Rarity.THIRD_PRIZE;
-    case HandRank.TWO_PAIR:
-      return Rarity.FOURTH_PRIZE;
-    case HandRank.ONE_PAIR:
-      return Rarity.FIFTH_PRIZE;
-    case HandRank.HIGH_CARD:
-    default:
-      return Rarity.LOSER;
-  }
-}
-
-/**
- * 動的等級設定に対応した重みベースの抽選（統一ロジック）
- * @param prizeWeights 等級ごとの重み（{"FIRST_PRIZE": 10, "SECOND_PRIZE": 20, ...}）
- * @param prizeOrder 等級の順序（["FIRST_PRIZE", "SECOND_PRIZE", ...]）
- * @returns 抽選されたレアリティ
- */
-function drawRarityByDynamicWeights(
-  prizeWeights: Record<string, number>,
-  prizeOrder: string[]
-): Rarity {
-  // 順序に従って重みを合計
-  const totalWeight = prizeOrder.reduce(
-    (sum, rarity) => sum + (prizeWeights[rarity] || 0),
-    0
-  );
-
-  if (totalWeight === 0) {
-    // 確率が設定されていない場合は最後の等級（通常はLOSER）
-    return (prizeOrder[prizeOrder.length - 1] as Rarity) || Rarity.LOSER;
-  }
-
-  const random = Math.random() * totalWeight;
-  let current = 0;
-
-  // 順序に従って抽選
-  for (const rarity of prizeOrder) {
-    current += prizeWeights[rarity] || 0;
-    if (random < current) {
-      return rarity as Rarity;
-    }
-  }
-
-  // フォールバック（通常は到達しない）
-  return (prizeOrder[prizeOrder.length - 1] as Rarity) || Rarity.LOSER;
-}
-
-/**
- * 確率に基づいてレアリティを抽選（既存の固定フィールド用、後方互換性）
- */
-function drawRarityByWeights(weights: {
-  firstPrizeWeight: number;
-  secondPrizeWeight: number;
-  thirdPrizeWeight: number;
-  fourthPrizeWeight: number;
-  fifthPrizeWeight: number;
-  loserWeight: number;
-}): Rarity {
-  const totalWeight =
-    weights.firstPrizeWeight +
-    weights.secondPrizeWeight +
-    weights.thirdPrizeWeight +
-    weights.fourthPrizeWeight +
-    weights.fifthPrizeWeight +
-    weights.loserWeight;
-
-  if (totalWeight === 0) {
-    // 確率が設定されていない場合はハズレ
-    return Rarity.LOSER;
-  }
-
-  const random = Math.random() * totalWeight;
-  let current = 0;
-
-  current += weights.firstPrizeWeight;
-  if (random < current) return Rarity.FIRST_PRIZE;
-
-  current += weights.secondPrizeWeight;
-  if (random < current) return Rarity.SECOND_PRIZE;
-
-  current += weights.thirdPrizeWeight;
-  if (random < current) return Rarity.THIRD_PRIZE;
-
-  current += weights.fourthPrizeWeight;
-  if (random < current) return Rarity.FOURTH_PRIZE;
-
-  current += weights.fifthPrizeWeight;
-  if (random < current) return Rarity.FIFTH_PRIZE;
-
-  return Rarity.LOSER;
-}
+// NOTE: 旧ロジック（GachaTypeの固定カラム/JSON）による抽選は廃止。
+// 正は GachaTierWeight（等級×重み）テーブル。
 
 export async function POST(request: NextRequest) {
   try {
@@ -209,9 +88,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // NOTE: 外部からは code（例: "normal"）を受け取る。変数名は互換のため gachaTypeId のまま。
+    const gachaTypeCode = String(gachaTypeId);
+
     // ガチャタイプの設定を取得
-    const gachaType = await prisma.gachaType.findUnique({
-      where: { id: gachaTypeId },
+    // NOTE: Prisma Client未再生成の状態でもビルドが通るように findFirst + any で回避。
+    // 新DB構築後に `prisma generate` を実行すれば `findUnique({ where: { code } })` に戻せます。
+    const gachaType = await prisma.gachaType.findFirst({
+      where: { code: gachaTypeCode } as unknown as Prisma.GachaTypeWhereInput,
     });
 
     if (!gachaType || !gachaType.isActive) {
@@ -224,11 +108,15 @@ export async function POST(request: NextRequest) {
     // 動画設定のバリデーション（個別設定の場合のみ）
     // デフォルト設定を使用する場合は、動画選択ロジック側で処理されるため、ここではバリデーションしない
     if (gachaType.useDefaultVideos === false) {
-      const commonVideoIds = gachaType.commonVideoIds || [];
-      const rarityVideoIds = gachaType.rarityVideoIds
-        ? (typeof gachaType.rarityVideoIds === 'string'
-            ? JSON.parse(gachaType.rarityVideoIds)
-            : gachaType.rarityVideoIds)
+      const gachaTypeForVideos = gachaType as unknown as {
+        commonVideoAssetIds?: number[];
+        tierVideoAssetIds?: unknown;
+      };
+      const commonVideoIds = gachaTypeForVideos.commonVideoAssetIds || [];
+      const rarityVideoIds = gachaTypeForVideos.tierVideoAssetIds
+        ? typeof gachaTypeForVideos.tierVideoAssetIds === "string"
+          ? JSON.parse(gachaTypeForVideos.tierVideoAssetIds)
+          : gachaTypeForVideos.tierVideoAssetIds
         : {};
 
       // 共通動画が設定されていない場合
@@ -240,10 +128,17 @@ export async function POST(request: NextRequest) {
       }
 
       // 各レアリティの動画が設定されているか確認（あたりの場合のみ）
-      const requiredRarities = ['FIRST_PRIZE', 'SECOND_PRIZE', 'THIRD_PRIZE', 'FOURTH_PRIZE', 'FIFTH_PRIZE'];
+      const requiredRarities = [
+        "FIRST_PRIZE",
+        "SECOND_PRIZE",
+        "THIRD_PRIZE",
+        "FOURTH_PRIZE",
+        "FIFTH_PRIZE",
+      ];
       const missingRarities: string[] = [];
       for (const rarity of requiredRarities) {
-        const rarityVideos = (rarityVideoIds as Record<string, number[]>)[rarity] || [];
+        const rarityVideos =
+          (rarityVideoIds as Record<string, number[]>)[rarity] || [];
         if (rarityVideos.length === 0) {
           missingRarities.push(rarity);
         }
@@ -251,7 +146,11 @@ export async function POST(request: NextRequest) {
 
       if (missingRarities.length > 0) {
         return NextResponse.json(
-          { error: `このガチャタイプには以下のレアリティの動画が設定されていません: ${missingRarities.join('、')}` },
+          {
+            error: `このガチャタイプには以下のレアリティの動画が設定されていません: ${missingRarities.join(
+              "、"
+            )}`,
+          },
           { status: 400 }
         );
       }
@@ -282,7 +181,7 @@ export async function POST(request: NextRequest) {
     // ポイントチェック
     const pointCost = gachaTypeWithDates.pointCost || 0;
     if (pointCost > 0) {
-      const { getPointBalances } = await import('@/lib/point-management');
+      const { getPointBalances } = await import("@/lib/point-management");
       const balances = await getPointBalances(userId);
 
       if (balances.total < pointCost) {
@@ -296,36 +195,38 @@ export async function POST(request: NextRequest) {
     }
 
     // 統一された重みベースの抽選ロジック（動的等級設定に対応）
-    let selectedRarity: Rarity;
-    
-    // 動的等級設定がある場合はそれを使用、なければ既存のフィールドから生成
-    const prizeWeights = gachaType.prizeWeights
-      ? (typeof gachaType.prizeWeights === 'string'
-          ? JSON.parse(gachaType.prizeWeights)
-          : gachaType.prizeWeights)
-      : null;
-    
-    const prizeOrder = gachaType.prizeOrder
-      ? (typeof gachaType.prizeOrder === 'string'
-          ? JSON.parse(gachaType.prizeOrder)
-          : gachaType.prizeOrder)
-      : null;
-    
-    if (prizeWeights && prizeOrder) {
-      // 動的等級設定を使用
-      selectedRarity = drawRarityByDynamicWeights(prizeWeights, prizeOrder);
+    let selectedTierCode: string;
+
+    // ESLint/TSサーバーの型キャッシュ差異を避けるため、必要なdelegateのみを明示型で参照
+    const prismaForTiers = prisma as unknown as PrismaClientForTiers;
+
+    // まず等級マスタと、ガチャ別の確率テーブルを確認（これが正）
+    const gachaTypeInternalId = (gachaType as unknown as { id: number }).id;
+
+    const tierWeights = await prismaForTiers.gachaTierWeight.findMany({
+      where: { gachaTypeId: gachaTypeInternalId, isActive: true },
+      select: { tierCode: true, weight: true },
+    });
+    if (tierWeights.length > 0) {
+      selectedTierCode = drawByWeights(
+        tierWeights.map((t: TierWeightRow) => ({
+          tierCode: t.tierCode,
+          weight:
+            typeof t.weight === "number" && Number.isFinite(t.weight)
+              ? t.weight
+              : 0,
+        }))
+      ).tierCode;
     } else {
-      // 既存のフィールドから重みを取得（後方互換性）
-      selectedRarity = drawRarityByWeights({
-        firstPrizeWeight: gachaType.firstPrizeWeight,
-        secondPrizeWeight: gachaType.secondPrizeWeight,
-        thirdPrizeWeight: gachaType.thirdPrizeWeight,
-        fourthPrizeWeight: gachaType.fourthPrizeWeight,
-        fifthPrizeWeight: gachaType.fifthPrizeWeight,
-        loserWeight: gachaType.loserWeight,
-      });
+      return NextResponse.json(
+        {
+          error:
+            "ガチャの確率（等級×重み）が未設定です（管理画面で設定してください）",
+        },
+        { status: 400 }
+      );
     }
-    
+
     // ポーカーハンドは結果表示用のみ（抽選には影響しない）
     // 役が設定されている場合のみ生成
     let pokerHand: {
@@ -335,23 +236,25 @@ export async function POST(request: NextRequest) {
       communityCards: Card[];
       allCards: Card[];
     } | null = null;
-    
+
     // 役が設定されているか確認
     const prizeHands = gachaType.prizeHands
-      ? (typeof gachaType.prizeHands === 'string'
-          ? JSON.parse(gachaType.prizeHands)
-          : gachaType.prizeHands)
+      ? typeof gachaType.prizeHands === "string"
+        ? JSON.parse(gachaType.prizeHands)
+        : gachaType.prizeHands
       : null;
-    
+
     // 既存のフィールドからも確認（後方互換性）
     const hasHandsConfigured = prizeHands
-      ? Object.values(prizeHands).some((hands: any) => Array.isArray(hands) && hands.length > 0)
-      : (gachaType.firstPrizeHands.length > 0 ||
-         gachaType.secondPrizeHands.length > 0 ||
-         gachaType.thirdPrizeHands.length > 0 ||
-         gachaType.fourthPrizeHands.length > 0 ||
-         gachaType.fifthPrizeHands.length > 0);
-    
+      ? Object.values(prizeHands as Record<string, unknown>).some((hands) => {
+          return Array.isArray(hands) && hands.length > 0;
+        })
+      : gachaType.firstPrizeHands.length > 0 ||
+        gachaType.secondPrizeHands.length > 0 ||
+        gachaType.thirdPrizeHands.length > 0 ||
+        gachaType.fourthPrizeHands.length > 0 ||
+        gachaType.fifthPrizeHands.length > 0;
+
     // 役が設定されている場合のみポーカーハンドを生成
     if (hasHandsConfigured) {
       try {
@@ -362,7 +265,7 @@ export async function POST(request: NextRequest) {
         const communityCards = allCards.slice(2, 7);
         const pokerHandRank = evaluateHand(allCards);
         const handName = getHandName(pokerHandRank);
-        
+
         pokerHand = {
           hand: pokerHandRank,
           handName: handName,
@@ -372,70 +275,63 @@ export async function POST(request: NextRequest) {
         };
       } catch (error) {
         // ポーカーハンド生成に失敗しても抽選には影響しない
-        console.error('ポーカーハンド生成エラー（結果表示用）:', error);
+        console.error("ポーカーハンド生成エラー（結果表示用）:", error);
       }
     }
 
     // 選択された等級の景品を取得（ガチャタイプ別割当が最優先）
-    const assignments = await prisma.gachaPrizeAssignment.findMany({
+    const assignments = await prismaForTiers.gachaPrizeAssignment.findMany({
       where: {
-        gachaTypeId,
-        rarity: selectedRarity,
+        gachaTypeId: gachaTypeInternalId,
+        tierCode: selectedTierCode,
         isActive: true,
         item: { isActive: true },
       },
-      include: { item: true },
+      select: {
+        weight: true,
+        item: {
+          select: { id: true, name: true, isActive: true },
+        },
+      },
     });
 
-    // 1) 割当がある場合は、割当（weight）で抽選して景品を決定
-    // 2) 割当がない場合は後方互換として旧ロジックにフォールバック（将来的に廃止予定）
-    let selectedItem =
-      assignments.length > 0
-        ? drawByWeights(
-            assignments.map((a) => ({
-              ...a,
-              weight: typeof a.weight === "number" && Number.isFinite(a.weight) ? a.weight : 1,
-            }))
-          ).item
-        : null;
-
-    if (!selectedItem) {
-      // 旧: GachaItemに等級（rarity）を持たせていた方式
-      const availableItems = await prisma.gachaItem.findMany({
-        where: {
-          rarity: selectedRarity,
-          isActive: true,
-          OR: [
-            { gachaTypeId: gachaTypeId }, // このガチャタイプ専用
-            { gachaTypeId: null }, // 共通アイテム
-          ],
+    if (assignments.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "該当する景品が見つかりません（管理画面で景品割当（ガチャ別）を設定してください）",
         },
-      });
-
-      if (availableItems.length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              "該当する景品が見つかりません（管理画面で景品割当を設定してください）",
-          },
-          { status: 404 }
-        );
-      }
-
-      selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+        { status: 404 }
+      );
     }
+
+    const selectedItem = drawByWeights(
+      assignments.map((a: AssignmentRow) => ({
+        item: a.item,
+        weight:
+          typeof a.weight === "number" && Number.isFinite(a.weight)
+            ? a.weight
+            : 1,
+      }))
+    ).item;
 
     // ポイント消費とガチャ履歴保存をトランザクションで実行
     const result = await prisma.$transaction(async (tx) => {
+      // 当選アイテムの詳細情報を取得（ポイント付与情報を含む）
+      const itemDetails = await tx.gachaItem.findUnique({
+        where: { id: selectedItem.id },
+        select: { grantFreePoints: true },
+      });
+
       // ガチャ履歴を保存（ポイント使用情報を含む）
       const gachaHistory = await tx.gachaHistory.create({
         data: {
           userId: userId,
-          gachaTypeId: gachaTypeId,
+          gachaTypeId: gachaTypeInternalId,
           itemId: selectedItem.id,
-          rarity: selectedRarity,
+          tierCode: selectedTierCode,
           pointsUsed: pointCost,
-        } as Prisma.GachaHistoryUncheckedCreateInput,
+        } as unknown as Prisma.GachaHistoryUncheckedCreateInput,
       });
 
       // ポイント消費（無償ポイントから優先的に消費）
@@ -446,18 +342,28 @@ export async function POST(request: NextRequest) {
         unifiedExpiresAt.setFullYear(unifiedExpiresAt.getFullYear() + 1);
 
         // 残高行を確実に作成
-        const existing = await tx.userPointBalance.findUnique({ where: { userId } });
+        const existing = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
         if (!existing) {
           await tx.userPointBalance.create({
-            data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: nowDate },
+            data: {
+              userId,
+              paidAmount: 0,
+              freeAmount: 0,
+              expiresAt: null,
+              lastUpdated: nowDate,
+            },
           });
         }
 
         // 期限切れなら同時に失効（lastUpdatedは上書きしない）
-        const before = await tx.userPointBalance.findUnique({ where: { userId } });
+        const before = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
         if (
           before &&
-          (before.paidAmount + before.freeAmount) > 0 &&
+          before.paidAmount + before.freeAmount > 0 &&
           before.expiresAt &&
           before.expiresAt <= nowDate
         ) {
@@ -467,9 +373,12 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        const balance = await tx.userPointBalance.findUnique({ where: { userId } });
+        const balance = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
         const freeAmount = balance?.freeAmount ?? 0;
         const paidAmount = balance?.paidAmount ?? 0;
+        const beforeTotal = freeAmount + paidAmount;
 
         // 無償ポイントから優先的に消費
         const consumeFromFree = Math.min(freeAmount, pointCost);
@@ -496,39 +405,123 @@ export async function POST(request: NextRequest) {
             userId,
             transactionType: PointTransactionType.CONSUME,
             amount: -pointCost,
+            balanceBefore: beforeTotal,
             balanceAfter: totalBalances,
             description: `${gachaType.name}ガチャ実行`,
             gachaHistoryId: gachaHistory.id,
-          },
+          } as unknown as Prisma.PointHistoryUncheckedCreateInput,
         });
 
         newBalance = totalBalances;
       } else {
-        // ポイント不要の場合は通常通り保存
-        newBalance = 0;
+        // ポイント不要の場合は残高を取得
+        const balance = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
+        newBalance = (balance?.paidAmount ?? 0) + (balance?.freeAmount ?? 0);
       }
 
-      return { gachaHistory, newBalance };
+      // アイテムに無償ポイント付与が設定されている場合、ポイントを付与
+      const grantPoints = itemDetails?.grantFreePoints ?? 0;
+      if (grantPoints > 0) {
+        const nowDate = new Date();
+        const unifiedExpiresAt = new Date(nowDate);
+        unifiedExpiresAt.setFullYear(unifiedExpiresAt.getFullYear() + 1);
+
+        // 残高行を確実に作成
+        const existing = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
+        if (!existing) {
+          await tx.userPointBalance.create({
+            data: {
+              userId,
+              paidAmount: 0,
+              freeAmount: 0,
+              expiresAt: null,
+              lastUpdated: nowDate,
+            },
+          });
+        }
+
+        const balanceBeforeGrant = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
+        const beforeTotal = (balanceBeforeGrant?.paidAmount ?? 0) + (balanceBeforeGrant?.freeAmount ?? 0);
+
+        // 無償ポイントを付与
+        const updatedBalance = await tx.userPointBalance.update({
+          where: { userId },
+          data: {
+            freeAmount: { increment: grantPoints },
+            expiresAt: unifiedExpiresAt,
+            lastUpdated: nowDate,
+          },
+        });
+
+        const afterTotal = (updatedBalance.paidAmount ?? 0) + (updatedBalance.freeAmount ?? 0);
+
+        // ポイント履歴を記録
+        await tx.pointHistory.create({
+          data: {
+            userId,
+            transactionType: PointTransactionType.GRANT,
+            amount: grantPoints,
+            balanceBefore: beforeTotal,
+            balanceAfter: afterTotal,
+            description: `ガチャ景品「${selectedItem.name}」による無償ポイント付与`,
+            gachaHistoryId: gachaHistory.id,
+          } as unknown as Prisma.PointHistoryUncheckedCreateInput,
+        });
+
+        newBalance = afterTotal;
+      }
+
+      return { gachaHistory, newBalance, grantedPoints: grantPoints };
     });
 
     // 被紹介者の行動を更新（将来の追加報酬機能用）
-    const { updateRefereeActivity } = await import('@/lib/referral-management');
+    const { updateRefereeActivity } = await import("@/lib/referral-management");
     updateRefereeActivity(userId).catch((error) => {
-      console.error('被紹介者行動更新エラー:', error);
+      console.error("被紹介者行動更新エラー:", error);
     });
 
     // 動画URLを取得（新しい動画システム、ガチャタイプの設定を使用）
-    const { getGachaVideoUrls } = await import('@/lib/gacha-video');
-    const videoUrls = await getGachaVideoUrls(gachaTypeId, selectedRarity);
+    const { getGachaVideoUrls } = await import("@/lib/gacha-video");
+    const videoUrls = await getGachaVideoUrls(gachaTypeCode, selectedTierCode);
 
     // ガチャ結果をLINEトークに送信（非同期、エラーが発生してもガチャ結果は返す）
     // 役が設定されている場合のみポーカーハンド情報を送信
+    // メッセージテンプレートはマスタ参照（未設定ならnull）
+    let messageTemplate: string | null = null;
+    const templateId = (
+      gachaType as unknown as { resultMessageTemplateId?: number | null }
+    ).resultMessageTemplateId;
+    if (
+      typeof templateId === "number" &&
+      Number.isFinite(templateId) &&
+      templateId > 0
+    ) {
+      // Prisma Client未再生成でも型エラーにしないため、delegateはunknown経由で呼ぶ
+      const prismaAny = prisma as unknown as {
+        resultMessageTemplate: {
+          findFirst: (args: {
+            where: { id: number };
+          }) => Promise<{ template: string } | null>;
+        };
+      };
+      const t = await prismaAny.resultMessageTemplate.findFirst({
+        where: { id: templateId },
+      });
+      messageTemplate = t?.template ?? null;
+    }
+
     sendGachaResultMessage(
       userId,
       selectedItem.name,
-      selectedRarity,
+      selectedTierCode,
       gachaType.name,
-      gachaType.resultMessageTemplate || null,
+      messageTemplate,
       pokerHand && pokerHand.handName
         ? {
             handName: pokerHand.handName,
@@ -536,7 +529,8 @@ export async function POST(request: NextRequest) {
             holeCards: [],
             communityCards: [],
           }
-        : undefined
+        : undefined,
+      result.grantedPoints || 0
     ).catch((error) => {
       // LINEメッセージ送信のエラーはログに記録するが、ガチャ結果には影響しない
       console.error("LINEメッセージ送信エラー（ガチャ結果は正常）:", error);
@@ -547,10 +541,11 @@ export async function POST(request: NextRequest) {
       item: {
         id: selectedItem.id,
         name: selectedItem.name,
-        rarity: selectedRarity,
-        videoUrl: selectedItem.videoUrl, // 後方互換性のため残す
+        rarity: selectedTierCode, // 後方互換: フロントは従来通り rarity 文字列で受ける
+        // 後方互換: 旧クライアントが参照していても壊れないよう先頭動画を返す
+        videoUrl: videoUrls[0] || "",
       },
-      videoUrls: videoUrls.length > 0 ? videoUrls : [selectedItem.videoUrl], // 新しい動画システム（フォールバック付き）
+      videoUrls, // 新しい動画システム（VideoAsset設定が正）
       timestamp: new Date().toISOString(),
       pokerHand: pokerHand,
       historyId: result.gachaHistory.id,

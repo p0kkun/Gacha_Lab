@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       },
       select: {
         id: true,
+        code: true,
         name: true,
         description: true,
         iconImageUrl: true,
@@ -37,8 +38,8 @@ export async function GET(request: NextRequest) {
         startAt: true,
         endAt: true,
         useDefaultVideos: true,
-        commonVideoIds: true,
-        rarityVideoIds: true,
+        commonVideoAssetIds: true,
+        tierVideoAssetIds: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -48,18 +49,20 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const hasDefaultVideos = defaultSettings && 
-      defaultSettings.commonVideoIds && 
-      defaultSettings.commonVideoIds.length > 0;
+    const hasDefaultVideos =
+      defaultSettings &&
+      (defaultSettings as any).commonVideoAssetIds &&
+      (defaultSettings as any).commonVideoAssetIds.length > 0;
 
     // 動画設定があるガチャタイプのみをフィルタリング
     const gachaTypes = allGachaTypes.filter((gachaType) => {
       // 個別設定を使用する場合
       if (gachaType.useDefaultVideos === false) {
         // 個別設定に共通動画があるか確認
-        const hasCommonVideos = gachaType.commonVideoIds && 
-          Array.isArray(gachaType.commonVideoIds) && 
-          gachaType.commonVideoIds.length > 0;
+        const hasCommonVideos =
+          (gachaType as any).commonVideoAssetIds &&
+          Array.isArray((gachaType as any).commonVideoAssetIds) &&
+          (gachaType as any).commonVideoAssetIds.length > 0;
         
         if (!hasCommonVideos) {
           return false;
@@ -67,11 +70,12 @@ export async function GET(request: NextRequest) {
 
         // 等級別動画の設定を確認
         let hasRarityVideos = false;
-        if (gachaType.rarityVideoIds) {
+        if ((gachaType as any).tierVideoAssetIds) {
           try {
-            const rarityVideoIdsObj = typeof gachaType.rarityVideoIds === 'string'
-              ? JSON.parse(gachaType.rarityVideoIds)
-              : gachaType.rarityVideoIds;
+            const rarityVideoIdsObj =
+              typeof (gachaType as any).tierVideoAssetIds === 'string'
+                ? JSON.parse((gachaType as any).tierVideoAssetIds)
+                : (gachaType as any).tierVideoAssetIds;
             
             if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
               const requiredRarities = ['FIRST_PRIZE', 'SECOND_PRIZE', 'THIRD_PRIZE', 'FOURTH_PRIZE', 'FIFTH_PRIZE'];
@@ -81,7 +85,10 @@ export async function GET(request: NextRequest) {
               });
             }
           } catch (error) {
-            console.error(`ガチャタイプ ${gachaType.id} の等級別動画設定解析エラー:`, error);
+            console.error(
+              `ガチャタイプ ${gachaType.code} の等級別動画設定解析エラー:`,
+              error
+            );
           }
         }
 
@@ -91,7 +98,9 @@ export async function GET(request: NextRequest) {
         return hasDefaultVideos;
       }
     }).map((gachaType) => ({
-      id: gachaType.id,
+      // NOTE: ユーザー画面・APIは外部参照用の code をIDとして扱う（後方互換）
+      id: gachaType.code,
+      code: gachaType.code,
       name: gachaType.name,
       description: gachaType.description,
       iconImageUrl: gachaType.iconImageUrl,

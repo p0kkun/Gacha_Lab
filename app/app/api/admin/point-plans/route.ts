@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
+import { recordAdminAction } from "@/lib/admin-action-history";
+import { AdminActionType } from "@/lib/admin-action-types";
 
 function isValidPlanId(id: string): boolean {
   // URL/メタデータにも載るため、シンプルな文字種に限定
@@ -118,6 +120,23 @@ export async function POST(request: NextRequest) {
           typeof displayOrder === "number" && Number.isFinite(displayOrder)
             ? Math.trunc(displayOrder)
             : 0,
+      },
+    });
+
+    // 操作履歴を記録
+    await recordAdminAction({
+      actionType: AdminActionType.POINT_PLAN_CREATE,
+      description: `ポイント購入プラン「${lbl}」を作成（ID: ${normalizedId}, ${Math.trunc(pts)}ポイント, ${Math.trunc(prc)}円）`,
+      metadata: {
+        planId: normalizedId,
+        points: Math.trunc(pts),
+        bonusFreePoints: Math.trunc(bonus),
+        price: Math.trunc(prc),
+        label: lbl,
+        isActive: typeof isActive === "boolean" ? isActive : true,
+        displayOrder: typeof displayOrder === "number" && Number.isFinite(displayOrder)
+          ? Math.trunc(displayOrder)
+          : 0,
       },
     });
 

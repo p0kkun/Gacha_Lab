@@ -25,15 +25,15 @@ export async function GET(
           userId: true,
           gachaTypeId: true,
           itemId: true,
-          rarity: true,
+          tierCode: true,
           createdAt: true,
           pointsUsed: true,
-          usedAt: true,
+          usageLog: { select: { usedAt: true } },
           gachaType: {
             select: { id: true, name: true },
           },
           item: {
-            select: { id: true, name: true, rarity: true },
+            select: { id: true, name: true },
           },
         },
       }),
@@ -44,11 +44,12 @@ export async function GET(
 
     const mapped = histories.map((h) => ({
       ...h,
-      // 新方式: gacha_histories.rarity を優先（景品マスタ側のrarityに依存しない）
+      // 新方式: gacha_histories.tierCode を等級として返す
       item: {
         ...h.item,
-        rarity: h.rarity ?? h.item?.rarity,
+        rarity: h.tierCode ?? 'UNKNOWN',
       },
+      usedAt: h.usageLog?.usedAt ? h.usageLog.usedAt.toISOString() : null,
     }));
 
     return NextResponse.json({

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
-import { Rarity } from "@prisma/client";
 
 type UpdateBody = {
-  rarity?: Rarity;
+  tierCode?: string;
   itemId?: number;
   weight?: number;
   isActive?: boolean;
@@ -32,7 +31,7 @@ export async function PUT(
     const body = (await request.json()) as UpdateBody;
     const data: any = {};
 
-    if (body.rarity) data.rarity = body.rarity;
+    if (typeof body.tierCode === "string" && body.tierCode) data.tierCode = body.tierCode;
     if (body.itemId !== undefined) {
       const itemId = typeof body.itemId === "number" ? body.itemId : Number(body.itemId);
       if (!Number.isFinite(itemId) || itemId <= 0) {
@@ -56,13 +55,13 @@ export async function PUT(
       where: { id: assignmentId },
       data,
       include: {
+        tier: { select: { code: true, label: true, displayOrder: true, isActive: true } },
         item: {
           select: {
             id: true,
             name: true,
             usageType: true,
             imageUrl: true,
-            videoUrl: true,
             isActive: true,
           },
         },

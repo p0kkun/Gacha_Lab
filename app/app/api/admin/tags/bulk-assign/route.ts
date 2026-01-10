@@ -67,8 +67,19 @@ export async function POST(request: NextRequest) {
 
       // 特定ガチャタイプを引いたユーザー
       if (gachaTypeId) {
+        // NOTE: 外部からはガチャタイプcodeを受け取る想定
+        const gt = await prisma.gachaType.findUnique({
+          where: { code: String(gachaTypeId) },
+          select: { id: true },
+        });
+        if (!gt) {
+          return NextResponse.json(
+            { error: 'ガチャタイプが見つかりません' },
+            { status: 404 }
+          );
+        }
         const userIds = await prisma.gachaHistory.findMany({
-          where: { gachaTypeId },
+          where: { gachaTypeId: gt.id },
           select: { userId: true },
           distinct: ['userId'],
         });
@@ -110,13 +121,11 @@ export async function POST(request: NextRequest) {
         userIdSets.push(new Set(userIds));
       }
 
-      // 特定レアリティで当選したユーザー
+      // 特定等級で当選したユーザー（tierCode）
       if (rarity) {
         const userIds = await prisma.gachaHistory.findMany({
           where: {
-            item: {
-              rarity: rarity,
-            },
+            tierCode: String(rarity),
           },
           select: { userId: true },
           distinct: ['userId'],
@@ -128,7 +137,7 @@ export async function POST(request: NextRequest) {
       if (hasUsedItem !== undefined) {
         const userIds = await prisma.gachaHistory.findMany({
           where: {
-            usedAt: hasUsedItem ? { not: null } : null,
+            usageLog: hasUsedItem ? { isNot: null } : { is: null },
           },
           select: { userId: true },
           distinct: ['userId'],

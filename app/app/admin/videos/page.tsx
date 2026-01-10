@@ -10,6 +10,7 @@ type GachaVideo = {
   videoType: "COMMON" | "RARITY";
   rarity: string | null;
   s3Url: string;
+  s3Key?: string;
   fileName: string;
   fileSize: number;
   description: string | null;
@@ -17,6 +18,7 @@ type GachaVideo = {
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
+  categories?: string[];
 };
 
 const RARITY_LABELS: Record<string, string> = {
@@ -60,16 +62,17 @@ export default function VideosPage() {
   const [showDefaultSettings, setShowDefaultSettings] = useState(false);
   const [defaultSettings, setDefaultSettings] = useState<{
     id: number | null;
-    commonVideoIds: number[];
-    rarityVideoIds: Record<string, number[]> | null;
+    commonVideoAssetIds: number[];
+    tierVideoAssetIds: Record<string, number[]> | null;
   } | null>(null);
   const [savedDefaultSettings, setSavedDefaultSettings] = useState<{
     id: number | null;
-    commonVideoIds: number[];
-    rarityVideoIds: Record<string, number[]> | null;
+    commonVideoAssetIds: number[];
+    tierVideoAssetIds: Record<string, number[]> | null;
   } | null>(null);
   const [loadingDefaultSettings, setLoadingDefaultSettings] = useState(false);
   const [savingDefaultSettings, setSavingDefaultSettings] = useState(false);
+  const [showThumbnails, setShowThumbnails] = useState(true);
 
   // 動画一覧を取得
   const fetchVideos = async () => {
@@ -378,11 +381,11 @@ export default function VideosPage() {
       const data = await res.json();
       const nextSettings = {
         id: data.settings.id,
-        commonVideoIds: data.settings.commonVideoIds || [],
-        rarityVideoIds: data.settings.rarityVideoIds
-          ? typeof data.settings.rarityVideoIds === "string"
-            ? JSON.parse(data.settings.rarityVideoIds)
-            : data.settings.rarityVideoIds
+        commonVideoAssetIds: data.settings.commonVideoAssetIds || [],
+        tierVideoAssetIds: data.settings.tierVideoAssetIds
+          ? typeof data.settings.tierVideoAssetIds === "string"
+            ? JSON.parse(data.settings.tierVideoAssetIds)
+            : data.settings.tierVideoAssetIds
           : null,
       };
       setDefaultSettings(nextSettings);
@@ -414,8 +417,8 @@ export default function VideosPage() {
           "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
-          commonVideoIds: defaultSettings.commonVideoIds,
-          rarityVideoIds: defaultSettings.rarityVideoIds,
+          commonVideoAssetIds: defaultSettings.commonVideoAssetIds,
+          tierVideoAssetIds: defaultSettings.tierVideoAssetIds,
         }),
       });
 
@@ -440,11 +443,11 @@ export default function VideosPage() {
       console.log("[一括設定保存] 成功:", data);
       const nextSettings = {
         id: data.settings.id,
-        commonVideoIds: data.settings.commonVideoIds || [],
-        rarityVideoIds: data.settings.rarityVideoIds
-          ? typeof data.settings.rarityVideoIds === "string"
-            ? JSON.parse(data.settings.rarityVideoIds)
-            : data.settings.rarityVideoIds
+        commonVideoAssetIds: data.settings.commonVideoAssetIds || [],
+        tierVideoAssetIds: data.settings.tierVideoAssetIds
+          ? typeof data.settings.tierVideoAssetIds === "string"
+            ? JSON.parse(data.settings.tierVideoAssetIds)
+            : data.settings.tierVideoAssetIds
           : null,
       };
       setDefaultSettings(nextSettings);
@@ -466,8 +469,8 @@ export default function VideosPage() {
     const after = defaultSettings;
     const changes: Array<{ label: string; from: string; to: string }> = [];
 
-    const beforeCommon = before.commonVideoIds?.length ?? 0;
-    const afterCommon = after.commonVideoIds?.length ?? 0;
+    const beforeCommon = before.commonVideoAssetIds?.length ?? 0;
+    const afterCommon = after.commonVideoAssetIds?.length ?? 0;
     if (beforeCommon !== afterCommon) {
       changes.push({
         label: "共通動画（選択数）",
@@ -476,11 +479,11 @@ export default function VideosPage() {
       });
     }
 
-    const beforeRarityKeys = before.rarityVideoIds
-      ? Object.keys(before.rarityVideoIds).length
+    const beforeRarityKeys = before.tierVideoAssetIds
+      ? Object.keys(before.tierVideoAssetIds).length
       : 0;
-    const afterRarityKeys = after.rarityVideoIds
-      ? Object.keys(after.rarityVideoIds).length
+    const afterRarityKeys = after.tierVideoAssetIds
+      ? Object.keys(after.tierVideoAssetIds).length
       : 0;
     if (beforeRarityKeys !== afterRarityKeys) {
       changes.push({
@@ -496,19 +499,12 @@ export default function VideosPage() {
     return changes;
   };
 
-  // 動画をタイプ別・等級別にグループ化
+  // 動画をタイプ別にグループ化
+  // 注意: 新しいスキーマでは、等級別動画の等級割当は GachaType/DefaultGachaVideoSettings で管理されるため、
+  // 動画管理画面では等級別にグループ化しない（すべての等級別動画を1つのセクションに表示）
   const groupedVideos = {
     COMMON: videos.filter((v) => v.videoType === "COMMON"),
-    RARITY: videos
-      .filter((v) => v.videoType === "RARITY")
-      .reduce((acc, video) => {
-        const rarity = video.rarity || "UNKNOWN";
-        if (!acc[rarity]) {
-          acc[rarity] = [];
-        }
-        acc[rarity].push(video);
-        return acc;
-      }, {} as Record<string, GachaVideo[]>),
+    RARITY: videos.filter((v) => v.videoType === "RARITY"),
   };
 
   const formatFileSize = (bytes: number) => {
@@ -523,6 +519,12 @@ export default function VideosPage() {
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">ガチャ動画管理</h1>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowThumbnails(!showThumbnails)}
+              className="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+            >
+              {showThumbnails ? "サムネイルを非表示" : "サムネイルを表示"}
+            </button>
             <button
               onClick={() => {
                 setShowDefaultSettings(!showDefaultSettings);
@@ -583,23 +585,23 @@ export default function VideosPage() {
                         >
                           <input
                             type="checkbox"
-                            checked={defaultSettings.commonVideoIds.includes(
+                            checked={defaultSettings.commonVideoAssetIds.includes(
                               video.id
                             )}
                             onChange={(e) => {
                               if (e.target.checked) {
                                 setDefaultSettings({
                                   ...defaultSettings,
-                                  commonVideoIds: [
-                                    ...defaultSettings.commonVideoIds,
+                                  commonVideoAssetIds: [
+                                    ...defaultSettings.commonVideoAssetIds,
                                     video.id,
                                   ],
                                 });
                               } else {
                                 setDefaultSettings({
                                   ...defaultSettings,
-                                  commonVideoIds:
-                                    defaultSettings.commonVideoIds.filter(
+                                  commonVideoAssetIds:
+                                    defaultSettings.commonVideoAssetIds.filter(
                                       (id) => id !== video.id
                                     ),
                                 });
@@ -645,16 +647,15 @@ export default function VideosPage() {
                                 <input
                                   type="checkbox"
                                   checked={
-                                    defaultSettings.rarityVideoIds?.[
-                                      key
-                                    ]?.includes(video.id) || false
+                                    defaultSettings.tierVideoAssetIds?.[key]?.includes(video.id) ||
+                                    false
                                   }
                                   onChange={(e) => {
                                     const currentIds =
-                                      defaultSettings.rarityVideoIds?.[key] ||
+                                      defaultSettings.tierVideoAssetIds?.[key] ||
                                       [];
                                     const newRarityVideoIds = {
-                                      ...defaultSettings.rarityVideoIds,
+                                      ...(defaultSettings.tierVideoAssetIds || {}),
                                       [key]: e.target.checked
                                         ? [...currentIds, video.id]
                                         : currentIds.filter(
@@ -663,7 +664,7 @@ export default function VideosPage() {
                                     };
                                     setDefaultSettings({
                                       ...defaultSettings,
-                                      rarityVideoIds: newRarityVideoIds,
+                                      tierVideoAssetIds: newRarityVideoIds,
                                     });
                                   }}
                                   className="rounded border-gray-300"
@@ -812,12 +813,14 @@ export default function VideosPage() {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <video
-                            src={video.s3Url}
-                            className="h-20 w-32 rounded object-cover"
-                            controls={false}
-                            muted
-                          />
+                          {showThumbnails && (
+                            <video
+                              src={video.s3Url}
+                              className="h-20 w-32 rounded object-cover"
+                              controls={false}
+                              muted
+                            />
+                          )}
                           <div>
                             <div className="font-medium text-gray-900">
                               {video.fileName}
@@ -867,74 +870,77 @@ export default function VideosPage() {
             </div>
 
             {/* 等級別動画 */}
-            {Object.entries(groupedVideos.RARITY).map(([rarity, videos]) => (
-              <div key={rarity} className="rounded-lg bg-white p-6 shadow">
-                <h2 className="mb-4 text-xl font-semibold text-gray-800">
-                  {RARITY_LABELS[rarity] || rarity} の動画
-                </h2>
-                {videos.length > 0 ? (
-                  <div className="space-y-4">
-                    {videos.map((video) => (
-                      <div
-                        key={video.id}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 p-4"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-2 text-xl font-semibold text-gray-800">
+                等級別動画（あたりの等級別）
+              </h2>
+              <p className="mb-4 text-sm text-gray-600">
+                等級の割り当ては、各ガチャタイプの設定画面または一括設定で管理されます。
+              </p>
+              {groupedVideos.RARITY.length > 0 ? (
+                <div className="space-y-4">
+                  {groupedVideos.RARITY.map((video) => (
+                    <div
+                      key={video.id}
+                      className="flex items-center justify-between rounded-lg border border-gray-200 p-4"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          {showThumbnails && (
                             <video
                               src={video.s3Url}
                               className="h-20 w-32 rounded object-cover"
                               controls={false}
                               muted
                             />
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {video.fileName}
+                          )}
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {video.fileName}
+                            </div>
+                            {video.description && (
+                              <div className="text-sm text-gray-500">
+                                {video.description}
                               </div>
-                              {video.description && (
-                                <div className="text-sm text-gray-500">
-                                  {video.description}
-                                </div>
+                            )}
+                            <div className="mt-1 text-xs text-gray-400">
+                              {formatFileSize(video.fileSize)} •{" "}
+                              {new Date(video.createdAt).toLocaleDateString(
+                                "ja-JP"
                               )}
-                              <div className="mt-1 text-xs text-gray-400">
-                                {formatFileSize(video.fileSize)} •{" "}
-                                {new Date(video.createdAt).toLocaleDateString(
-                                  "ja-JP"
-                                )}
-                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              openToggleConfirm(video.id, video.isActive)
-                            }
-                            className={`rounded px-3 py-1 text-sm ${
-                              video.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {video.isActive ? "有効" : "無効"}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(video.id)}
-                            className="rounded bg-red-100 px-3 py-1 text-sm text-red-800 hover:bg-red-200"
-                          >
-                            削除
-                          </button>
-                        </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-sm text-gray-500">
-                    {RARITY_LABELS[rarity] || rarity} の動画が登録されていません
-                  </div>
-                )}
-              </div>
-            ))}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            openToggleConfirm(video.id, video.isActive)
+                          }
+                          className={`rounded px-3 py-1 text-sm ${
+                            video.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {video.isActive ? "有効" : "無効"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(video.id)}
+                          className="rounded bg-red-100 px-3 py-1 text-sm text-red-800 hover:bg-red-200"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-sm text-gray-500">
+                  等級別動画が登録されていません
+                </div>
+              )}
+            </div>
           </div>
         )}
 

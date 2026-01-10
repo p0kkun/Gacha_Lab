@@ -8,7 +8,7 @@ import { verifyReferralLink } from '@/lib/referral-management';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { referralLinkId } = body;
+    const { referralLinkId, userId } = body;
 
     if (!referralLinkId) {
       return NextResponse.json(
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     // デバイス情報を取得
     const deviceInfo = request.headers.get('user-agent') || 'unknown';
 
-    const result = await verifyReferralLink(referralLinkId, ipAddress, deviceInfo);
+    // userIdが指定されている場合、User.lastAccessedReferralLinkIdに記録
+    const result = await verifyReferralLink(referralLinkId, ipAddress, deviceInfo, userId);
 
     if (!result.isValid) {
       return NextResponse.json(
@@ -51,6 +52,8 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
 
 
 

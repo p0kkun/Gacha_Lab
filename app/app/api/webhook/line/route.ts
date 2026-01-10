@@ -385,73 +385,119 @@ async function handleWebhookEvent(
  */
 async function processReferralOnFollow(refereeId: string, client: Client) {
   try {
-    const { completeReferral } = await import('@/lib/referral-management');
-    
-    // 最近アクセスした紹介リンクを検索（24時間以内）
-    const recentReferrals = await prisma.referralHistory.findMany({
-      where: {
-        status: ReferralStatus.PENDING,
-        expiresAt: { gte: new Date() },
-        referredAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24時間以内
-        },
-      },
-      orderBy: { referredAt: 'desc' },
-      take: 10, // 最近の10件をチェック
+    // ユーザー情報を取得（lastAccessedReferralLinkIdを確認）
+    const user = await prisma.user.findUnique({
+      where: { userId: refereeId },
+      select: { lastAccessedReferralLinkId: true, lastAccessedReferralAt: true },
     });
 
-    // 不正検知と紹介成立処理
-    for (const referral of recentReferrals) {
-      // 自己紹介チェック
-      if (referral.referrerId === refereeId) {
+    // lastAccessedReferralLinkIdが存在し、24時間以内にアクセスしている場合のみ処理
+    if (!user?.lastAccessedReferralLinkId) {
+      console.log('紹介リンクのアクセス履歴がありません:', refereeId);
+      return;
+    }
+
+    // アクセスから24時間以上経過している場合は無視
+    if (user.lastAccessedReferralAt) {
+      const hoursSinceAccess = (Date.now() - user.lastAccessedReferralAt.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceAccess > 24) {
+        console.log('紹介リンクのアクセスから24時間以上経過しています:', refereeId);
+        return;
+      }
+    }
+
+    // Referralテーブルから紹介リンクを取得
+    const referral = await prisma.referral.findUnique({
+      where: { referralLinkId: user.lastAccessedReferralLinkId },
+    });
+
+    if (!referral) {
+      console.log('紹介リンクが見つかりません:', user.lastAccessedReferralLinkId);
+      return;
+    }
+
+    // 自己紹介チェック
+    if (referral.userId === refereeId) {
+      await prisma.referral.update({
+        where: { id: referral.id },
+        data: {
+          status: ReferralStatus.FRAUD,
+        },
+      });
+
+      // ReferralHistoryの最新履歴を更新
+      const latestHistory = await prisma.referralHistory.findFirst({
+        where: {
+          referralId: referral.id,
+        },
+        orderBy: { referredAt: 'desc' },
+      });
+
+      if (latestHistory) {
         await prisma.referralHistory.update({
-          where: { id: referral.id },
+          where: { id: latestHistory.id },
           data: {
             status: ReferralStatus.FRAUD,
             isFraudDetected: true,
             fraudReason: '自己紹介が検出されました',
-            refereeId: refereeId,
           },
         });
-        continue;
       }
 
-      // 既に同じ被紹介者で成立済みの紹介がないかチェック
-      const existingCompleted = await prisma.referralHistory.findFirst({
-        where: {
-          refereeId: refereeId,
-          status: ReferralStatus.COMPLETED,
+      console.log('自己紹介が検出されました:', refereeId);
+      return;
+    }
+
+    // 既に同じ被紹介者で成立済みの紹介がないかチェック（ReferralUserで確認）
+    const existingReferralUser = await prisma.referralUser.findFirst({
+      where: {
+        toUserId: refereeId,
+      },
+    });
+
+    if (existingReferralUser) {
+      // 既に他の紹介者から紹介されている
+      await prisma.referral.update({
+        where: { id: referral.id },
+        data: {
+          status: ReferralStatus.INVALID,
         },
       });
 
-      if (existingCompleted) {
-        // 既に他の紹介者から紹介されている
+      // ReferralHistoryの最新履歴を更新
+      const latestHistory = await prisma.referralHistory.findFirst({
+        where: {
+          referralId: referral.id,
+        },
+        orderBy: { referredAt: 'desc' },
+      });
+
+      if (latestHistory) {
         await prisma.referralHistory.update({
-          where: { id: referral.id },
+          where: { id: latestHistory.id },
           data: {
             status: ReferralStatus.INVALID,
-            refereeId: refereeId,
             fraudReason: '既に他の紹介者から紹介されています',
           },
         });
-        continue;
       }
 
-      // 紹介成立処理
-      const { completeReferral } = await import('@/lib/referral-management');
-      await completeReferral(referral.id, refereeId);
-      
-      // 紹介成立通知を送信
-      try {
-        await client.pushMessage(referral.referrerId, {
-          type: 'text',
-          text: `🎉 友だち紹介が成立しました！\n\n紹介特典として100ポイントを付与しました。\n\n引き続きガチャをお楽しみください！`,
-        });
-      } catch (error) {
-        console.error('紹介成立通知送信エラー:', error);
-      }
-      
-      break; // 最初の有効な紹介のみ処理
+      console.log('既に他の紹介者から紹介されています:', refereeId);
+      return;
+    }
+
+    // 紹介成立処理
+    const { completeReferral } = await import('@/lib/referral-management');
+    await completeReferral(referral.id, refereeId);
+    
+    // 紹介成立通知を送信
+    try {
+      await client.pushMessage(referral.userId, {
+        type: 'text',
+        text: `🎉 友だち紹介が成立しました！\n\n紹介特典として100ポイントを付与しました。\n\n引き続きガチャをお楽しみください！`,
+      });
+    } catch (error) {
+      console.error('紹介成立通知送信エラー:', error);
     }
   } catch (error) {
     console.error('紹介処理エラー:', error);

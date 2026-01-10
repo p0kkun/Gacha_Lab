@@ -8,10 +8,10 @@ import { getAdminAuthToken } from '@/lib/admin-auth';
 type GachaItem = {
   id: number;
   name: string;
-  rarity: string;
-  videoUrl: string;
+  description: string | null;
   imageUrl: string | null;
   usageType: string;
+  grantFreePoints: number;
   isActive: boolean;
   useStartAt: string | null;
   useEndAt: string | null;
@@ -22,14 +22,7 @@ type GachaItem = {
   };
 };
 
-const RARITY_OPTIONS = [
-  { value: 'FIRST_PRIZE', label: '1等' },
-  { value: 'SECOND_PRIZE', label: '2等' },
-  { value: 'THIRD_PRIZE', label: '3等' },
-  { value: 'FOURTH_PRIZE', label: '4等' },
-  { value: 'FIFTH_PRIZE', label: '5等' },
-  { value: 'LOSER', label: 'ハズレ' },
-];
+// NOTE: 等級（1等/2等…）は「景品割当（ガチャ別）」で管理するため、アイテムマスタ側では管理しない
 
 const USAGE_TYPE_OPTIONS = [
   { value: 'IMAGE', label: '画像' },
@@ -48,6 +41,9 @@ export default function ItemEditPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [descriptionTextareaRef, setDescriptionTextareaRef] = useState<HTMLTextAreaElement | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkData, setLinkData] = useState({ text: '', url: '' });
 
   const toDatetimeLocalValue = (iso: string | null | undefined): string => {
     if (!iso) return '';
@@ -64,6 +60,43 @@ export default function ItemEditPage() {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return null;
     return d.toISOString();
+  };
+
+  // リンク挿入処理
+  const handleInsertLink = () => {
+    if (!descriptionTextareaRef) return;
+
+    const textarea = descriptionTextareaRef;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentText = formData.description || '';
+    const selectedText = currentText.substring(start, end);
+
+    // 選択テキストがある場合はそれをリンクテキストとして使用
+    const linkText = linkData.text || selectedText || 'リンク';
+    const linkUrl = linkData.url || '';
+
+    if (!linkUrl) {
+      alert('URLを入力してください');
+      return;
+    }
+
+    const markdownLink = `[${linkText}](${linkUrl})`;
+    const newText =
+      currentText.substring(0, start) +
+      markdownLink +
+      currentText.substring(end);
+
+    setFormData({ ...formData, description: newText });
+    setShowLinkModal(false);
+    setLinkData({ text: '', url: '' });
+
+    // テキストエリアのフォーカスを復帰し、カーソル位置を調整
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + markdownLink.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   useEffect(() => {
@@ -102,8 +135,8 @@ export default function ItemEditPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.rarity) {
-      setError('名前とレアリティは必須です');
+    if (!formData.name) {
+      setError('名前は必須です');
       return;
     }
 
@@ -163,6 +196,75 @@ export default function ItemEditPage() {
             </button>
           </div>
         </div>
+
+        {/* リンク挿入モーダル */}
+        {showLinkModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+            onClick={() => setShowLinkModal(false)}
+          >
+            <div
+              className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                リンクを挿入
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    リンクテキスト
+                  </label>
+                  <input
+                    type="text"
+                    value={linkData.text}
+                    onChange={(e) =>
+                      setLinkData({ ...linkData, text: e.target.value })
+                    }
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    placeholder="例: 詳細はこちら"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    テキストエリアで選択したテキストがある場合は、それがリンクテキストとして使用されます
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    URL *
+                  </label>
+                  <input
+                    type="url"
+                    value={linkData.url}
+                    onChange={(e) =>
+                      setLinkData({ ...linkData, url: e.target.value })
+                    }
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    placeholder="https://example.com"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowLinkModal(false);
+                    setLinkData({ text: '', url: '' });
+                  }}
+                  className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleInsertLink}
+                  className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                >
+                  挿入
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </AdminLayout>
     );
   }
@@ -211,29 +313,43 @@ export default function ItemEditPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">レアリティ</label>
-              <select
-                value={formData.rarity || 'FIRST_PRIZE'}
-                onChange={(e) => setFormData({ ...formData, rarity: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-              >
-                {RARITY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700">
+                説明文（任意）
+              </label>
+              <div className="mt-1 flex gap-2">
+                <textarea
+                  ref={(el) => setDescriptionTextareaRef(el)}
+                  value={formData.description || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  rows={4}
+                  placeholder="アイテムの説明を入力してください。リンクは[リンク挿入]ボタンから追加できます。"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLinkModal(true)}
+                  className="h-fit rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                  title="リンクを挿入"
+                >
+                  リンク挿入
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Markdown形式でリンクを記述できます: [リンクテキスト](URL)
+              </p>
+            </div>
+
+            <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
+              等級（1等/2等…）は <code>/admin/prize-assignments</code> の「景品割当（ガチャ別）」で設定します。
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">動画URL</label>
-              <input
-                type="text"
-                value={formData.videoUrl || ''}
-                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                placeholder="https://..."
-              />
+              <label className="block text-sm font-medium text-gray-700">（参考）動画URL</label>
+              <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                ガチャ演出動画は「動画管理」「ガチャ設定」で管理します（アイテムマスタでは管理しません）。
+              </div>
             </div>
 
             <div>
@@ -249,6 +365,28 @@ export default function ItemEditPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                当選時付与無償ポイント
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={formData.grantFreePoints ?? 0}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    grantFreePoints: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                placeholder="0"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                ガチャでこのアイテムが当選した際に付与する無償ポイント数（0の場合は付与しない）
+              </p>
             </div>
             {formData.usageType === 'IMAGE' && (
               <div>
@@ -407,6 +545,74 @@ export default function ItemEditPage() {
           </div>
         </div>
       </div>
+        {/* リンク挿入モーダル */}
+        {showLinkModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+          onClick={() => setShowLinkModal(false)}
+        >
+          <div
+            className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-lg font-semibold text-gray-800">
+              リンクを挿入
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  リンクテキスト
+                </label>
+                <input
+                  type="text"
+                  value={linkData.text}
+                  onChange={(e) =>
+                    setLinkData({ ...linkData, text: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="例: 詳細はこちら"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  テキストエリアで選択したテキストがある場合は、それがリンクテキストとして使用されます
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  URL *
+                </label>
+                <input
+                  type="url"
+                  value={linkData.url}
+                  onChange={(e) =>
+                    setLinkData({ ...linkData, url: e.target.value })
+                  }
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowLinkModal(false);
+                  setLinkData({ text: '', url: '' });
+                }}
+                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleInsertLink}
+                className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              >
+                挿入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

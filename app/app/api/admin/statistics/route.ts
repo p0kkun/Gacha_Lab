@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
     const filterType = searchParams.get('filterType') || 'all'; // 'all' | 'active' | 'inactive' | 'selected'
-    const selectedGachaTypeIds = searchParams.get('gachaTypeIds')?.split(',') || []; // 選択したガチャタイプID（カンマ区切り）
+    // NOTE: 外部指定は gachaType code（例: "normal"）を受け取る想定
+    const selectedGachaTypeCodes =
+      searchParams.get('gachaTypeIds')?.split(',').filter(Boolean) || [];
 
     // 期間の開始日と終了日を計算
     const now = new Date();
@@ -42,11 +44,15 @@ export async function GET(request: NextRequest) {
     }
 
     // 絞り込み条件に基づいてガチャタイプを取得
-    let targetGachaTypeIds: string[] = [];
+    let targetGachaTypeIds: number[] = [];
     
-    if (filterType === 'selected' && selectedGachaTypeIds.length > 0) {
-      // 選択したガチャのみ
-      targetGachaTypeIds = selectedGachaTypeIds;
+    if (filterType === 'selected' && selectedGachaTypeCodes.length > 0) {
+      // 選択したガチャのみ（code → id に解決）
+      const selected = await prisma.gachaType.findMany({
+        where: { code: { in: selectedGachaTypeCodes } },
+        select: { id: true },
+      });
+      targetGachaTypeIds = selected.map((gt) => gt.id);
     } else {
       // すべてのガチャタイプを取得してフィルタリング
       const allGachaTypes = await prisma.gachaType.findMany({
@@ -145,43 +151,22 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // レアリティ別の統計（新方式: gacha_histories.rarity を優先）
+    // 等級別の統計（tierCode）
     const whereForPeriod: any = {
       createdAt: { gte: startDate, lte: endDate },
       ...(targetGachaTypeIds.length > 0 && { gachaTypeId: { in: targetGachaTypeIds } }),
     };
 
-    const [rarityStatsByHistory, fallbackByItem] = await Promise.all([
-      prisma.gachaHistory.groupBy({
-        by: ['rarity'],
-        where: { ...whereForPeriod, rarity: { not: null } },
-        _count: { id: true },
-      }),
-      prisma.gachaHistory.groupBy({
-        by: ['itemId'],
-        where: { ...whereForPeriod, rarity: null },
-        _count: { id: true },
-      }),
-    ]);
+    const rarityStatsByHistory = await prisma.gachaHistory.groupBy({
+      by: ['tierCode'],
+      where: { ...whereForPeriod, tierCode: { not: null } },
+      _count: { id: true },
+    });
 
     const rarityCounts: Record<string, number> = {};
     for (const stat of rarityStatsByHistory) {
-      const key = stat.rarity || 'UNKNOWN';
+      const key = (stat as any).tierCode || 'UNKNOWN';
       rarityCounts[key] = (rarityCounts[key] || 0) + stat._count.id;
-    }
-
-    // 旧データ（rarityがnull）はアイテム側rarityで補完
-    if (fallbackByItem.length > 0) {
-      const itemIds = fallbackByItem.map((s) => s.itemId);
-      const items = await prisma.gachaItem.findMany({
-        where: { id: { in: itemIds } },
-        select: { id: true, rarity: true },
-      });
-      for (const stat of fallbackByItem) {
-        const item = items.find((i) => i.id === stat.itemId);
-        if (!item) continue;
-        rarityCounts[item.rarity] = (rarityCounts[item.rarity] || 0) + stat._count.id;
-      }
     }
 
     // 日別の集計（指定期間のすべての日を1日ずつ表示、データがない日は0）
@@ -262,13 +247,9 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        rarity: true,
         isActive: true,
       },
-      orderBy: [
-        { rarity: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ name: 'asc' }],
     });
 
     // 2. アイテムごとの所持数・使用数を集計
@@ -287,11 +268,11 @@ export async function GET(request: NextRequest) {
         });
         const ownershipCount = ownershipUsers.length;
 
-        // 使用数（usedAtがnullでない件数）
+        // 使用数（ItemUsageLogが存在する件数）
         const usageCount = await prisma.gachaHistory.count({
           where: {
             itemId: item.id,
-            usedAt: { not: null },
+            usageLog: { isNot: null },
             ...(targetGachaTypeIds.length > 0 && {
               gachaTypeId: { in: targetGachaTypeIds },
             }),
@@ -305,7 +286,8 @@ export async function GET(request: NextRequest) {
         return {
           itemId: item.id,
           itemName: item.name,
-          rarity: item.rarity,
+          // 等級はガチャ別に変わるため、アイテムマスタでは持たない
+          rarity: '（割当で管理）',
           isActive: item.isActive,
           ownershipCount,
           ownershipRate: Math.round(ownershipRate * 100) / 100, // 小数点第2位まで
@@ -315,20 +297,8 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // レアリティ順、所持数順でソート
-    const rarityOrder: Record<string, number> = {
-      FIRST_PRIZE: 1,
-      SECOND_PRIZE: 2,
-      THIRD_PRIZE: 3,
-      FOURTH_PRIZE: 4,
-      FIFTH_PRIZE: 5,
-      LOSER: 6,
-    };
-    itemUsageData.sort((a, b) => {
-      const rarityDiff = (rarityOrder[a.rarity] || 99) - (rarityOrder[b.rarity] || 99);
-      if (rarityDiff !== 0) return rarityDiff;
-      return b.ownershipCount - a.ownershipCount;
-    });
+    // 所持数順でソート
+    itemUsageData.sort((a, b) => b.ownershipCount - a.ownershipCount);
 
     return NextResponse.json({
       period,

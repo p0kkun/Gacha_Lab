@@ -33,8 +33,12 @@ export async function POST(
       );
     }
 
-    // 既に使用済みの場合はエラー
-    if (history.usedAt) {
+    // 既に使用済みの場合はエラー（ItemUsageLogで判定）
+    const existingUsage = await prisma.itemUsageLog.findFirst({
+      where: { gachaHistoryId: historyIdNum },
+      select: { id: true, usedAt: true },
+    });
+    if (existingUsage) {
       return NextResponse.json(
         { error: 'このアイテムは既に使用済みです' },
         { status: 400 }
@@ -58,24 +62,28 @@ export async function POST(
       );
     }
 
-    // 使用済みフラグを更新
-    const updatedHistory = await prisma.gachaHistory.update({
-      where: {
-        id: historyIdNum,
-      },
+    // 使用ログを作成（ItemUsageLog）
+    const created = await prisma.itemUsageLog.create({
       data: {
+        gachaHistoryId: historyIdNum,
         usedAt: new Date(),
       },
       include: {
-        item: {
+        gachaHistory: {
           select: {
             id: true,
-            name: true,
-            rarity: true,
-            usageType: true,
-            imageUrl: true,
-            useStartAt: true,
-            useEndAt: true,
+            createdAt: true,
+            tierCode: true,
+            item: {
+              select: {
+                id: true,
+                name: true,
+                usageType: true,
+                imageUrl: true,
+                useStartAt: true,
+                useEndAt: true,
+              },
+            },
           },
         },
       },
@@ -84,10 +92,10 @@ export async function POST(
     return NextResponse.json({
       success: true,
       item: {
-        id: updatedHistory.id,
-        item: updatedHistory.item,
-        createdAt: updatedHistory.createdAt,
-        usedAt: updatedHistory.usedAt?.toISOString() || null,
+        id: created.gachaHistory.id,
+        item: created.gachaHistory.item,
+        createdAt: created.gachaHistory.createdAt,
+        usedAt: created.usedAt.toISOString(),
       },
     });
   } catch (error) {

@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { getAdminAuthToken } from '@/lib/admin-auth';
-import type { AdminActionType } from '.prisma/client';
-import { AdminActionType as AdminActionTypeEnum } from '.prisma/client';
+import { useState, useEffect } from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { getAdminAuthToken } from "@/lib/admin-auth";
+import {
+  AdminActionTypeLabels,
+  type AdminActionType,
+} from "@/lib/admin-action-types";
 
 type AdminActionHistory = {
   id: number;
-  actionType: AdminActionType;
+  actionType: string;
   adminUserId: string | null;
   adminName: string | null;
   targetUserId: string | null;
@@ -18,22 +20,6 @@ type AdminActionHistory = {
   createdAt: Date;
 };
 
-const ACTION_TYPE_LABELS: Record<AdminActionType, string> = {
-  POINT_GRANT: 'ポイント付与',
-  ITEM_GRANT: 'アイテム付与',
-  GACHA_PROBABILITY_UPDATE: 'ガチャ確率変更',
-  MESSAGE_SEND: 'メッセージ配信',
-  TAG_ASSIGN: 'タグ付与',
-  TAG_BULK_ASSIGN: 'タグ一括付与',
-  USER_UPDATE: 'ユーザー情報更新',
-  GACHA_TYPE_UPDATE: 'ガチャタイプ更新',
-  ITEM_UPDATE: 'アイテム更新',
-  VIDEO_UPLOAD: '動画アップロード',
-  VIDEO_UPDATE: '動画更新',
-  VIDEO_DELETE: '動画削除',
-  OTHER: 'その他',
-};
-
 export default function ActionHistoryPage() {
   const [histories, setHistories] = useState<AdminActionHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,11 +27,11 @@ export default function ActionHistoryPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
-    actionType: '' as AdminActionType | '',
-    adminUserId: '',
-    targetUserId: '',
-    startDate: '',
-    endDate: '',
+    actionType: "" as string,
+    adminUserId: "",
+    targetUserId: "",
+    startDate: "",
+    endDate: "",
   });
 
   useEffect(() => {
@@ -58,47 +44,47 @@ export default function ActionHistoryPage() {
 
     try {
       const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('limit', '50');
+      params.append("page", page.toString());
+      params.append("limit", "50");
       if (filters.actionType) {
-        params.append('actionType', filters.actionType);
+        params.append("actionType", filters.actionType);
       }
       if (filters.adminUserId) {
-        params.append('adminUserId', filters.adminUserId);
+        params.append("adminUserId", filters.adminUserId);
       }
       if (filters.targetUserId) {
-        params.append('targetUserId', filters.targetUserId);
+        params.append("targetUserId", filters.targetUserId);
       }
       if (filters.startDate) {
-        params.append('startDate', filters.startDate);
+        params.append("startDate", filters.startDate);
       }
       if (filters.endDate) {
-        params.append('endDate', filters.endDate);
+        params.append("endDate", filters.endDate);
       }
 
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/action-history?${params}`, {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
-        throw new Error('操作履歴の取得に失敗しました');
+        throw new Error("操作履歴の取得に失敗しました");
       }
 
       const data = await res.json();
       setHistories(data.histories);
       setTotalPages(data.pagination.totalPages);
     } catch (err: any) {
-      console.error('操作履歴取得エラー:', err);
-      setError(err.message || '操作履歴の取得に失敗しました');
+      console.error("操作履歴取得エラー:", err);
+      setError(err.message || "操作履歴の取得に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -110,13 +96,13 @@ export default function ActionHistoryPage() {
   };
 
   const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+    return new Date(date).toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   };
 
@@ -141,11 +127,13 @@ export default function ActionHistoryPage() {
               </label>
               <select
                 value={filters.actionType}
-                onChange={(e) => handleFilterChange('actionType', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("actionType", e.target.value)
+                }
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
               >
                 <option value="">すべて</option>
-                {Object.entries(ACTION_TYPE_LABELS).map(([value, label]) => (
+                {Object.entries(AdminActionTypeLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
@@ -160,7 +148,9 @@ export default function ActionHistoryPage() {
               <input
                 type="text"
                 value={filters.adminUserId}
-                onChange={(e) => handleFilterChange('adminUserId', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("adminUserId", e.target.value)
+                }
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                 placeholder="管理者ユーザーID"
               />
@@ -173,7 +163,9 @@ export default function ActionHistoryPage() {
               <input
                 type="text"
                 value={filters.targetUserId}
-                onChange={(e) => handleFilterChange('targetUserId', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("targetUserId", e.target.value)
+                }
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                 placeholder="対象ユーザーID"
               />
@@ -186,7 +178,9 @@ export default function ActionHistoryPage() {
               <input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("startDate", e.target.value)
+                }
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
               />
             </div>
@@ -198,7 +192,7 @@ export default function ActionHistoryPage() {
               <input
                 type="date"
                 value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                onChange={(e) => handleFilterChange("endDate", e.target.value)}
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
               />
             </div>
@@ -231,13 +225,19 @@ export default function ActionHistoryPage() {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-500"
+                    >
                       読み込み中...
                     </td>
                   </tr>
                 ) : histories.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-500"
+                    >
                       履歴がありません
                     </td>
                   </tr>
@@ -249,16 +249,21 @@ export default function ActionHistoryPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
                         <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                          {ACTION_TYPE_LABELS[history.actionType] || history.actionType}
+                          {AdminActionTypeLabels[
+                            history.actionType as AdminActionType
+                          ] || history.actionType}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
-                        {history.adminName || history.adminUserId || '（不明）'}
+                        {history.adminName || history.adminUserId || "（不明）"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {history.targetUserId ? (
-                          <div className="text-xs">{history.targetUserId.substring(0, 10)}...</div>
-                        ) : history.targetUserIds && history.targetUserIds.length > 0 ? (
+                          <div className="text-xs">
+                            {history.targetUserId.substring(0, 10)}...
+                          </div>
+                        ) : history.targetUserIds &&
+                          history.targetUserIds.length > 0 ? (
                           <div className="text-xs">
                             {history.targetUserIds.length}人
                             {history.targetUserIds.length <= 3 && (
@@ -324,4 +329,3 @@ export default function ActionHistoryPage() {
     </AdminLayout>
   );
 }
-

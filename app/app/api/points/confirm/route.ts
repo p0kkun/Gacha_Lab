@@ -83,11 +83,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 購入ログ（PointPurchaseLog）を作成/再利用（idempotent）
+    const prismaAny = prisma as unknown as {
+      pointPurchaseLog: {
+        findFirst: (args: { where: { providerPaymentIntentId: string } }) => Promise<{ id: number } | null>;
+        create: (args: { data: any }) => Promise<{ id: number }>;
+      };
+      pointHistory: {
+        findFirst: (args: { where: any; select?: any }) => Promise<{ id: number } | null>;
+      };
+    };
+
+    const existingLog = await prismaAny.pointPurchaseLog.findFirst({
+      where: { providerPaymentIntentId: paymentIntentId },
+    });
+    const purchaseLogId =
+      existingLog?.id ??
+      (
+        await prismaAny.pointPurchaseLog.create({
+          data: {
+            userId,
+            provider: "STRIPE",
+            providerPaymentIntentId: paymentIntentId,
+            amountYen: paymentIntent.amount,
+            planId: paymentIntent.metadata.planId || null,
+            status: "SUCCEEDED",
+            raw: {
+              amount: paymentIntent.amount,
+              currency: paymentIntent.currency,
+              metadata: paymentIntent.metadata,
+            },
+          },
+        })
+      ).id;
+
     // 既にポイントが付与されているか確認（重複付与を防ぐ）
-    const existingHistory = await prisma.pointHistory.findFirst({
-      where: {
-        stripePaymentId: paymentIntentId,
-      },
+    const existingHistory = await prismaAny.pointHistory.findFirst({
+      where: { purchaseLogId },
+      select: { id: true },
     });
 
     if (existingHistory) {
@@ -108,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
     const { grantPurchasePoints, getPointBalances } = await import('@/lib/point-management');
-    await grantPurchasePoints(userId, points, bonusFreePoints, paymentIntentId);
+    await grantPurchasePoints(userId, points, bonusFreePoints, paymentIntentId, purchaseLogId);
 
     // 現在のポイント残高を取得
     const balances = await getPointBalances(userId);

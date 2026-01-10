@@ -760,27 +760,27 @@ function PointsPageContent() {
                 購入可能なプランがありません（管理画面でプランを設定してください）
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
                 {plans.map((plan) => (
-                  <button
+                <button
                     key={plan.id}
-                    onClick={() => setSelectedPlan(plan)}
-                    className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
-                  >
-                    <div className="mb-2 text-lg font-bold text-gray-800">
-                      {plan.label}
-                    </div>
+                  onClick={() => setSelectedPlan(plan)}
+                  className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
+                >
+                  <div className="mb-2 text-lg font-bold text-gray-800">
+                    {plan.label}
+                  </div>
                     {plan.bonusFreePoints > 0 && (
                       <div className="mb-1 text-xs font-semibold text-green-700">
                         おまけ: +{plan.bonusFreePoints.toLocaleString()}pt（無償）
                       </div>
                     )}
-                    <div className="text-sm text-gray-600">
-                      ¥{plan.price.toLocaleString()}
-                    </div>
-                  </button>
-                ))}
-              </div>
+                  <div className="text-sm text-gray-600">
+                    ¥{plan.price.toLocaleString()}
+                  </div>
+                </button>
+              ))}
+            </div>
             )}
           </div>
         ) : (

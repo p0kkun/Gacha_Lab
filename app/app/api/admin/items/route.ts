@@ -4,7 +4,7 @@ import { verifyAdminAuth } from '@/lib/admin-auth';
 
 /**
  * アイテム一覧を取得
- * GET /api/admin/items?rarity=xxx&isActive=true
+ * GET /api/admin/items?isActive=true
  */
 export async function GET(request: NextRequest) {
   // 認証チェック
@@ -17,21 +17,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const rarity = searchParams.get('rarity');
-    const gachaTypeId = searchParams.get('gachaTypeId');
     const isActive = searchParams.get('isActive');
 
     const where: any = {};
-    if (rarity) {
-      where.rarity = rarity;
-    }
-    if (gachaTypeId) {
-      if (gachaTypeId === 'null') {
-        where.gachaTypeId = null;
-      } else {
-        where.gachaTypeId = gachaTypeId;
-      }
-    }
     if (isActive !== null) {
       where.isActive = isActive === 'true';
     }
@@ -68,10 +56,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name,
-      rarity,
-      videoUrl,
       imageUrl,
-      gachaTypeId,
       usageType,
       isActive,
       useStartAt,
@@ -79,9 +64,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // バリデーション
-    if (!name || !rarity) {
+    if (!name) {
       return NextResponse.json(
-        { error: '名前とレアリティは必須です' },
+        { error: '名前は必須です' },
         { status: 400 }
       );
     }
@@ -104,10 +89,7 @@ export async function POST(request: NextRequest) {
     const item = await prisma.gachaItem.create({
       data: {
         name,
-        rarity,
-        videoUrl: videoUrl || '',
         imageUrl: imageUrl || null,
-        gachaTypeId: gachaTypeId || null,
         usageType: usageType || 'IMAGE',
         isActive: isActive ?? true,
         useStartAt: start,

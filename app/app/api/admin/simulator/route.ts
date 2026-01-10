@@ -26,9 +26,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // NOTE: 外部からは code（例: "normal"）を受け取る（互換のため変数名は gachaTypeId のまま）
+    const gachaTypeCode = String(gachaTypeId);
+
     // ガチャタイプを取得
     const gachaType = await prisma.gachaType.findUnique({
-      where: { id: gachaTypeId },
+      where: { code: gachaTypeCode },
     });
 
     if (!gachaType) {
@@ -38,80 +41,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 重みの合計を計算
-    const totalWeight =
-      gachaType.firstPrizeWeight +
-      gachaType.secondPrizeWeight +
-      gachaType.thirdPrizeWeight +
-      gachaType.fourthPrizeWeight +
-      gachaType.fifthPrizeWeight +
-      gachaType.loserWeight;
+    // 等級確率テーブル（正）
+    const tierWeights = await (prisma as any).gachaTierWeight.findMany({
+      where: { gachaTypeId: gachaType.id, isActive: true },
+      select: { tierCode: true, weight: true },
+      orderBy: [{ tierCode: 'asc' }],
+    });
 
-    if (totalWeight === 0) {
+    if (!Array.isArray(tierWeights) || tierWeights.length === 0) {
+      return NextResponse.json(
+        { error: '確率（等級×重み）が未設定です。管理画面で設定してください。' },
+        { status: 400 }
+      );
+    }
+
+    const totalWeight = tierWeights.reduce(
+      (sum: number, r: any) => sum + (Number.isFinite(r.weight) ? r.weight : 0),
+      0
+    );
+    if (totalWeight <= 0) {
       return NextResponse.json(
         { error: '重みの合計が0です。確率を設定してください。' },
         { status: 400 }
       );
     }
 
-    // シミュレーション実行
-    const results = {
-      FIRST_PRIZE: 0,
-      SECOND_PRIZE: 0,
-      THIRD_PRIZE: 0,
-      FOURTH_PRIZE: 0,
-      FIFTH_PRIZE: 0,
-      LOSER: 0,
-    };
-
+    const results: Record<string, number> = {};
     for (let i = 0; i < iterations; i++) {
-      const random = Math.random() * totalWeight;
-      let cumulative = 0;
-
-      cumulative += gachaType.firstPrizeWeight;
-      if (random < cumulative) {
-        results.FIRST_PRIZE++;
-        continue;
+      const rnd = Math.random() * totalWeight;
+      let acc = 0;
+      let selected = tierWeights[tierWeights.length - 1]?.tierCode || 'LOSER';
+      for (const r of tierWeights) {
+        acc += Number.isFinite(r.weight) ? r.weight : 0;
+        if (rnd < acc) {
+          selected = r.tierCode;
+          break;
+        }
       }
-
-      cumulative += gachaType.secondPrizeWeight;
-      if (random < cumulative) {
-        results.SECOND_PRIZE++;
-        continue;
-      }
-
-      cumulative += gachaType.thirdPrizeWeight;
-      if (random < cumulative) {
-        results.THIRD_PRIZE++;
-        continue;
-      }
-
-      cumulative += gachaType.fourthPrizeWeight;
-      if (random < cumulative) {
-        results.FOURTH_PRIZE++;
-        continue;
-      }
-
-      cumulative += gachaType.fifthPrizeWeight;
-      if (random < cumulative) {
-        results.FIFTH_PRIZE++;
-        continue;
-      }
-
-      results.LOSER++;
+      results[selected] = (results[selected] || 0) + 1;
     }
 
-    // 実際の排出率を計算
-    const actualRates = {
-      FIRST_PRIZE: (results.FIRST_PRIZE / iterations) * 100,
-      SECOND_PRIZE: (results.SECOND_PRIZE / iterations) * 100,
-      THIRD_PRIZE: (results.THIRD_PRIZE / iterations) * 100,
-      FOURTH_PRIZE: (results.FOURTH_PRIZE / iterations) * 100,
-      FIFTH_PRIZE: (results.FIFTH_PRIZE / iterations) * 100,
-      LOSER: (results.LOSER / iterations) * 100,
-    };
+    const actualRates: Record<string, number> = {};
+    const expectedRates: Record<string, number> = {};
+    for (const r of tierWeights) {
+      const code = r.tierCode;
+      const count = results[code] || 0;
+      actualRates[code] = (count / iterations) * 100;
+      expectedRates[code] =
+        ((Number.isFinite(r.weight) ? r.weight : 0) / totalWeight) * 100;
+    }
 
-    // 設定確率
+    // 旧UI互換のため、固定キーも埋める（存在しない等級は0）
+    const fixedKeys = ['FIRST_PRIZE','SECOND_PRIZE','THIRD_PRIZE','FOURTH_PRIZE','FIFTH_PRIZE','LOSER'];
+    for (const k of fixedKeys) {
+      if (results[k] === undefined) results[k] = 0;
+      if (actualRates[k] === undefined) actualRates[k] = 0;
+      if (expectedRates[k] === undefined) expectedRates[k] = 0;
+    }
+
+    return NextResponse.json({
+      gachaTypeId: gachaTypeCode,
+      gachaTypeName: gachaType.name,
+      iterations,
+      totalWeight,
+      results,
+      actualRates,
+      expectedRates,
+    });
+
+    /*
+    // 設定確率（旧）
     const expectedRates = {
       FIRST_PRIZE: (gachaType.firstPrizeWeight / totalWeight) * 100,
       SECOND_PRIZE: (gachaType.secondPrizeWeight / totalWeight) * 100,
@@ -120,6 +119,7 @@ export async function POST(request: NextRequest) {
       FIFTH_PRIZE: (gachaType.fifthPrizeWeight / totalWeight) * 100,
       LOSER: (gachaType.loserWeight / totalWeight) * 100,
     };
+    */
 
     return NextResponse.json({
       gachaTypeId,

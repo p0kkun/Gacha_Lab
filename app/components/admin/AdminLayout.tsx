@@ -13,19 +13,24 @@ export default function AdminLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { href: "/admin", label: "ダッシュボード" },
-    { href: "/admin/users", label: "ユーザー管理" },
-    { href: "/admin/tags", label: "タグ管理" },
-    { href: "/admin/messages", label: "メッセージ配信" },
-    { href: "/admin/points", label: "ポイント管理" },
-    { href: "/admin/point-plans", label: "ポイント購入プラン" },
-    { href: "/admin/gacha-types", label: "ガチャ設定" },
-    { href: "/admin/prize-assignments", label: "景品割当（ガチャ別）" },
-    { href: "/admin/items", label: "アイテム設定" },
-    { href: "/admin/videos", label: "動画管理" },
-    { href: "/admin/statistics", label: "統計・購入状況" },
-    { href: "/admin/simulator", label: "ガチャシミュレータ" },
-    { href: "/admin/action-history", label: "操作履歴" },
+    { href: "/admin", label: "ダッシュボード", icon: "📊" },
+    { href: "/admin/users", label: "ユーザー管理", icon: "👥" },
+    { href: "/admin/tags", label: "タグ管理", icon: "🏷️" },
+    { href: "/admin/messages", label: "メッセージ配信", icon: "💬" },
+    { href: "/admin/points", label: "ポイント管理", icon: "💰" },
+    { href: "/admin/point-plans", label: "ポイント購入プラン", icon: "💳" },
+    { href: "/admin/gacha-types", label: "ガチャ設定", icon: "🎰" },
+    { href: "/admin/free-gacha-settings", label: "無料ガチャ設定", icon: "🎁" },
+    { href: "/admin/result-message-templates", label: "結果メッセージテンプレート", icon: "📝" },
+    { href: "/admin/prize-tiers", label: "等級マスタ管理", icon: "⭐" },
+    { href: "/admin/prize-assignments", label: "景品割当（ガチャ別）", icon: "🎁" },
+    { href: "/admin/items", label: "アイテム設定", icon: "📦" },
+    { href: "/admin/videos", label: "動画管理", icon: "🎬" },
+    { href: "/admin/statistics", label: "統計・購入状況", icon: "📈" },
+    { href: "/admin/simulator", label: "ガチャシミュレータ", icon: "🎯" },
+    { href: "/admin/referrals", label: "友達紹介履歴", icon: "👥" },
+    { href: "/admin/action-history", label: "操作履歴", icon: "📋" },
+    { href: "/admin/help", label: "ヘルプ", icon: "❓" },
   ];
 
   const handleLogout = () => {
@@ -34,15 +39,15 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       {/* モバイル用ハンバーガーメニューボタン */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="fixed left-4 top-4 z-50 rounded-md bg-white p-2 shadow-lg lg:hidden"
+        className="fixed left-4 top-4 z-50 rounded-lg bg-white p-2.5 shadow-lg transition-all hover:shadow-xl lg:hidden"
         aria-label="メニューを開く"
       >
         <svg
-          className="h-6 w-6 text-gray-800"
+          className="h-6 w-6 text-gray-700"
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -60,50 +65,60 @@ export default function AdminLayout({
 
       {/* サイドバー */}
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-white shadow-lg transition-transform duration-300 lg:relative lg:translate-x-0 ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed left-0 top-0 z-40 flex h-screen w-72 flex-col bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="border-b p-4">
-          <h2 className="text-xl font-bold text-gray-800">管理画面</h2>
+        {/* ヘッダー */}
+        <div className="flex-shrink-0 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
+          <h2 className="text-xl font-bold text-white">管理画面</h2>
+          <p className="mt-1 text-sm text-blue-100">Gacha Lab Admin</p>
         </div>
-        <nav className="flex-1 overflow-y-auto">
-          {menuItems.map((item, index) => {
-            const isActive =
-              pathname === item.href || pathname?.startsWith(item.href + "/");
-            const isBsop = item.label.includes("BSOP");
-            const isBsopSub = item.label.startsWith("  ");
 
-            return (
-              <div key={item.href}>
-                {(item as any).divider && index > 0 && (
-                  <div className="my-2 border-t border-gray-200" />
-                )}
+        {/* ナビゲーション */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const isActive =
+                pathname === item.href || pathname?.startsWith(item.href + "/");
+
+              return (
                 <Link
+                  key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-4 py-3 transition-colors ${
-                    isActive
-                      ? isBsop
-                        ? "bg-orange-500 text-white"
-                        : "bg-blue-500 text-white"
-                      : "text-gray-700 hover:bg-gray-100"
-                  } ${isBsopSub ? "pl-8 text-sm" : ""} ${
-                    isBsop && !isBsopSub ? "font-semibold" : ""
-                  }`}
+                  className={`
+                    group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all
+                    ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 shadow-sm"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
                 >
-                  {item.label}
+                  <span className="text-lg">{item.icon}</span>
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <span className="ml-auto h-2 w-2 rounded-full bg-blue-600"></span>
+                  )}
                 </Link>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </nav>
-        <div className="border-t p-4">
+
+        {/* フッター */}
+        <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50 p-4">
           <button
             onClick={handleLogout}
-            className="w-full rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+            className="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-300 hover:shadow-sm"
           >
-            ログアウト
+            <span className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              ログアウト
+            </span>
           </button>
         </div>
       </aside>
@@ -111,14 +126,14 @@ export default function AdminLayout({
       {/* モバイルメニューのオーバーレイ */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-white bg-opacity-70 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* メインコンテンツ */}
-      <main className="flex-1 overflow-auto lg:ml-0">
-        <div className="p-4 lg:p-6">{children}</div>
+      <main className="flex-1 overflow-auto lg:ml-72">
+        <div className="mx-auto max-w-7xl p-4 lg:p-8">{children}</div>
       </main>
     </div>
   );

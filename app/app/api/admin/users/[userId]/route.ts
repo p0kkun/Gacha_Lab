@@ -40,7 +40,6 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                rarity: true,
               },
             },
           },
@@ -63,38 +62,17 @@ export async function GET(
       );
     }
 
-    // レアリティ別の集計（新方式: gacha_histories.rarity を優先）
-    const [rarityStatsByHistory, fallbackByItem] = await Promise.all([
-      prisma.gachaHistory.groupBy({
-        by: ['rarity'],
-        where: { userId, rarity: { not: null } },
-        _count: { id: true },
-      }),
-      prisma.gachaHistory.groupBy({
-        by: ['itemId'],
-        where: { userId, rarity: null },
-        _count: { id: true },
-      }),
-    ]);
+    // 等級別の集計（tierCode）
+    const rarityStatsByHistory = await prisma.gachaHistory.groupBy({
+      by: ['tierCode'],
+      where: { userId, tierCode: { not: null } },
+      _count: { id: true },
+    });
 
     const rarityCounts: Record<string, number> = {};
     for (const stat of rarityStatsByHistory) {
-      const key = stat.rarity || 'UNKNOWN';
+      const key = (stat as any).tierCode || 'UNKNOWN';
       rarityCounts[key] = (rarityCounts[key] || 0) + stat._count.id;
-    }
-
-    // 旧データ（rarityがnull）はアイテム側rarityで補完
-    if (fallbackByItem.length > 0) {
-      const itemIds = fallbackByItem.map((s) => s.itemId);
-      const items = await prisma.gachaItem.findMany({
-        where: { id: { in: itemIds } },
-        select: { id: true, rarity: true },
-      });
-      for (const stat of fallbackByItem) {
-        const item = items.find((i) => i.id === stat.itemId);
-        if (!item) continue;
-        rarityCounts[item.rarity] = (rarityCounts[item.rarity] || 0) + stat._count.id;
-      }
     }
 
     return NextResponse.json({

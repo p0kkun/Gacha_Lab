@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Rarity } from ".prisma/client";
+import { getVideoUrl } from "@/lib/s3-upload";
 
 /**
  * ガチャタイプの動画設定に基づいて動画を選択
@@ -9,38 +9,38 @@ import type { Rarity } from ".prisma/client";
  * @returns 動画URLの配列（共通動画 → 等級別動画の順）
  */
 export async function getGachaVideoUrls(
-  gachaTypeId: string,
-  itemRarity: Rarity
+  gachaTypeCode: string,
+  itemRarity: string
 ): Promise<string[]> {
   // ガチャタイプを取得（全フィールドを取得）
   const gachaType = await prisma.gachaType.findUnique({
-    where: { id: gachaTypeId },
+    where: { code: gachaTypeCode },
   });
 
   if (!gachaType) {
-    console.error(`ガチャタイプが見つかりません: ${gachaTypeId}`);
+    console.error(`ガチャタイプが見つかりません: ${gachaTypeCode}`);
     return [];
   }
 
   const urls: string[] = [];
-  let commonVideoIds: number[] = [];
-  let rarityVideoIdsObj: Record<string, number[]> | null = null;
+  let commonVideoAssetIds: number[] = [];
+  let tierVideoAssetIdsObj: Record<string, number[]> | null = null;
 
   // 動画設定の取得（個別設定 or デフォルト設定）
   if (
     gachaType.useDefaultVideos === false &&
-    gachaType.commonVideoIds &&
-    gachaType.commonVideoIds.length > 0
+    (gachaType as any).commonVideoAssetIds &&
+    (gachaType as any).commonVideoAssetIds.length > 0
   ) {
     // 個別設定を使用
-    console.log(`[動画選択] ガチャタイプ ${gachaTypeId}: 個別設定を使用`);
-    commonVideoIds = gachaType.commonVideoIds;
-    if (gachaType.rarityVideoIds) {
+    console.log(`[動画選択] ガチャタイプ ${gachaTypeCode}: 個別設定を使用`);
+    commonVideoAssetIds = (gachaType as any).commonVideoAssetIds;
+    if ((gachaType as any).tierVideoAssetIds) {
       try {
-        rarityVideoIdsObj =
-          typeof gachaType.rarityVideoIds === "string"
-            ? JSON.parse(gachaType.rarityVideoIds)
-            : (gachaType.rarityVideoIds as Record<string, number[]>);
+        tierVideoAssetIdsObj =
+          typeof (gachaType as any).tierVideoAssetIds === "string"
+            ? JSON.parse((gachaType as any).tierVideoAssetIds)
+            : ((gachaType as any).tierVideoAssetIds as Record<string, number[]>);
       } catch (error) {
         console.error("等級別動画IDの解析エラー:", error);
       }
@@ -48,41 +48,46 @@ export async function getGachaVideoUrls(
   } else {
     // デフォルト設定を使用
     console.log(
-      `[動画選択] ガチャタイプ ${gachaTypeId}: デフォルト設定を使用 (useDefaultVideos=${
+      `[動画選択] ガチャタイプ ${gachaTypeCode}: デフォルト設定を使用 (useDefaultVideos=${
         gachaType.useDefaultVideos
-      }, commonVideoIds.length=${gachaType.commonVideoIds?.length || 0})`
+      }, commonVideoAssetIds.length=${
+        (gachaType as any).commonVideoAssetIds?.length || 0
+      })`
     );
     const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
       orderBy: { createdAt: "desc" },
     });
 
     if (defaultSettings) {
-      commonVideoIds = defaultSettings.commonVideoIds || [];
-      if (defaultSettings.rarityVideoIds) {
+      commonVideoAssetIds = (defaultSettings as any).commonVideoAssetIds || [];
+      if ((defaultSettings as any).tierVideoAssetIds) {
         try {
-          rarityVideoIdsObj =
-            typeof defaultSettings.rarityVideoIds === "string"
-              ? JSON.parse(defaultSettings.rarityVideoIds)
-              : (defaultSettings.rarityVideoIds as Record<string, number[]>);
+          tierVideoAssetIdsObj =
+            typeof (defaultSettings as any).tierVideoAssetIds === "string"
+              ? JSON.parse((defaultSettings as any).tierVideoAssetIds)
+              : ((defaultSettings as any).tierVideoAssetIds as Record<
+                  string,
+                  number[]
+                >);
         } catch (error) {
           console.error("デフォルト等級別動画IDの解析エラー:", error);
         }
       }
       console.log(
         `[動画選択] デフォルト設定: 共通動画${
-          commonVideoIds.length
+          commonVideoAssetIds.length
         }件, 等級別動画設定${
-          rarityVideoIdsObj ? Object.keys(rarityVideoIdsObj).length : 0
+          tierVideoAssetIdsObj ? Object.keys(tierVideoAssetIdsObj).length : 0
         }等級`
       );
       console.log(
-        `[動画選択] デフォルト設定詳細: commonVideoIds=[${commonVideoIds.join(
+        `[動画選択] デフォルト設定詳細: commonVideoAssetIds=[${commonVideoAssetIds.join(
           ","
-        )}], rarityVideoIds=${JSON.stringify(rarityVideoIdsObj)}`
+        )}], tierVideoAssetIds=${JSON.stringify(tierVideoAssetIdsObj)}`
       );
     } else {
       console.warn(
-        `[動画選択] ガチャタイプ ${gachaTypeId}: デフォルト設定が見つかりません`
+        `[動画選択] ガチャタイプ ${gachaTypeCode}: デフォルト設定が見つかりません`
       );
       console.warn(
         `[動画選択] デフォルト設定テーブルを確認してください。管理画面で一括設定を保存してください。`
@@ -91,16 +96,16 @@ export async function getGachaVideoUrls(
   }
 
   // 1. 共通動画を取得
-  if (commonVideoIds.length > 0) {
-    const commonVideos = await prisma.gachaVideo.findMany({
+  if (commonVideoAssetIds.length > 0) {
+    const commonVideos = await prisma.videoAsset.findMany({
       where: {
-        id: { in: commonVideoIds },
+        id: { in: commonVideoAssetIds },
         isActive: true,
       },
     });
 
     console.log(
-      `[動画選択] 共通動画: ID${commonVideoIds.join(",")}から${
+      `[動画選択] 共通動画: ID${commonVideoAssetIds.join(",")}から${
         commonVideos.length
       }件取得`
     );
@@ -109,13 +114,17 @@ export async function getGachaVideoUrls(
     if (commonVideos.length > 0) {
       const selectedCommonVideo =
         commonVideos[Math.floor(Math.random() * commonVideos.length)];
-      urls.push(selectedCommonVideo.s3Url);
+      urls.push(getVideoUrl(selectedCommonVideo.s3Key));
       console.log(
-        `[動画選択] 共通動画選択: ${selectedCommonVideo.fileName} (${selectedCommonVideo.s3Url})`
+        `[動画選択] 共通動画選択: ${selectedCommonVideo.fileName} (${getVideoUrl(
+          selectedCommonVideo.s3Key
+        )})`
       );
     } else {
       console.warn(
-        `[動画選択] 共通動画が見つかりません (ID: ${commonVideoIds.join(",")})`
+        `[動画選択] 共通動画が見つかりません (ID: ${commonVideoAssetIds.join(
+          ","
+        )})`
       );
     }
   } else {
@@ -123,9 +132,9 @@ export async function getGachaVideoUrls(
   }
 
   // 2. 等級別動画を取得（ハズレを含むすべてのレアリティ）
-  if (rarityVideoIdsObj) {
+  if (tierVideoAssetIdsObj) {
     const rarityKey = itemRarity as string;
-    const rarityVideoIds: number[] = rarityVideoIdsObj[rarityKey] || [];
+    const rarityVideoIds: number[] = tierVideoAssetIdsObj[rarityKey] || [];
 
     console.log(
       `[動画選択] 等級別動画 (${rarityKey}): ID${
@@ -134,7 +143,7 @@ export async function getGachaVideoUrls(
     );
 
     if (rarityVideoIds.length > 0) {
-      const rarityVideos = await prisma.gachaVideo.findMany({
+      const rarityVideos = await prisma.videoAsset.findMany({
         where: {
           id: { in: rarityVideoIds },
           isActive: true,
@@ -145,9 +154,11 @@ export async function getGachaVideoUrls(
       if (rarityVideos.length > 0) {
         const selectedRarityVideo =
           rarityVideos[Math.floor(Math.random() * rarityVideos.length)];
-        urls.push(selectedRarityVideo.s3Url);
+        urls.push(getVideoUrl(selectedRarityVideo.s3Key));
         console.log(
-          `[動画選択] 等級別動画選択: ${selectedRarityVideo.fileName} (${selectedRarityVideo.s3Url})`
+          `[動画選択] 等級別動画選択: ${selectedRarityVideo.fileName} (${getVideoUrl(
+            selectedRarityVideo.s3Key
+          )})`
         );
       } else {
         console.warn(

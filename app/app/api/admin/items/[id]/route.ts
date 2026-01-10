@@ -87,10 +87,7 @@ export async function PUT(
     const body = await request.json();
     const {
       name,
-      rarity,
-      videoUrl,
       imageUrl,
-      gachaTypeId,
       usageType,
       isActive,
       useStartAt,
@@ -98,9 +95,9 @@ export async function PUT(
     } = body;
 
     // バリデーション
-    if (!name || !rarity) {
+    if (!name) {
       return NextResponse.json(
-        { error: '名前とレアリティは必須です' },
+        { error: '名前は必須です' },
         { status: 400 }
       );
     }
@@ -124,10 +121,7 @@ export async function PUT(
       where: { id },
       data: {
         name,
-        rarity,
-        videoUrl: videoUrl || '',
         imageUrl: imageUrl || null,
-        gachaTypeId: gachaTypeId || null,
         usageType: usageType || 'IMAGE',
         isActive: isActive ?? true,
         useStartAt: start,

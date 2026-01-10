@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
-import type { GachaVideoType, Rarity } from ".prisma/client";
 import { recordVideoUploadAction } from "@/lib/admin-action-history";
 import { getVideoUrl } from "@/lib/s3-upload";
 
@@ -35,28 +34,26 @@ export async function POST(request: NextRequest) {
 
     // 等級はガチャ設定側で選択するため、ここではバリデーションしない
 
-    // S3 URLを生成
-    const s3Url = getVideoUrl(s3Key);
-
-    // DBに登録
-    const gachaVideo = await prisma.gachaVideo.create({
+    // DBに登録（VideoAsset）
+    const asset = await prisma.videoAsset.create({
       data: {
-        videoType: videoType as GachaVideoType,
-        rarity: rarity ? (rarity as Rarity) : null,
         s3Key,
-        s3Url,
         fileName,
         fileSize: fileSize || 0,
         description: description || null,
         isActive: true,
-        displayOrder: 0,
-        updatedAt: new Date(),
       },
+    });
+
+    // カテゴリ付与（用途はマスタから分離）
+    const category = videoType === "COMMON" ? "COMMON" : "TIER";
+    await prisma.videoAssetCategory.create({
+      data: { assetId: asset.id, category },
     });
 
     // 操作履歴を記録
     await recordVideoUploadAction({
-      videoId: gachaVideo.id,
+      videoId: asset.id,
       videoType: videoType,
       rarity: rarity || null,
       fileName,
@@ -67,14 +64,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       video: {
-        id: gachaVideo.id,
-        videoType: gachaVideo.videoType,
-        rarity: gachaVideo.rarity,
-        s3Url: gachaVideo.s3Url,
-        fileName: gachaVideo.fileName,
-        fileSize: gachaVideo.fileSize,
-        description: gachaVideo.description,
-        isActive: gachaVideo.isActive,
+        id: asset.id,
+        videoType: videoType,
+        rarity: null,
+        s3Url: getVideoUrl(asset.s3Key),
+        fileName: asset.fileName,
+        fileSize: asset.fileSize,
+        description: asset.description,
+        isActive: asset.isActive,
       },
     });
   } catch (error) {

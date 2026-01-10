@@ -20,7 +20,7 @@ import {
 } from 'recharts';
 
 type GachaStat = {
-  gachaTypeId: string;
+  gachaTypeId: number;
   gachaTypeName: string;
   count: number;
   uniqueUserCount: number;
@@ -63,7 +63,8 @@ const RARITY_LABELS: Record<string, string> = {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 type GachaTypeOption = {
-  id: string;
+  id: number; // 内部ID（DB）
+  code: string; // 外部参照用コード（例: "normal"）
   name: string;
   isActive: boolean;
 };
@@ -76,6 +77,7 @@ export default function StatisticsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'active' | 'inactive' | 'selected'>('all');
+  // NOTE: 外部指定は code を扱う（API/URLの互換のため変数名は維持）
   const [selectedGachaTypeIds, setSelectedGachaTypeIds] = useState<string[]>([]);
   const [gachaTypeOptions, setGachaTypeOptions] = useState<GachaTypeOption[]>([]);
   const [showGachaChart, setShowGachaChart] = useState(false);
@@ -253,7 +255,7 @@ export default function StatisticsPage() {
                     ) : (
                       <div className="space-y-1">
                         {gachaTypeOptions.map((gachaType) => {
-                          const isSelected = selectedGachaTypeIds.includes(gachaType.id);
+                          const isSelected = selectedGachaTypeIds.includes(gachaType.code);
                           return (
                             <label
                               key={gachaType.id}
@@ -266,9 +268,16 @@ export default function StatisticsPage() {
                                 checked={isSelected}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setSelectedGachaTypeIds([...selectedGachaTypeIds, gachaType.id]);
+                                    setSelectedGachaTypeIds([
+                                      ...selectedGachaTypeIds,
+                                      gachaType.code,
+                                    ]);
                                   } else {
-                                    setSelectedGachaTypeIds(selectedGachaTypeIds.filter((id) => id !== gachaType.id));
+                                    setSelectedGachaTypeIds(
+                                      selectedGachaTypeIds.filter(
+                                        (id) => id !== gachaType.code
+                                      )
+                                    );
                                   }
                                 }}
                                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
@@ -305,7 +314,9 @@ export default function StatisticsPage() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {selectedGachaTypeIds.map((id) => {
-                          const gachaType = gachaTypeOptions.find((gt) => gt.id === id);
+                          const gachaType = gachaTypeOptions.find(
+                            (gt) => gt.code === id
+                          );
                           return gachaType ? (
                             <span
                               key={id}

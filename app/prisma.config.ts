@@ -14,6 +14,8 @@ export default defineConfig({
   },
   migrations: {
     path: "prisma/migrations",
+    // `npx prisma db seed` 用（Prisma 7以降はここで設定）
+    seed: "tsx prisma/seed.ts",
   },
   // prisma generate時にはデータベース接続は不要
   // DATABASE_URLは実行時に環境変数から取得される
