@@ -108,28 +108,6 @@ export async function POST(request: NextRequest) {
       actualRates,
       expectedRates,
     });
-
-    /*
-    // 設定確率（旧）
-    const expectedRates = {
-      FIRST_PRIZE: (gachaType.firstPrizeWeight / totalWeight) * 100,
-      SECOND_PRIZE: (gachaType.secondPrizeWeight / totalWeight) * 100,
-      THIRD_PRIZE: (gachaType.thirdPrizeWeight / totalWeight) * 100,
-      FOURTH_PRIZE: (gachaType.fourthPrizeWeight / totalWeight) * 100,
-      FIFTH_PRIZE: (gachaType.fifthPrizeWeight / totalWeight) * 100,
-      LOSER: (gachaType.loserWeight / totalWeight) * 100,
-    };
-    */
-
-    return NextResponse.json({
-      gachaTypeId,
-      gachaTypeName: gachaType.name,
-      iterations,
-      totalWeight,
-      results,
-      actualRates,
-      expectedRates,
-    });
   } catch (error) {
     console.error('シミュレータ実行エラー:', error);
     return NextResponse.json(

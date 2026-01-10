@@ -47,8 +47,8 @@ export async function GET(
         _count: {
           select: {
             gachaHistories: true,
-            referralHistoriesAsReferrer: true,
-            referralHistoriesAsReferee: true,
+            referralUsersAsReferrer: true,
+            referralUsersAsReferee: true,
             freeGachaHistories: true,
           },
         },

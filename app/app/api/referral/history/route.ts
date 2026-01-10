@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
       count,
       history: history.map((h) => ({
         id: h.id,
-        refereeId: h.refereeId,
-        referee: h.referee,
+        refereeId: h.toUserId,
+        referee: h.toUser,
         completedAt: h.completedAt,
-        refereeTotalSpent: h.refereeTotalSpent,
-        refereeGachaCount: h.refereeGachaCount,
-        refereeLastActiveAt: h.refereeLastActiveAt,
+        refereeTotalSpent: h.refereeActivity?.totalSpent || 0,
+        refereeGachaCount: h.refereeActivity?.gachaCount || 0,
+        refereeLastActiveAt: h.refereeActivity?.lastActiveAt || null,
         additionalRewardGranted: h.additionalRewardGranted,
       })),
     });

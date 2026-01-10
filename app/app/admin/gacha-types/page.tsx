@@ -1891,7 +1891,7 @@ export default function GachaTypesPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={addPrize}
+                              onClick={() => addPrize()}
                               className="rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600"
                             >
                               + 等級を追加

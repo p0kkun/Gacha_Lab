@@ -120,8 +120,6 @@ export async function POST(request: NextRequest) {
       thirdPrizeHands,
       fourthPrizeHands,
       fifthPrizeHands,
-      commonVideoIds,
-      rarityVideoIds,
       prizeWeights,
       prizeHands,
       prizeOrder,
@@ -204,13 +202,6 @@ export async function POST(request: NextRequest) {
             ? fourthPrizeHands
             : [],
           fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
-          // legacy（動画旧カラム）: いったん保持（別PRで削除）
-          commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
-          rarityVideoIds: rarityVideoIds
-            ? typeof rarityVideoIds === "string"
-              ? JSON.parse(rarityVideoIds)
-              : rarityVideoIds
-            : null,
           // legacy（JSON確率）: いったん保持
           prizeWeights: prizeWeights
             ? typeof prizeWeights === "string"
@@ -254,12 +245,6 @@ export async function POST(request: NextRequest) {
             ? fourthPrizeHands
             : [],
           fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
-          commonVideoIds: Array.isArray(commonVideoIds) ? commonVideoIds : [],
-          rarityVideoIds: rarityVideoIds
-            ? typeof rarityVideoIds === "string"
-              ? JSON.parse(rarityVideoIds)
-              : rarityVideoIds
-            : null,
           prizeWeights: prizeWeights
             ? typeof prizeWeights === "string"
               ? JSON.parse(prizeWeights)

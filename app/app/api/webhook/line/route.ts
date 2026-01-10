@@ -209,7 +209,7 @@ async function sendGachaSelectionCard(
             label: 'このガチャを引く',
             uri: getLiffUrl({
               action: 'gacha',
-              gachaTypeId: gachaType.id,
+              gachaTypeId: String(gachaType.id),
             }),
           } as URIAction,
         ],

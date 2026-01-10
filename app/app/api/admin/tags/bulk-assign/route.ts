@@ -106,18 +106,15 @@ export async function POST(request: NextRequest) {
 
       // 最小紹介人数
       if (minReferralCount !== undefined && minReferralCount > 0) {
-        const referralCounts = await prisma.referralHistory.groupBy({
-          by: ['referrerId'],
-          where: {
-            status: 'COMPLETED',
-          },
+        const referralCounts = await prisma.referralUser.groupBy({
+          by: ['userId'],
           _count: {
-            refereeId: true,
+            toUserId: true,
           },
         });
         const userIds = referralCounts
-          .filter((r) => (r._count.refereeId || 0) >= minReferralCount)
-          .map((r) => r.referrerId);
+          .filter((r) => (r._count.toUserId || 0) >= minReferralCount)
+          .map((r) => r.userId);
         userIdSets.push(new Set(userIds));
       }
 

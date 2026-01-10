@@ -216,7 +216,7 @@ export async function DELETE(
     const videoId = parseInt(id);
 
     // 削除前のデータを取得
-    const video = await prisma.gachaVideo.findUnique({
+    const video = await prisma.videoAsset.findUnique({
       where: { id: videoId },
     });
 
@@ -369,18 +369,18 @@ export async function DELETE(
       const allGachaTypes = await prisma.gachaType.findMany();
       const gachaTypes = allGachaTypes.filter((gt) => {
         // 共通動画に含まれているか確認
-        if (gt.commonVideoIds && Array.isArray(gt.commonVideoIds) && gt.commonVideoIds.includes(videoId)) {
+        if (gt.commonVideoAssetIds && Array.isArray(gt.commonVideoAssetIds) && gt.commonVideoAssetIds.includes(videoId)) {
           return true;
         }
         // 等級別動画に含まれているか確認
-        if (gt.rarityVideoIds) {
+        if (gt.tierVideoAssetIds) {
           try {
-            const rarityVideoIdsObj = typeof gt.rarityVideoIds === 'string'
-              ? JSON.parse(gt.rarityVideoIds)
-              : gt.rarityVideoIds;
-            if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
-              for (const rarity in rarityVideoIdsObj) {
-                if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+            const tierVideoAssetIdsObj = typeof gt.tierVideoAssetIds === 'string'
+              ? JSON.parse(gt.tierVideoAssetIds)
+              : gt.tierVideoAssetIds;
+            if (typeof tierVideoAssetIdsObj === 'object' && tierVideoAssetIdsObj !== null) {
+              for (const tier in tierVideoAssetIdsObj) {
+                if (Array.isArray(tierVideoAssetIdsObj[tier]) && tierVideoAssetIdsObj[tier].includes(videoId)) {
                   return true;
                 }
               }

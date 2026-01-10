@@ -40,7 +40,7 @@ export default function FreeGachaSettingsPage() {
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     message: string;
-    changes?: Array<{ field: string; from: string; to: string }>;
+    changes?: Array<{ label: string; from: string; to: string }>;
   }>({ isOpen: false, message: "" });
 
   useEffect(() => {
@@ -98,19 +98,19 @@ export default function FreeGachaSettingsPage() {
   const handleSave = () => {
     if (!settings) return;
 
-    const changes: Array<{ field: string; from: string; to: string }> = [];
+    const changes: Array<{ label: string; from: string; to: string }> = [];
 
     // 変更内容を記録
     if (settings.isEnabled !== formData.isEnabled) {
       changes.push({
-        field: "無料ガチャ機能",
+        label: "無料ガチャ機能",
         from: settings.isEnabled ? "有効" : "無効",
         to: formData.isEnabled ? "有効" : "無効",
       });
     }
     if (settings.grantOnReferralComplete !== formData.grantOnReferralComplete) {
       changes.push({
-        field: "紹介成立時のガチャ付与",
+        label: "紹介成立時のガチャ付与",
         from: settings.grantOnReferralComplete ? "有効" : "無効",
         to: formData.grantOnReferralComplete ? "有効" : "無効",
       });
@@ -124,7 +124,7 @@ export default function FreeGachaSettingsPage() {
     );
     if (oldReferrerGachaType?.code !== formData.referrerGachaTypeCode) {
       changes.push({
-        field: "紹介者用ガチャタイプ",
+        label: "紹介者用ガチャタイプ",
         from: oldReferrerGachaType?.name || "未設定",
         to: referrerGachaType?.name || "未設定",
       });
@@ -138,7 +138,7 @@ export default function FreeGachaSettingsPage() {
     );
     if (oldRefereeGachaType?.code !== formData.refereeGachaTypeCode) {
       changes.push({
-        field: "被紹介者用ガチャタイプ",
+        label: "被紹介者用ガチャタイプ",
         from: oldRefereeGachaType?.name || "未設定",
         to: refereeGachaType?.name || "未設定",
       });
@@ -146,7 +146,7 @@ export default function FreeGachaSettingsPage() {
 
     if (settings.expirationDays !== formData.expirationDays) {
       changes.push({
-        field: "有効期限（日数）",
+        label: "有効期限（日数）",
         from: settings.expirationDays?.toString() || "無期限",
         to: formData.expirationDays?.toString() || "無期限",
       });
@@ -217,19 +217,25 @@ export default function FreeGachaSettingsPage() {
     <AdminLayout>
       <div className="p-6">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">
-            無料ガチャ設定
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-800">無料ガチャ設定</h1>
         </div>
 
         {error && (
-          <Alert variant="error" className="mb-4" onClose={() => setError(null)}>
+          <Alert
+            variant="error"
+            className="mb-4"
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
 
         {success && (
-          <Alert variant="success" className="mb-4" onClose={() => setSuccess(null)}>
+          <Alert
+            variant="success"
+            className="mb-4"
+            onClose={() => setSuccess(null)}
+          >
             {success}
           </Alert>
         )}
@@ -290,8 +296,7 @@ export default function FreeGachaSettingsPage() {
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            referrerGachaTypeCode:
-                              e.target.value || null,
+                            referrerGachaTypeCode: e.target.value || null,
                           })
                         }
                         options={[
@@ -377,15 +382,13 @@ export default function FreeGachaSettingsPage() {
 
       <ConfirmModal
         isOpen={confirmModal.isOpen}
+        title="設定の保存"
         message={confirmModal.message}
         changes={confirmModal.changes}
         onConfirm={handleConfirmSave}
         onCancel={() => setConfirmModal({ isOpen: false, message: "" })}
-        variant="primary"
+        variant="info"
       />
     </AdminLayout>
   );
 }
-
-
-

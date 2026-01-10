@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 type UserItem = {
   id: number;
@@ -47,7 +47,7 @@ export default function ItemDetail({
   };
 
   // MarkdownリンクをHTMLに変換
-  const renderDescription = (text: string | null): JSX.Element => {
+  const renderDescription = (text: string | null): React.ReactElement => {
     if (!text) {
       // 説明文がない場合はアイテム名から生成（後方互換性）
       const fallback = getItemDescription(userItem.item.name, userItem.item.rarity);
@@ -56,7 +56,7 @@ export default function ItemDetail({
 
     // Markdownリンク [テキスト](URL) を検出して変換
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts: (string | JSX.Element)[] = [];
+    const parts: (string | React.ReactElement)[] = [];
     let lastIndex = 0;
     let match;
 
