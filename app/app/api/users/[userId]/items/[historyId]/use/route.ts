@@ -34,15 +34,20 @@ export async function POST(
     }
 
     // 既に使用済みの場合はエラー（ItemUsageLogで判定）
-    const existingUsage = await prisma.itemUsageLog.findFirst({
-      where: { gachaHistoryId: historyIdNum },
-      select: { id: true, usedAt: true },
-    });
-    if (existingUsage) {
-      return NextResponse.json(
-        { error: 'このアイテムは既に使用済みです' },
-        { status: 400 }
-      );
+    if (history.itemId) {
+      const existingUsage = await prisma.itemUsageLog.findFirst({
+        where: {
+          userId: userId,
+          itemId: history.itemId,
+        },
+        select: { id: true, usedAt: true },
+      });
+      if (existingUsage) {
+        return NextResponse.json(
+          { error: 'このアイテムは既に使用済みです' },
+          { status: 400 }
+        );
+      }
     }
 
     // 使用可能期間のチェック（任意設定）
@@ -62,40 +67,56 @@ export async function POST(
       );
     }
 
+    if (!history.itemId) {
+      return NextResponse.json(
+        { error: 'アイテムIDが見つかりません' },
+        { status: 400 }
+      );
+    }
+
     // 使用ログを作成（ItemUsageLog）
-    const created = await prisma.itemUsageLog.create({
+    await prisma.itemUsageLog.create({
       data: {
-        gachaHistoryId: historyIdNum,
+        userId: userId,
+        itemId: history.itemId,
         usedAt: new Date(),
       },
+    });
+
+    // ガチャ履歴からアイテム情報を再取得
+    const historyWithItem = await prisma.gachaHistory.findFirst({
+      where: {
+        id: historyIdNum,
+        userId: userId,
+      },
       include: {
-        gachaHistory: {
+        item: {
           select: {
             id: true,
-            createdAt: true,
-            tierCode: true,
-            item: {
-              select: {
-                id: true,
-                name: true,
-                usageType: true,
-                imageUrl: true,
-                useStartAt: true,
-                useEndAt: true,
-              },
-            },
+            name: true,
+            usageType: true,
+            imageUrl: true,
+            useStartAt: true,
+            useEndAt: true,
           },
         },
       },
     });
 
+    if (!historyWithItem || !historyWithItem.item) {
+      return NextResponse.json(
+        { error: 'アイテム情報の取得に失敗しました' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       item: {
-        id: created.gachaHistory.id,
-        item: created.gachaHistory.item,
-        createdAt: created.gachaHistory.createdAt,
-        usedAt: created.usedAt.toISOString(),
+        id: historyWithItem.id,
+        item: historyWithItem.item,
+        createdAt: historyWithItem.createdAt,
+        usedAt: new Date().toISOString(),
       },
     });
   } catch (error) {

@@ -115,43 +115,51 @@ async function main() {
     update: {
       name: "通常ガチャ",
       description: "通常のガチャです",
-      resultMessageTemplateId: defaultTemplate.id,
-      firstPrizeWeight: 1, // 1%
-      secondPrizeWeight: 2, // 2%
-      thirdPrizeWeight: 5, // 5%
-      fourthPrizeWeight: 10, // 10%
-      fifthPrizeWeight: 20, // 20%
-      loserWeight: 62, // 62%
-      // デフォルトの役設定（配列形式）
-      firstPrizeHands: [HandRank.ROYAL_FLUSH],      // 1等: ロイヤルフラッシュ（最強）
-      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],  // 2等: ストレートフラッシュ
-      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],   // 3等: フォーカード
-      fourthPrizeHands: [HandRank.FULL_HOUSE],      // 4等: フルハウス
-      fifthPrizeHands: [HandRank.FLUSH],            // 5等: フラッシュ
-      // ハズレは上位の当たりに設定されていない役すべてが対象
+      resultMessageTemplate: {
+        connect: { id: defaultTemplate.id },
+      },
+      prizeWeights: {
+        FIRST_PRIZE: 1,
+        SECOND_PRIZE: 2,
+        THIRD_PRIZE: 5,
+        FOURTH_PRIZE: 10,
+        FIFTH_PRIZE: 20,
+        LOSER: 62,
+      },
+      prizeHands: {
+        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
+        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
+        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
+        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
+        FIFTH_PRIZE: [HandRank.FLUSH],
+      },
       isActive: true,
-      // 開始・終了日時をnullに設定（期間制限なし）
       startAt: null,
       endAt: null,
-      // ポイントコストを設定（デフォルト: 100ポイント）
       pointCost: 100,
     },
     create: {
       code: "normal",
       name: "通常ガチャ",
       description: "通常のガチャです",
-      resultMessageTemplateId: defaultTemplate.id,
-      firstPrizeWeight: 1,
-      secondPrizeWeight: 2,
-      thirdPrizeWeight: 5,
-      fourthPrizeWeight: 10,
-      fifthPrizeWeight: 20,
-      loserWeight: 62,
-      firstPrizeHands: [HandRank.ROYAL_FLUSH],
-      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],
-      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],
-      fourthPrizeHands: [HandRank.FULL_HOUSE],
-      fifthPrizeHands: [HandRank.FLUSH],
+      resultMessageTemplate: {
+        connect: { id: defaultTemplate.id },
+      },
+      prizeWeights: {
+        FIRST_PRIZE: 1,
+        SECOND_PRIZE: 2,
+        THIRD_PRIZE: 5,
+        FOURTH_PRIZE: 10,
+        FIFTH_PRIZE: 20,
+        LOSER: 62,
+      },
+      prizeHands: {
+        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
+        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
+        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
+        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
+        FIFTH_PRIZE: [HandRank.FLUSH],
+      },
       isActive: true,
       startAt: null,
       endAt: null,
@@ -164,43 +172,51 @@ async function main() {
     update: {
       name: "プレミアムガチャ",
       description: "プレミアムガチャです",
-      resultMessageTemplateId: defaultTemplate.id,
-      firstPrizeWeight: 3, // 3%
-      secondPrizeWeight: 5, // 5%
-      thirdPrizeWeight: 10, // 10%
-      fourthPrizeWeight: 15, // 15%
-      fifthPrizeWeight: 25, // 25%
-      loserWeight: 42, // 42%
-      // デフォルトの役設定（配列形式）
-      firstPrizeHands: [HandRank.ROYAL_FLUSH],      // 1等: ロイヤルフラッシュ（最強）
-      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],  // 2等: ストレートフラッシュ
-      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],   // 3等: フォーカード
-      fourthPrizeHands: [HandRank.FULL_HOUSE],      // 4等: フルハウス
-      fifthPrizeHands: [HandRank.FLUSH],            // 5等: フラッシュ
-      // ハズレは上位の当たりに設定されていない役すべてが対象
+      resultMessageTemplate: {
+        connect: { id: defaultTemplate.id },
+      },
+      prizeWeights: {
+        FIRST_PRIZE: 3,
+        SECOND_PRIZE: 5,
+        THIRD_PRIZE: 10,
+        FOURTH_PRIZE: 15,
+        FIFTH_PRIZE: 25,
+        LOSER: 42,
+      },
+      prizeHands: {
+        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
+        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
+        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
+        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
+        FIFTH_PRIZE: [HandRank.FLUSH],
+      },
       isActive: true,
-      // 開始・終了日時をnullに設定（期間制限なし）
       startAt: null,
       endAt: null,
-      // ポイントコストを設定（デフォルト: 300ポイント）
       pointCost: 300,
     },
     create: {
       code: "premium",
       name: "プレミアムガチャ",
       description: "プレミアムガチャです",
-      resultMessageTemplateId: defaultTemplate.id,
-      firstPrizeWeight: 3,
-      secondPrizeWeight: 5,
-      thirdPrizeWeight: 10,
-      fourthPrizeWeight: 15,
-      fifthPrizeWeight: 25,
-      loserWeight: 42,
-      firstPrizeHands: [HandRank.ROYAL_FLUSH],
-      secondPrizeHands: [HandRank.STRAIGHT_FLUSH],
-      thirdPrizeHands: [HandRank.FOUR_OF_A_KIND],
-      fourthPrizeHands: [HandRank.FULL_HOUSE],
-      fifthPrizeHands: [HandRank.FLUSH],
+      resultMessageTemplate: {
+        connect: { id: defaultTemplate.id },
+      },
+      prizeWeights: {
+        FIRST_PRIZE: 3,
+        SECOND_PRIZE: 5,
+        THIRD_PRIZE: 10,
+        FOURTH_PRIZE: 15,
+        FIFTH_PRIZE: 25,
+        LOSER: 42,
+      },
+      prizeHands: {
+        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
+        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
+        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
+        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
+        FIFTH_PRIZE: [HandRank.FLUSH],
+      },
       isActive: true,
       startAt: null,
       endAt: null,
@@ -346,7 +362,7 @@ async function main() {
   if (!existingFreeGachaSettings) {
     await prisma.freeGachaSettings.create({
       data: {
-        isEnabled: false,
+        isActive: false,
         grantOnReferralComplete: false,
         referrerGachaTypeId: null,
         refereeGachaTypeId: null,

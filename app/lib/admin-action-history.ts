@@ -7,8 +7,8 @@ import { AdminActionType } from './admin-action-types';
  */
 export async function recordAdminAction(params: {
   actionType: AdminActionType;
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   targetUserId?: string;
   targetUserIds?: string[];
   description: string;
@@ -18,10 +18,13 @@ export async function recordAdminAction(params: {
     await prisma.adminActionHistory.create({
       data: {
         actionType: params.actionType,
-        adminUserId: params.adminUserId || null,
-        adminName: params.adminName || null,
-        targetUserId: params.targetUserId || null,
-        targetUserIds: params.targetUserIds && params.targetUserIds.length > 0 ? params.targetUserIds : Prisma.JsonNull,
+        adminUserId: params.adminUserId,
+        adminName: params.adminName,
+        targetUserIds: params.targetUserIds && params.targetUserIds.length > 0 
+          ? (params.targetUserIds as Prisma.InputJsonValue)
+          : params.targetUserId 
+            ? ([params.targetUserId] as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
         description: params.description,
         metadata: params.metadata ? (params.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
@@ -36,8 +39,8 @@ export async function recordAdminAction(params: {
  * ポイント付与の履歴を記録
  */
 export async function recordPointGrantAction(params: {
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   targetUserIds: string[];
   amount: number;
   pointType: 'PAID' | 'FREE';
@@ -62,8 +65,8 @@ export async function recordPointGrantAction(params: {
  * メッセージ配信の履歴を記録
  */
 export async function recordMessageSendAction(params: {
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   targetUserIds: string[];
   message: string;
   tagIds?: number[];
@@ -86,8 +89,8 @@ export async function recordMessageSendAction(params: {
  * タグ付与の履歴を記録
  */
 export async function recordTagAssignAction(params: {
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   targetUserIds: string[];
   tagId: number;
   tagName: string;
@@ -112,8 +115,8 @@ export async function recordTagAssignAction(params: {
  * ガチャ確率変更の履歴を記録
  */
 export async function recordGachaProbabilityUpdateAction(params: {
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   gachaTypeId: string;
   gachaTypeName: string;
   oldProbabilities?: Record<string, number>;
@@ -137,8 +140,8 @@ export async function recordGachaProbabilityUpdateAction(params: {
  * 動画アップロードの履歴を記録
  */
 export async function recordVideoUploadAction(params: {
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   videoId: number;
   videoType: string;
   rarity?: string | null;
@@ -169,8 +172,8 @@ export async function recordVideoUploadAction(params: {
  * 動画更新の履歴を記録
  */
 export async function recordVideoUpdateAction(params: {
-  adminUserId?: string;
-  adminName?: string;
+  adminUserId: string;
+  adminName: string;
   videoId: number;
   videoType: string;
   rarity?: string | null;
@@ -206,6 +209,9 @@ export async function recordVideoDeleteAction(params: {
   rarity?: string | null;
   fileName: string;
 }) {
+  if (!params.adminUserId || !params.adminName) {
+    throw new Error('adminUserId と adminName は必須です');
+  }
   const rarityLabel = params.rarity 
     ? `（${params.rarity}）`
     : '';

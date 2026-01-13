@@ -2,9 +2,6 @@
 CREATE TYPE "ReferralStatus" AS ENUM ('PENDING', 'COMPLETED', 'INVALID', 'FRAUD');
 
 -- CreateEnum
-CREATE TYPE "FreeGachaGrantType" AS ENUM ('REFERRER', 'REFEREE');
-
--- CreateEnum
 CREATE TYPE "PointTransactionType" AS ENUM ('PURCHASE', 'CONSUME', 'GRANT', 'REFUND', 'REFERRAL_REWARD');
 
 -- CreateEnum
@@ -24,6 +21,12 @@ CREATE TYPE "ItemUsageType" AS ENUM ('IMAGE', 'SHOW_TO_STAFF');
 
 -- CreateEnum
 CREATE TYPE "PointType" AS ENUM ('PAID', 'FREE');
+
+-- CreateEnum
+CREATE TYPE "UserItemStatus" AS ENUM ('UNUSED', 'USED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "PrizeRewardType" AS ENUM ('ITEM', 'POINTS');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -46,7 +49,6 @@ CREATE TABLE "gacha_items" (
     "description" TEXT,
     "imageUrl" TEXT,
     "usageType" "ItemUsageType" NOT NULL DEFAULT 'IMAGE',
-    "grantFreePoints" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "useStartAt" TIMESTAMP(3),
     "useEndAt" TIMESTAMP(3),
@@ -69,20 +71,9 @@ CREATE TABLE "gacha_types" (
     "pointCost" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "firstPrizeWeight" INTEGER NOT NULL DEFAULT 0,
-    "secondPrizeWeight" INTEGER NOT NULL DEFAULT 0,
-    "thirdPrizeWeight" INTEGER NOT NULL DEFAULT 0,
-    "fourthPrizeWeight" INTEGER NOT NULL DEFAULT 0,
-    "fifthPrizeWeight" INTEGER NOT NULL DEFAULT 0,
-    "loserWeight" INTEGER NOT NULL DEFAULT 0,
     "prizeWeights" JSONB,
     "prizeHands" JSONB,
     "prizeOrder" JSONB,
-    "firstPrizeHands" "HandRank"[] DEFAULT ARRAY[]::"HandRank"[],
-    "secondPrizeHands" "HandRank"[] DEFAULT ARRAY[]::"HandRank"[],
-    "thirdPrizeHands" "HandRank"[] DEFAULT ARRAY[]::"HandRank"[],
-    "fourthPrizeHands" "HandRank"[] DEFAULT ARRAY[]::"HandRank"[],
-    "fifthPrizeHands" "HandRank"[] DEFAULT ARRAY[]::"HandRank"[],
     "commonVideoAssetIds" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "tierVideoAssetIds" JSONB,
     "useDefaultVideos" BOOLEAN NOT NULL DEFAULT true,
@@ -96,7 +87,7 @@ CREATE TABLE "gacha_histories" (
     "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "gachaTypeId" INTEGER NOT NULL,
-    "itemId" INTEGER NOT NULL,
+    "itemId" INTEGER,
     "tierCode" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "pointsUsed" INTEGER NOT NULL DEFAULT 0,
@@ -107,7 +98,8 @@ CREATE TABLE "gacha_histories" (
 -- CreateTable
 CREATE TABLE "item_usage_logs" (
     "id" SERIAL NOT NULL,
-    "gachaHistoryId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
+    "itemId" INTEGER NOT NULL,
     "usedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -115,11 +107,25 @@ CREATE TABLE "item_usage_logs" (
 );
 
 -- CreateTable
+CREATE TABLE "user_items" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "itemId" INTEGER NOT NULL,
+    "status" "UserItemStatus" NOT NULL DEFAULT 'UNUSED',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "gacha_prize_assignments" (
     "id" SERIAL NOT NULL,
     "gachaTypeId" INTEGER NOT NULL,
     "tierCode" TEXT NOT NULL,
-    "itemId" INTEGER NOT NULL,
+    "itemId" INTEGER,
+    "rewardType" "PrizeRewardType" NOT NULL DEFAULT 'ITEM',
+    "points" INTEGER NOT NULL DEFAULT 0,
     "weight" INTEGER NOT NULL DEFAULT 1,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -135,6 +141,7 @@ CREATE TABLE "referrals" (
     "referralLinkId" TEXT NOT NULL,
     "referralLink" TEXT NOT NULL,
     "status" "ReferralStatus" NOT NULL DEFAULT 'PENDING',
+    "expiresAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -166,7 +173,6 @@ CREATE TABLE "referral_users" (
     "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "toUserId" TEXT NOT NULL,
-    "referralId" INTEGER NOT NULL,
     "completedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "additionalRewardGranted" BOOLEAN NOT NULL DEFAULT false,
     "additionalRewardGrantedAt" TIMESTAMP(3),
@@ -177,32 +183,16 @@ CREATE TABLE "referral_users" (
 );
 
 -- CreateTable
-CREATE TABLE "referee_activities" (
-    "id" SERIAL NOT NULL,
-    "referralUserId" INTEGER NOT NULL,
-    "gachaCount" INTEGER NOT NULL DEFAULT 0,
-    "totalSpent" INTEGER NOT NULL DEFAULT 0,
-    "lastActiveAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "referee_activities_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "free_gacha_histories" (
+CREATE TABLE "user_activities" (
     "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
-    "referralUserId" INTEGER,
-    "gachaTypeId" INTEGER NOT NULL,
-    "grantType" "FreeGachaGrantType" NOT NULL,
-    "isUsed" BOOLEAN NOT NULL DEFAULT false,
-    "usedAt" TIMESTAMP(3),
-    "expiresAt" TIMESTAMP(3),
+    "gachaCount" INTEGER NOT NULL DEFAULT 0,
+    "totalSpent" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "referralUserId" INTEGER,
 
-    CONSTRAINT "free_gacha_histories_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "user_activities_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -214,10 +204,11 @@ CREATE TABLE "point_histories" (
     "balanceBefore" INTEGER NOT NULL DEFAULT 0,
     "balanceAfter" INTEGER NOT NULL,
     "description" TEXT,
-    "stripePaymentId" TEXT,
-    "purchaseLogId" INTEGER,
-    "gachaHistoryId" INTEGER,
+    "historyTable" TEXT,
+    "historyTableId" INTEGER,
+    "paymentMethod" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "point_histories_pkey" PRIMARY KEY ("id")
 );
@@ -243,9 +234,8 @@ CREATE TABLE "point_purchase_logs" (
 CREATE TABLE "admin_action_histories" (
     "id" SERIAL NOT NULL,
     "actionType" TEXT NOT NULL,
-    "adminUserId" TEXT,
-    "adminName" TEXT,
-    "targetUserId" TEXT,
+    "adminUserId" TEXT NOT NULL,
+    "adminName" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -274,6 +264,7 @@ CREATE TABLE "video_asset_categories" (
     "assetId" INTEGER NOT NULL,
     "category" "VideoCategoryType" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "video_asset_categories_pkey" PRIMARY KEY ("id")
 );
@@ -307,14 +298,14 @@ CREATE TABLE "gacha_tier_weights" (
 
 -- CreateTable
 CREATE TABLE "user_point_balances" (
+    "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "paidAmount" INTEGER NOT NULL DEFAULT 0,
     "freeAmount" INTEGER NOT NULL DEFAULT 0,
-    "expiresAt" TIMESTAMP(3),
-    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "user_point_balances_pkey" PRIMARY KEY ("userId")
+    CONSTRAINT "user_point_balances_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -380,7 +371,7 @@ CREATE TABLE "result_message_templates" (
 -- CreateTable
 CREATE TABLE "free_gacha_settings" (
     "id" SERIAL NOT NULL,
-    "isEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "grantOnReferralComplete" BOOLEAN NOT NULL DEFAULT true,
     "referrerGachaTypeId" INTEGER,
     "refereeGachaTypeId" INTEGER,
@@ -413,6 +404,9 @@ CREATE UNIQUE INDEX "gacha_types_code_key" ON "gacha_types"("code");
 CREATE INDEX "gacha_types_isActive_idx" ON "gacha_types"("isActive");
 
 -- CreateIndex
+CREATE INDEX "gacha_types_isActive_startAt_endAt_idx" ON "gacha_types"("isActive", "startAt", "endAt");
+
+-- CreateIndex
 CREATE INDEX "gacha_histories_userId_createdAt_idx" ON "gacha_histories"("userId", "createdAt");
 
 -- CreateIndex
@@ -428,10 +422,22 @@ CREATE INDEX "gacha_histories_createdAt_idx" ON "gacha_histories"("createdAt");
 CREATE INDEX "gacha_histories_tierCode_idx" ON "gacha_histories"("tierCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "item_usage_logs_gachaHistoryId_key" ON "item_usage_logs"("gachaHistoryId");
+CREATE INDEX "item_usage_logs_userId_usedAt_idx" ON "item_usage_logs"("userId", "usedAt");
+
+-- CreateIndex
+CREATE INDEX "item_usage_logs_itemId_idx" ON "item_usage_logs"("itemId");
 
 -- CreateIndex
 CREATE INDEX "item_usage_logs_usedAt_idx" ON "item_usage_logs"("usedAt");
+
+-- CreateIndex
+CREATE INDEX "user_items_userId_status_idx" ON "user_items"("userId", "status");
+
+-- CreateIndex
+CREATE INDEX "user_items_itemId_idx" ON "user_items"("itemId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_items_userId_itemId_key" ON "user_items"("userId", "itemId");
 
 -- CreateIndex
 CREATE INDEX "gacha_prize_assignments_gachaTypeId_tierCode_isActive_idx" ON "gacha_prize_assignments"("gachaTypeId", "tierCode", "isActive");
@@ -440,19 +446,10 @@ CREATE INDEX "gacha_prize_assignments_gachaTypeId_tierCode_isActive_idx" ON "gac
 CREATE UNIQUE INDEX "gacha_prize_assignments_gachaTypeId_tierCode_itemId_key" ON "gacha_prize_assignments"("gachaTypeId", "tierCode", "itemId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "referrals_userId_key" ON "referrals"("userId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "referrals_referralLinkId_key" ON "referrals"("referralLinkId");
 
 -- CreateIndex
 CREATE INDEX "referrals_userId_idx" ON "referrals"("userId");
-
--- CreateIndex
-CREATE INDEX "referrals_referralLinkId_idx" ON "referrals"("referralLinkId");
-
--- CreateIndex
-CREATE INDEX "referrals_status_idx" ON "referrals"("status");
 
 -- CreateIndex
 CREATE INDEX "referral_histories_referralId_referredAt_idx" ON "referral_histories"("referralId", "referredAt");
@@ -479,31 +476,19 @@ CREATE INDEX "referral_users_userId_completedAt_idx" ON "referral_users"("userId
 CREATE INDEX "referral_users_toUserId_idx" ON "referral_users"("toUserId");
 
 -- CreateIndex
-CREATE INDEX "referral_users_referralId_idx" ON "referral_users"("referralId");
-
--- CreateIndex
 CREATE INDEX "referral_users_additionalRewardGranted_idx" ON "referral_users"("additionalRewardGranted");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "referral_users_userId_toUserId_key" ON "referral_users"("userId", "toUserId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "referee_activities_referralUserId_key" ON "referee_activities"("referralUserId");
+CREATE UNIQUE INDEX "user_activities_userId_key" ON "user_activities"("userId");
 
 -- CreateIndex
-CREATE INDEX "referee_activities_referralUserId_idx" ON "referee_activities"("referralUserId");
+CREATE UNIQUE INDEX "user_activities_referralUserId_key" ON "user_activities"("referralUserId");
 
 -- CreateIndex
-CREATE INDEX "free_gacha_histories_userId_isUsed_idx" ON "free_gacha_histories"("userId", "isUsed");
-
--- CreateIndex
-CREATE INDEX "free_gacha_histories_referralUserId_idx" ON "free_gacha_histories"("referralUserId");
-
--- CreateIndex
-CREATE INDEX "free_gacha_histories_expiresAt_idx" ON "free_gacha_histories"("expiresAt");
-
--- CreateIndex
-CREATE INDEX "free_gacha_histories_gachaTypeId_idx" ON "free_gacha_histories"("gachaTypeId");
+CREATE INDEX "user_activities_userId_idx" ON "user_activities"("userId");
 
 -- CreateIndex
 CREATE INDEX "point_histories_userId_createdAt_idx" ON "point_histories"("userId", "createdAt");
@@ -512,10 +497,7 @@ CREATE INDEX "point_histories_userId_createdAt_idx" ON "point_histories"("userId
 CREATE INDEX "point_histories_transactionType_idx" ON "point_histories"("transactionType");
 
 -- CreateIndex
-CREATE INDEX "point_histories_stripePaymentId_idx" ON "point_histories"("stripePaymentId");
-
--- CreateIndex
-CREATE INDEX "point_histories_gachaHistoryId_idx" ON "point_histories"("gachaHistoryId");
+CREATE INDEX "point_histories_historyTable_historyTableId_idx" ON "point_histories"("historyTable", "historyTableId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "point_purchase_logs_providerPaymentIntentId_key" ON "point_purchase_logs"("providerPaymentIntentId");
@@ -534,9 +516,6 @@ CREATE INDEX "admin_action_histories_adminUserId_idx" ON "admin_action_histories
 
 -- CreateIndex
 CREATE INDEX "admin_action_histories_createdAt_idx" ON "admin_action_histories"("createdAt");
-
--- CreateIndex
-CREATE INDEX "admin_action_histories_targetUserId_idx" ON "admin_action_histories"("targetUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "video_assets_s3Key_key" ON "video_assets"("s3Key");
@@ -566,7 +545,10 @@ CREATE INDEX "gacha_tier_weights_gachaTypeId_displayOrder_idx" ON "gacha_tier_we
 CREATE UNIQUE INDEX "gacha_tier_weights_gachaTypeId_tierCode_key" ON "gacha_tier_weights"("gachaTypeId", "tierCode");
 
 -- CreateIndex
-CREATE INDEX "user_point_balances_expiresAt_idx" ON "user_point_balances"("expiresAt");
+CREATE UNIQUE INDEX "user_point_balances_userId_key" ON "user_point_balances"("userId");
+
+-- CreateIndex
+CREATE INDEX "user_point_balances_userId_idx" ON "user_point_balances"("userId");
 
 -- CreateIndex
 CREATE INDEX "point_purchase_plans_isActive_displayOrder_idx" ON "point_purchase_plans"("isActive", "displayOrder");
@@ -581,7 +563,7 @@ CREATE UNIQUE INDEX "tags_name_key" ON "tags"("name");
 CREATE INDEX "tags_name_idx" ON "tags"("name");
 
 -- CreateIndex
-CREATE INDEX "user_tags_tagId_idx" ON "user_tags"("tagId");
+CREATE INDEX "user_tags_tagId_userId_idx" ON "user_tags"("tagId", "userId");
 
 -- CreateIndex
 CREATE INDEX "user_tags_userId_idx" ON "user_tags"("userId");
@@ -602,16 +584,16 @@ ALTER TABLE "gacha_types" ADD CONSTRAINT "gacha_types_resultMessageTemplateId_fk
 ALTER TABLE "gacha_histories" ADD CONSTRAINT "gacha_histories_gachaTypeId_fkey" FOREIGN KEY ("gachaTypeId") REFERENCES "gacha_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "gacha_histories" ADD CONSTRAINT "gacha_histories_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "gacha_histories" ADD CONSTRAINT "gacha_histories_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "gacha_histories" ADD CONSTRAINT "gacha_histories_tierCode_fkey" FOREIGN KEY ("tierCode") REFERENCES "prize_tiers"("code") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "gacha_histories" ADD CONSTRAINT "gacha_histories_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "item_usage_logs" ADD CONSTRAINT "item_usage_logs_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "item_usage_logs" ADD CONSTRAINT "item_usage_logs_gachaHistoryId_fkey" FOREIGN KEY ("gachaHistoryId") REFERENCES "gacha_histories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "user_items" ADD CONSTRAINT "user_items_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_gachaTypeId_fkey" FOREIGN KEY ("gachaTypeId") REFERENCES "gacha_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -620,46 +602,7 @@ ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_ga
 ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_tierCode_fkey" FOREIGN KEY ("tierCode") REFERENCES "prize_tiers"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "referrals" ADD CONSTRAINT "referrals_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "referral_histories" ADD CONSTRAINT "referral_histories_referralId_fkey" FOREIGN KEY ("referralId") REFERENCES "referrals"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "referral_users" ADD CONSTRAINT "referral_users_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "referral_users" ADD CONSTRAINT "referral_users_toUserId_fkey" FOREIGN KEY ("toUserId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "referral_users" ADD CONSTRAINT "referral_users_referralId_fkey" FOREIGN KEY ("referralId") REFERENCES "referrals"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "referee_activities" ADD CONSTRAINT "referee_activities_referralUserId_fkey" FOREIGN KEY ("referralUserId") REFERENCES "referral_users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "free_gacha_histories" ADD CONSTRAINT "free_gacha_histories_referralUserId_fkey" FOREIGN KEY ("referralUserId") REFERENCES "referral_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "free_gacha_histories" ADD CONSTRAINT "free_gacha_histories_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "free_gacha_histories" ADD CONSTRAINT "free_gacha_histories_gachaTypeId_fkey" FOREIGN KEY ("gachaTypeId") REFERENCES "gacha_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "point_histories" ADD CONSTRAINT "point_histories_gachaHistoryId_fkey" FOREIGN KEY ("gachaHistoryId") REFERENCES "gacha_histories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "point_histories" ADD CONSTRAINT "point_histories_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "point_histories" ADD CONSTRAINT "point_histories_purchaseLogId_fkey" FOREIGN KEY ("purchaseLogId") REFERENCES "point_purchase_logs"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "point_purchase_logs" ADD CONSTRAINT "point_purchase_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "video_asset_categories" ADD CONSTRAINT "video_asset_categories_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "video_assets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -671,13 +614,7 @@ ALTER TABLE "gacha_tier_weights" ADD CONSTRAINT "gacha_tier_weights_gachaTypeId_
 ALTER TABLE "gacha_tier_weights" ADD CONSTRAINT "gacha_tier_weights_tierCode_fkey" FOREIGN KEY ("tierCode") REFERENCES "prize_tiers"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_point_balances" ADD CONSTRAINT "user_point_balances_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "user_tags" ADD CONSTRAINT "user_tags_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "tags"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "user_tags" ADD CONSTRAINT "user_tags_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "free_gacha_settings" ADD CONSTRAINT "free_gacha_settings_referrerGachaTypeId_fkey" FOREIGN KEY ("referrerGachaTypeId") REFERENCES "gacha_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -1,24 +1,19 @@
 import { PointTransactionType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
-function calcUnifiedExpiry(from: Date): Date {
-  const d = new Date(from);
-  d.setFullYear(d.getFullYear() + 1);
-  return d;
-}
-
 async function ensureUserPointBalance(userId: string) {
   const existing = await prisma.userPointBalance.findUnique({
     where: { userId },
   });
   if (existing) return existing;
   return await prisma.userPointBalance.create({
-    data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null },
+    data: { userId, paidAmount: 0, freeAmount: 0 },
   });
 }
 
 /**
  * ポイント残高を取得（有効期限切れを考慮）
+ * 有効期限は updatedAt + 1年で計算される
  */
 export async function getPointBalances(userId: string) {
   await ensureUserPointBalance(userId);
@@ -29,40 +24,29 @@ export async function getPointBalances(userId: string) {
   const paid = balance?.paidAmount ?? 0;
   const free = balance?.freeAmount ?? 0;
 
+  // 有効期限は updatedAt + 1年で計算
+  const expiresAt = balance?.updatedAt 
+    ? new Date(balance.updatedAt.getTime() + 365 * 24 * 60 * 60 * 1000)
+    : null;
+
   return {
     paid,
     free,
     total: paid + free,
-    // 後方互換のため paid/free それぞれ返すが、値は同一
-    paidExpiresAt: balance?.expiresAt ?? null,
-    freeExpiresAt: balance?.expiresAt ?? null,
-    lastUpdated: balance?.lastUpdated ?? null,
+    // 有償・無償ともに同じ有効期限（updatedAt + 1年）
+    paidExpiresAt: expiresAt?.toISOString() ?? null,
+    freeExpiresAt: expiresAt?.toISOString() ?? null,
+    lastUpdated: balance?.updatedAt ?? null,
   };
 }
 
 /**
  * 有効期限切れのポイントを0に更新
+ * 注意: スキーマにexpiresAtフィールドがないため、この機能は無効化されています
  */
 async function expirePoints(userId: string) {
-  const now = new Date();
-  const balance = await prisma.userPointBalance.findUnique({ where: { userId } });
-  if (!balance) return;
-
-  const shouldExpire =
-    (balance.paidAmount + balance.freeAmount) > 0 &&
-    balance.expiresAt &&
-    balance.expiresAt <= now;
-  if (!shouldExpire) return;
-
-  await prisma.userPointBalance.update({
-    where: { userId },
-    data: {
-      paidAmount: 0,
-      freeAmount: 0,
-      expiresAt: null,
-      // lastUpdatedは上書きしない（表示用）
-    },
-  });
+  // スキーマにexpiresAtフィールドがないため、何もしない
+  return;
 }
 
 /**
@@ -86,29 +70,25 @@ export async function grantPaidPoints(
     throw new Error('ポイント数は1以上である必要があります');
   }
 
-  // 要件: 有償/無償合計で「最終更新日から1年後」に両方が同時に失効
-  // （有償/無償の切り分け・表示は維持）
+  // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
   const now = new Date();
-  const unifiedExpiresAt = calcUnifiedExpiry(now);
 
   return await prisma.$transaction(async (tx) => {
     // 残高行を確実に作成
     const existing = await tx.userPointBalance.findUnique({ where: { userId } });
     if (!existing) {
       await tx.userPointBalance.create({
-        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
+        data: { userId, paidAmount: 0, freeAmount: 0 },
       });
     }
 
     const beforeTotal = (existing?.paidAmount ?? 0) + (existing?.freeAmount ?? 0);
 
-    // PAIDを加算し、有効期限/最終更新を更新
+    // PAIDを加算
     const updatedBalance = await tx.userPointBalance.update({
       where: { userId },
       data: {
         paidAmount: { increment: amount },
-        expiresAt: unifiedExpiresAt,
-        lastUpdated: now,
       },
     });
 
@@ -130,8 +110,8 @@ export async function grantPaidPoints(
         balanceBefore: beforeTotal,
         balanceAfter: totalBalances,
         description,
-        stripePaymentId,
-        purchaseLogId,
+        historyTable: purchaseLogId ? 'point_purchase_logs' : null,
+        historyTableId: purchaseLogId || null,
       },
     });
 
@@ -162,17 +142,20 @@ export async function grantPurchasePoints(
     throw new Error("おまけ無償ポイントは0以上である必要があります");
   }
 
+  // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
   const now = new Date();
-  const unifiedExpiresAt = calcUnifiedExpiry(now);
 
   return await prisma.$transaction(async (tx) => {
     // 既に付与済みなら何もしない（idempotent）
-    const existing = await tx.pointHistory.findFirst({
-      where: purchaseLogId
-        ? { purchaseLogId }
-        : { stripePaymentId },
-      select: { id: true },
-    });
+    const existing = purchaseLogId
+      ? await tx.pointHistory.findFirst({
+          where: {
+            historyTable: 'point_purchase_logs',
+            historyTableId: purchaseLogId,
+          },
+          select: { id: true },
+        })
+      : null;
     if (existing) {
       return { alreadyGranted: true };
     }
@@ -181,7 +164,7 @@ export async function grantPurchasePoints(
     const balance = await tx.userPointBalance.findUnique({ where: { userId } });
     if (!balance) {
       await tx.userPointBalance.create({
-        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
+        data: { userId, paidAmount: 0, freeAmount: 0 },
       });
     }
 
@@ -193,8 +176,6 @@ export async function grantPurchasePoints(
       where: { userId },
       data: {
         paidAmount: { increment: paidPoints },
-        expiresAt: unifiedExpiresAt,
-        lastUpdated: now,
       },
     });
 
@@ -207,8 +188,8 @@ export async function grantPurchasePoints(
         balanceBefore: beforeTotal,
         balanceAfter: afterPaidTotal,
         description: `${paidPoints}ポイント購入`,
-        stripePaymentId,
-        purchaseLogId,
+        historyTable: purchaseLogId ? 'point_purchase_logs' : null,
+        historyTableId: purchaseLogId || null,
       },
     });
 
@@ -218,8 +199,6 @@ export async function grantPurchasePoints(
         where: { userId },
         data: {
           freeAmount: { increment: bonusFreePoints },
-          expiresAt: unifiedExpiresAt,
-          lastUpdated: now,
         },
       });
       const afterBonusTotal =
@@ -232,8 +211,8 @@ export async function grantPurchasePoints(
           balanceBefore: afterPaidTotal,
           balanceAfter: afterBonusTotal,
           description: `購入特典（無償） +${bonusFreePoints}pt`,
-          stripePaymentId,
-          purchaseLogId,
+          historyTable: purchaseLogId ? 'point_purchase_logs' : null,
+          historyTableId: purchaseLogId || null,
         },
       });
     }
@@ -263,14 +242,14 @@ export async function grantFreePoints(
     throw new Error('ポイント数は1以上である必要があります');
   }
 
+  // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
   const now = new Date();
-  const unifiedExpiresAt = calcUnifiedExpiry(now);
 
   return await prisma.$transaction(async (tx) => {
     const existing = await tx.userPointBalance.findUnique({ where: { userId } });
     if (!existing) {
       await tx.userPointBalance.create({
-        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
+        data: { userId, paidAmount: 0, freeAmount: 0 },
       });
     }
 
@@ -280,8 +259,6 @@ export async function grantFreePoints(
       where: { userId },
       data: {
         freeAmount: { increment: amount },
-        expiresAt: unifiedExpiresAt,
-        lastUpdated: now,
       },
     });
 
@@ -329,26 +306,12 @@ export async function consumePoints(
 
   return await prisma.$transaction(async (tx) => {
     const now = new Date();
-    const unifiedExpiresAt = calcUnifiedExpiry(now);
+    // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
 
     const existing = await tx.userPointBalance.findUnique({ where: { userId } });
     if (!existing) {
       await tx.userPointBalance.create({
-        data: { userId, paidAmount: 0, freeAmount: 0, expiresAt: null, lastUpdated: now },
-    });
-    }
-
-    // 有効期限切れなら同時に0へ（lastUpdatedは上書きしない）
-    const before = await tx.userPointBalance.findUnique({ where: { userId } });
-    if (
-      before &&
-      (before.paidAmount + before.freeAmount) > 0 &&
-      before.expiresAt &&
-      before.expiresAt <= now
-    ) {
-      await tx.userPointBalance.update({
-      where: { userId },
-        data: { paidAmount: 0, freeAmount: 0, expiresAt: null },
+        data: { userId, paidAmount: 0, freeAmount: 0 },
       });
     }
 
@@ -372,13 +335,11 @@ export async function consumePoints(
 
     await tx.userPointBalance.update({
       where: { userId },
-        data: {
+      data: {
         freeAmount: newFree,
         paidAmount: newPaid,
-        expiresAt: newTotal > 0 ? unifiedExpiresAt : null,
-        lastUpdated: now,
-        },
-      });
+      },
+    });
 
     // User.pointsへの更新は停止（PointBalanceのみで管理）
     // const totalBalances = await getTotalBalances(tx, userId);
@@ -396,7 +357,8 @@ export async function consumePoints(
         balanceBefore: beforeTotal,
         balanceAfter: newTotal,
         description,
-        gachaHistoryId,
+        historyTable: gachaHistoryId ? 'gacha_histories' : null,
+        historyTableId: gachaHistoryId || null,
       },
     });
 

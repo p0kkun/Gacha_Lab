@@ -60,20 +60,30 @@ export async function GET(request: NextRequest) {
           pictureUrl: true,
           createdAt: true,
           updatedAt: true,
-          _count: {
-            select: {
-              gachaHistories: true,
-            },
-          },
         },
       }),
       prisma.user.count({ where }),
     ]);
 
+    // ガチャ実行回数を取得
+    const usersWithCounts = await Promise.all(
+      users.map(async (user) => {
+        const gachaHistoriesCount = await prisma.gachaHistory.count({
+          where: { userId: user.userId },
+        });
+        return {
+          ...user,
+          _count: {
+            gachaHistories: gachaHistoriesCount,
+          },
+        };
+      })
+    );
+
     // ガチャ実行回数でソートする場合
-    let sortedUsers = users;
+    let sortedUsers = usersWithCounts;
     if (sortBy === 'gachaCount') {
-      sortedUsers = [...users].sort((a, b) => {
+      sortedUsers = [...usersWithCounts].sort((a, b) => {
         const countA = a._count.gachaHistories;
         const countB = b._count.gachaHistories;
         return sortOrder === 'asc' ? countA - countB : countB - countA;

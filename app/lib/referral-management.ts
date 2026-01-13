@@ -1,6 +1,6 @@
-import { ReferralStatus } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
-import crypto from 'crypto';
+import { ReferralStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 /**
  * 紹介リンクを生成（1ユーザー1リンク固定、期限切れでも再利用）
@@ -10,9 +10,10 @@ export async function generateReferralLink(userId: string): Promise<{
   referralLink: string;
   qrCodeUrl?: string;
 }> {
-  // 既存の紹介リンクを検索（1ユーザー1リンク固定）
-  const existingReferral = await prisma.referral.findUnique({
+  // 既存の紹介リンクを検索（最新のものを取得）
+  const existingReferral = await prisma.referral.findFirst({
     where: { userId },
+    orderBy: { createdAt: "desc" },
   });
 
   if (existingReferral) {
@@ -24,7 +25,7 @@ export async function generateReferralLink(userId: string): Promise<{
       existingReferral.status === ReferralStatus.INVALID
     ) {
       newStatus = ReferralStatus.PENDING;
-      
+
       // ステータス変更が必要な場合は更新
       await prisma.referral.update({
         where: { id: existingReferral.id },
@@ -42,10 +43,10 @@ export async function generateReferralLink(userId: string): Promise<{
 
   // 新しい紹介リンクを生成（初回のみ）
   const referralLinkId = crypto.randomUUID();
-  const liffUrl = process.env.NEXT_PUBLIC_LIFF_URL || '';
+  const liffUrl = process.env.NEXT_PUBLIC_LIFF_URL || "";
 
   if (!liffUrl) {
-    throw new Error('NEXT_PUBLIC_LIFF_URLが設定されていません');
+    throw new Error("NEXT_PUBLIC_LIFF_URLが設定されていません");
   }
 
   const referralLink = `${liffUrl}?ref=${referralLinkId}`;
@@ -87,7 +88,7 @@ export async function verifyReferralLink(
   if (!referral) {
     return {
       isValid: false,
-      reason: '紹介リンクが見つかりません',
+      reason: "紹介リンクが見つかりません",
     };
   }
 
@@ -95,7 +96,7 @@ export async function verifyReferralLink(
   if (referral.status !== ReferralStatus.PENDING) {
     return {
       isValid: false,
-      reason: 'この紹介リンクは既に使用済みです',
+      reason: "この紹介リンクは既に使用済みです",
     };
   }
 
@@ -122,9 +123,9 @@ export async function verifyReferralLink(
           lastAccessedReferralAt: new Date(),
         },
       });
-    } catch (error) {
+    } catch {
       // ユーザーが存在しない場合は無視（初回アクセス時など）
-      console.log('紹介リンク記録時にユーザーが見つかりませんでした:', userId);
+      console.log("紹介リンク記録時にユーザーが見つかりませんでした:", userId);
     }
   }
 
@@ -146,13 +147,6 @@ export async function detectFraud(
 }> {
   const referral = await prisma.referral.findUnique({
     where: { id: referralId },
-    include: {
-      referralUsers: {
-        where: {
-          toUserId: refereeId,
-        },
-      },
-    },
   });
 
   if (!referral) {
@@ -163,15 +157,22 @@ export async function detectFraud(
   if (referral.userId === refereeId) {
     return {
       isFraud: true,
-      reason: '自己紹介が検出されました',
+      reason: "自己紹介が検出されました",
     };
   }
 
   // 2. 重複紹介チェック（同じ紹介者から既に紹介されている）
-  if (referral.referralUsers.length > 0) {
+  const existingReferralUser = await prisma.referralUser.findFirst({
+    where: {
+      userId: referral.userId,
+      toUserId: refereeId,
+    },
+  });
+
+  if (existingReferralUser) {
     return {
       isFraud: true,
-      reason: '重複紹介が検出されました',
+      reason: "重複紹介が検出されました",
     };
   }
 
@@ -190,7 +191,10 @@ export async function detectFraud(
   const ipCounts = new Map<string, number>();
   for (const history of recentHistories) {
     if (history.ipAddress) {
-      ipCounts.set(history.ipAddress, (ipCounts.get(history.ipAddress) || 0) + 1);
+      ipCounts.set(
+        history.ipAddress,
+        (ipCounts.get(history.ipAddress) || 0) + 1
+      );
     }
   }
 
@@ -206,7 +210,7 @@ export async function detectFraud(
           where: { id: latestHistory.id },
           data: {
             isFraudDetected: true,
-            fraudReason: '同一IPアドレスからの異常な紹介が検出されました',
+            fraudReason: "同一IPアドレスからの異常な紹介が検出されました",
             status: ReferralStatus.FRAUD,
           },
         });
@@ -214,7 +218,7 @@ export async function detectFraud(
 
       return {
         isFraud: true,
-        reason: '同一IPアドレスからの異常な紹介が検出されました',
+        reason: "同一IPアドレスからの異常な紹介が検出されました",
       };
     }
   }
@@ -236,22 +240,22 @@ export async function completeReferral(
   await prisma.$transaction(async (tx) => {
     const referral = await tx.referral.findUnique({
       where: { id: referralId },
-      include: {
-        referralUsers: {
-          where: {
-            toUserId: refereeId,
-          },
-        },
-      },
     });
 
     if (!referral || referral.status !== ReferralStatus.PENDING) {
-      throw new Error('紹介履歴が見つからないか、既に処理済みです');
+      throw new Error("紹介履歴が見つからないか、既に処理済みです");
     }
 
     // 既に同じ被紹介者で成立済みの紹介がないかチェック
-    if (referral.referralUsers.length > 0) {
-      throw new Error('既にこの被紹介者との紹介は成立済みです');
+    const existingReferralUser = await tx.referralUser.findFirst({
+      where: {
+        userId: referral.userId,
+        toUserId: refereeId,
+      },
+    });
+
+    if (existingReferralUser) {
+      throw new Error("既にこの被紹介者との紹介は成立済みです");
     }
 
     // 不正検知
@@ -269,7 +273,7 @@ export async function completeReferral(
         where: {
           referralId: referral.id,
         },
-        orderBy: { referredAt: 'desc' },
+        orderBy: { referredAt: "desc" },
       });
 
       if (latestHistory) {
@@ -291,19 +295,18 @@ export async function completeReferral(
       data: {
         userId: referral.userId,
         toUserId: refereeId,
-        referralId: referral.id,
         completedAt: new Date(),
         additionalRewardGranted: false,
       },
     });
 
-    // RefereeActivityを作成（被紹介者行動情報）
-    await tx.refereeActivity.create({
+    // UserActivityを作成（被紹介者行動情報）
+    await tx.userActivity.create({
       data: {
+        userId: refereeId,
         referralUserId: referralUser.id,
         gachaCount: 0,
         totalSpent: 0,
-        lastActiveAt: new Date(),
       },
     });
 
@@ -320,7 +323,7 @@ export async function completeReferral(
       where: {
         referralId: referral.id,
       },
-      orderBy: { referredAt: 'desc' },
+      orderBy: { referredAt: "desc" },
     });
 
     if (latestHistory) {
@@ -332,34 +335,43 @@ export async function completeReferral(
       });
     }
 
+    // 紹介報酬ポイント設定を取得
+    const referralRewardSettings = await tx.freeGachaSettings.findFirst();
+    const referrerPoints = referralRewardSettings?.referrerPoints ?? 100;
+    const refereePoints = referralRewardSettings?.refereePoints ?? 100;
+
     // 紹介者と被紹介者に無償ポイントを付与
-    const { grantFreePoints } = await import('@/lib/point-management');
-    const { PointTransactionType } = await import('@prisma/client');
+    const { grantFreePoints } = await import("@/lib/point-management");
+    const { PointTransactionType } = await import("@prisma/client");
 
-    // 紹介者への特典（100ポイント）
-    await grantFreePoints(
-      referral.userId,
-      100,
-      null,
-      '友だち紹介特典（紹介者）',
-      PointTransactionType.REFERRAL_REWARD
-    );
+    // 紹介者への特典（設定されたポイント）
+    if (referrerPoints > 0) {
+      await grantFreePoints(
+        referral.userId,
+        referrerPoints,
+        null,
+        `友だち紹介特典（紹介者）: ${referrerPoints}ポイント`,
+        PointTransactionType.REFERRAL_REWARD
+      );
+    }
 
-    // 被紹介者への特典（100ポイント）
-    await grantFreePoints(
-      refereeId,
-      100,
-      null,
-      '友だち紹介特典（被紹介者）',
-      PointTransactionType.REFERRAL_REWARD
-    );
+    // 被紹介者への特典（設定されたポイント）
+    if (refereePoints > 0) {
+      await grantFreePoints(
+        refereeId,
+        refereePoints,
+        null,
+        `友だち紹介特典（被紹介者）: ${refereePoints}ポイント`,
+        PointTransactionType.REFERRAL_REWARD
+      );
+    }
 
     // 無料ガチャ設定を取得
     const freeGachaSettings = await tx.freeGachaSettings.findFirst();
 
     // 無料ガチャ機能が有効で、紹介成立時に付与する設定になっている場合
     if (
-      freeGachaSettings?.isEnabled &&
+      freeGachaSettings?.isActive &&
       freeGachaSettings.grantOnReferralComplete
     ) {
       const now = new Date();
@@ -376,38 +388,36 @@ export async function completeReferral(
         );
       }
 
-      // 紹介者に無料ガチャを付与
-      if (freeGachaSettings.referrerGachaTypeId) {
-        await tx.freeGachaHistory.create({
-          data: {
-            userId: referral.userId,
-            referralUserId: referralUser.id,
-            gachaTypeId: freeGachaSettings.referrerGachaTypeId,
-            grantType: 'REFERRER',
-            expiresAt,
-            isUsed: false,
-          },
-        });
-      }
+      // 無料ガチャ機能は将来実装予定
+      // FreeGachaHistoryモデルが存在しないため、コメントアウト
+      // if (freeGachaSettings.referrerGachaTypeId) {
+      //   await tx.freeGachaHistory.create({
+      //     data: {
+      //       userId: referral.userId,
+      //       referralUserId: referralUser.id,
+      //       gachaTypeId: freeGachaSettings.referrerGachaTypeId,
+      //       grantType: "REFERRER",
+      //       expiresAt,
+      //       isUsed: false,
+      //     },
+      //   });
+      // }
 
-      // 被紹介者に無料ガチャを付与
-      if (freeGachaSettings.refereeGachaTypeId) {
-        await tx.freeGachaHistory.create({
-          data: {
-            userId: refereeId,
-            referralUserId: referralUser.id,
-            gachaTypeId: freeGachaSettings.refereeGachaTypeId,
-            grantType: 'REFEREE',
-            expiresAt,
-            isUsed: false,
-          },
-        });
-      }
+      // if (freeGachaSettings.refereeGachaTypeId) {
+      //   await tx.freeGachaHistory.create({
+      //     data: {
+      //       userId: refereeId,
+      //       referralUserId: referralUser.id,
+      //       gachaTypeId: freeGachaSettings.refereeGachaTypeId,
+      //       grantType: "REFEREE",
+      //       expiresAt,
+      //       isUsed: false,
+      //     },
+      //   });
+      // }
     }
 
-    console.log(
-      `紹介成立: 紹介者 ${referral.userId} → 被紹介者 ${refereeId}`
-    );
+    console.log(`紹介成立: 紹介者 ${referral.userId} → 被紹介者 ${refereeId}`);
   });
 }
 
@@ -427,40 +437,48 @@ export async function getReferralCount(referrerId: string): Promise<number> {
  * 紹介者の紹介履歴を取得
  */
 export async function getReferralHistory(referrerId: string) {
-  return await prisma.referralUser.findMany({
+  const referralUsers = await prisma.referralUser.findMany({
     where: {
       userId: referrerId,
     },
-    include: {
-      toUser: {
-        select: {
-          userId: true,
-          displayName: true,
-          pictureUrl: true,
-          createdAt: true,
-        },
-      },
-      referral: {
-        select: {
-          referralLinkId: true,
-          referralLink: true,
-        },
-      },
-      freeGachaHistories: {
-        include: {
-          gachaType: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-            },
-          },
-        },
-      },
-      refereeActivity: true,
-    },
-    orderBy: { completedAt: 'desc' },
+    orderBy: { completedAt: "desc" },
   });
+
+  // toUserの情報を取得
+  const toUserIds = referralUsers.map((ru) => ru.toUserId);
+  const toUsers = await prisma.user.findMany({
+    where: {
+      userId: { in: toUserIds },
+    },
+    select: {
+      userId: true,
+      displayName: true,
+      pictureUrl: true,
+      createdAt: true,
+    },
+  });
+
+  const toUserMap = new Map(toUsers.map((u) => [u.userId, u]));
+
+  // UserActivityをreferralUserIdで取得
+  const referralUserIds = referralUsers.map((ru) => ru.id);
+  const userActivities = await prisma.userActivity.findMany({
+    where: {
+      referralUserId: { in: referralUserIds },
+    },
+  });
+
+  // referralUserIdをキーにしたマップを作成
+  const activityMap = new Map(
+    userActivities.map((ua) => [ua.referralUserId, ua])
+  );
+
+  // 各referralUserにtoUserとactivityを追加
+  return referralUsers.map((ru) => ({
+    ...ru,
+    toUser: toUserMap.get(ru.toUserId) || null,
+    refereeActivity: activityMap.get(ru.id) || null,
+  }));
 }
 
 /**
@@ -473,9 +491,6 @@ export async function updateRefereeActivity(refereeId: string) {
     where: {
       toUserId: refereeId,
     },
-    include: {
-      refereeActivity: true,
-    },
   });
 
   if (!referralUser) {
@@ -486,7 +501,7 @@ export async function updateRefereeActivity(refereeId: string) {
   const pointHistories = await prisma.pointHistory.findMany({
     where: {
       userId: refereeId,
-      transactionType: 'PURCHASE',
+      transactionType: "PURCHASE",
     },
   });
 
@@ -500,23 +515,28 @@ export async function updateRefereeActivity(refereeId: string) {
     where: { userId: refereeId },
   });
 
-  // RefereeActivityを更新または作成
-  if (referralUser.refereeActivity) {
-    await prisma.refereeActivity.update({
-      where: { id: referralUser.refereeActivity.id },
+  // UserActivityを更新または作成
+  const existingActivity = await prisma.userActivity.findFirst({
+    where: {
+      referralUserId: referralUser.id,
+    },
+  });
+
+  if (existingActivity) {
+    await prisma.userActivity.update({
+      where: { id: existingActivity.id },
       data: {
         totalSpent,
         gachaCount,
-        lastActiveAt: new Date(),
       },
     });
   } else {
-    await prisma.refereeActivity.create({
+    await prisma.userActivity.create({
       data: {
+        userId: refereeId,
         referralUserId: referralUser.id,
         totalSpent,
         gachaCount,
-        lastActiveAt: new Date(),
       },
     });
   }
@@ -536,14 +556,14 @@ export async function updateRefereeActivity(refereeId: string) {
     totalSpent >= 1000 &&
     gachaCount >= 1
   ) {
-    const { grantFreePoints } = await import('@/lib/point-management');
-    const { PointTransactionType } = await import('@prisma/client');
+    const { grantFreePoints } = await import("@/lib/point-management");
+    const { PointTransactionType } = await import("@prisma/client");
 
     await grantFreePoints(
       referralUser.userId,
       100,
       null,
-      '友だち紹介追加報酬（被紹介者の課金特典）',
+      "友だち紹介追加報酬（被紹介者の課金特典）",
       PointTransactionType.REFERRAL_REWARD
     );
 

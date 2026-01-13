@@ -60,51 +60,57 @@ export async function GET(request: NextRequest) {
       .filter((id): id is string => id !== null);
 
     // ReferralUserを取得（紹介成立情報）
-    const [referralUsers, totalReferralUsers] = await Promise.all([
+    const [referralUsersRaw, totalReferralUsers] = await Promise.all([
       prisma.referralUser.findMany({
         where: whereReferralUser,
-        include: {
-          user: {
-            select: {
-              userId: true,
-              displayName: true,
-              pictureUrl: true,
-            },
-          },
-          toUser: {
-            select: {
-              userId: true,
-              displayName: true,
-              pictureUrl: true,
-            },
-          },
-          referral: {
-            select: {
-              id: true,
-              referralLinkId: true,
-              referralLink: true,
-              status: true,
-            },
-          },
-          freeGachaHistories: {
-            include: {
-              gachaType: {
-                select: {
-                  id: true,
-                  code: true,
-                  name: true,
-                },
-              },
-            },
-          },
-          refereeActivity: true,
-        },
         orderBy: { completedAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
       }),
       prisma.referralUser.count({ where: whereReferralUser }),
     ]);
+
+    // 手動でjoinする（リレーションが削除されているため）
+    const userIds = [...new Set(referralUsersRaw.map((ru) => ru.userId))];
+    const toUserIds = [...new Set(referralUsersRaw.map((ru) => ru.toUserId))];
+    const referralUserIds = referralUsersRaw.map((ru) => ru.id);
+
+    const [users, toUsers, userActivities] = await Promise.all([
+      prisma.user.findMany({
+        where: { userId: { in: userIds } },
+        select: {
+          userId: true,
+          displayName: true,
+          pictureUrl: true,
+        },
+      }),
+      prisma.user.findMany({
+        where: { userId: { in: toUserIds } },
+        select: {
+          userId: true,
+          displayName: true,
+          pictureUrl: true,
+        },
+      }),
+      prisma.userActivity.findMany({
+        where: { referralUserId: { in: referralUserIds } },
+      }),
+    ]);
+
+    const userMap = new Map(users.map((u) => [u.userId, u]));
+    const toUserMap = new Map(toUsers.map((u) => [u.userId, u]));
+    const activityMap = new Map(
+      userActivities.map((ua) => [ua.referralUserId, ua])
+    );
+
+    const referralUsers = referralUsersRaw.map((ru) => ({
+      ...ru,
+      user: userMap.get(ru.userId) || null,
+      toUser: toUserMap.get(ru.toUserId) || null,
+      refereeActivity: activityMap.get(ru.id) || null,
+      referral: null, // TODO: 必要に応じて手動でjoin
+      freeGachaHistories: [], // TODO: 必要に応じて手動でjoin
+    }));
 
     // ReferralHistoryを取得（リンクアクセス履歴、フィルタ条件がある場合）
     let histories: any[] = [];
@@ -115,39 +121,51 @@ export async function GET(request: NextRequest) {
 
       // リンクアクセス済みだがLINE未追加のケースを含める
       if (pendingLinkIds.length > 0) {
-        whereClause.OR = [
-          whereHistory, // 通常のフィルタ条件
-          {
-            referralLinkId: { in: pendingLinkIds },
-            referral: {
-              status: { not: "COMPLETED" }, // まだ成立していない
-            },
-          },
-        ];
+        whereClause.referralLinkId = { in: pendingLinkIds };
       }
 
-      [histories, totalHistories] = await Promise.all([
+      const [historiesRaw, totalHistories] = await Promise.all([
         prisma.referralHistory.findMany({
           where: whereClause,
-          include: {
-            referral: {
-              include: {
-                user: {
-                  select: {
-                    userId: true,
-                    displayName: true,
-                    pictureUrl: true,
-                  },
-                },
-              },
-            },
-          },
           orderBy: { referredAt: "desc" },
           skip: (page - 1) * limit,
           take: limit,
         }),
         prisma.referralHistory.count({ where: whereClause }),
       ]);
+
+      // Referralを手動でjoin
+      const referralIds = [...new Set(historiesRaw.map((h) => h.referralId))];
+      const referrals = await prisma.referral.findMany({
+        where: { id: { in: referralIds } },
+      });
+      const referralMap = new Map(referrals.map((r) => [r.id, r]));
+
+      // Userを手動でjoin
+      const referralUserIds = referrals.map((r) => r.userId);
+      const referralUsersForHistory = await prisma.user.findMany({
+        where: { userId: { in: referralUserIds } },
+        select: {
+          userId: true,
+          displayName: true,
+          pictureUrl: true,
+        },
+      });
+      const referralUserMap = new Map(
+        referralUsersForHistory.map((u) => [u.userId, u])
+      );
+
+      histories = historiesRaw.map((h) => ({
+        ...h,
+        referral: referralMap.get(h.referralId)
+          ? {
+              ...referralMap.get(h.referralId)!,
+              user: referralUserMap.get(
+                referralMap.get(h.referralId)!.userId
+              ) || null,
+            }
+          : null,
+      }));
     }
 
     // リンクアクセス済みユーザー情報をマージ

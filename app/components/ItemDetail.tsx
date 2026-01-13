@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 
 type UserItem = {
   id: number;
@@ -18,6 +19,12 @@ type UserItem = {
   usedAt: string | null;
 };
 
+type PrizeTier = {
+  code: string;
+  label: string;
+  displayOrder: number;
+};
+
 type ItemDetailProps = {
   userItem: UserItem;
   userId: string;
@@ -33,17 +40,33 @@ export default function ItemDetail({
 }: ItemDetailProps) {
   const [isUsing, setIsUsing] = useState(false);
   const [showUsageScreen, setShowUsageScreen] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchPrizeTiers();
+  }, []);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const res = await fetch('/api/prize-tiers');
+      if (res.ok) {
+        const data = await res.json();
+        const tierMap: Record<string, string> = {};
+        if (Array.isArray(data.tiers)) {
+          data.tiers.forEach((tier: PrizeTier) => {
+            tierMap[tier.code] = tier.label;
+          });
+        }
+        setPrizeTiers(tierMap);
+      }
+    } catch (error) {
+      console.error('等級マスタ取得エラー:', error);
+    }
+  };
 
   const getRarityLabel = (rarity: string): string => {
-    const labels: Record<string, string> = {
-      FIRST_PRIZE: '1等',
-      SECOND_PRIZE: '2等',
-      THIRD_PRIZE: '3等',
-      FOURTH_PRIZE: '4等',
-      FIFTH_PRIZE: '5等',
-      LOSER: 'ハズレ',
-    };
-    return labels[rarity] || rarity;
+    return prizeTiers[rarity] || rarity;
   };
 
   // MarkdownリンクをHTMLに変換
@@ -102,9 +125,15 @@ export default function ItemDetail({
     return name;
   };
 
-  const handleUse = async () => {
+  const handleUseClick = () => {
+    // 確認モーダルを表示
+    setShowConfirmModal(true);
+  };
+
+  const handleUseConfirm = async () => {
     if (isUsing) return;
 
+    setShowConfirmModal(false);
     setIsUsing(true);
     try {
       // アイテム使用APIを呼び出し
@@ -264,21 +293,6 @@ export default function ItemDetail({
             )}
           </div>
 
-          {/* メニューリンク */}
-          <div className="mt-6 space-y-2 rounded-lg bg-white p-4 shadow">
-            <a
-              href="?action=gacha"
-              className="block rounded-md bg-blue-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-600"
-            >
-              ガチャを引く
-            </a>
-            <a
-              href="/points"
-              className="block rounded-md bg-green-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-green-600"
-            >
-              ポイント購入
-            </a>
-          </div>
         </div>
       </div>
     );
@@ -392,7 +406,7 @@ export default function ItemDetail({
           ) : (
             <div className="mt-4">
               <button
-                onClick={handleUse}
+                onClick={handleUseClick}
                 disabled={isUsing}
                 className="w-full rounded-md bg-blue-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-600"
               >
@@ -401,23 +415,26 @@ export default function ItemDetail({
             </div>
           )}
         </div>
-
-        {/* メニューリンク */}
-        <div className="mt-6 space-y-2 rounded-lg bg-white p-4 shadow">
-          <a
-            href="?action=gacha"
-            className="block rounded-md bg-blue-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-600"
-          >
-            ガチャを引く
-          </a>
-          <a
-            href="/points"
-            className="block rounded-md bg-green-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-green-600"
-          >
-            ポイント購入
-          </a>
-        </div>
       </div>
+
+      {/* 確認モーダル */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="アイテムを使用しますか？"
+        message={
+          <div>
+            <p className="mb-2">このアイテムを使用しますか？</p>
+            <p className="text-sm text-gray-600">
+              使用すると使用済みになり、再度使用できません。
+            </p>
+          </div>
+        }
+        confirmText="使用する"
+        cancelText="キャンセル"
+        variant="warning"
+        onConfirm={handleUseConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         completedAt: h.completedAt,
         refereeTotalSpent: h.refereeActivity?.totalSpent || 0,
         refereeGachaCount: h.refereeActivity?.gachaCount || 0,
-        refereeLastActiveAt: h.refereeActivity?.lastActiveAt || null,
+        refereeLastActiveAt: null, // UserActivityモデルにlastActiveAtフィールドは存在しない
         additionalRewardGranted: h.additionalRewardGranted,
       })),
     });

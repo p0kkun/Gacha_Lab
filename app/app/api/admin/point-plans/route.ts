@@ -123,9 +123,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const { adminUserId, adminName } = body as { adminUserId?: string; adminName?: string };
+
     // 操作履歴を記録
     await recordAdminAction({
       actionType: AdminActionType.POINT_PLAN_CREATE,
+      adminUserId: adminUserId || 'unknown',
+      adminName: adminName || 'unknown',
       description: `ポイント購入プラン「${lbl}」を作成（ID: ${normalizedId}, ${Math.trunc(pts)}ポイント, ${Math.trunc(prc)}円）`,
       metadata: {
         planId: normalizedId,

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { getAdminAuthToken } from '@/lib/admin-auth';
 
 type Tag = {
@@ -139,10 +138,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6">
-        <h1 className="mb-6 text-2xl font-bold text-gray-800">メッセージ配信</h1>
-
+    <div className="w-full">
         {sendError && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
             {sendError}
@@ -325,8 +321,7 @@ export default function MessagesPage() {
             </div>
           </div>
         </div>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
 

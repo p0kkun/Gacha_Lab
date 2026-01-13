@@ -137,8 +137,8 @@ export async function POST(request: NextRequest) {
     // 操作履歴を記録（成功したユーザーに対して）
     if (successfulUserIds.length > 0) {
       await recordPointGrantAction({
-        adminUserId: adminUserId || null,
-        adminName: adminName || null,
+        adminUserId: adminUserId || 'unknown',
+        adminName: adminName || 'unknown',
         targetUserIds: successfulUserIds,
         amount,
         pointType,

@@ -82,7 +82,7 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      <div>
+      <div className="p-4 lg:p-6">
         <div className="mb-4 flex items-center justify-between lg:mb-6">
           <h1 className="text-xl font-bold text-gray-800 lg:text-2xl">ダッシュボード</h1>
           <a
@@ -120,7 +120,7 @@ export default function AdminPage() {
               ユーザータグの追加・編集・一括割当ができます
             </p>
             <a
-              href="/admin/tags"
+              href="/admin/users?tab=tags"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               タグ管理へ
@@ -136,7 +136,7 @@ export default function AdminPage() {
               LINEユーザーへのメッセージ配信ができます
             </p>
             <a
-              href="/admin/messages"
+              href="/admin/analytics?tab=messages"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               メッセージ配信へ
@@ -152,7 +152,7 @@ export default function AdminPage() {
               ユーザーへのポイント付与ができます
             </p>
             <a
-              href="/admin/points"
+              href="/admin/points?tab=points"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ポイント管理へ
@@ -168,7 +168,7 @@ export default function AdminPage() {
               ポイント購入プランの追加・編集ができます
             </p>
             <a
-              href="/admin/point-plans"
+              href="/admin/points?tab=point-plans"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ポイント購入プランへ
@@ -184,7 +184,7 @@ export default function AdminPage() {
               ガチャタイプの確率設定ができます
             </p>
             <a
-              href="/admin/gacha-types"
+              href="/admin/gacha?tab=gacha-types"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ガチャ設定へ
@@ -216,7 +216,7 @@ export default function AdminPage() {
               ガチャ結果メッセージのテンプレートを管理できます
             </p>
             <a
-              href="/admin/result-message-templates"
+              href="/admin/gacha?tab=result-message-templates"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               結果メッセージテンプレートへ
@@ -248,7 +248,7 @@ export default function AdminPage() {
               ガチャタイプごとに景品の等級割当を設定できます
             </p>
             <a
-              href="/admin/prize-assignments"
+              href="/admin/gacha?tab=prize-assignments"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               景品割当へ
@@ -296,7 +296,7 @@ export default function AdminPage() {
               ガチャごとの課金人数や金額を確認できます
             </p>
             <a
-              href="/admin/statistics"
+              href="/admin/analytics?tab=statistics"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               統計へ
@@ -312,7 +312,7 @@ export default function AdminPage() {
               設定したガチャの排出率を確認できます
             </p>
             <a
-              href="/admin/simulator"
+              href="/admin/gacha?tab=simulator"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               シミュレータへ
@@ -328,7 +328,7 @@ export default function AdminPage() {
               友達紹介システムの履歴と無料ガチャ付与状況を確認できます
             </p>
             <a
-              href="/admin/referrals"
+              href="/admin/users?tab=referrals"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               友達紹介履歴へ
@@ -344,7 +344,7 @@ export default function AdminPage() {
               管理画面での操作履歴を確認できます
             </p>
             <a
-              href="/admin/action-history"
+              href="/admin/system?tab=action-history"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               操作履歴へ

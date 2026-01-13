@@ -31,6 +31,8 @@ export async function PUT(
       label,
       isActive,
       displayOrder,
+      adminUserId,
+      adminName,
     }: {
       points?: number;
       bonusFreePoints?: number;
@@ -38,6 +40,8 @@ export async function PUT(
       label?: string;
       isActive?: boolean;
       displayOrder?: number;
+      adminUserId?: string;
+      adminName?: string;
     } = body;
 
     const data: any = {};
@@ -122,6 +126,8 @@ export async function PUT(
 
     await recordAdminAction({
       actionType: AdminActionType.POINT_PLAN_UPDATE,
+      adminUserId: adminUserId || 'unknown',
+      adminName: adminName || 'unknown',
       description: `ポイント購入プラン「${updated.label}」を更新（ID: ${planId}）`,
       metadata: {
         planId,
@@ -169,12 +175,17 @@ export async function DELETE(
       where: { id: planId },
     });
 
+    const body = await request.json().catch(() => ({}));
+    const { adminUserId, adminName } = body as { adminUserId?: string; adminName?: string };
+
     await prisma.pointPurchasePlan.delete({ where: { id: planId } });
 
     // 操作履歴を記録
     if (oldPlan) {
       await recordAdminAction({
         actionType: AdminActionType.POINT_PLAN_DELETE,
+        adminUserId: adminUserId || 'unknown',
+        adminName: adminName || 'unknown',
         description: `ポイント購入プラン「${oldPlan.label}」を削除（ID: ${planId}）`,
         metadata: {
           planId,

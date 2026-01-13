@@ -69,14 +69,10 @@ async function main() {
         userId,
         paidAmount,
         freeAmount,
-        expiresAt,
-        lastUpdated,
       },
       update: {
         paidAmount,
         freeAmount,
-        expiresAt,
-        lastUpdated,
       },
     });
     upserted++;

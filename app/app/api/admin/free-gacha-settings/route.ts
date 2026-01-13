@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (!settings) {
       settings = {
         id: 0,
-        isEnabled: false,
+        isActive: false,
         grantOnReferralComplete: false,
         referrerGachaTypeId: null,
         refereeGachaTypeId: null,
@@ -60,17 +60,21 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      isEnabled,
+      isActive,
       grantOnReferralComplete,
       referrerGachaTypeCode,
       refereeGachaTypeCode,
       expirationDays,
+      referrerPoints,
+      refereePoints,
     }: {
-      isEnabled?: boolean;
+      isActive?: boolean;
       grantOnReferralComplete?: boolean;
       referrerGachaTypeCode?: string | null;
       refereeGachaTypeCode?: string | null;
       expirationDays?: number | null;
+      referrerPoints?: number;
+      refereePoints?: number;
     } = body;
 
     // ガチャタイプコードからIDを取得
@@ -118,11 +122,13 @@ export async function PUT(request: NextRequest) {
     // 設定を取得または作成
     const existing = await prisma.freeGachaSettings.findFirst();
     const data: any = {
-      isEnabled: isEnabled ?? false,
+      isActive: isActive ?? false,
       grantOnReferralComplete: grantOnReferralComplete ?? false,
       referrerGachaTypeId,
       refereeGachaTypeId,
       expirationDays: expirationDays === null || expirationDays === undefined ? null : Math.trunc(expirationDays),
+      referrerPoints: referrerPoints !== null && referrerPoints !== undefined ? Math.trunc(referrerPoints) : (existing?.referrerPoints ?? 100),
+      refereePoints: refereePoints !== null && refereePoints !== undefined ? Math.trunc(refereePoints) : (existing?.refereePoints ?? 100),
     };
 
     const updated = existing

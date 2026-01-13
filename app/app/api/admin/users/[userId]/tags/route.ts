@@ -133,8 +133,8 @@ export async function POST(
 
     // 操作履歴を記録
     await recordTagAssignAction({
-      adminUserId: adminUserId || null,
-      adminName: adminName || null,
+      adminUserId: adminUserId || 'unknown',
+      adminName: adminName || 'unknown',
       targetUserIds: [userId],
       tagId,
       tagName: tag.name,

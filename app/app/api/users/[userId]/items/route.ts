@@ -8,29 +8,59 @@ export async function GET(
   try {
     // Next.js 16ではparamsがPromiseなので、awaitでアンラップする必要がある
     const { userId } = await params;
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+
+    const skip = (page - 1) * limit;
 
     // ユーザーが獲得したアイテム（ガチャ履歴から取得）
-    const histories = await prisma.gachaHistory.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        createdAt: true,
-        tierCode: true,
-        usageLog: { select: { usedAt: true } },
-        item: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            usageType: true,
-            imageUrl: true,
-            useStartAt: true,
-            useEndAt: true,
+    const [histories, total] = await Promise.all([
+      prisma.gachaHistory.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          createdAt: true,
+          tierCode: true,
+          itemId: true,
+          item: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              usageType: true,
+              imageUrl: true,
+              useStartAt: true,
+              useEndAt: true,
+            },
           },
         },
+      }),
+      prisma.gachaHistory.count({
+        where: { userId },
+      }),
+    ]);
+
+    // ItemUsageLogから使用日時を取得
+    const itemIds = histories.filter((h) => h.itemId).map((h) => h.itemId!);
+    const usageLogs = await prisma.itemUsageLog.findMany({
+      where: {
+        userId,
+        itemId: { in: itemIds },
+      },
+      select: {
+        itemId: true,
+        usedAt: true,
       },
     });
+
+    // itemIdをキーにしたマップを作成
+    const usageLogMap = new Map(
+      usageLogs.map((log) => [log.itemId, log.usedAt])
+    );
 
     const items = histories.map((history) => ({
       id: history.id,
@@ -39,11 +69,17 @@ export async function GET(
         rarity: history.tierCode ?? 'UNKNOWN',
       },
       createdAt: history.createdAt,
-      usedAt: history.usageLog?.usedAt ? history.usageLog.usedAt.toISOString() : null,
+      usedAt: history.itemId ? usageLogMap.get(history.itemId)?.toISOString() ?? null : null,
     }));
 
     return NextResponse.json({
       items,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('アイテム取得エラー:', error);

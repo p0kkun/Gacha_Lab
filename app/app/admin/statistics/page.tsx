@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import { getAdminAuthToken } from '@/lib/admin-auth';
 import {
   BarChart,
@@ -153,40 +152,37 @@ export default function StatisticsPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
+      <div className="w-full">
         <div className="flex items-center justify-center py-12">
           <div className="text-gray-500">読み込み中...</div>
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
   if (!statistics) {
     return (
-      <AdminLayout>
+      <div className="w-full">
         <div className="p-6">
           <div className="rounded-lg bg-red-50 p-4 text-red-800">
             統計情報の取得に失敗しました
           </div>
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div>
-        <div className="mb-6">
-          <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">統計・購入状況</h1>
-          
-          {error && (
-            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-              {error}
-            </div>
-          )}
-          
-          {/* 期間選択とガチャ絞り込み */}
-          <div className="mb-4 flex flex-wrap items-start gap-4">
+    <div className="w-full">
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+      
+      {/* 期間選択とガチャ絞り込み */}
+      <div className="mb-6">
+        <div className="mb-4 flex flex-wrap items-start gap-4">
             {/* 期間選択 */}
             <div className="flex flex-wrap items-center gap-3">
               <select
@@ -345,8 +341,8 @@ export default function StatisticsPage() {
           </div>
         </div>
 
-        {/* サマリー */}
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* サマリー */}
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-lg bg-white p-6 shadow">
             <div className="text-sm text-gray-500">総ユーザー数</div>
             <div className="mt-2 text-3xl font-bold text-gray-800">
@@ -674,8 +670,7 @@ export default function StatisticsPage() {
             </div>
           </div>
         )}
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
 

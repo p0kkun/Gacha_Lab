@@ -1,0 +1,323 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import type { LiffProfile } from '@/lib/liff';
+import BottomNavigation from './BottomNavigation';
+import PointCard from './PointCard';
+
+type GachaType = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  iconImageUrl: string | null;
+  pointCost: number;
+};
+
+type UserStats = {
+  totalGachaCount: number;
+  rarityStats: Record<string, number>;
+};
+
+type PointBalances = {
+  paid: number;
+  free: number;
+  total: number;
+  paidExpiresAt: string | null;
+  freeExpiresAt: string | null;
+  lastUpdated: string | null;
+};
+
+type HomePageContentProps = {
+  profile: LiffProfile;
+  pointBalances: PointBalances | null;
+  onOpenGacha: () => void;
+};
+
+export default function HomePageContent({
+  profile,
+  pointBalances,
+  onOpenGacha,
+}: HomePageContentProps) {
+  const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loadingGacha, setLoadingGacha] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    // ガチャタイプ一覧を取得
+    const fetchGachaTypes = async () => {
+      try {
+        const res = await fetch('/api/gacha/types');
+        if (res.ok) {
+          const data = await res.json();
+          setGachaTypes(data.gachaTypes || []);
+        }
+      } catch (error) {
+        console.error('ガチャタイプ取得エラー:', error);
+      } finally {
+        setLoadingGacha(false);
+      }
+    };
+
+    // 統計情報を取得
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`/api/users/${profile.userId}/stats`);
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('統計情報取得エラー:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchGachaTypes();
+    fetchStats();
+  }, [profile.userId]);
+
+  return (
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+        <div className="mx-auto max-w-md">
+          {/* ヒーローセクション - ポーカーテーブル風 */}
+          <div className="relative overflow-hidden px-4 pt-8 pb-6">
+            {/* 背景装飾 */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-10 left-10 text-6xl">🂡</div>
+              <div className="absolute top-20 right-10 text-5xl">🂮</div>
+              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
+              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+            </div>
+            
+            <div className="relative z-10 text-center text-white">
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">Gacha Lab</h1>
+              <p className="mb-6 text-sm text-green-200">ポーカー風ガチャでアイテムを獲得しよう！</p>
+              
+              {/* ポイント表示 - 共通コンポーネント */}
+              <div className="mb-6">
+                <PointCard pointBalances={pointBalances} variant="home" />
+              </div>
+
+              {/* メインアクション - ガチャを引くボタン */}
+              <button
+                onClick={onOpenGacha}
+                disabled={gachaTypes.length === 0}
+                className="group relative mx-auto mb-3 w-full max-w-xs overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-8 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
+              >
+                {/* 光るエフェクト */}
+                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
+                
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <img
+                    src="/icons/navigation/icon-gacha.svg"
+                    alt="ガチャ"
+                    className="h-6 w-6"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                  <span>ガチャを引く</span>
+                  <span className="text-2xl">🂡</span>
+                </span>
+              </button>
+
+              {/* ポイント購入ボタン */}
+              <Link
+                href="/points"
+                className="mx-auto block w-full max-w-xs rounded-xl border-2 border-yellow-400/50 bg-white/10 backdrop-blur-sm px-6 py-3 text-sm font-semibold text-white transition-all hover:border-yellow-400 hover:bg-white/20 hover:shadow-lg active:scale-95"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span>💰</span>
+                  <span>ポイントを購入</span>
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="px-4 py-4">
+            {/* クイックアクション */}
+            <div className="mb-6 grid grid-cols-3 gap-3">
+              <Link
+                href="/?action=history"
+                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                <img
+                  src="/icons/navigation/icon-history.svg"
+                  alt="履歴"
+                  className="mb-2 h-8 w-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="text-xs font-semibold">履歴</div>
+              </Link>
+              <Link
+                href="/?action=items"
+                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                <img
+                  src="/icons/navigation/icon-items.svg"
+                  alt="アイテム"
+                  className="mb-2 h-8 w-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="text-xs font-semibold">アイテム</div>
+              </Link>
+              <Link
+                href="/?action=mypage"
+                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                <img
+                  src="/icons/navigation/icon-mypage.svg"
+                  alt="マイページ"
+                  className="mb-2 h-8 w-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="text-xs font-semibold">マイページ</div>
+              </Link>
+            </div>
+
+            {/* ガチャタイプ一覧 */}
+            <div className="mb-6">
+              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">利用可能なガチャ</h2>
+              {loadingGacha ? (
+                <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center">
+                  <div className="text-white">読み込み中...</div>
+                </div>
+              ) : gachaTypes.length === 0 ? (
+                <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center">
+                  <div className="text-white">現在利用可能なガチャがありません</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {gachaTypes.map((gacha) => (
+                    <button
+                      key={gacha.id}
+                      onClick={onOpenGacha}
+                      className="group w-full rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-lg transition-all hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/20 active:scale-[0.98]"
+                    >
+                      <div className="flex items-center gap-4">
+                        {gacha.iconImageUrl ? (
+                          <img
+                            src={gacha.iconImageUrl}
+                            alt={gacha.name}
+                            className="h-16 w-16 flex-shrink-0 rounded-lg object-cover border-2 border-gray-200 shadow-sm"
+                            onError={(e) => {
+                              // 画像読み込みエラー時はフォールバック表示
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const fallback = target.nextElementSibling as HTMLElement;
+                              if (fallback) {
+                                fallback.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div 
+                          className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-2xl text-white shadow-sm ${gacha.iconImageUrl ? 'hidden' : ''}`}
+                        >
+                          🎰
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h3 className="mb-1 font-bold text-gray-800">{gacha.name}</h3>
+                          {gacha.description && (
+                            <p className="mb-2 text-xs text-gray-600 line-clamp-2">
+                              {gacha.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
+                              {gacha.pointCost > 0
+                                ? `$${gacha.pointCost.toLocaleString()}`
+                                : '無料'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-yellow-600 transition-transform group-hover:translate-x-1">
+                          <svg
+                            className="h-6 w-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* お知らせ・ヘルプ */}
+            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
+              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">お知らせ・ヘルプ</h2>
+              <div className="space-y-2">
+                <Link
+                  href="/?action=help"
+                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-xl">❓</div>
+                    <span className="text-sm font-medium">ヘルプ・お知らせ</span>
+                  </div>
+                  <svg
+                    className="h-5 w-5 text-white/70"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </Link>
+                <Link
+                  href="/?action=referral"
+                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-xl">👥</div>
+                    <span className="text-sm font-medium">友達紹介</span>
+                  </div>
+                  <svg
+                    className="h-5 w-5 text-white/70"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <BottomNavigation currentPage="home" />
+    </>
+  );
+}

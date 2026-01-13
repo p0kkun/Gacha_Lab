@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 export default function AdminLayout({
   children,
@@ -14,24 +14,66 @@ export default function AdminLayout({
 
   const menuItems = [
     { href: "/admin", label: "ダッシュボード", icon: "📊" },
-    { href: "/admin/users", label: "ユーザー管理", icon: "👥" },
-    { href: "/admin/tags", label: "タグ管理", icon: "🏷️" },
-    { href: "/admin/messages", label: "メッセージ配信", icon: "💬" },
-    { href: "/admin/points", label: "ポイント管理", icon: "💰" },
-    { href: "/admin/point-plans", label: "ポイント購入プラン", icon: "💳" },
-    { href: "/admin/gacha-types", label: "ガチャ設定", icon: "🎰" },
-    { href: "/admin/free-gacha-settings", label: "無料ガチャ設定", icon: "🎁" },
-    { href: "/admin/result-message-templates", label: "結果メッセージテンプレート", icon: "📝" },
-    { href: "/admin/prize-tiers", label: "等級マスタ管理", icon: "⭐" },
-    { href: "/admin/prize-assignments", label: "景品割当（ガチャ別）", icon: "🎁" },
-    { href: "/admin/items", label: "アイテム設定", icon: "📦" },
+    { href: "/admin/gacha", label: "ガチャ管理", icon: "🎰" },
     { href: "/admin/videos", label: "動画管理", icon: "🎬" },
-    { href: "/admin/statistics", label: "統計・購入状況", icon: "📈" },
-    { href: "/admin/simulator", label: "ガチャシミュレータ", icon: "🎯" },
-    { href: "/admin/referrals", label: "友達紹介履歴", icon: "👥" },
-    { href: "/admin/action-history", label: "操作履歴", icon: "📋" },
+    { href: "/admin/points", label: "ポイント管理", icon: "💰" },
+    { href: "/admin/users", label: "ユーザー管理", icon: "👥" },
+    { href: "/admin/analytics", label: "配信・統計", icon: "📈" },
+    { href: "/admin/system", label: "システム", icon: "⚙️" },
     { href: "/admin/help", label: "ヘルプ", icon: "❓" },
   ];
+
+  // アクティブ状態の判定を最適化
+  const isActiveItem = useMemo(() => {
+    return (itemHref: string) => {
+      if (pathname === itemHref) return true;
+      if (pathname?.startsWith(itemHref + "/")) return true;
+
+      // グループページの判定
+      const groupMappings: Record<string, string[]> = {
+        "/admin/gacha": [
+          "/admin/gacha-types",
+          "/admin/free-gacha-settings",
+          "/admin/result-message-templates",
+          "/admin/prize-tiers",
+          "/admin/prize-assignments",
+          "/admin/items",
+          "/admin/simulator",
+        ],
+        "/admin/points": ["/admin/point-plans"],
+        "/admin/users": ["/admin/tags", "/admin/referrals"],
+        "/admin/analytics": ["/admin/messages", "/admin/statistics"],
+        "/admin/system": ["/admin/action-history"],
+      };
+
+      const subPaths = groupMappings[itemHref];
+      return subPaths?.some((subPath) => pathname?.startsWith(subPath)) || false;
+    };
+  }, [pathname]);
+
+  // モバイルメニューを閉じる（ESCキー対応）
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isMobileMenuOpen]);
+
+  // モバイルでメニューが開いている時はスクロールを無効化
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     sessionStorage.removeItem("admin_authenticated");
@@ -43,15 +85,16 @@ export default function AdminLayout({
       {/* モバイル用ハンバーガーメニューボタン */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="fixed left-4 top-4 z-50 rounded-lg bg-white p-2.5 shadow-lg transition-all hover:shadow-xl lg:hidden"
+        className="fixed left-4 top-4 z-50 rounded-lg bg-white p-3 shadow-lg transition-all hover:bg-gray-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 lg:hidden"
         aria-label="メニューを開く"
+        aria-expanded={isMobileMenuOpen}
       >
         <svg
           className="h-6 w-6 text-gray-700"
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth="2"
+          strokeWidth="2.5"
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
@@ -65,22 +108,31 @@ export default function AdminLayout({
 
       {/* サイドバー */}
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen w-72 flex-col bg-white shadow-xl transition-transform duration-300 ease-in-out ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`fixed left-0 top-0 z-40 flex h-screen w-72 flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
+          isMobileMenuOpen
+            ? "translate-x-0"
+            : "-translate-x-full lg:translate-x-0"
         }`}
+        aria-label="メインナビゲーション"
       >
         {/* ヘッダー */}
-        <div className="flex-shrink-0 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
-          <h2 className="text-xl font-bold text-white">管理画面</h2>
-          <p className="mt-1 text-sm text-blue-100">Gacha Lab Admin</p>
+        <div className="flex-shrink-0 border-b border-blue-500/20 bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 px-6 py-6 shadow-sm">
+          <h2 className="text-xl font-bold text-white drop-shadow-sm">
+            管理画面
+          </h2>
+          <p className="mt-1.5 text-sm font-medium text-blue-100 opacity-95">
+            Gacha Lab Admin
+          </p>
         </div>
 
         {/* ナビゲーション */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
-          <div className="space-y-1">
+        <nav
+          className="flex-1 min-h-0 overflow-y-auto px-4 py-5 scrollbar-thin"
+          aria-label="サイドナビゲーション"
+        >
+          <div className="space-y-1.5">
             {menuItems.map((item) => {
-              const isActive =
-                pathname === item.href || pathname?.startsWith(item.href + "/");
+              const isActive = isActiveItem(item.href);
 
               return (
                 <Link
@@ -88,18 +140,33 @@ export default function AdminLayout({
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`
-                    group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all
+                    group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white
                     ${
                       isActive
-                        ? "bg-blue-50 text-blue-700 shadow-sm"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-gradient-to-r from-blue-50 to-blue-50/50 text-blue-700 shadow-md shadow-blue-100/50"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
                     }
                   `}
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
+                  {/* アクティブ状態の左側インジケーター */}
                   {isActive && (
-                    <span className="ml-auto h-2 w-2 rounded-full bg-blue-600"></span>
+                    <span className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-blue-600 shadow-sm"></span>
+                  )}
+                  
+                  <span
+                    className={`text-lg transition-transform duration-200 ${
+                      isActive ? "scale-110" : "group-hover:scale-110"
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="flex-1">{item.label}</span>
+                  
+                  {/* アクティブ状態の右側インジケーター */}
+                  {isActive && (
+                    <span className="h-2 w-2 rounded-full bg-blue-600 shadow-sm"></span>
                   )}
                 </Link>
               );
@@ -108,16 +175,28 @@ export default function AdminLayout({
         </nav>
 
         {/* フッター */}
-        <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50 p-4">
+        <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50/80 p-4 backdrop-blur-sm">
           <button
             onClick={handleLogout}
-            className="w-full rounded-lg bg-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-300 hover:shadow-sm"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-gray-100"
+            aria-label="ログアウト"
           >
-            <span className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            <span className="flex items-center justify-center gap-2.5">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
-              ログアウト
+              <span>ログアウト</span>
             </span>
           </button>
         </div>
@@ -126,14 +205,17 @@ export default function AdminLayout({
       {/* モバイルメニューのオーバーレイ */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* メインコンテンツ */}
       <main className="flex-1 overflow-auto lg:ml-72">
-        <div className="mx-auto max-w-7xl p-4 lg:p-8">{children}</div>
+        <div className="min-h-screen">
+          {children}
+        </div>
       </main>
     </div>
   );

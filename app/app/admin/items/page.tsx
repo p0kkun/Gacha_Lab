@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 
@@ -306,12 +305,8 @@ export default function ItemsPage() {
   // 等級は「景品割当（ガチャ別）」で管理するため、アイテムマスタ側では表示しない
 
   return (
-    <AdminLayout>
-      <div>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:mb-6">
-          <h1 className="text-xl font-bold text-gray-800 lg:text-2xl">
-            アイテム設定
-          </h1>
+    <div className="w-full">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end lg:mb-6">
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="w-full rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 sm:w-auto"
@@ -692,10 +687,9 @@ export default function ItemsPage() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm({ isOpen: false, itemId: null })}
         />
-      </div>
 
-      {/* リンク挿入モーダル */}
-      {showLinkModal && (
+        {/* リンク挿入モーダル */}
+        {showLinkModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
@@ -761,7 +755,7 @@ export default function ItemsPage() {
             </div>
           </div>
         </div>
-      )}
-    </AdminLayout>
-  );
-}
+        )}
+      </div>
+    );
+  }

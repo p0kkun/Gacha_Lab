@@ -15,7 +15,7 @@ function getStripeInstance(): Stripe {
     throw new Error("STRIPE_SECRET_KEY環境変数が設定されていません");
   }
   return new Stripe(stripeSecretKey, {
-    apiVersion: "2025-12-15.clover",
+    apiVersion: "2025-11-17.clover",
   });
 }
 
@@ -124,7 +124,10 @@ export async function POST(request: NextRequest) {
 
     // 既にポイントが付与されているか確認（重複付与を防ぐ）
     const existingHistory = await prismaAny.pointHistory.findFirst({
-      where: { purchaseLogId },
+      where: {
+        historyTable: "point_purchase_logs",
+        historyTableId: purchaseLogId,
+      },
       select: { id: true },
     });
 

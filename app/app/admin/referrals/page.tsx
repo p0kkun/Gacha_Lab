@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 import { Card, Button, Input, Select, Badge, Alert, Table, PageHeader } from "@/components/admin/ui";
 
@@ -188,13 +187,7 @@ export default function ReferralsPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6">
-        <PageHeader
-          title="友達紹介履歴"
-          description="友達紹介システムの履歴を確認できます"
-        />
-
+    <div className="w-full">
         {error && (
           <Alert variant="error" className="mb-4" onClose={() => setError(null)}>
             {error}
@@ -520,7 +513,6 @@ export default function ReferralsPage() {
             </div>
           )}
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }

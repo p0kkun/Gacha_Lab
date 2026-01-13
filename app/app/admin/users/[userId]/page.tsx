@@ -48,6 +48,12 @@ type UserTag = {
   createdAt: string;
 };
 
+type PrizeTier = {
+  code: string;
+  label: string;
+  displayOrder: number;
+};
+
 export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
@@ -63,12 +69,37 @@ export default function UserDetailPage() {
     isOpen: boolean;
     tagId: number | null;
   }>({ isOpen: false, tagId: null });
+  const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    fetchPrizeTiers();
     fetchUserDetail();
     fetchUserTags();
     fetchAllTags();
   }, [userId]);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch('/api/admin/prize-tiers', {
+        headers: {
+          'X-Admin-Auth': authToken || '',
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const tierMap: Record<string, string> = {};
+        if (Array.isArray(data.tiers)) {
+          data.tiers.forEach((tier: PrizeTier) => {
+            tierMap[tier.code] = tier.label;
+          });
+        }
+        setPrizeTiers(tierMap);
+      }
+    } catch (error) {
+      console.error('等級マスタ取得エラー:', error);
+    }
+  };
 
   const fetchUserDetail = async () => {
     setLoading(true);
@@ -212,15 +243,7 @@ export default function UserDetailPage() {
   };
 
   const getRarityLabel = (rarity: string): string => {
-    const labels: Record<string, string> = {
-      FIRST_PRIZE: '1等',
-      SECOND_PRIZE: '2等',
-      THIRD_PRIZE: '3等',
-      FOURTH_PRIZE: '4等',
-      FIFTH_PRIZE: '5等',
-      LOSER: 'ハズレ',
-    };
-    return labels[rarity] || rarity;
+    return prizeTiers[rarity] || rarity;
   };
 
   if (loading) {

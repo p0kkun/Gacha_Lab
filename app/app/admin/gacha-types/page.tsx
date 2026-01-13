@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { Button, Select, Card, Alert, Badge, PageHeader, Input } from "@/components/admin/ui";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
@@ -785,52 +784,57 @@ export default function GachaTypesPage() {
       return;
     }
 
-    // 動画設定のバリデーション
-    const commonVideoIds = formData.commonVideoIds || [];
-    const rarityVideoIds =
-      (formData.rarityVideoIds as Record<string, number[]>) || {};
+    // 動画設定のバリデーション（個別設定の場合のみ）
+    // デフォルト動画を使用する場合はバリデーションをスキップ
+    if (formData.useDefaultVideos !== false) {
+      // デフォルト動画を使用する場合は、動画設定のバリデーションをスキップ
+    } else {
+      const commonVideoIds = formData.commonVideoIds || [];
+      const rarityVideoIds =
+        (formData.rarityVideoIds as Record<string, number[]>) || {};
 
-    // 共通動画が設定されていない場合
-    if (commonVideoIds.length === 0) {
-      setError("共通動画を少なくとも1つ選択してください");
-      return;
-    }
-
-    // 各レアリティの動画が設定されているか確認（あたりの場合のみ）
-    const requiredRarities = [
-      "FIRST_PRIZE",
-      "SECOND_PRIZE",
-      "THIRD_PRIZE",
-      "FOURTH_PRIZE",
-      "FIFTH_PRIZE",
-    ];
-    const missingRarities: string[] = [];
-    for (const rarity of requiredRarities) {
-      const rarityVideos = rarityVideoIds[rarity] || [];
-      if (rarityVideos.length === 0) {
-        missingRarities.push(RARITY_LABELS[rarity]);
+      // 共通動画が設定されていない場合
+      if (commonVideoIds.length === 0) {
+        setError("共通動画を少なくとも1つ選択してください");
+        return;
       }
-    }
 
-    if (missingRarities.length > 0) {
-      setError(
-        `以下のレアリティの動画が設定されていません: ${missingRarities.join(
-          "、"
-        )}`
-      );
-      return;
-    }
+      // 各レアリティの動画が設定されているか確認（あたりの場合のみ）
+      const requiredRarities = [
+        "FIRST_PRIZE",
+        "SECOND_PRIZE",
+        "THIRD_PRIZE",
+        "FOURTH_PRIZE",
+        "FIFTH_PRIZE",
+      ];
+      const missingRarities: string[] = [];
+      for (const rarity of requiredRarities) {
+        const rarityVideos = rarityVideoIds[rarity] || [];
+        if (rarityVideos.length === 0) {
+          missingRarities.push(RARITY_LABELS[rarity]);
+        }
+      }
 
-    // 動画が設定されていない場合はガチャを無効にする
-    if (
-      formData.isActive &&
-      (commonVideoIds.length === 0 || Object.keys(rarityVideoIds).length === 0)
-    ) {
-      setFormData({ ...formData, isActive: false });
-      setError(
-        "動画が設定されていないため、ガチャを無効にしました。動画を設定してから有効にしてください。"
-      );
-      return;
+      if (missingRarities.length > 0) {
+        setError(
+          `以下のレアリティの動画が設定されていません: ${missingRarities.join(
+            "、"
+          )}`
+        );
+        return;
+      }
+
+      // 動画が設定されていない場合はガチャを無効にする
+      if (
+        formData.isActive &&
+        (commonVideoIds.length === 0 || Object.keys(rarityVideoIds).length === 0)
+      ) {
+        setFormData({ ...formData, isActive: false });
+        setError(
+          "動画が設定されていないため、ガチャを無効にしました。動画を設定してから有効にしてください。"
+        );
+        return;
+      }
     }
 
     try {
@@ -885,14 +889,23 @@ export default function GachaTypesPage() {
   };
 
   const calculateTotalWeight = (gachaType: GachaType): number => {
-    return (
-      gachaType.firstPrizeWeight +
-      gachaType.secondPrizeWeight +
-      gachaType.thirdPrizeWeight +
-      gachaType.fourthPrizeWeight +
-      gachaType.fifthPrizeWeight +
-      gachaType.loserWeight
-    );
+    // 動的等級システム（prizeWeights）を優先
+    if (gachaType.prizeWeights && Object.keys(gachaType.prizeWeights).length > 0) {
+      return Object.values(gachaType.prizeWeights).reduce((sum, weight) => {
+        const numWeight = typeof weight === 'number' ? weight : (parseFloat(String(weight)) || 0);
+        return sum + numWeight;
+      }, 0);
+    }
+    
+    // レガシーフィールドを使用（後方互換性）
+    const first = typeof gachaType.firstPrizeWeight === 'number' ? gachaType.firstPrizeWeight : 0;
+    const second = typeof gachaType.secondPrizeWeight === 'number' ? gachaType.secondPrizeWeight : 0;
+    const third = typeof gachaType.thirdPrizeWeight === 'number' ? gachaType.thirdPrizeWeight : 0;
+    const fourth = typeof gachaType.fourthPrizeWeight === 'number' ? gachaType.fourthPrizeWeight : 0;
+    const fifth = typeof gachaType.fifthPrizeWeight === 'number' ? gachaType.fifthPrizeWeight : 0;
+    const loser = typeof gachaType.loserWeight === 'number' ? gachaType.loserWeight : 0;
+    
+    return first + second + third + fourth + fifth + loser;
   };
 
   const calculatePercentage = (weight: number, total: number): number => {
@@ -901,17 +914,13 @@ export default function GachaTypesPage() {
   };
 
   return (
-    <AdminLayout>
-      <div>
-        <PageHeader
-          title="ガチャ設定"
-          description="ガチャタイプの設定と管理を行います"
-          actions={
-            <Button variant="success" onClick={handleNewGachaType} leftIcon={<span>+</span>}>
-              新規ガチャ追加
-            </Button>
-          }
-        />
+    <div className="w-full">
+        {/* 新規ガチャ追加ボタン（PageHeaderの代わり） */}
+        <div className="mb-6 flex items-center justify-end">
+          <Button variant="success" onClick={handleNewGachaType} leftIcon={<span>+</span>}>
+            新規ガチャ追加
+          </Button>
+        </div>
 
         {/* フィルターとソート */}
         <Card className="mb-6" padding="md">
@@ -1263,6 +1272,42 @@ export default function GachaTypesPage() {
                     </p>
                   )}
 
+                  {/* アイコン設定の表示 */}
+                  {!isEditing && (
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <div className="mb-2 text-sm font-medium text-gray-700">
+                        アイコン設定
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {gachaType.iconImageUrl ? (
+                          <>
+                            <img
+                              src={gachaType.iconImageUrl}
+                              alt={gachaType.name}
+                              className="h-16 w-16 rounded-lg object-cover border border-gray-300"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-xs font-medium text-green-700">
+                                ✓ アイコン設定済み
+                              </div>
+                              <div className="mt-1 text-xs text-gray-500 break-all">
+                                {gachaType.iconImageUrl}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span className="text-red-600">⚠️</span>
+                            <span>アイコン未設定</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* 動画設定の表示 */}
                   {!isEditing && (
                     <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -1270,31 +1315,47 @@ export default function GachaTypesPage() {
                         動画設定
                       </div>
                       <div className="space-y-1 text-xs text-gray-600">
-                        <div>
-                          共通動画:{" "}
-                          {gachaType.commonVideoIds &&
-                          gachaType.commonVideoIds.length > 0
-                            ? `${gachaType.commonVideoIds.length}個設定済み`
-                            : "未設定"}
-                        </div>
-                        <div>
-                          等級別動画:{" "}
-                          {gachaType.rarityVideoIds &&
-                          Object.keys(gachaType.rarityVideoIds).length > 0
-                            ? `${
-                                Object.keys(gachaType.rarityVideoIds).length
-                              }レアリティ設定済み`
-                            : "未設定"}
-                        </div>
-                        {(!gachaType.commonVideoIds ||
-                          gachaType.commonVideoIds.length === 0 ||
-                          !gachaType.rarityVideoIds ||
-                          Object.keys(gachaType.rarityVideoIds).length ===
-                            0) && (
-                          <div className="mt-2 text-xs text-red-600">
-                            ⚠️
-                            動画が設定されていないため、ガチャを有効にできません
+                        {gachaType.useDefaultVideos !== false ? (
+                          <div className="space-y-1">
+                            <div className="font-medium text-blue-700">
+                              ✓ デフォルト設定を使用
+                            </div>
+                            <div className="text-gray-500">
+                              共通動画: デフォルト設定から取得
+                            </div>
+                            <div className="text-gray-500">
+                              等級別動画: デフォルト設定から取得
+                            </div>
                           </div>
+                        ) : (
+                          <>
+                            <div>
+                              共通動画:{" "}
+                              {gachaType.commonVideoIds &&
+                              gachaType.commonVideoIds.length > 0
+                                ? `${gachaType.commonVideoIds.length}個設定済み`
+                                : "未設定"}
+                            </div>
+                            <div>
+                              等級別動画:{" "}
+                              {gachaType.rarityVideoIds &&
+                              Object.keys(gachaType.rarityVideoIds).length > 0
+                                ? `${
+                                    Object.keys(gachaType.rarityVideoIds).length
+                                  }レアリティ設定済み`
+                                : "未設定"}
+                            </div>
+                            {(!gachaType.commonVideoIds ||
+                              gachaType.commonVideoIds.length === 0 ||
+                              !gachaType.rarityVideoIds ||
+                              Object.keys(gachaType.rarityVideoIds).length ===
+                                0) && (
+                              <div className="mt-2 text-xs text-red-600">
+                                ⚠️
+                                動画が設定されていないため、ガチャを有効にできません
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -2531,155 +2592,60 @@ export default function GachaTypesPage() {
                   ) : (
                     <div>
                       <div className="mb-4 text-sm text-gray-600">
-                        重みの合計: {totalWeight}
+                        重みの合計: {isNaN(totalWeight) ? 0 : totalWeight}
                       </div>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
-                          <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                            1等
+                      {(() => {
+                        // 動的等級システムを使用
+                        const prizeConfigs = getPrizeConfigs(gachaType);
+                        const validTotalWeight = isNaN(totalWeight) || totalWeight === 0 ? 1 : totalWeight;
+                        
+                        return (
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {prizeConfigs.map((config) => {
+                              const weight = typeof config.weight === 'number' ? config.weight : 0;
+                              const percentage = calculatePercentage(weight, validTotalWeight);
+                              
+                              return (
+                                <div key={config.rarity} className="rounded-md bg-gray-50 p-3 lg:p-4">
+                                  <div className="text-xs font-medium text-gray-700 lg:text-sm">
+                                    {RARITY_LABELS[config.rarity] || config.rarity}
+                                  </div>
+                                  <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
+                                    {weight} ({percentage.toFixed(1)}%)
+                                  </div>
+                                  <div className="mt-2 text-xs text-gray-600 lg:text-sm">
+                                    役:{" "}
+                                    <span className="font-medium">
+                                      {config.rarity === 'LOSER' ? (
+                                        (() => {
+                                          // 上位の当たりに設定されている役を取得
+                                          const assignedHands = new Set<string>();
+                                          prizeConfigs.forEach((c) => {
+                                            if (c.rarity !== 'LOSER') {
+                                              c.hands.forEach((h) => assignedHands.add(h));
+                                            }
+                                          });
+                                          // すべての役から、設定されている役を除外
+                                          const loserHands = handRankOptions
+                                            .map((opt) => opt.value)
+                                            .filter((hand) => !assignedHands.has(hand));
+                                          return loserHands.length > 0
+                                            ? getHandNames(loserHands)
+                                            : "なし（すべての役が当たりに設定されています）";
+                                        })()
+                                      ) : (
+                                        config.hands && config.hands.length > 0
+                                          ? getHandNames(config.hands)
+                                          : "未設定"
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                            {gachaType.firstPrizeWeight} (
-                            {calculatePercentage(
-                              gachaType.firstPrizeWeight,
-                              totalWeight
-                            ).toFixed(1)}
-                            %)
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                            役:{" "}
-                            <span className="font-medium">
-                              {gachaType.firstPrizeHands &&
-                              gachaType.firstPrizeHands.length > 0
-                                ? getHandNames(gachaType.firstPrizeHands)
-                                : "未設定"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
-                          <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                            2等
-                          </div>
-                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                            {gachaType.secondPrizeWeight} (
-                            {calculatePercentage(
-                              gachaType.secondPrizeWeight,
-                              totalWeight
-                            ).toFixed(1)}
-                            %)
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                            役:{" "}
-                            <span className="font-medium">
-                              {gachaType.secondPrizeHands &&
-                              gachaType.secondPrizeHands.length > 0
-                                ? getHandNames(gachaType.secondPrizeHands)
-                                : "未設定"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
-                          <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                            3等
-                          </div>
-                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                            {gachaType.thirdPrizeWeight} (
-                            {calculatePercentage(
-                              gachaType.thirdPrizeWeight,
-                              totalWeight
-                            ).toFixed(1)}
-                            %)
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                            役:{" "}
-                            <span className="font-medium">
-                              {gachaType.thirdPrizeHands &&
-                              gachaType.thirdPrizeHands.length > 0
-                                ? getHandNames(gachaType.thirdPrizeHands)
-                                : "未設定"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
-                          <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                            4等
-                          </div>
-                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                            {gachaType.fourthPrizeWeight} (
-                            {calculatePercentage(
-                              gachaType.fourthPrizeWeight,
-                              totalWeight
-                            ).toFixed(1)}
-                            %)
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                            役:{" "}
-                            <span className="font-medium">
-                              {gachaType.fourthPrizeHands &&
-                              gachaType.fourthPrizeHands.length > 0
-                                ? getHandNames(gachaType.fourthPrizeHands)
-                                : "未設定"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
-                          <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                            5等
-                          </div>
-                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                            {gachaType.fifthPrizeWeight} (
-                            {calculatePercentage(
-                              gachaType.fifthPrizeWeight,
-                              totalWeight
-                            ).toFixed(1)}
-                            %)
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                            役:{" "}
-                            <span className="font-medium">
-                              {gachaType.fifthPrizeHands &&
-                              gachaType.fifthPrizeHands.length > 0
-                                ? getHandNames(gachaType.fifthPrizeHands)
-                                : "未設定"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="rounded-md bg-gray-50 p-3 lg:p-4">
-                          <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                            ハズレ
-                          </div>
-                          <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                            {gachaType.loserWeight} (
-                            {calculatePercentage(
-                              gachaType.loserWeight,
-                              totalWeight
-                            ).toFixed(1)}
-                            %)
-                          </div>
-                          <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                            役:{" "}
-                            <span className="font-medium">
-                              {(() => {
-                                // 上位の当たりに設定されている役を取得
-                                const assignedHands = new Set([
-                                  ...(gachaType.firstPrizeHands || []),
-                                  ...(gachaType.secondPrizeHands || []),
-                                  ...(gachaType.thirdPrizeHands || []),
-                                  ...(gachaType.fourthPrizeHands || []),
-                                  ...(gachaType.fifthPrizeHands || []),
-                                ]);
-                                // すべての役から、設定されている役を除外
-                                const loserHands = handRankOptions
-                                  .map((opt) => opt.value)
-                                  .filter((hand) => !assignedHands.has(hand));
-                                return loserHands.length > 0
-                                  ? getHandNames(loserHands)
-                                  : "なし（すべての役が当たりに設定されています）";
-                              })()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </Card>
@@ -2687,16 +2653,15 @@ export default function GachaTypesPage() {
             })}
           </div>
         )}
-      </div>
 
-      {/* 変数情報モーダル */}
-      <VariableInfoModal
-        isOpen={showVariableInfo}
-        onClose={() => setShowVariableInfo(false)}
-      />
+        {/* 変数情報モーダル */}
+        <VariableInfoModal
+          isOpen={showVariableInfo}
+          onClose={() => setShowVariableInfo(false)}
+        />
 
-      {/* 削除確認モーダル */}
-      {confirmDeleteModal && (
+        {/* 削除確認モーダル */}
+        {confirmDeleteModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center">
           {/* オーバーレイ */}
           <div
@@ -2727,10 +2692,10 @@ export default function GachaTypesPage() {
             </div>
           </div>
         </div>
-      )}
+        )}
 
-      {/* 等級追加モーダル */}
-      {showAddPrizeModal && (
+        {/* 等級追加モーダル */}
+        {showAddPrizeModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center">
           {/* オーバーレイ */}
           <div
@@ -2822,7 +2787,7 @@ export default function GachaTypesPage() {
             )}
           </div>
         </div>
-      )}
-    </AdminLayout>
-  );
-}
+        )}
+      </div>
+    );
+  }

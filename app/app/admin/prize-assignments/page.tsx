@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 
@@ -297,12 +296,7 @@ export default function PrizeAssignmentsPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6">
-        <h1 className="mb-6 text-2xl font-bold text-gray-800">
-          景品割当（ガチャ別）
-        </h1>
-
+    <div className="w-full">
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
             {error}
@@ -560,8 +554,7 @@ export default function PrizeAssignmentsPage() {
           }}
           onCancel={closeConfirm}
         />
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
 

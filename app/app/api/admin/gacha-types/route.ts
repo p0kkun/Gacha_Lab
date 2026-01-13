@@ -109,17 +109,6 @@ export async function POST(request: NextRequest) {
       startAt,
       endAt,
       pointCost,
-      firstPrizeWeight,
-      secondPrizeWeight,
-      thirdPrizeWeight,
-      fourthPrizeWeight,
-      fifthPrizeWeight,
-      loserWeight,
-      firstPrizeHands,
-      secondPrizeHands,
-      thirdPrizeHands,
-      fourthPrizeHands,
-      fifthPrizeHands,
       prizeWeights,
       prizeHands,
       prizeOrder,
@@ -152,26 +141,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 重みの合計を確認（任意のバリデーション）
-    const totalWeight =
-      (firstPrizeWeight || 0) +
-      (secondPrizeWeight || 0) +
-      (thirdPrizeWeight || 0) +
-      (fourthPrizeWeight || 0) +
-      (fifthPrizeWeight || 0) +
-      (loserWeight || 0);
+    const parsedPrizeWeights = prizeWeights
+      ? typeof prizeWeights === "string"
+        ? JSON.parse(prizeWeights)
+        : prizeWeights
+      : null;
+    const totalWeight = parsedPrizeWeights
+      ? Object.values(parsedPrizeWeights).reduce(
+          (sum: number, w) => sum + (Number(w) || 0),
+          0
+        )
+      : 0;
 
-    const parsedTierWeights: Record<string, number> | null =
-      tierWeights
-        ? typeof tierWeights === "string"
-          ? JSON.parse(tierWeights)
-          : tierWeights
-        : null;
-    const parsedTierOrder: string[] | null =
-      tierOrder
-        ? typeof tierOrder === "string"
-          ? JSON.parse(tierOrder)
-          : tierOrder
-        : null;
+    const parsedTierWeights: Record<string, number> | null = tierWeights
+      ? typeof tierWeights === "string"
+        ? JSON.parse(tierWeights)
+        : tierWeights
+      : null;
+    const parsedTierOrder: string[] | null = tierOrder
+      ? typeof tierOrder === "string"
+        ? JSON.parse(tierOrder)
+        : tierOrder
+      : null;
 
     // ガチャタイプを作成または更新 + tierWeights を同期（GachaTierWeightを正にする）
     const gachaType = await prisma.$transaction(async (tx) => {
@@ -186,23 +177,6 @@ export async function POST(request: NextRequest) {
           startAt: startAt ? new Date(startAt) : null,
           endAt: endAt ? new Date(endAt) : null,
           pointCost: pointCost || 0,
-          // legacy（後方互換）: いったん保持
-          firstPrizeWeight: firstPrizeWeight || 0,
-          secondPrizeWeight: secondPrizeWeight || 0,
-          thirdPrizeWeight: thirdPrizeWeight || 0,
-          fourthPrizeWeight: fourthPrizeWeight || 0,
-          fifthPrizeWeight: fifthPrizeWeight || 0,
-          loserWeight: loserWeight || 0,
-          firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
-          secondPrizeHands: Array.isArray(secondPrizeHands)
-            ? secondPrizeHands
-            : [],
-          thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
-          fourthPrizeHands: Array.isArray(fourthPrizeHands)
-            ? fourthPrizeHands
-            : [],
-          fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
-          // legacy（JSON確率）: いったん保持
           prizeWeights: prizeWeights
             ? typeof prizeWeights === "string"
               ? JSON.parse(prizeWeights)
@@ -230,21 +204,6 @@ export async function POST(request: NextRequest) {
           startAt: startAt ? new Date(startAt) : null,
           endAt: endAt ? new Date(endAt) : null,
           pointCost: pointCost || 0,
-          firstPrizeWeight: firstPrizeWeight || 0,
-          secondPrizeWeight: secondPrizeWeight || 0,
-          thirdPrizeWeight: thirdPrizeWeight || 0,
-          fourthPrizeWeight: fourthPrizeWeight || 0,
-          fifthPrizeWeight: fifthPrizeWeight || 0,
-          loserWeight: loserWeight || 0,
-          firstPrizeHands: Array.isArray(firstPrizeHands) ? firstPrizeHands : [],
-          secondPrizeHands: Array.isArray(secondPrizeHands)
-            ? secondPrizeHands
-            : [],
-          thirdPrizeHands: Array.isArray(thirdPrizeHands) ? thirdPrizeHands : [],
-          fourthPrizeHands: Array.isArray(fourthPrizeHands)
-            ? fourthPrizeHands
-            : [],
-          fifthPrizeHands: Array.isArray(fifthPrizeHands) ? fifthPrizeHands : [],
           prizeWeights: prizeWeights
             ? typeof prizeWeights === "string"
               ? JSON.parse(prizeWeights)
@@ -266,16 +225,19 @@ export async function POST(request: NextRequest) {
       });
 
       if (parsedTierWeights && Object.keys(parsedTierWeights).length > 0) {
-        const order = Array.isArray(parsedTierOrder) && parsedTierOrder.length > 0
-          ? parsedTierOrder
-          : Object.keys(parsedTierWeights);
+        const order =
+          Array.isArray(parsedTierOrder) && parsedTierOrder.length > 0
+            ? parsedTierOrder
+            : Object.keys(parsedTierWeights);
 
         for (let i = 0; i < order.length; i++) {
           const tierCode = order[i];
           const w = Number((parsedTierWeights as any)[tierCode] ?? 0);
           if (!Number.isFinite(w) || w < 0) continue;
           await (tx as any).gachaTierWeight.upsert({
-            where: { gachaTypeId_tierCode: { gachaTypeId: saved.id, tierCode } },
+            where: {
+              gachaTypeId_tierCode: { gachaTypeId: saved.id, tierCode },
+            },
             update: {
               weight: Math.trunc(w),
               displayOrder: (i + 1) * 10,

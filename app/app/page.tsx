@@ -15,7 +15,7 @@ import GachaHistory from "@/components/GachaHistory";
 import MyItems from "@/components/MyItems";
 import HelpPage from "@/components/HelpPage";
 import Referral from "@/components/Referral";
-import PointDisplay from "@/components/PointDisplay";
+import HomePageContent from "@/components/HomePageContent";
 
 type ActivePage = "home" | "mypage" | "history" | "items" | "help" | "referral";
 
@@ -43,18 +43,22 @@ function HomeContent() {
     if (action === "gacha" && profile) {
       setIsGachaModalOpen(true);
       setActivePage("home");
-    } else if (action === "mypage") {
-      setActivePage("mypage");
-    } else if (action === "history") {
-      setActivePage("history");
-    } else if (action === "items") {
-      setActivePage("items");
-    } else if (action === "help") {
-      setActivePage("help");
-    } else if (action === "referral") {
-      setActivePage("referral");
     } else {
-      setActivePage("home");
+      // ガチャ以外のアクションが選択された場合はモーダルを閉じる
+      setIsGachaModalOpen(false);
+      if (action === "mypage") {
+        setActivePage("mypage");
+      } else if (action === "history") {
+        setActivePage("history");
+      } else if (action === "items") {
+        setActivePage("items");
+      } else if (action === "help") {
+        setActivePage("help");
+      } else if (action === "referral") {
+        setActivePage("referral");
+      } else {
+        setActivePage("home");
+      }
     }
   }, [searchParams, profile]);
 
@@ -196,71 +200,11 @@ function HomeContent() {
       case "home":
       default:
         return (
-          <>
-            <div className="flex min-h-screen flex-col bg-gray-100">
-              <main className="flex-1 p-4">
-                <div className="mx-auto max-w-md">
-                  <h1 className="mb-4 text-center text-2xl font-bold text-gray-800">
-                    Gacha Lab
-                  </h1>
-
-                  <div className="mb-4 rounded-lg bg-white p-4 shadow">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {profile.pictureUrl && (
-                          <img
-                            src={profile.pictureUrl}
-                            alt={profile.displayName}
-                            className="h-12 w-12 rounded-full"
-                          />
-                        )}
-                        <div>
-                          <div className="font-semibold">
-                            {profile.displayName}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            ID: {profile.userId}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <PointDisplay
-                          pointBalances={pointBalances}
-                          displayMode="combined"
-                          showExpiry={false}
-                          size="medium"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg bg-white p-4 shadow">
-                    <p className="mb-4 text-center text-gray-600">
-                      ガチャボタンを押してガチャを引こう！
-                    </p>
-                  </div>
-                </div>
-              </main>
-
-              {/* 下部メニューバー（ガチャボタン・ポイント購入） */}
-              <div className="border-t bg-white p-4">
-                <div className="mx-auto max-w-md space-y-2">
-                  <button
-                    onClick={() => setIsGachaModalOpen(true)}
-                    className="w-full rounded-lg bg-blue-500 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-blue-600"
-                  >
-                    ガチャ
-                  </button>
-                  <a
-                    href="/points"
-                    className="block w-full rounded-lg bg-green-500 px-6 py-3 text-center text-lg font-bold text-white transition-colors hover:bg-green-600"
-                  >
-                    ポイント購入
-                  </a>
-                </div>
-              </div>
-            </div>
-          </>
+          <HomePageContent
+            profile={profile}
+            pointBalances={pointBalances}
+            onOpenGacha={() => setIsGachaModalOpen(true)}
+          />
         );
     }
   };

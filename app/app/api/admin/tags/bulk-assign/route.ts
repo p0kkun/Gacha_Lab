@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyAdminAuth } from '@/lib/admin-auth';
-import { recordTagAssignAction } from '@/lib/admin-action-history';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyAdminAuth } from "@/lib/admin-auth";
+import { recordTagAssignAction } from "@/lib/admin-action-history";
 
 /**
  * 条件に基づいてユーザーにタグを一括付与
@@ -10,10 +10,7 @@ import { recordTagAssignAction } from '@/lib/admin-action-history';
 export async function POST(request: NextRequest) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -27,10 +24,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!tagId) {
-      return NextResponse.json(
-        { error: 'タグIDが必要です' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "タグIDが必要です" }, { status: 400 });
     }
 
     // タグが存在するか確認
@@ -40,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     if (!tag) {
       return NextResponse.json(
-        { error: 'タグが見つかりません' },
+        { error: "タグが見つかりません" },
         { status: 404 }
       );
     }
@@ -74,14 +68,14 @@ export async function POST(request: NextRequest) {
         });
         if (!gt) {
           return NextResponse.json(
-            { error: 'ガチャタイプが見つかりません' },
+            { error: "ガチャタイプが見つかりません" },
             { status: 404 }
           );
         }
         const userIds = await prisma.gachaHistory.findMany({
           where: { gachaTypeId: gt.id },
           select: { userId: true },
-          distinct: ['userId'],
+          distinct: ["userId"],
         });
         userIdSets.push(new Set(userIds.map((h) => h.userId)));
       }
@@ -89,9 +83,9 @@ export async function POST(request: NextRequest) {
       // 最小課金額
       if (minPurchaseAmount !== undefined && minPurchaseAmount > 0) {
         const purchaseHistories = await prisma.pointHistory.groupBy({
-          by: ['userId'],
+          by: ["userId"],
           where: {
-            transactionType: 'PURCHASE',
+            transactionType: "PURCHASE",
             amount: { gt: 0 },
           },
           _sum: {
@@ -107,7 +101,7 @@ export async function POST(request: NextRequest) {
       // 最小紹介人数
       if (minReferralCount !== undefined && minReferralCount > 0) {
         const referralCounts = await prisma.referralUser.groupBy({
-          by: ['userId'],
+          by: ["userId"],
           _count: {
             toUserId: true,
           },
@@ -125,27 +119,43 @@ export async function POST(request: NextRequest) {
             tierCode: String(rarity),
           },
           select: { userId: true },
-          distinct: ['userId'],
+          distinct: ["userId"],
         });
         userIdSets.push(new Set(userIds.map((h) => h.userId)));
       }
 
       // アイテム使用済み
       if (hasUsedItem !== undefined) {
-        const userIds = await prisma.gachaHistory.findMany({
-          where: {
-            usageLog: hasUsedItem ? { isNot: null } : { is: null },
-          },
-          select: { userId: true },
-          distinct: ['userId'],
-        });
+        // usageLogリレーションが削除されたため、ItemUsageLogを直接検索
+        let userIds: { userId: string }[] = [];
+        if (hasUsedItem) {
+          // アイテムを使用したユーザーを取得
+          const usageLogs = await prisma.itemUsageLog.findMany({
+            select: { userId: true },
+            distinct: ["userId"],
+          });
+          userIds = usageLogs.map((log) => ({ userId: log.userId }));
+        } else {
+          // アイテムを使用していないユーザーを取得（全ユーザーから使用済みユーザーを除外）
+          const usedUserIds = await prisma.itemUsageLog.findMany({
+            select: { userId: true },
+            distinct: ["userId"],
+          });
+          const usedUserIdSet = new Set(usedUserIds.map((log) => log.userId));
+          const allUsers = await prisma.user.findMany({
+            select: { userId: true },
+          });
+          userIds = allUsers
+            .filter((u) => !usedUserIdSet.has(u.userId))
+            .map((u) => ({ userId: u.userId }));
+        }
         userIdSets.push(new Set(userIds.map((h) => h.userId)));
       }
 
       // 最小ガチャ実行回数
       if (minGachaCount !== undefined && minGachaCount > 0) {
         const gachaCounts = await prisma.gachaHistory.groupBy({
-          by: ['userId'],
+          by: ["userId"],
           _count: {
             id: true,
           },
@@ -166,14 +176,14 @@ export async function POST(request: NextRequest) {
       }
     } else {
       return NextResponse.json(
-        { error: 'ユーザーIDまたは条件を指定してください' },
+        { error: "ユーザーIDまたは条件を指定してください" },
         { status: 400 }
       );
     }
 
     if (targetUserIds.length === 0) {
       return NextResponse.json(
-        { error: '対象ユーザーが見つかりませんでした' },
+        { error: "対象ユーザーが見つかりませんでした" },
         { status: 400 }
       );
     }
@@ -213,8 +223,8 @@ export async function POST(request: NextRequest) {
     // 操作履歴を記録（新規付与したユーザーに対して）
     if (newUserIds.length > 0) {
       await recordTagAssignAction({
-        adminUserId: adminUserId || null,
-        adminName: adminName || null,
+        adminUserId: adminUserId || "unknown",
+        adminName: adminName || "unknown",
         targetUserIds: newUserIds,
         tagId,
         tagName: tag.name,
@@ -229,11 +239,10 @@ export async function POST(request: NextRequest) {
       newlyAssigned: newUserIds.length,
     });
   } catch (error) {
-    console.error('一括タグ付与エラー:', error);
+    console.error("一括タグ付与エラー:", error);
     return NextResponse.json(
-      { error: 'タグの一括付与に失敗しました' },
+      { error: "タグの一括付与に失敗しました" },
       { status: 500 }
     );
   }
 }
-

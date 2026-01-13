@@ -1,68 +1,41 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
-  // デフォルトの生成先を使用（node_modules/.prisma/client）
 }
 
 datasource db {
   provider = "postgresql"
-  // Prisma 7: 接続URLは `prisma.config.ts` で管理（schema.prisma の url は非対応）
 }
 
-// ============================================
-// Layer 1: ガチャ基盤（MVP / 2月26日必須）
-// ============================================
-
 model User {
-  /// 内部用の連番ID（DB内部の参照用）
-  id                         Int                @id @default(autoincrement())
-  /// 外部のユーザー識別子（LINEのuserIdなど）
-  userId                     String             @unique
+  id                         Int       @id @default(autoincrement())
+  userId                     String    @unique
   displayName                String?
   pictureUrl                 String?
-  /// 最後にアクセスした紹介リンクID（LIFFアプリの?ref=パラメータから記録）
-  /// 友だち追加時に、このreferralLinkIdを参照して紹介成立処理を行う
   lastAccessedReferralLinkId String?
-  /// 紹介リンクIDにアクセスした日時
   lastAccessedReferralAt     DateTime?
-  createdAt                  DateTime           @default(now())
-  updatedAt                  DateTime           @updatedAt
-  freeGachaHistories         FreeGachaHistory[]
-  gachaHistories             GachaHistory[]     @relation("UserGachaHistories")
-  // 現在のポイント残高（1ユーザーにつき1行）
-  pointBalance               UserPointBalance?
-  pointHistories             PointHistory[]
-  pointPurchaseLogs          PointPurchaseLog[]
-  referralLink               Referral?          @relation("ReferrerLink") // 紹介リンク（1ユーザー1リンク）
-  referralUsersAsReferrer    ReferralUser[]     @relation("ReferrerUser") // 紹介者としての成立情報
-  referralUsersAsReferee     ReferralUser[]     @relation("RefereeUser") // 被紹介者としての成立情報
-  userTags                   UserTag[]
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   @@index([createdAt])
   @@map("users")
 }
 
-// ============================================
-// 2. ガチャアイテム（GachaItem）
-// ============================================
 model GachaItem {
-  id              Int           @id @default(autoincrement())
-  name            String // アイテム名
-  description     String? // 説明文（Markdown形式、リンクなど対応）
-  imageUrl        String? // アイテム使用時に表示する画像URL（S3、IMAGEタイプの場合に使用）
-  usageType       ItemUsageType @default(IMAGE) // アイテム使用方法
-  grantFreePoints Int           @default(0) // 当選時に付与する無償ポイント（0の場合は付与しない）
-  isActive        Boolean       @default(true) // 有効/無効フラグ
-  useStartAt      DateTime? // 使用開始日時（nullの場合は制限なし）
-  useEndAt        DateTime? // 使用期限（nullの場合は制限なし）
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?
+  imageUrl    String?
+  usageType   ItemUsageType @default(IMAGE)
+  isActive    Boolean       @default(true)
+  useStartAt  DateTime?
+  useEndAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  // リレーション
   gachaHistories   GachaHistory[]
   prizeAssignments GachaPrizeAssignment[]
+  userItems        UserItem[]
+  usageLogs        ItemUsageLog[]
 
   @@index([isActive])
   @@index([useStartAt])
@@ -70,176 +43,142 @@ model GachaItem {
   @@map("gacha_items")
 }
 
-// ============================================
-// 3. ガチャタイプ（GachaType）
-// ============================================
 model GachaType {
-  /// 内部用の連番ID（主キー）
   id           Int       @id @default(autoincrement())
-  /// 外部参照・URL・設定用のコード（例: "normal", "premium"）
   code         String    @unique
-  name         String // ガチャ名
-  description  String? // 説明文
-  iconImageUrl String? // アイコン画像URL（S3）
-  isActive     Boolean   @default(true) // 有効/無効フラグ
-  startAt      DateTime? // 開始日時（nullの場合は開始日時の制限なし）
-  endAt        DateTime? // 終了日時（nullの場合は終了日時の制限なし）
-  pointCost    Int       @default(0) // ガチャ実行に必要なポイント数
+  name         String
+  description  String?
+  iconImageUrl String?
+  isActive     Boolean   @default(true)
+  startAt      DateTime?
+  endAt        DateTime?
+  pointCost    Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  // 確率設定（%）
-  firstPrizeWeight  Int @default(0) // 1等確率（後方互換性のため残す）
-  secondPrizeWeight Int @default(0) // 2等確率（後方互換性のため残す）
-  thirdPrizeWeight  Int @default(0) // 3等確率（後方互換性のため残す）
-  fourthPrizeWeight Int @default(0) // 4等確率（後方互換性のため残す）
-  fifthPrizeWeight  Int @default(0) // 5等確率（後方互換性のため残す）
-  loserWeight       Int @default(0) // ハズレ確率（後方互換性のため残す）
+  prizeWeights Json?
+  prizeHands   Json?
+  prizeOrder   Json?
 
-  // 動的等級設定（JSON形式）
-  prizeWeights Json? // 等級ごとの重み {"FIRST_PRIZE": 10, "SECOND_PRIZE": 20, "LOSER": 70}
-  prizeHands   Json? // 等級ごとの役設定 {"FIRST_PRIZE": ["ROYAL_FLUSH"], "SECOND_PRIZE": ["STRAIGHT_FLUSH"]}
-  prizeOrder   Json? // 等級の表示順序 ["FIRST_PRIZE", "SECOND_PRIZE", "THIRD_PRIZE", "FOURTH_PRIZE", "FIFTH_PRIZE", "LOSER"]
+  commonVideoAssetIds Int[]   @default([])
+  tierVideoAssetIds   Json?
+  useDefaultVideos    Boolean @default(true)
 
-  // ポーカーの役設定（各レアリティに対応する役、複数設定可能）
-  firstPrizeHands  HandRank[] @default([]) // 1等に対応する役（複数可）（後方互換性のため残す）
-  secondPrizeHands HandRank[] @default([]) // 2等に対応する役（複数可）（後方互換性のため残す）
-  thirdPrizeHands  HandRank[] @default([]) // 3等に対応する役（複数可）（後方互換性のため残す）
-  fourthPrizeHands HandRank[] @default([]) // 4等に対応する役（複数可）（後方互換性のため残す）
-  fifthPrizeHands  HandRank[] @default([]) // 5等に対応する役（複数可）（後方互換性のため残す）
-  // ハズレは上位の当たりに設定されていない役すべてを対象とするため、明示的な設定は不要
-
-  // ガチャ動画設定（個別設定）
-  // NOTE: 動画URLはDBに持たず、s3Keyから生成する（パス変更に強くする）
-  commonVideoAssetIds Int[]   @default([]) // 共通動画のVideoAsset.id配列（複数選択可能）
-  tierVideoAssetIds   Json? // 等級別動画のVideoAsset.id配列（各等級ごとに複数選択可能）
-  // 形式: {"FIRST_PRIZE": [1,2,3], "SECOND_PRIZE": [4,5], ...} （キーは PrizeTier.code）
-  useDefaultVideos    Boolean @default(true) // デフォルト動画を使用するかどうか（true: デフォルト使用、false: 個別設定使用）
-
-  // 結果送信メッセージテンプレート（マスタ参照）
   resultMessageTemplateId Int?
-  // 使用可能な変数:
-  // {itemName} - アイテム名
-  // {rarity} - 等級ラベル（1等、2等など）
-  // {rarityEmoji} - 等級の絵文字
-  // {gachaTypeName} - ガチャタイプ名
-  // {handName} - ポーカーハンド名（役）
-  // {holeCards} - 手札（カード一覧）
-  // {communityCards} - コミュニティカード（カード一覧）
-  // {holeCard1}, {holeCard2} - 個別の手札カード
-  // {communityCard1}〜{communityCard5} - 個別のコミュニティカード
 
-  // リレーション
   gachaHistories            GachaHistory[]
   prizeAssignments          GachaPrizeAssignment[]
   tierWeights               GachaTierWeight[]
   resultMessageTemplate     ResultMessageTemplate? @relation(fields: [resultMessageTemplateId], references: [id])
   referrerFreeGachaSettings FreeGachaSettings[]    @relation("ReferrerFreeGacha")
   refereeFreeGachaSettings  FreeGachaSettings[]    @relation("RefereeFreeGacha")
-  freeGachaHistories        FreeGachaHistory[]
 
   @@index([isActive])
+  @@index([isActive, startAt, endAt])
   @@map("gacha_types")
 }
 
 model GachaHistory {
-  id             Int            @id @default(autoincrement())
-  userId         String
-  gachaTypeId    Int
-  itemId         Int
-  /// 抽選された等級コード（PrizeTier.code）
-  /// NOTE: enum廃止・等級マスタ化のため文字列で保持
-  tierCode       String?
-  createdAt      DateTime       @default(now())
-  pointsUsed     Int            @default(0)
-  // NOTE: アイテム使用ログは ItemUsageLog に分離
-  gachaType      GachaType      @relation(fields: [gachaTypeId], references: [id])
-  item           GachaItem      @relation(fields: [itemId], references: [id])
-  tier           PrizeTier?     @relation(fields: [tierCode], references: [code])
-  user           User           @relation("UserGachaHistories", fields: [userId], references: [userId])
-  pointHistories PointHistory[]
-  usageLog       ItemUsageLog?
+  id          Int        @id @default(autoincrement())
+  userId      String
+  gachaTypeId Int
+  itemId      Int?
+  tierCode    String?
+  createdAt   DateTime   @default(now())
+  pointsUsed  Int        @default(0)
+  gachaType   GachaType? @relation(fields: [gachaTypeId], references: [id])
+  item        GachaItem? @relation(fields: [itemId], references: [id])
+  tier        PrizeTier? @relation(fields: [tierCode], references: [code])
 
   @@index([userId, createdAt])
   @@index([gachaTypeId, createdAt])
   @@index([itemId])
   @@index([createdAt])
-  // usedAt 系のindexは ItemUsageLog に移動
   @@index([tierCode])
   @@map("gacha_histories")
 }
 
-/// アイテム使用ログ（使用日時はGachaHistoryから分離）
 model ItemUsageLog {
-  id             Int      @id @default(autoincrement())
-  gachaHistoryId Int      @unique
-  usedAt         DateTime @default(now())
-  createdAt      DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    String
+  itemId    Int
+  usedAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  gachaHistory GachaHistory @relation(fields: [gachaHistoryId], references: [id])
+  item GachaItem? @relation(fields: [itemId], references: [id])
 
+  @@index([userId, usedAt])
+  @@index([itemId])
   @@index([usedAt])
   @@map("item_usage_logs")
 }
 
-/// ガチャタイプ別の景品割当（同じ景品をガチャによって別の等級に割当可能）
+model UserItem {
+  id        Int            @id @default(autoincrement())
+  userId    String
+  itemId    Int
+  status    UserItemStatus @default(UNUSED)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  item GachaItem? @relation(fields: [itemId], references: [id])
+
+  @@unique([userId, itemId])
+  @@index([userId, status])
+  @@index([itemId])
+  @@map("user_items")
+}
+
 model GachaPrizeAssignment {
-  id          Int      @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   gachaTypeId Int
   tierCode    String
-  itemId      Int
-  weight      Int      @default(1)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  itemId      Int?
+  rewardType  PrizeRewardType @default(ITEM)
+  points      Int             @default(0)
+  weight      Int             @default(1)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  gachaType GachaType @relation(fields: [gachaTypeId], references: [id])
-  tier      PrizeTier @relation(fields: [tierCode], references: [code])
-  item      GachaItem @relation(fields: [itemId], references: [id])
+  gachaType GachaType  @relation(fields: [gachaTypeId], references: [id])
+  tier      PrizeTier  @relation(fields: [tierCode], references: [code])
+  item      GachaItem? @relation(fields: [itemId], references: [id])
 
   @@unique([gachaTypeId, tierCode, itemId])
   @@index([gachaTypeId, tierCode, isActive])
   @@map("gacha_prize_assignments")
 }
 
-/// 友だち紹介リンクテーブル（1ユーザー1リンク固定）
 model Referral {
   id             Int            @id @default(autoincrement())
-  userId         String         @unique // 紹介者のユーザーID（1ユーザー1リンク）
-  referralLinkId String         @unique // 紹介リンクの一意識別子
-  referralLink   String // 紹介リンクのURL文字列
-  status         ReferralStatus @default(PENDING) // 紹介の状態
+  userId         String
+  referralLinkId String         @unique
+  referralLink   String
+  status         ReferralStatus @default(PENDING)
+  expiresAt      DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  user          User              @relation("ReferrerLink", fields: [userId], references: [userId])
-  histories     ReferralHistory[] // このリンクへのアクセス履歴
-  referralUsers ReferralUser[] // このリンクで成立した紹介
-
   @@index([userId])
-  @@index([referralLinkId])
-  @@index([status])
   @@map("referrals")
 }
 
-/// 友だち紹介履歴テーブル（リンクアクセス履歴、インサートのみ）
 model ReferralHistory {
   id                 Int            @id @default(autoincrement())
-  referralId         Int // 紹介リンクID
-  referralLinkId     String // 紹介リンクの一意識別子（検索用）
-  ipAddress          String? // 紹介リンクアクセス時のIPアドレス
-  deviceInfo         String? // デバイス情報
-  status             ReferralStatus @default(PENDING) // 紹介の状態
-  isFraudDetected    Boolean        @default(false) // 不正検知フラグ
-  fraudReason        String? // 不正検知理由
-  isBotDetected      Boolean        @default(false) // ボット検知フラグ
-  botDetectionReason String? // ボット検知理由
-  metadata           String? // 追加メタデータ（JSON文字列など）
-  referredAt         DateTime       @default(now()) // リンクアクセス日時
+  referralId         Int
+  referralLinkId     String
+  ipAddress          String?
+  deviceInfo         String?
+  status             ReferralStatus @default(PENDING)
+  isFraudDetected    Boolean        @default(false)
+  fraudReason        String?
+  isBotDetected      Boolean        @default(false)
+  botDetectionReason String?
+  metadata           String?
+  referredAt         DateTime       @default(now())
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
-
-  referral Referral @relation(fields: [referralId], references: [id])
 
   @@index([referralId, referredAt])
   @@index([referralLinkId])
@@ -250,69 +189,35 @@ model ReferralHistory {
   @@map("referral_histories")
 }
 
-/// 友だち紹介成立テーブル（紹介成立情報、報酬情報）
 model ReferralUser {
   id                        Int       @id @default(autoincrement())
-  userId                    String // 紹介者のユーザーID
-  toUserId                  String // 被紹介者のユーザーID
-  referralId                Int // 紹介リンクID
-  completedAt               DateTime  @default(now()) // 紹介成立日時
-  additionalRewardGranted   Boolean   @default(false) // 追加報酬付与済みフラグ
-  additionalRewardGrantedAt DateTime? // 追加報酬付与日時
+  userId                    String
+  toUserId                  String
+  completedAt               DateTime  @default(now())
+  additionalRewardGranted   Boolean   @default(false)
+  additionalRewardGrantedAt DateTime?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
-
-  user               User               @relation("ReferrerUser", fields: [userId], references: [userId])
-  toUser             User               @relation("RefereeUser", fields: [toUserId], references: [userId])
-  referral           Referral           @relation(fields: [referralId], references: [id])
-  freeGachaHistories FreeGachaHistory[] // この紹介で付与された無料ガチャ履歴
-  refereeActivity    RefereeActivity? // 被紹介者の行動情報
 
   @@unique([userId, toUserId], name: "unique_referral_pair")
   @@index([userId, completedAt])
   @@index([toUserId])
-  @@index([referralId])
   @@index([additionalRewardGranted])
   @@map("referral_users")
 }
 
-/// 被紹介者行動情報テーブル（被紹介者の行動を別テーブルで管理）
-model RefereeActivity {
-  id             Int       @id @default(autoincrement())
-  referralUserId Int       @unique // ReferralUserのID
-  gachaCount     Int       @default(0) // 被紹介者のガチャ実行回数
-  totalSpent     Int       @default(0) // 被紹介者の合計消費額（ポイント購入額など）
-  lastActiveAt   DateTime? // 被紹介者の最終アクティブ日時
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+model UserActivity {
+  id         Int      @id @default(autoincrement())
+  userId     String   @unique
+  gachaCount Int      @default(0)
+  totalSpent Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  referralUser ReferralUser @relation(fields: [referralUserId], references: [id])
+  referralUserId Int? @unique
 
-  @@index([referralUserId])
-  @@map("referee_activities")
-}
-
-model FreeGachaHistory {
-  id             Int                @id @default(autoincrement())
-  userId         String
-  referralUserId Int? // ReferralUserのID（紹介成立情報への参照）
-  /// 付与された無料ガチャのガチャタイプID（設定から取得した時点の値）
-  gachaTypeId    Int
-  grantType      FreeGachaGrantType
-  isUsed         Boolean            @default(false)
-  usedAt         DateTime?
-  expiresAt      DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  referralUser   ReferralUser?      @relation(fields: [referralUserId], references: [id])
-  user           User               @relation(fields: [userId], references: [userId])
-  gachaType      GachaType          @relation(fields: [gachaTypeId], references: [id])
-
-  @@index([userId, isUsed])
-  @@index([referralUserId])
-  @@index([expiresAt])
-  @@index([gachaTypeId])
-  @@map("free_gacha_histories")
+  @@index([userId])
+  @@map("user_activities")
 }
 
 model PointHistory {
@@ -322,25 +227,19 @@ model PointHistory {
   amount          Int
   balanceBefore   Int                  @default(0)
   balanceAfter    Int
-  // 将来: paid/free の内訳も保持したい場合は別カラム化する
   description     String?
-  // NOTE: Stripe等の購入ログは PointPurchaseLog に分離（旧カラムは互換用）
-  stripePaymentId String?
-  purchaseLogId   Int?
-  gachaHistoryId  Int?
+  historyTable    String?
+  historyTableId  Int?
+  paymentMethod   String?
   createdAt       DateTime             @default(now())
-  gachaHistory    GachaHistory?        @relation(fields: [gachaHistoryId], references: [id])
-  user            User                 @relation(fields: [userId], references: [userId])
-  purchaseLog     PointPurchaseLog?    @relation(fields: [purchaseLogId], references: [id])
+  updatedAt       DateTime             @updatedAt
 
   @@index([userId, createdAt])
   @@index([transactionType])
-  @@index([stripePaymentId])
-  @@index([gachaHistoryId])
+  @@index([historyTable, historyTableId])
   @@map("point_histories")
 }
 
-/// 購入ログ（Stripe等の決済ログ。エラー情報も保持できる）
 model PointPurchaseLog {
   id                      Int             @id @default(autoincrement())
   userId                  String
@@ -354,9 +253,6 @@ model PointPurchaseLog {
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
 
-  user           User           @relation(fields: [userId], references: [userId])
-  pointHistories PointHistory[]
-
   @@index([userId, createdAt])
   @@index([provider, status])
   @@map("point_purchase_logs")
@@ -364,10 +260,9 @@ model PointPurchaseLog {
 
 model AdminActionHistory {
   id            Int      @id @default(autoincrement())
-  actionType    String // アプリ側で管理（AdminActionType定数を使用）
-  adminUserId   String?
-  adminName     String?
-  targetUserId  String?
+  actionType    String
+  adminUserId   String
+  adminName     String
   description   String
   metadata      Json?
   createdAt     DateTime @default(now())
@@ -376,11 +271,9 @@ model AdminActionHistory {
   @@index([actionType])
   @@index([adminUserId])
   @@index([createdAt])
-  @@index([targetUserId])
   @@map("admin_action_histories")
 }
 
-/// 動画ファイルマスタ（用途情報は持たない）
 model VideoAsset {
   id          Int      @id @default(autoincrement())
   s3Key       String   @unique
@@ -397,12 +290,12 @@ model VideoAsset {
   @@map("video_assets")
 }
 
-/// 動画のカテゴリ（用途をマスタから分離）
 model VideoAssetCategory {
   id        Int               @id @default(autoincrement())
   assetId   Int
   category  VideoCategoryType
   createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   asset VideoAsset @relation(fields: [assetId], references: [id])
 
@@ -411,16 +304,11 @@ model VideoAssetCategory {
   @@map("video_asset_categories")
 }
 
-/// 等級マスタ（運用で増減可能）
 model PrizeTier {
   id           Int      @id @default(autoincrement())
-  /// 等級コード（例: FIRST_PRIZE）。アプリ内キーとして使用し、変更しない前提。
   code         String   @unique
-  /// 表示名（例: 1等 / ハズレ）
   label        String
-  /// 表示順（小さいほど先）
   displayOrder Int      @default(0)
-  /// 有効/無効
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -433,13 +321,11 @@ model PrizeTier {
   @@map("prize_tiers")
 }
 
-/// ガチャタイプ別の等級確率（重み）
 model GachaTierWeight {
   id           Int      @id @default(autoincrement())
   gachaTypeId  Int
   tierCode     String
   weight       Int      @default(0)
-  /// ガチャごとの表示順（必要なら上書き）
   displayOrder Int      @default(0)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -454,39 +340,25 @@ model GachaTierWeight {
   @@map("gacha_tier_weights")
 }
 
-// 現在のポイント残高（正）
-// 方針: 履歴(PointHistory)は閲覧/監査用。残高はこのテーブルが正。
 model UserPointBalance {
-  userId      String    @id
-  paidAmount  Int       @default(0)
-  freeAmount  Int       @default(0)
-  // 要件: 有効期限は有償/無償合計で「最終更新日から1年後」に同時失効
-  expiresAt   DateTime?
-  lastUpdated DateTime  @default(now())
-  createdAt   DateTime  @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     String   @unique
+  paidAmount Int      @default(0)
+  freeAmount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [userId])
-
-  @@index([expiresAt])
+  @@index([userId])
   @@map("user_point_balances")
 }
 
-// ポイント購入プラン（管理画面で編集する）
-// 方針: クライアントから送られた金額/ポイントは信用せず、サーバー側で planId を照合して確定する
 model PointPurchasePlan {
-  /// プランID（例: "p100"）
   id              String   @id
-  /// 付与ポイント数
   points          Int
-  /// おまけ無償ポイント数（購入特典）
   bonusFreePoints Int      @default(0)
-  /// 価格（JPY, 円単位）
   price           Int
-  /// 表示ラベル（例: "100ポイント"）
   label           String
-  /// 有効/無効（無効化しても過去の決済のメタデータは残る）
   isActive        Boolean  @default(true)
-  /// 表示順（小さいほど先）
   displayOrder    Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -514,58 +386,44 @@ model UserTag {
   tagId     Int
   createdAt DateTime @default(now())
   tag       Tag      @relation(fields: [tagId], references: [id])
-  user      User     @relation(fields: [userId], references: [userId])
 
   @@unique([userId, tagId])
-  @@index([tagId])
+  @@index([tagId, userId])
   @@index([userId])
   @@map("user_tags")
 }
 
-// 紹介ステータス
 enum ReferralStatus {
-  PENDING // 紹介リンク生成済み（被紹介者の登録待ち）
-  COMPLETED // 紹介成立（被紹介者が初回ガチャ実行）
-  INVALID // 無効（自己紹介、重複紹介など）
-  FRAUD // 不正検知
+  PENDING
+  COMPLETED
+  INVALID
+  FRAUD
 }
 
-// 無料ガチャ付与タイプ
-enum FreeGachaGrantType {
-  REFERRER // 紹介者への付与
-  REFEREE // 被紹介者への付与
-}
-
-// ポイント取引タイプ
 enum PointTransactionType {
-  PURCHASE // 購入（Stripe決済）- 有償ポイント
-  CONSUME // 消費（ガチャ実行）
-  GRANT // 付与（管理者による付与、報酬など）- 無償ポイント
-  REFUND // 返金
-  REFERRAL_REWARD // 紹介特典 - 無償ポイント
+  PURCHASE
+  CONSUME
+  GRANT
+  REFUND
+  REFERRAL_REWARD
 }
 
-// ポーカーの役（HandRank）
 enum HandRank {
-  ROYAL_FLUSH // ロイヤルフラッシュ
-  STRAIGHT_FLUSH // ストレートフラッシュ
-  FOUR_OF_A_KIND // フォーカード
-  FULL_HOUSE // フルハウス
-  FLUSH // フラッシュ
-  STRAIGHT // ストレート
-  THREE_OF_A_KIND // スリーカード
-  TWO_PAIR // ツーペア
-  ONE_PAIR // ワンペア
-  HIGH_CARD // ハイカード
+  ROYAL_FLUSH
+  STRAIGHT_FLUSH
+  FOUR_OF_A_KIND
+  FULL_HOUSE
+  FLUSH
+  STRAIGHT
+  THREE_OF_A_KIND
+  TWO_PAIR
+  ONE_PAIR
+  HIGH_CARD
 }
 
-// 管理画面操作タイプ
-// AdminActionType enumは削除され、アプリ側（lib/admin-action-types.ts）で管理されるようになりました
-
-// ガチャ動画タイプ
 enum VideoCategoryType {
-  COMMON // 共通動画として使う想定の候補
-  TIER // 等級別動画として使う想定の候補
+  COMMON
+  TIER
 }
 
 enum PaymentProvider {
@@ -578,26 +436,30 @@ enum PaymentStatus {
   PENDING
 }
 
-// アイテム使用方法
 enum ItemUsageType {
-  IMAGE // 画像を表示
-  SHOW_TO_STAFF // 店員に見せて使用
+  IMAGE
+  SHOW_TO_STAFF
 }
 
-// ポイント種別
 enum PointType {
-  PAID // 有償ポイント（購入で獲得）
-  FREE // 無償ポイント（紹介特典、管理者付与など）
+  PAID
+  FREE
 }
 
-// ============================================
-// デフォルトガチャ動画設定（一括設定）
-// ============================================
+enum UserItemStatus {
+  UNUSED
+  USED
+  EXPIRED
+}
+
+enum PrizeRewardType {
+  ITEM
+  POINTS
+}
+
 model DefaultGachaVideoSettings {
   id                  Int      @id @default(autoincrement())
-  commonVideoAssetIds Int[]    @default([]) // 共通動画のVideoAsset.id配列（全ガチャタイプのデフォルト、複数選択可能）
-  /// 等級別動画のID配列（全ガチャタイプのデフォルト、各等級ごとに複数選択可能）
-  /// 形式: {"FIRST_PRIZE": [1,2,3], "SECOND_PRIZE": [4,5], ...} （キーは PrizeTier.code）
+  commonVideoAssetIds Int[]    @default([])
   tierVideoAssetIds   Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -605,7 +467,6 @@ model DefaultGachaVideoSettings {
   @@map("default_gacha_video_settings")
 }
 
-/// 結果送信メッセージテンプレート（マスタ）
 model ResultMessageTemplate {
   id          Int      @id @default(autoincrement())
   code        String   @unique
@@ -621,19 +482,15 @@ model ResultMessageTemplate {
   @@map("result_message_templates")
 }
 
-/// 無料ガチャ設定（紹介システム用）
 model FreeGachaSettings {
   id                      Int      @id @default(autoincrement())
-  /// 無料ガチャ機能の有効/無効
-  isEnabled               Boolean  @default(true)
-  /// 紹介成立時に無料ガチャを付与するかどうか
+  isActive                Boolean  @default(true)
   grantOnReferralComplete Boolean  @default(true)
-  /// 紹介者に付与するガチャタイプID（nullの場合は付与しない）
   referrerGachaTypeId     Int?
-  /// 被紹介者に付与するガチャタイプID（nullの場合は付与しない）
   refereeGachaTypeId      Int?
-  /// 無料ガチャの有効期限（日数、nullの場合は期限なし）
   expirationDays          Int?
+  referrerPoints          Int      @default(100)
+  refereePoints           Int      @default(100)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 

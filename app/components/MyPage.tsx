@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { LiffProfile } from '@/lib/liff';
+import BottomNavigation from './BottomNavigation';
+import PointCard from './PointCard';
 
 type MyPageProps = {
   profile: LiffProfile;
@@ -12,13 +15,68 @@ type UserStats = {
   rarityStats: Record<string, number>;
 };
 
+type PrizeTier = {
+  code: string;
+  label: string;
+  displayOrder: number;
+};
+
+type PointBalances = {
+  paid: number;
+  free: number;
+  total: number;
+  paidExpiresAt: string | null;
+  freeExpiresAt: string | null;
+  lastUpdated: string | null;
+};
+
+type RecentItem = {
+  id: number;
+  item: {
+    id: number;
+    name: string;
+    description: string | null;
+    rarity: string;
+    usageType: string;
+    imageUrl: string | null;
+  };
+  createdAt: string;
+  usedAt: string | null;
+};
+
 export default function MyPage({ profile }: MyPageProps) {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
+  const [pointBalances, setPointBalances] = useState<PointBalances | null>(null);
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
+  const [loadingPoints, setLoadingPoints] = useState(true);
+  const [loadingItems, setLoadingItems] = useState(true);
 
   useEffect(() => {
+    fetchPrizeTiers();
     fetchUserStats();
+    fetchPointBalances();
+    fetchRecentItems();
   }, [profile.userId]);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const res = await fetch('/api/prize-tiers');
+      if (res.ok) {
+        const data = await res.json();
+        const tierMap: Record<string, string> = {};
+        if (Array.isArray(data.tiers)) {
+          data.tiers.forEach((tier: PrizeTier) => {
+            tierMap[tier.code] = tier.label;
+          });
+        }
+        setPrizeTiers(tierMap);
+      }
+    } catch (error) {
+      console.error('等級マスタ取得エラー:', error);
+    }
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -34,116 +92,318 @@ export default function MyPage({ profile }: MyPageProps) {
     }
   };
 
+  const fetchPointBalances = async () => {
+    try {
+      const res = await fetch(`/api/points/balance?userId=${profile.userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPointBalances({
+          paid: data.paid || 0,
+          free: data.free || 0,
+          total: data.total || 0,
+          paidExpiresAt: data.paidExpiresAt || null,
+          freeExpiresAt: data.freeExpiresAt || null,
+          lastUpdated: data.lastUpdated || null,
+        });
+      }
+    } catch (error) {
+      console.error('ポイント残高取得エラー:', error);
+    } finally {
+      setLoadingPoints(false);
+    }
+  };
+
+  const fetchRecentItems = async () => {
+    try {
+      const res = await fetch(`/api/users/${profile.userId}/items?page=1&limit=5`);
+      if (res.ok) {
+        const data = await res.json();
+        setRecentItems(data.items || []);
+      }
+    } catch (error) {
+      console.error('最近のアイテム取得エラー:', error);
+    } finally {
+      setLoadingItems(false);
+    }
+  };
+
   const getRarityLabel = (rarity: string): string => {
-    const labels: Record<string, string> = {
-      FIRST_PRIZE: '1等',
-      SECOND_PRIZE: '2等',
-      THIRD_PRIZE: '3等',
-      FOURTH_PRIZE: '4等',
-      FIFTH_PRIZE: '5等',
-      LOSER: 'ハズレ',
+    return prizeTiers[rarity] || rarity;
+  };
+
+  const getRarityColor = (rarity: string): string => {
+    const colors: Record<string, string> = {
+      'FIRST_PRIZE': 'from-yellow-500 to-yellow-600',
+      'SECOND_PRIZE': 'from-purple-500 to-purple-600',
+      'THIRD_PRIZE': 'from-blue-500 to-blue-600',
+      'FOURTH_PRIZE': 'from-green-500 to-green-600',
+      'FIFTH_PRIZE': 'from-gray-400 to-gray-500',
+      'LOSER': 'from-gray-300 to-gray-400',
     };
-    return labels[rarity] || rarity;
+    return colors[rarity] || 'from-gray-400 to-gray-500';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="mx-auto max-w-md">
-        {/* ヘッダー */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <h1 className="mb-4 text-2xl font-bold text-gray-800">マイページ</h1>
-          <div className="flex items-center gap-4">
-            {profile.pictureUrl && (
-              <img
-                src={profile.pictureUrl}
-                alt={profile.displayName}
-                className="h-16 w-16 rounded-full"
-              />
-            )}
-            <div>
-              <div className="text-lg font-semibold text-gray-800">
-                {profile.displayName}
-              </div>
-              <div className="text-sm text-gray-500">ID: {profile.userId}</div>
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+        <div className="mx-auto max-w-md">
+          {/* ヒーローセクション - プロフィール */}
+          <div className="relative overflow-hidden px-4 pt-8 pb-6">
+            {/* 背景装飾 */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-10 left-10 text-6xl">🂡</div>
+              <div className="absolute top-20 right-10 text-5xl">🂮</div>
+              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
+              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
-          </div>
-        </div>
-
-        {/* 統計情報 */}
-        {loading ? (
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <div className="text-center text-gray-500">読み込み中...</div>
-          </div>
-        ) : stats ? (
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-semibold text-gray-800">統計情報</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-gray-500">ガチャ実行回数</div>
-                <div className="text-2xl font-bold text-gray-800">
-                  {stats.totalGachaCount} 回
+            
+            <div className="relative z-10 text-center text-white">
+              <h1 className="mb-6 text-3xl font-bold drop-shadow-lg">マイページ</h1>
+              
+              {/* プロフィールカード */}
+              <div className="mx-auto mb-6 max-w-xs rounded-xl border-2 border-yellow-400/50 bg-gradient-to-br from-white/95 to-white/90 p-6 shadow-2xl backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-4">
+                  {profile.pictureUrl && (
+                    <img
+                      src={profile.pictureUrl}
+                      alt={profile.displayName || 'ユーザー'}
+                      className="h-20 w-20 rounded-full border-4 border-yellow-400 shadow-lg"
+                    />
+                  )}
+                  <div className="text-center">
+                    <div className="mb-1 text-xl font-bold text-gray-800">
+                      {profile.displayName || 'ユーザー'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ID: {profile.userId.substring(0, 8)}...
+                    </div>
+                  </div>
                 </div>
               </div>
-              {Object.keys(stats.rarityStats).length > 0 && (
-                <div>
-                  <div className="mb-2 text-sm text-gray-500">レアリティ別獲得数</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(stats.rarityStats).map(([rarity, count]) => (
-                      <div key={rarity} className="rounded-md bg-gray-50 p-2">
-                        <div className="text-xs text-gray-500">{getRarityLabel(rarity)}</div>
-                        <div className="text-lg font-semibold">{count}</div>
-                      </div>
-                    ))}
+
+              {/* ポイント表示 - 共通コンポーネント */}
+              <div className="mb-6">
+                <PointCard pointBalances={pointBalances} variant="mypage" />
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-4">
+            {/* クイックアクション */}
+            <div className="mb-6 grid grid-cols-3 gap-3">
+              <Link
+                href="/?action=history"
+                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                <img
+                  src="/icons/navigation/icon-history.svg"
+                  alt="履歴"
+                  className="mb-2 h-8 w-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="text-xs font-semibold">履歴</div>
+              </Link>
+              <Link
+                href="/?action=items"
+                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                <img
+                  src="/icons/navigation/icon-items.svg"
+                  alt="アイテム"
+                  className="mb-2 h-8 w-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="text-xs font-semibold">アイテム</div>
+              </Link>
+              <Link
+                href="/?action=referral"
+                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                <img
+                  src="/icons/navigation/icon-referral.svg"
+                  alt="友達紹介"
+                  className="mb-2 h-8 w-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <div className="text-xs font-semibold">紹介</div>
+              </Link>
+            </div>
+
+            {/* 統計情報 */}
+            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
+              <h2 className="mb-4 text-lg font-bold text-white drop-shadow-md">統計情報</h2>
+              {loading ? (
+                <div className="text-center text-white/70">読み込み中...</div>
+              ) : stats ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-white/10 p-4 backdrop-blur-sm">
+                    <div className="mb-1 text-xs text-white/70">ガチャ実行回数</div>
+                    <div className="text-3xl font-bold text-yellow-300 drop-shadow-md">
+                      {stats.totalGachaCount.toLocaleString()} 回
+                    </div>
                   </div>
+                  {Object.keys(stats.rarityStats).length > 0 && (
+                    <div>
+                      <div className="mb-3 text-sm font-semibold text-white">レアリティ別獲得数</div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {Object.entries(stats.rarityStats)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([rarity, count]) => (
+                            <div
+                              key={rarity}
+                              className={`rounded-lg bg-gradient-to-br ${getRarityColor(rarity)} p-3 shadow-md`}
+                            >
+                              <div className="mb-1 text-xs font-medium text-white/90">
+                                {getRarityLabel(rarity)}
+                              </div>
+                              <div className="text-xl font-bold text-white">
+                                {count.toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-white/70">統計情報がありません</div>
+              )}
+            </div>
+
+            {/* 最近の獲得アイテム */}
+            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-white drop-shadow-md">最近の獲得アイテム</h2>
+                <Link
+                  href="/?action=items"
+                  className="text-xs text-white/80 underline hover:text-white"
+                >
+                  すべて見る
+                </Link>
+              </div>
+              {loadingItems ? (
+                <div className="text-center text-white/70">読み込み中...</div>
+              ) : recentItems.length > 0 ? (
+                <div className="space-y-3">
+                  {recentItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="group rounded-lg border-2 border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90 p-3 shadow-md transition-all hover:border-yellow-400/60 hover:shadow-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        {item.item.imageUrl ? (
+                          <img
+                            src={item.item.imageUrl}
+                            alt={item.item.name}
+                            className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border border-gray-200"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const fallback = target.nextElementSibling as HTMLElement;
+                              if (fallback) {
+                                fallback.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getRarityColor(item.item.rarity)} text-lg text-white shadow-sm ${item.item.imageUrl ? 'hidden' : ''}`}
+                        >
+                          🎁
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="mb-1 font-semibold text-gray-800 truncate">
+                            {item.item.name}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`rounded-full bg-gradient-to-r ${getRarityColor(item.item.rarity)} px-2 py-0.5 text-xs font-semibold text-white shadow-sm`}
+                            >
+                              {getRarityLabel(item.item.rarity)}
+                            </span>
+                            {item.usedAt && (
+                              <span className="text-xs text-gray-500">使用済み</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-white/70">
+                  まだ獲得したアイテムがありません
                 </div>
               )}
             </div>
-          </div>
-        ) : (
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <div className="text-center text-gray-500">統計情報がありません</div>
-          </div>
-        )}
 
-        {/* メニューリンク */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">メニュー</h2>
-          <div className="space-y-2">
-            <a
-              href="?action=gacha"
-              className="block rounded-md bg-blue-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-600"
-            >
-              ガチャを引く
-            </a>
-            <a
-              href="/points"
-              className="block rounded-md bg-green-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-green-600"
-            >
-              ポイント購入
-            </a>
-            <a
-              href="?action=history"
-              className="block rounded-md bg-gray-200 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-300"
-            >
-              ガチャ履歴
-            </a>
-            <a
-              href="?action=items"
-              className="block rounded-md bg-gray-200 px-4 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-300"
-            >
-              マイアイテム
-            </a>
-            <a
-              href="?action=referral"
-              className="block rounded-md bg-purple-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-purple-600"
-            >
-              友だち紹介
-            </a>
+            {/* お知らせ・ヘルプ */}
+            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
+              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">お知らせ・ヘルプ</h2>
+              <div className="space-y-2">
+                <Link
+                  href="/?action=help"
+                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-xl">❓</div>
+                    <span className="text-sm font-medium">ヘルプ・お知らせ</span>
+                  </div>
+                  <svg
+                    className="h-5 w-5 text-white/70"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </Link>
+                <Link
+                  href="/?action=home"
+                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="/icons/navigation/icon-home.svg"
+                      alt="ホーム"
+                      className="h-5 w-5"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <span className="text-sm font-medium">ホームに戻る</span>
+                  </div>
+                  <svg
+                    className="h-5 w-5 text-white/70"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <BottomNavigation currentPage="mypage" />
+    </>
   );
 }
-
-

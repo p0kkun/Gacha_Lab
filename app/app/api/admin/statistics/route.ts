@@ -272,7 +272,6 @@ export async function GET(request: NextRequest) {
         const usageCount = await prisma.gachaHistory.count({
           where: {
             itemId: item.id,
-            usageLog: { isNot: null },
             ...(targetGachaTypeIds.length > 0 && {
               gachaTypeId: { in: targetGachaTypeIds },
             }),

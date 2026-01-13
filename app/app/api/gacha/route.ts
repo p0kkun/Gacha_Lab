@@ -71,9 +71,11 @@ function drawByWeights<T extends { weight: number }>(rows: T[]): T {
 
 export async function POST(request: NextRequest) {
   try {
+    // ステップ1: ガチャ実行APIを受信する
     const body = await request.json();
     const { userId, gachaTypeId } = body;
 
+    // ステップ2: バリデーションチェックを行う
     if (!userId) {
       return NextResponse.json(
         { error: "ユーザーIDが必要です" },
@@ -91,13 +93,14 @@ export async function POST(request: NextRequest) {
     // NOTE: 外部からは code（例: "normal"）を受け取る。変数名は互換のため gachaTypeId のまま。
     const gachaTypeCode = String(gachaTypeId);
 
-    // ガチャタイプの設定を取得
+    // ステップ3: ガチャデータを取得する
     // NOTE: Prisma Client未再生成の状態でもビルドが通るように findFirst + any で回避。
     // 新DB構築後に `prisma generate` を実行すれば `findUnique({ where: { code } })` に戻せます。
     const gachaType = await prisma.gachaType.findFirst({
       where: { code: gachaTypeCode } as unknown as Prisma.GachaTypeWhereInput,
     });
 
+    // ステップ4: ガチャが有効か判定する
     if (!gachaType || !gachaType.isActive) {
       return NextResponse.json(
         { error: "ガチャタイプが見つからないか、無効です" },
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 動画設定のバリデーション（個別設定の場合のみ）
+    // ステップ6: 動画設定のバリデーションを行う（個別設定の場合のみ）
     // デフォルト設定を使用する場合は、動画選択ロジック側で処理されるため、ここではバリデーションしない
     if (gachaType.useDefaultVideos === false) {
       const gachaTypeForVideos = gachaType as unknown as {
@@ -156,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 期間チェック
+    // ステップ5: ガチャが開催中か判定する
     const now = new Date();
     // 型アサーション: PrismaスキーマにはstartAt/endAt/pointCostが存在するが、型解決の問題で型エラーが出る場合がある
     const gachaTypeWithDates = gachaType as typeof gachaType & {
@@ -178,12 +181,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ポイントチェック
+    // ステップ7: ユーザーデータを取得する
+    const { getPointBalances } = await import("@/lib/point-management");
+    const balances = await getPointBalances(userId);
+
+    // ステップ8: 消費ポイントが足りているか判定する
     const pointCost = gachaTypeWithDates.pointCost || 0;
     if (pointCost > 0) {
-      const { getPointBalances } = await import("@/lib/point-management");
-      const balances = await getPointBalances(userId);
-
       if (balances.total < pointCost) {
         return NextResponse.json(
           {
@@ -194,7 +198,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 統一された重みベースの抽選ロジック（動的等級設定に対応）
+    // ステップ9: 景品抽選を行う
     let selectedTierCode: string;
 
     // ESLint/TSサーバーの型キャッシュ差異を避けるため、必要なdelegateのみを明示型で参照
@@ -227,6 +231,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ステップ10: 景品抽選結果をもとに演出内容を決定する
     // ポーカーハンドは結果表示用のみ（抽選には影響しない）
     // 役が設定されている場合のみ生成
     let pokerHand: {
@@ -244,16 +249,11 @@ export async function POST(request: NextRequest) {
         : gachaType.prizeHands
       : null;
 
-    // 既存のフィールドからも確認（後方互換性）
     const hasHandsConfigured = prizeHands
       ? Object.values(prizeHands as Record<string, unknown>).some((hands) => {
           return Array.isArray(hands) && hands.length > 0;
         })
-      : gachaType.firstPrizeHands.length > 0 ||
-        gachaType.secondPrizeHands.length > 0 ||
-        gachaType.thirdPrizeHands.length > 0 ||
-        gachaType.fourthPrizeHands.length > 0 ||
-        gachaType.fifthPrizeHands.length > 0;
+      : false;
 
     // 役が設定されている場合のみポーカーハンドを生成
     if (hasHandsConfigured) {
@@ -317,13 +317,7 @@ export async function POST(request: NextRequest) {
 
     // ポイント消費とガチャ履歴保存をトランザクションで実行
     const result = await prisma.$transaction(async (tx) => {
-      // 当選アイテムの詳細情報を取得（ポイント付与情報を含む）
-      const itemDetails = await tx.gachaItem.findUnique({
-        where: { id: selectedItem.id },
-        select: { grantFreePoints: true },
-      });
-
-      // ガチャ履歴を保存（ポイント使用情報を含む）
+      // ステップ12: ガチャ履歴を保存（ポイント使用情報を含む）
       const gachaHistory = await tx.gachaHistory.create({
         data: {
           userId: userId,
@@ -334,7 +328,26 @@ export async function POST(request: NextRequest) {
         } as unknown as Prisma.GachaHistoryUncheckedCreateInput,
       });
 
-      // ポイント消費（無償ポイントから優先的に消費）
+      // ステップ13: ユーザーのアイテム所持情報を保存する
+      // UserItemテーブルにupsert（既に同じアイテムを所持している場合は更新しない）
+      await tx.userItem.upsert({
+        where: {
+          userId_itemId: {
+            userId: userId,
+            itemId: selectedItem.id,
+          },
+        },
+        create: {
+          userId: userId,
+          itemId: selectedItem.id,
+          status: "UNUSED",
+        },
+        update: {
+          // 既に所持している場合は更新しない（statusは変更しない）
+        },
+      });
+
+      // ステップ14: ポイント消費を行う（pointCost > 0 の場合のみ）
       let newBalance = 0;
       if (pointCost > 0) {
         const nowDate = new Date();
@@ -351,25 +364,7 @@ export async function POST(request: NextRequest) {
               userId,
               paidAmount: 0,
               freeAmount: 0,
-              expiresAt: null,
-              lastUpdated: nowDate,
             },
-          });
-        }
-
-        // 期限切れなら同時に失効（lastUpdatedは上書きしない）
-        const before = await tx.userPointBalance.findUnique({
-          where: { userId },
-        });
-        if (
-          before &&
-          before.paidAmount + before.freeAmount > 0 &&
-          before.expiresAt &&
-          before.expiresAt <= nowDate
-        ) {
-          await tx.userPointBalance.update({
-            where: { userId },
-            data: { paidAmount: 0, freeAmount: 0, expiresAt: null },
           });
         }
 
@@ -394,8 +389,6 @@ export async function POST(request: NextRequest) {
           data: {
             freeAmount: newFreeAmount,
             paidAmount: newPaidAmount,
-            expiresAt: totalBalances > 0 ? unifiedExpiresAt : null,
-            lastUpdated: nowDate,
           },
         });
 
@@ -408,8 +401,9 @@ export async function POST(request: NextRequest) {
             balanceBefore: beforeTotal,
             balanceAfter: totalBalances,
             description: `${gachaType.name}ガチャ実行`,
-            gachaHistoryId: gachaHistory.id,
-          } as unknown as Prisma.PointHistoryUncheckedCreateInput,
+            historyTable: 'gacha_histories',
+            historyTableId: gachaHistory.id,
+          },
         });
 
         newBalance = totalBalances;
@@ -421,76 +415,19 @@ export async function POST(request: NextRequest) {
         newBalance = (balance?.paidAmount ?? 0) + (balance?.freeAmount ?? 0);
       }
 
-      // アイテムに無償ポイント付与が設定されている場合、ポイントを付与
-      const grantPoints = itemDetails?.grantFreePoints ?? 0;
-      if (grantPoints > 0) {
-        const nowDate = new Date();
-        const unifiedExpiresAt = new Date(nowDate);
-        unifiedExpiresAt.setFullYear(unifiedExpiresAt.getFullYear() + 1);
-
-        // 残高行を確実に作成
-        const existing = await tx.userPointBalance.findUnique({
-          where: { userId },
-        });
-        if (!existing) {
-          await tx.userPointBalance.create({
-            data: {
-              userId,
-              paidAmount: 0,
-              freeAmount: 0,
-              expiresAt: null,
-              lastUpdated: nowDate,
-            },
-          });
-        }
-
-        const balanceBeforeGrant = await tx.userPointBalance.findUnique({
-          where: { userId },
-        });
-        const beforeTotal = (balanceBeforeGrant?.paidAmount ?? 0) + (balanceBeforeGrant?.freeAmount ?? 0);
-
-        // 無償ポイントを付与
-        const updatedBalance = await tx.userPointBalance.update({
-          where: { userId },
-          data: {
-            freeAmount: { increment: grantPoints },
-            expiresAt: unifiedExpiresAt,
-            lastUpdated: nowDate,
-          },
-        });
-
-        const afterTotal = (updatedBalance.paidAmount ?? 0) + (updatedBalance.freeAmount ?? 0);
-
-        // ポイント履歴を記録
-        await tx.pointHistory.create({
-          data: {
-            userId,
-            transactionType: PointTransactionType.GRANT,
-            amount: grantPoints,
-            balanceBefore: beforeTotal,
-            balanceAfter: afterTotal,
-            description: `ガチャ景品「${selectedItem.name}」による無償ポイント付与`,
-            gachaHistoryId: gachaHistory.id,
-          } as unknown as Prisma.PointHistoryUncheckedCreateInput,
-        });
-
-        newBalance = afterTotal;
-      }
-
-      return { gachaHistory, newBalance, grantedPoints: grantPoints };
+      // ステップ15: DBコミットを行う（トランザクション成功時）
+      return { gachaHistory, newBalance, grantedPoints: 0 };
     });
 
-    // 被紹介者の行動を更新（将来の追加報酬機能用）
-    const { updateRefereeActivity } = await import("@/lib/referral-management");
-    updateRefereeActivity(userId).catch((error) => {
-      console.error("被紹介者行動更新エラー:", error);
-    });
-
-    // 動画URLを取得（新しい動画システム、ガチャタイプの設定を使用）
+    // ステップ10（続き）: 動画URLを取得（新しい動画システム、ガチャタイプの設定を使用）
     const { getGachaVideoUrls } = await import("@/lib/gacha-video");
     const videoUrls = await getGachaVideoUrls(gachaTypeCode, selectedTierCode);
 
-    // ガチャ結果をLINEトークに送信（非同期、エラーが発生してもガチャ結果は返す）
+    // ステップ16: 抽選結果を含むレスポンスを返却する
+    // （ステップ17の非同期処理はレスポンス返却後に実行される）
+
+    // ステップ17: 非同期処理（エラーが発生してもガチャ結果には影響しない）
+    // LINEメッセージを送信する
     // 役が設定されている場合のみポーカーハンド情報を送信
     // メッセージテンプレートはマスタ参照（未設定ならnull）
     let messageTemplate: string | null = null;
@@ -534,6 +471,12 @@ export async function POST(request: NextRequest) {
     ).catch((error) => {
       // LINEメッセージ送信のエラーはログに記録するが、ガチャ結果には影響しない
       console.error("LINEメッセージ送信エラー（ガチャ結果は正常）:", error);
+    });
+
+    // 被紹介者行動を更新する（将来の追加報酬機能用）
+    const { updateRefereeActivity } = await import("@/lib/referral-management");
+    updateRefereeActivity(userId).catch((error) => {
+      console.error("被紹介者行動更新エラー:", error);
     });
 
     return NextResponse.json({

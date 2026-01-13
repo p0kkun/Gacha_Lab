@@ -22,37 +22,9 @@ export async function GET(
     // Next.js 16ではparamsがPromiseなので、awaitでアンラップする必要がある
     const { userId } = await params;
 
-    // ユーザー情報とガチャ履歴を取得
+    // ユーザー情報を取得
     const user = await prisma.user.findUnique({
       where: { userId },
-      include: {
-        gachaHistories: {
-          take: 50, // 最新50件
-          orderBy: { createdAt: 'desc' },
-          include: {
-            gachaType: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            item: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            gachaHistories: true,
-            referralUsersAsReferrer: true,
-            referralUsersAsReferee: true,
-            freeGachaHistories: true,
-          },
-        },
-      },
     });
 
     if (!user) {
@@ -61,6 +33,34 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // ガチャ履歴を取得
+    const gachaHistories = await prisma.gachaHistory.findMany({
+      where: { userId },
+      take: 50, // 最新50件
+      orderBy: { createdAt: 'desc' },
+      include: {
+        gachaType: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        item: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // カウントを取得
+    const [gachaHistoriesCount, referralUsersAsReferrerCount, referralUsersAsRefereeCount] = await Promise.all([
+      prisma.gachaHistory.count({ where: { userId } }),
+      prisma.referralUser.count({ where: { userId } }),
+      prisma.referralUser.count({ where: { toUserId: userId } }),
+    ]);
 
     // 等級別の集計（tierCode）
     const rarityStatsByHistory = await prisma.gachaHistory.groupBy({
@@ -82,10 +82,15 @@ export async function GET(
         pictureUrl: user.pictureUrl,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        counts: user._count,
+        counts: {
+          gachaHistories: gachaHistoriesCount,
+          referralUsersAsReferrer: referralUsersAsReferrerCount,
+          referralUsersAsReferee: referralUsersAsRefereeCount,
+          freeGachaHistories: 0, // FreeGachaHistoryは削除されたため0
+        },
         rarityStats: rarityCounts,
       },
-      gachaHistories: user.gachaHistories,
+      gachaHistories,
     });
   } catch (error) {
     console.error('ユーザー詳細取得エラー:', error);

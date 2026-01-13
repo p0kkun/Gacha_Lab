@@ -52,7 +52,11 @@ export async function POST(request: NextRequest) {
     });
 
     // 操作履歴を記録
+    const adminUserId = body.adminUserId || 'unknown';
+    const adminName = body.adminName || 'unknown';
     await recordVideoUploadAction({
+      adminUserId,
+      adminName,
       videoId: asset.id,
       videoType: videoType,
       rarity: rarity || null,

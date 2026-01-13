@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import GachaMenu from './GachaMenu';
 import GachaContent from './GachaContent';
 import PointDisplay from './PointDisplay';
@@ -112,23 +113,71 @@ export default function GachaModal({
       <div className="flex h-full w-full flex-col">
         {/* 上部: ポイント表示とメニューボタン */}
         {pointBalances && (
-          <div className="border-b border-gray-300 bg-gray-50 px-6 py-2.5">
-            <div className="flex items-center justify-between">
-              <PointDisplay
-                pointBalances={pointBalances}
-                displayMode="separated"
-                showExpiry={false}
-                size="small"
-              />
+          <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              {/* ポイント表示 - クリック可能（デザイン改善） */}
+              <Link
+                href="/points"
+                className="group flex flex-1 items-center gap-3 rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-yellow-50 to-yellow-100/50 px-4 py-2.5 transition-all hover:border-yellow-400/60 hover:from-yellow-100 hover:to-yellow-200/50 hover:shadow-md active:scale-95"
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex-shrink-0 text-yellow-600">
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs font-medium text-yellow-700">$</span>
+                      <span className="text-lg font-bold text-yellow-800 truncate">
+                        {pointBalances.total.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-medium text-yellow-600">
+                        有償: ${pointBalances.paid.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] font-medium text-green-600">
+                        無償: ${pointBalances.free.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 text-yellow-600 opacity-60 transition-opacity group-hover:opacity-100">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </div>
+              </Link>
               {/* ガチャ選択ボタン */}
               <button
                 onClick={() => setIsMenuOpen(true)}
-                className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-600 active:scale-95"
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-lg active:scale-95"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                <span>ガチャ選択</span>
+                <span className="hidden sm:inline">ガチャ選択</span>
               </button>
             </div>
           </div>

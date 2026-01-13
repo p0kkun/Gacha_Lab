@@ -96,7 +96,11 @@ export async function POST(request: NextRequest) {
     });
 
     // 操作履歴を記録
+    const adminUserId = formData.get('adminUserId')?.toString() || 'unknown';
+    const adminName = formData.get('adminName')?.toString() || 'unknown';
     await recordVideoUploadAction({
+      adminUserId,
+      adminName,
       videoId: asset.id,
       videoType: videoType,
       rarity: rarity || null,

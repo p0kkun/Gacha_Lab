@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import AdminLayout from '@/components/admin/AdminLayout';
 import ConfirmModal from '@/components/admin/ConfirmModal';
 import { getAdminAuthToken } from '@/lib/admin-auth';
 
@@ -146,8 +145,7 @@ export default function TagsPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6">
+    <div className="w-full">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">タグ管理</h1>
           <div className="flex gap-2">
@@ -305,8 +303,7 @@ export default function TagsPage() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm({ isOpen: false, tagId: null })}
         />
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
@@ -209,12 +208,7 @@ export default function ResultMessageTemplatesPage() {
   };
 
   return (
-    <AdminLayout>
-      <div>
-        <h1 className="mb-4 text-xl font-bold text-gray-800 lg:mb-6 lg:text-2xl">
-          結果メッセージテンプレート
-        </h1>
-
+    <div className="w-full">
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
             {error}
@@ -453,8 +447,7 @@ export default function ResultMessageTemplatesPage() {
           isOpen={showVariableInfo}
           onClose={() => setShowVariableInfo(false)}
         />
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
 

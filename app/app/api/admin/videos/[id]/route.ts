@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminAuth } from '@/lib/admin-auth';
-import { prisma } from '@/lib/prisma';
-import { recordVideoUpdateAction, recordVideoDeleteAction } from '@/lib/admin-action-history';
-import { getVideoUrl } from '@/lib/s3-upload';
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth } from "@/lib/admin-auth";
+import { prisma } from "@/lib/prisma";
+import {
+  recordVideoUpdateAction,
+  recordVideoDeleteAction,
+} from "@/lib/admin-action-history";
+import { getVideoUrl } from "@/lib/s3-upload";
 
 /**
  * 動画の使用状況を取得
@@ -14,10 +17,7 @@ export async function GET(
 ) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -31,7 +31,7 @@ export async function GET(
 
     if (!video) {
       return NextResponse.json(
-        { error: '動画が見つかりません' },
+        { error: "動画が見つかりません" },
         { status: 404 }
       );
     }
@@ -47,7 +47,7 @@ export async function GET(
 
     // デフォルト設定で使用されているか確認
     const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (defaultSettings) {
@@ -57,12 +57,18 @@ export async function GET(
       } else if ((defaultSettings as any).tierVideoAssetIds) {
         try {
           const rarityVideoIdsObj =
-            typeof (defaultSettings as any).tierVideoAssetIds === 'string'
+            typeof (defaultSettings as any).tierVideoAssetIds === "string"
               ? JSON.parse((defaultSettings as any).tierVideoAssetIds)
               : (defaultSettings as any).tierVideoAssetIds;
-          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+          if (
+            typeof rarityVideoIdsObj === "object" &&
+            rarityVideoIdsObj !== null
+          ) {
             for (const rarity in rarityVideoIdsObj) {
-              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+              if (
+                Array.isArray(rarityVideoIdsObj[rarity]) &&
+                rarityVideoIdsObj[rarity].includes(videoId)
+              ) {
                 usageInfo.inDefaultSettings = true;
                 break;
               }
@@ -78,17 +84,27 @@ export async function GET(
     const allGachaTypes = await prisma.gachaType.findMany();
     for (const gachaType of allGachaTypes) {
       let isUsed = false;
-      if ((gachaType as any).commonVideoAssetIds && Array.isArray((gachaType as any).commonVideoAssetIds) && (gachaType as any).commonVideoAssetIds.includes(videoId)) {
+      if (
+        (gachaType as any).commonVideoAssetIds &&
+        Array.isArray((gachaType as any).commonVideoAssetIds) &&
+        (gachaType as any).commonVideoAssetIds.includes(videoId)
+      ) {
         isUsed = true;
       } else if ((gachaType as any).tierVideoAssetIds) {
         try {
           const rarityVideoIdsObj =
-            typeof (gachaType as any).tierVideoAssetIds === 'string'
+            typeof (gachaType as any).tierVideoAssetIds === "string"
               ? JSON.parse((gachaType as any).tierVideoAssetIds)
               : (gachaType as any).tierVideoAssetIds;
-          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+          if (
+            typeof rarityVideoIdsObj === "object" &&
+            rarityVideoIdsObj !== null
+          ) {
             for (const rarity in rarityVideoIdsObj) {
-              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+              if (
+                Array.isArray(rarityVideoIdsObj[rarity]) &&
+                rarityVideoIdsObj[rarity].includes(videoId)
+              ) {
                 isUsed = true;
                 break;
               }
@@ -110,9 +126,9 @@ export async function GET(
       usageInfo,
     });
   } catch (error) {
-    console.error('使用状況取得エラー:', error);
+    console.error("使用状況取得エラー:", error);
     return NextResponse.json(
-      { error: '使用状況の取得に失敗しました' },
+      { error: "使用状況の取得に失敗しました" },
       { status: 500 }
     );
   }
@@ -128,10 +144,7 @@ export async function PATCH(
 ) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -146,7 +159,7 @@ export async function PATCH(
 
     if (!beforeVideo) {
       return NextResponse.json(
-        { error: '動画が見つかりません' },
+        { error: "動画が見つかりません" },
         { status: 404 }
       );
     }
@@ -155,7 +168,8 @@ export async function PATCH(
       where: { id: videoId },
       data: {
         isActive: body.isActive !== undefined ? body.isActive : undefined,
-        description: body.description !== undefined ? body.description : undefined,
+        description:
+          body.description !== undefined ? body.description : undefined,
       },
     });
 
@@ -164,15 +178,25 @@ export async function PATCH(
     if (body.isActive !== undefined && body.isActive !== beforeVideo.isActive) {
       changes.isActive = { from: beforeVideo.isActive, to: body.isActive };
     }
-    if (body.description !== undefined && body.description !== beforeVideo.description) {
-      changes.description = { from: beforeVideo.description, to: body.description };
+    if (
+      body.description !== undefined &&
+      body.description !== beforeVideo.description
+    ) {
+      changes.description = {
+        from: beforeVideo.description,
+        to: body.description,
+      };
     }
 
     // 操作履歴を記録
     if (Object.keys(changes).length > 0) {
+      const adminUserId = body.adminUserId || "unknown";
+      const adminName = body.adminName || "unknown";
       await recordVideoUpdateAction({
+        adminUserId,
+        adminName,
         videoId: updatedVideo.id,
-        videoType: 'UNKNOWN',
+        videoType: "UNKNOWN",
         rarity: null,
         fileName: updatedVideo.fileName,
         changes,
@@ -187,9 +211,9 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error('動画更新エラー:', error);
+    console.error("動画更新エラー:", error);
     return NextResponse.json(
-      { error: '動画の更新に失敗しました' },
+      { error: "動画の更新に失敗しました" },
       { status: 500 }
     );
   }
@@ -205,10 +229,7 @@ export async function DELETE(
 ) {
   // 認証チェック
   if (!verifyAdminAuth(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -222,7 +243,7 @@ export async function DELETE(
 
     if (!video) {
       return NextResponse.json(
-        { error: '動画が見つかりません' },
+        { error: "動画が見つかりません" },
         { status: 404 }
       );
     }
@@ -238,7 +259,7 @@ export async function DELETE(
 
     // デフォルト設定で使用されているか確認
     const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (defaultSettings) {
@@ -248,12 +269,18 @@ export async function DELETE(
       } else if ((defaultSettings as any).tierVideoAssetIds) {
         try {
           const rarityVideoIdsObj =
-            typeof (defaultSettings as any).tierVideoAssetIds === 'string'
+            typeof (defaultSettings as any).tierVideoAssetIds === "string"
               ? JSON.parse((defaultSettings as any).tierVideoAssetIds)
               : (defaultSettings as any).tierVideoAssetIds;
-          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+          if (
+            typeof rarityVideoIdsObj === "object" &&
+            rarityVideoIdsObj !== null
+          ) {
             for (const rarity in rarityVideoIdsObj) {
-              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+              if (
+                Array.isArray(rarityVideoIdsObj[rarity]) &&
+                rarityVideoIdsObj[rarity].includes(videoId)
+              ) {
                 usageInfo.inDefaultSettings = true;
                 break;
               }
@@ -269,16 +296,27 @@ export async function DELETE(
     const allGachaTypes = await prisma.gachaType.findMany();
     for (const gachaType of allGachaTypes) {
       let isUsed = false;
-      if ((gachaType as any).commonVideoAssetIds && Array.isArray((gachaType as any).commonVideoAssetIds) && (gachaType as any).commonVideoAssetIds.includes(videoId)) {
+      if (
+        (gachaType as any).commonVideoAssetIds &&
+        Array.isArray((gachaType as any).commonVideoAssetIds) &&
+        (gachaType as any).commonVideoAssetIds.includes(videoId)
+      ) {
         isUsed = true;
       } else if ((gachaType as any).tierVideoAssetIds) {
         try {
-          const rarityVideoIdsObj = typeof (gachaType as any).tierVideoAssetIds === 'string'
-            ? JSON.parse((gachaType as any).tierVideoAssetIds)
-            : (gachaType as any).tierVideoAssetIds;
-          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+          const rarityVideoIdsObj =
+            typeof (gachaType as any).tierVideoAssetIds === "string"
+              ? JSON.parse((gachaType as any).tierVideoAssetIds)
+              : (gachaType as any).tierVideoAssetIds;
+          if (
+            typeof rarityVideoIdsObj === "object" &&
+            rarityVideoIdsObj !== null
+          ) {
             for (const rarity in rarityVideoIdsObj) {
-              if (Array.isArray(rarityVideoIdsObj[rarity]) && rarityVideoIdsObj[rarity].includes(videoId)) {
+              if (
+                Array.isArray(rarityVideoIdsObj[rarity]) &&
+                rarityVideoIdsObj[rarity].includes(videoId)
+              ) {
                 isUsed = true;
                 break;
               }
@@ -298,30 +336,35 @@ export async function DELETE(
 
     // 削除前に操作履歴を記録（削除後に記録するとデータが取得できないため）
     try {
+      const adminUserId = request.headers.get("X-Admin-User-Id") || "unknown";
+      const adminName = request.headers.get("X-Admin-Name") || "unknown";
       await recordVideoDeleteAction({
+        adminUserId,
+        adminName,
         videoId: video.id,
-        videoType: 'UNKNOWN',
+        videoType: "UNKNOWN",
         rarity: null,
         fileName: video.fileName,
       });
     } catch (historyError) {
       // 履歴記録の失敗はログに記録するが、削除操作は続行
-      console.error('動画削除の操作履歴記録エラー:', historyError);
+      console.error("動画削除の操作履歴記録エラー:", historyError);
     }
 
     // デフォルト設定から動画IDを削除
     try {
       const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
 
       if (defaultSettings) {
         let needsUpdate = false;
-        const updatedCommonVideoIds = (defaultSettings as any).commonVideoAssetIds || [];
+        const updatedCommonVideoIds =
+          (defaultSettings as any).commonVideoAssetIds || [];
         const updatedRarityVideoIds = (defaultSettings as any).tierVideoAssetIds
-          ? (typeof (defaultSettings as any).tierVideoAssetIds === 'string'
-              ? JSON.parse((defaultSettings as any).tierVideoAssetIds)
-              : (defaultSettings as any).tierVideoAssetIds)
+          ? typeof (defaultSettings as any).tierVideoAssetIds === "string"
+            ? JSON.parse((defaultSettings as any).tierVideoAssetIds)
+            : (defaultSettings as any).tierVideoAssetIds
           : null;
 
         // 共通動画から削除
@@ -329,19 +372,29 @@ export async function DELETE(
           const index = updatedCommonVideoIds.indexOf(videoId);
           updatedCommonVideoIds.splice(index, 1);
           needsUpdate = true;
-          console.log(`[動画削除] デフォルト設定の共通動画からID ${videoId} を削除`);
+          console.log(
+            `[動画削除] デフォルト設定の共通動画からID ${videoId} を削除`
+          );
         }
 
         // 等級別動画から削除
-        if (updatedRarityVideoIds && typeof updatedRarityVideoIds === 'object') {
-          const rarityVideoIdsObj = updatedRarityVideoIds as Record<string, number[]>;
+        if (
+          updatedRarityVideoIds &&
+          typeof updatedRarityVideoIds === "object"
+        ) {
+          const rarityVideoIdsObj = updatedRarityVideoIds as Record<
+            string,
+            number[]
+          >;
           for (const rarity in rarityVideoIdsObj) {
             if (Array.isArray(rarityVideoIdsObj[rarity])) {
               const index = rarityVideoIdsObj[rarity].indexOf(videoId);
               if (index !== -1) {
                 rarityVideoIdsObj[rarity].splice(index, 1);
                 needsUpdate = true;
-                console.log(`[動画削除] デフォルト設定の等級別動画(${rarity})からID ${videoId} を削除`);
+                console.log(
+                  `[動画削除] デフォルト設定の等級別動画(${rarity})からID ${videoId} を削除`
+                );
               }
             }
           }
@@ -360,7 +413,10 @@ export async function DELETE(
       }
     } catch (defaultSettingsError) {
       // デフォルト設定の更新失敗はログに記録するが、削除操作は続行
-      console.error('デフォルト設定からの動画ID削除エラー:', defaultSettingsError);
+      console.error(
+        "デフォルト設定からの動画ID削除エラー:",
+        defaultSettingsError
+      );
     }
 
     // 個別設定（GachaType）から動画IDを削除
@@ -369,18 +425,29 @@ export async function DELETE(
       const allGachaTypes = await prisma.gachaType.findMany();
       const gachaTypes = allGachaTypes.filter((gt) => {
         // 共通動画に含まれているか確認
-        if (gt.commonVideoAssetIds && Array.isArray(gt.commonVideoAssetIds) && gt.commonVideoAssetIds.includes(videoId)) {
+        if (
+          gt.commonVideoAssetIds &&
+          Array.isArray(gt.commonVideoAssetIds) &&
+          gt.commonVideoAssetIds.includes(videoId)
+        ) {
           return true;
         }
         // 等級別動画に含まれているか確認
         if (gt.tierVideoAssetIds) {
           try {
-            const tierVideoAssetIdsObj = typeof gt.tierVideoAssetIds === 'string'
-              ? JSON.parse(gt.tierVideoAssetIds)
-              : gt.tierVideoAssetIds;
-            if (typeof tierVideoAssetIdsObj === 'object' && tierVideoAssetIdsObj !== null) {
+            const tierVideoAssetIdsObj =
+              typeof gt.tierVideoAssetIds === "string"
+                ? JSON.parse(gt.tierVideoAssetIds)
+                : gt.tierVideoAssetIds;
+            if (
+              typeof tierVideoAssetIdsObj === "object" &&
+              tierVideoAssetIdsObj !== null
+            ) {
               for (const tier in tierVideoAssetIdsObj) {
-                if (Array.isArray(tierVideoAssetIdsObj[tier]) && tierVideoAssetIdsObj[tier].includes(videoId)) {
+                if (
+                  Array.isArray(tierVideoAssetIdsObj[tier]) &&
+                  tierVideoAssetIdsObj[tier].includes(videoId)
+                ) {
                   return true;
                 }
               }
@@ -394,11 +461,12 @@ export async function DELETE(
 
       for (const gachaType of gachaTypes) {
         let needsUpdate = false;
-        const updatedCommonVideoIds = (gachaType as any).commonVideoAssetIds || [];
+        const updatedCommonVideoIds =
+          (gachaType as any).commonVideoAssetIds || [];
         const updatedRarityVideoIds = (gachaType as any).tierVideoAssetIds
-          ? (typeof (gachaType as any).tierVideoAssetIds === 'string'
-              ? JSON.parse((gachaType as any).tierVideoAssetIds)
-              : (gachaType as any).tierVideoAssetIds)
+          ? typeof (gachaType as any).tierVideoAssetIds === "string"
+            ? JSON.parse((gachaType as any).tierVideoAssetIds)
+            : (gachaType as any).tierVideoAssetIds
           : null;
 
         // 共通動画から削除
@@ -406,19 +474,29 @@ export async function DELETE(
           const index = updatedCommonVideoIds.indexOf(videoId);
           updatedCommonVideoIds.splice(index, 1);
           needsUpdate = true;
-          console.log(`[動画削除] ガチャタイプ ${gachaType.id} の共通動画からID ${videoId} を削除`);
+          console.log(
+            `[動画削除] ガチャタイプ ${gachaType.id} の共通動画からID ${videoId} を削除`
+          );
         }
 
         // 等級別動画から削除
-        if (updatedRarityVideoIds && typeof updatedRarityVideoIds === 'object') {
-          const rarityVideoIdsObj = updatedRarityVideoIds as Record<string, number[]>;
+        if (
+          updatedRarityVideoIds &&
+          typeof updatedRarityVideoIds === "object"
+        ) {
+          const rarityVideoIdsObj = updatedRarityVideoIds as Record<
+            string,
+            number[]
+          >;
           for (const rarity in rarityVideoIdsObj) {
             if (Array.isArray(rarityVideoIdsObj[rarity])) {
               const index = rarityVideoIdsObj[rarity].indexOf(videoId);
               if (index !== -1) {
                 rarityVideoIdsObj[rarity].splice(index, 1);
                 needsUpdate = true;
-                console.log(`[動画削除] ガチャタイプ ${gachaType.id} の等級別動画(${rarity})からID ${videoId} を削除`);
+                console.log(
+                  `[動画削除] ガチャタイプ ${gachaType.id} の等級別動画(${rarity})からID ${videoId} を削除`
+                );
               }
             }
           }
@@ -432,13 +510,31 @@ export async function DELETE(
               tierVideoAssetIds: updatedRarityVideoIds,
             } as any,
           });
-          console.log(`[動画削除] ガチャタイプ ${gachaType.id} の設定を更新しました`);
+          console.log(
+            `[動画削除] ガチャタイプ ${gachaType.id} の設定を更新しました`
+          );
         }
       }
     } catch (gachaTypeError) {
       // 個別設定の更新失敗はログに記録するが、削除操作は続行
-      console.error('個別設定からの動画ID削除エラー:', gachaTypeError);
+      console.error("個別設定からの動画ID削除エラー:", gachaTypeError);
     }
+
+    // 関連するVideoAssetCategoryを先に削除（外部キー制約のため）
+    try {
+      await prisma.videoAssetCategory.deleteMany({
+        where: { assetId: videoId },
+      });
+      console.log(`[動画削除] 動画ID ${videoId} のカテゴリを削除しました`);
+    } catch (categoryError) {
+      // カテゴリ削除の失敗はログに記録するが、削除操作は続行
+      console.error("動画カテゴリの削除エラー:", categoryError);
+    }
+
+    // 関連するVideoAssetCategoryを先に削除（外部キー制約のため）
+    await prisma.videoAssetCategory.deleteMany({
+      where: { assetId: videoId },
+    });
 
     // 動画を削除
     await prisma.videoAsset.delete({
@@ -451,11 +547,10 @@ export async function DELETE(
       success: true,
     });
   } catch (error) {
-    console.error('動画削除エラー:', error);
+    console.error("動画削除エラー:", error);
     return NextResponse.json(
-      { error: '動画の削除に失敗しました' },
+      { error: "動画の削除に失敗しました" },
       { status: 500 }
     );
   }
 }
-

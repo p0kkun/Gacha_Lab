@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 import type { PointPlan } from "@/lib/point-plan-types";
@@ -424,12 +423,7 @@ export default function AdminPointPlansPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6">
-        <h1 className="mb-6 text-2xl font-bold text-gray-800">
-          ポイント購入プラン
-        </h1>
-
+    <div className="w-full">
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
             {error}
@@ -444,7 +438,7 @@ export default function AdminPointPlansPage() {
         {/* 新規作成 */}
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold text-gray-800">新規作成</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-6 xl:grid-cols-8">
             <div className="md:col-span-1">
               <label className="block text-sm font-medium text-gray-700">
                 プランID
@@ -530,7 +524,7 @@ export default function AdminPointPlansPage() {
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               />
             </div>
-            <div className="flex items-end gap-3 md:col-span-6">
+            <div className="flex items-end gap-3 lg:col-span-6 xl:col-span-8">
               <label className="flex items-center gap-2 text-sm text-gray-900">
                 <input
                   type="checkbox"
@@ -746,20 +740,19 @@ export default function AdminPointPlansPage() {
             </div>
           )}
         </div>
-      </div>
 
-      <ConfirmModal
-        isOpen={!!confirmModal?.isOpen}
-        title={confirmModal?.title ?? ""}
-        message={confirmModal?.message ?? ""}
-        changes={confirmModal?.changes}
-        confirmText={confirmModal?.confirmText ?? "OK"}
-        cancelText="キャンセル"
-        variant={confirmModal?.variant ?? "info"}
-        isConfirmDisabled={savingId !== null}
-        onConfirm={runConfirm}
-        onCancel={closeConfirm}
-      />
-    </AdminLayout>
+        <ConfirmModal
+          isOpen={!!confirmModal?.isOpen}
+          title={confirmModal?.title ?? ""}
+          message={confirmModal?.message ?? ""}
+          changes={confirmModal?.changes}
+          confirmText={confirmModal?.confirmText ?? "OK"}
+          cancelText="キャンセル"
+          variant={confirmModal?.variant ?? "info"}
+          isConfirmDisabled={savingId !== null}
+          onConfirm={runConfirm}
+          onCancel={closeConfirm}
+        />
+    </div>
   );
 }

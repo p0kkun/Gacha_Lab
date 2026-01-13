@@ -28,7 +28,6 @@ export async function GET(
           tierCode: true,
           createdAt: true,
           pointsUsed: true,
-          usageLog: { select: { usedAt: true } },
           gachaType: {
             select: { id: true, name: true },
           },
@@ -42,6 +41,24 @@ export async function GET(
       }),
     ]);
 
+    // ItemUsageLogから使用日時を取得
+    const historyIds = histories.map((h) => h.id);
+    const usageLogs = await prisma.itemUsageLog.findMany({
+      where: {
+        userId,
+        itemId: { in: histories.filter((h) => h.itemId).map((h) => h.itemId!) },
+      },
+      select: {
+        itemId: true,
+        usedAt: true,
+      },
+    });
+
+    // itemIdをキーにしたマップを作成
+    const usageLogMap = new Map(
+      usageLogs.map((log) => [log.itemId, log.usedAt])
+    );
+
     const mapped = histories.map((h) => ({
       ...h,
       // 新方式: gacha_histories.tierCode を等級として返す
@@ -49,7 +66,7 @@ export async function GET(
         ...h.item,
         rarity: h.tierCode ?? 'UNKNOWN',
       },
-      usedAt: h.usageLog?.usedAt ? h.usageLog.usedAt.toISOString() : null,
+      usedAt: h.itemId ? usageLogMap.get(h.itemId)?.toISOString() ?? null : null,
     }));
 
     return NextResponse.json({

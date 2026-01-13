@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { Button, Input, Card, Alert, Badge, PageHeader } from "@/components/admin/ui";
 import { getAdminAuthToken } from "@/lib/admin-auth";
@@ -225,22 +224,14 @@ export default function PrizeTiersPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center p-8">
-          <div className="text-gray-600">読み込み中...</div>
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center p-8">
+        <div className="text-gray-600">読み込み中...</div>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div>
-        <PageHeader
-          title="等級マスタ管理"
-          description="ガチャの等級（1等、2等など）を管理します"
-        />
-
+    <div className="w-full">
         {error && (
           <Alert variant="error" className="mb-6" onClose={() => setError(null)}>
             {error}
@@ -486,8 +477,7 @@ export default function PrizeTiersPage() {
           onConfirm={handleConfirm}
           onCancel={() => setConfirmModal(null)}
         />
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
 

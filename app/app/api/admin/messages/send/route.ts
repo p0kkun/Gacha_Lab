@@ -112,8 +112,8 @@ export async function POST(request: NextRequest) {
     // 操作履歴を記録（送信成功したユーザーに対して）
     if (results.success > 0) {
       await recordMessageSendAction({
-        adminUserId: adminUserId || null,
-        adminName: adminName || null,
+        adminUserId: adminUserId || 'unknown',
+        adminName: adminName || 'unknown',
         targetUserIds: targetUserIds,
         message: message.trim(),
         tagIds: tagIds || [],

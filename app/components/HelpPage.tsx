@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BottomNavigation from './BottomNavigation';
 
 export default function HelpPage() {
   return (
@@ -73,22 +74,8 @@ export default function HelpPage() {
           </div>
         </div>
 
-        {/* メニューリンク */}
-        <div className="mt-6 space-y-2 rounded-lg bg-white p-4 shadow">
-          <a
-            href="?action=gacha"
-            className="block rounded-md bg-blue-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-600"
-          >
-            ガチャを引く
-          </a>
-          <a
-            href="/points"
-            className="block rounded-md bg-green-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-green-600"
-          >
-            ポイント購入
-          </a>
-        </div>
       </div>
+      <BottomNavigation />
     </div>
   );
 }

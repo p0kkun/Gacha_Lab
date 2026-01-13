@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { GachaType } from "./GachaModal";
 import MultiVideoPlayer from "./MultiVideoPlayer";
+import BottomNavigation from "./BottomNavigation";
+import PrizeListModal from "./PrizeListModal";
 
 type GachaResult = {
   item: {
@@ -35,6 +37,7 @@ export default function GachaContent({
   const [videoError, setVideoError] = useState(false);
   // 再生用URLはstateに保持して参照を安定化（再レンダーで新しい配列を渡さない）
   const [videoUrlsToPlay, setVideoUrlsToPlay] = useState<string[]>([]);
+  const [showPrizeList, setShowPrizeList] = useState(false);
 
   const handleDrawGacha = async () => {
     // ポイント確認とガチャ実行
@@ -214,7 +217,7 @@ export default function GachaContent({
 
   return (
     <div 
-      className="relative flex h-full flex-col"
+      className="relative flex h-full flex-col overflow-hidden"
       style={{ touchAction: "none" }}
       onTouchStart={(e) => e.preventDefault()}
       onTouchMove={(e) => e.preventDefault()}
@@ -227,15 +230,23 @@ export default function GachaContent({
               <img
                 src={selectedGacha.iconImageUrl}
                 alt={selectedGacha.name}
-                className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border-2 border-yellow-400"
+                className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border-2 border-yellow-400 shadow-md"
                 onError={(e) => {
-                  // 画像読み込みエラー時は非表示
-                  (e.target as HTMLImageElement).style.display = "none";
+                  // 画像読み込みエラー時はフォールバック表示
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "none";
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) {
+                    fallback.style.display = "flex";
+                  }
                 }}
               />
-            ) : (
-              <div className="text-2xl flex-shrink-0">🂡</div>
-            )}
+            ) : null}
+            <div 
+              className={`text-2xl flex-shrink-0 ${selectedGacha.iconImageUrl ? 'hidden' : ''}`}
+            >
+              🂡
+            </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-bold text-yellow-300 drop-shadow-lg break-words">
                 {selectedGacha.name}
@@ -252,7 +263,7 @@ export default function GachaContent({
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
       <div
-        className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${
+        className={`flex-1 overflow-hidden bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${
           showVideo ? "" : "p-8"
         }`}
       >
@@ -337,7 +348,7 @@ export default function GachaContent({
 
       {/* フッター（ガチャを引くボタン） - ポーカー風 */}
       {!showVideo && (
-        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
+        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 pb-24 shadow-lg">
           <button
             onClick={handleDrawGacha}
             disabled={isDrawing}
@@ -354,7 +365,14 @@ export default function GachaContent({
                 </>
               ) : (
                 <>
-                  <span className="flex-shrink-0">🂡</span>
+                  <img
+                    src="/icons/navigation/icon-gacha.svg"
+                    alt="ガチャ"
+                    className="h-5 w-5 flex-shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
                   <span className="whitespace-nowrap">
                     カードを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
@@ -373,6 +391,16 @@ export default function GachaContent({
           </button>
         </div>
       )}
+
+      {/* ボトムナビゲーション - 動画再生中は非表示 */}
+      {!showVideo && <BottomNavigation currentPage="gacha" hideSpacer={true} transparent={true} />}
+
+      {/* 景品一覧モーダル */}
+      <PrizeListModal
+        isOpen={showPrizeList}
+        onClose={() => setShowPrizeList(false)}
+        gachaTypeId={selectedGacha.id}
+      />
     </div>
   );
 }
