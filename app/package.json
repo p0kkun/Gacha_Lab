@@ -15,7 +15,9 @@
     "localstack:up": "docker-compose -f docker-compose.localstack.yml up -d",
     "localstack:down": "docker-compose -f docker-compose.localstack.yml down",
     "localstack:logs": "docker-compose -f docker-compose.localstack.yml logs -f",
-    "localstack:setup": "node scripts/setup-localstack.js"
+    "localstack:setup": "node scripts/setup-localstack.js",
+    "mermaid:generate": "mmdc -i docs/gacha-execution-sequence.mmd -o docs/gacha-execution-sequence.png",
+    "mermaid:generate:svg": "mmdc -i docs/gacha-execution-sequence.mmd -o docs/gacha-execution-sequence.svg"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

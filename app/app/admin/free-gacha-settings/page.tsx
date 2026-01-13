@@ -218,228 +218,295 @@ export default function FreeGachaSettingsPage() {
 
   return (
     <div className="w-full">
-        {error && (
-          <Alert
-            variant="error"
-            className="mb-4"
-            onClose={() => setError(null)}
-          >
-            {error}
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="error" className="mb-4" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-        {success && (
-          <Alert
-            variant="success"
-            className="mb-4"
-            onClose={() => setSuccess(null)}
-          >
-            {success}
-          </Alert>
-        )}
+      {success && (
+        <Alert
+          variant="success"
+          className="mb-4"
+          onClose={() => setSuccess(null)}
+        >
+          {success}
+        </Alert>
+      )}
 
-        <Card className="mb-6">
-          <div className="space-y-6">
-            <div>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isActive: e.target.checked })
-                  }
-                  className="rounded border-gray-300"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  無料ガチャ機能を有効にする
-                </span>
-              </label>
-              <p className="mt-1 text-xs text-gray-500">
-                無効にすると、紹介システムで無料ガチャは付与されません
-              </p>
+      {/* 動作説明カード */}
+      <Card className="mb-6 bg-blue-50 border-blue-200">
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+            <span>ℹ️</span>
+            これを設定した場合
+          </h3>
+          <div className="space-y-2 text-sm text-blue-800">
+            <div className="flex items-start gap-2">
+              <span className="font-semibold">1.</span>
+              <div>
+                <strong>紹介成立時（被紹介者が友だち追加/初回登録時）</strong>
+                に、以下の報酬が自動付与されます：
+                <ul className="mt-1 ml-4 list-disc space-y-1">
+                  <li>
+                    <strong>紹介者</strong>：
+                    {formData.referrerGachaTypeCode
+                      ? `「${
+                          gachaTypes.find(
+                            (gt) => gt.code === formData.referrerGachaTypeCode
+                          )?.name || formData.referrerGachaTypeCode
+                        }」の無料ガチャ1回`
+                      : "無料ガチャなし"}
+                    {formData.referrerPoints > 0 &&
+                      ` + ${formData.referrerPoints}ポイント`}
+                  </li>
+                  <li>
+                    <strong>被紹介者</strong>：
+                    {formData.refereeGachaTypeCode
+                      ? `「${
+                          gachaTypes.find(
+                            (gt) => gt.code === formData.refereeGachaTypeCode
+                          )?.name || formData.refereeGachaTypeCode
+                        }」の無料ガチャ1回`
+                      : "無料ガチャなし"}
+                    {formData.refereePoints > 0 &&
+                      ` + ${formData.refereePoints}ポイント`}
+                  </li>
+                </ul>
+              </div>
             </div>
+            <div className="flex items-start gap-2">
+              <span className="font-semibold">2.</span>
+              <div>
+                <strong>無料ガチャの有効期限</strong>：
+                {formData.expirationDays && formData.expirationDays > 0
+                  ? `付与日から${formData.expirationDays}日間有効（期限切れ後は使用不可）`
+                  : "無期限（期限なし）"}
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="font-semibold">3.</span>
+              <div>
+                <strong>注意事項</strong>：
+                <ul className="mt-1 ml-4 list-disc space-y-1 text-orange-700">
+                  <li>
+                    無料ガチャ機能は現在実装中です（FreeGachaHistoryモデルが必要）
+                  </li>
+                  <li>
+                    現在は設定のみ保存され、実際の付与処理はコメントアウトされています
+                  </li>
+                  <li>ポイント報酬は正常に動作しています</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
-            {formData.isActive && (
-              <>
-                <div>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.grantOnReferralComplete}
+      <Card className="mb-6">
+        <div className="space-y-6">
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.isActive}
+                onChange={(e) =>
+                  setFormData({ ...formData, isActive: e.target.checked })
+                }
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                無料ガチャ機能を有効にする
+              </span>
+            </label>
+            <p className="mt-1 text-xs text-gray-500">
+              無効にすると、紹介システムで無料ガチャは付与されません
+            </p>
+          </div>
+
+          {formData.isActive && (
+            <>
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.grantOnReferralComplete}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        grantOnReferralComplete: e.target.checked,
+                      })
+                    }
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    紹介成立時に無料ガチャを付与する
+                  </span>
+                </label>
+                <p className="mt-1 text-xs text-gray-500">
+                  被紹介者が友だち追加（初回登録）した時点で無料ガチャを付与します
+                </p>
+              </div>
+
+              {formData.grantOnReferralComplete && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      紹介者に付与するガチャタイプ
+                    </label>
+                    <Select
+                      value={formData.referrerGachaTypeCode || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          grantOnReferralComplete: e.target.checked,
+                          referrerGachaTypeCode: e.target.value || null,
                         })
                       }
-                      className="rounded border-gray-300"
+                      options={[
+                        { value: "", label: "未設定（付与しない）" },
+                        ...gachaTypes.map((gt) => ({
+                          value: gt.code,
+                          label: gt.name,
+                        })),
+                      ]}
                     />
-                    <span className="text-sm font-medium text-gray-700">
-                      紹介成立時に無料ガチャを付与する
-                    </span>
-                  </label>
-                  <p className="mt-1 text-xs text-gray-500">
-                    被紹介者が友だち追加（初回登録）した時点で無料ガチャを付与します
-                  </p>
-                </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      紹介者が獲得できる無料ガチャの種類
+                    </p>
+                  </div>
 
-                {formData.grantOnReferralComplete && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        紹介者に付与するガチャタイプ
-                      </label>
-                      <Select
-                        value={formData.referrerGachaTypeCode || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            referrerGachaTypeCode: e.target.value || null,
-                          })
-                        }
-                        options={[
-                          { value: "", label: "未設定（付与しない）" },
-                          ...gachaTypes.map((gt) => ({
-                            value: gt.code,
-                            label: gt.name,
-                          })),
-                        ]}
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        紹介者が獲得できる無料ガチャの種類
-                      </p>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      被紹介者に付与するガチャタイプ
+                    </label>
+                    <Select
+                      value={formData.refereeGachaTypeCode || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          refereeGachaTypeCode: e.target.value || null,
+                        })
+                      }
+                      options={[
+                        { value: "", label: "未設定（付与しない）" },
+                        ...gachaTypes.map((gt) => ({
+                          value: gt.code,
+                          label: gt.name,
+                        })),
+                      ]}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      被紹介者が獲得できる無料ガチャの種類
+                    </p>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        被紹介者に付与するガチャタイプ
-                      </label>
-                      <Select
-                        value={formData.refereeGachaTypeCode || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            refereeGachaTypeCode: e.target.value || null,
-                          })
-                        }
-                        options={[
-                          { value: "", label: "未設定（付与しない）" },
-                          ...gachaTypes.map((gt) => ({
-                            value: gt.code,
-                            label: gt.name,
-                          })),
-                        ]}
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        被紹介者が獲得できる無料ガチャの種類
-                      </p>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      無料ガチャの有効期限（日数）
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.expirationDays || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          expirationDays:
+                            e.target.value === ""
+                              ? null
+                              : parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="例: 30（30日後まで有効）"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      未入力または0の場合は無期限（有効期限なし）
+                    </p>
+                  </div>
+                </>
+              )}
+            </>
+          )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        無料ガチャの有効期限（日数）
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={formData.expirationDays || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            expirationDays:
-                              e.target.value === ""
-                                ? null
-                                : parseInt(e.target.value) || 0,
-                          })
-                        }
-                        placeholder="例: 30（30日後まで有効）"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        未入力または0の場合は無期限（有効期限なし）
-                      </p>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
+          {/* 紹介報酬ポイント設定 */}
+          <div className="border-t pt-6">
+            <h3 className="mb-4 text-lg font-semibold text-gray-800">
+              紹介報酬ポイント設定
+            </h3>
+            <p className="mb-4 text-sm text-gray-600">
+              紹介成立時に、紹介者と被紹介者に付与するポイントを設定できます。
+            </p>
 
-            {/* 紹介報酬ポイント設定 */}
-            <div className="border-t pt-6">
-              <h3 className="mb-4 text-lg font-semibold text-gray-800">紹介報酬ポイント設定</h3>
-              <p className="mb-4 text-sm text-gray-600">
-                紹介成立時に、紹介者と被紹介者に付与するポイントを設定できます。
-              </p>
-              
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    紹介者へのポイント報酬
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.referrerPoints}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        referrerPoints: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="例: 100"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    紹介者が獲得できるポイント数（0の場合は付与しない）
-                  </p>
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  紹介者へのポイント報酬
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.referrerPoints}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      referrerPoints: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="例: 100"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  紹介者が獲得できるポイント数（0の場合は付与しない）
+                </p>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    被紹介者へのポイント報酬
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={formData.refereePoints}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        refereePoints: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="例: 100"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    被紹介者が獲得できるポイント数（0の場合は付与しない）
-                  </p>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  被紹介者へのポイント報酬
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.refereePoints}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      refereePoints: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="例: 100"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  被紹介者が獲得できるポイント数（0の場合は付与しない）
+                </p>
               </div>
             </div>
-
-            <div className="flex justify-end pt-4 border-t">
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                disabled={saving}
-                leftIcon={saving ? "⏳" : "💾"}
-              >
-                {saving ? "保存中..." : "保存"}
-              </Button>
-            </div>
           </div>
-        </Card>
 
-        <ConfirmModal
-          isOpen={confirmModal.isOpen}
-          title="設定の保存"
-          message={confirmModal.message}
-          changes={confirmModal.changes}
-          onConfirm={handleConfirmSave}
-          onCancel={() => setConfirmModal({ isOpen: false, message: "" })}
-          variant="info"
-        />
-      </div>
-    );
-  }
+          <div className="flex justify-end pt-4 border-t">
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={saving}
+              leftIcon={saving ? "⏳" : "💾"}
+            >
+              {saving ? "保存中..." : "保存"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="設定の保存"
+        message={confirmModal.message}
+        changes={confirmModal.changes}
+        onConfirm={handleConfirmSave}
+        onCancel={() => setConfirmModal({ isOpen: false, message: "" })}
+        variant="info"
+      />
+    </div>
+  );
+}

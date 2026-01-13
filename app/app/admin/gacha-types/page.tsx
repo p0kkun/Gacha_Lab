@@ -851,8 +851,9 @@ export default function GachaTypesPage() {
           ...formData,
           rarityVideoIds:
             formData.useDefaultVideos === false &&
-            Object.keys(rarityVideoIds).length > 0
-              ? rarityVideoIds
+            formData.rarityVideoIds &&
+            Object.keys(formData.rarityVideoIds as Record<string, number[]>).length > 0
+              ? formData.rarityVideoIds
               : null,
           prizeWeights: formData.prizeWeights || null,
           prizeHands: formData.prizeHands || null,

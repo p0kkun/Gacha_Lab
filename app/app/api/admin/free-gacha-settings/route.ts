@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
         referrerGachaTypeId: null,
         refereeGachaTypeId: null,
         expirationDays: null,
+        referrerPoints: 100,
+        refereePoints: 100,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
