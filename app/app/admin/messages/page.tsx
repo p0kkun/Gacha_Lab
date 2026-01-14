@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Tag = {
@@ -142,7 +143,8 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="w-full">
+    <AdminLayout>
+      <div className="w-full">
       {sendError && (
         <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
           {sendError}
@@ -157,7 +159,7 @@ export default function MessagesPage() {
               送信対象の選択方法
             </label>
             <div className="mt-2 flex gap-4">
-              <label className="flex items-center">
+              <label className="flex items-center text-black">
                 <input
                   type="radio"
                   value="tags"
@@ -170,7 +172,7 @@ export default function MessagesPage() {
                 />
                 タグで選択
               </label>
-              <label className="flex items-center">
+              <label className="flex items-center text-black">
                 <input
                   type="radio"
                   value="users"
@@ -194,12 +196,15 @@ export default function MessagesPage() {
               </label>
               <div className="mt-2 max-h-64 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
                 {tags.length === 0 ? (
-                  <div className="text-center text-black">
+                  <div className="text-center text-gray-900">
                     タグがありません。先にタグを作成してください。
                   </div>
                 ) : (
                   tags.map((tag) => (
-                    <label key={tag.id} className="flex items-center">
+                    <label
+                      key={tag.id}
+                      className="flex items-center text-gray-900"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedTagIds.includes(tag.id)}
@@ -243,7 +248,10 @@ export default function MessagesPage() {
                   </div>
                 ) : (
                   users.map((user) => (
-                    <label key={user.userId} className="flex items-center">
+                    <label
+                      key={user.userId}
+                      className="flex items-center text-black"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedUserIds.includes(user.userId)}
@@ -286,9 +294,7 @@ export default function MessagesPage() {
               rows={6}
               placeholder="送信するメッセージを入力してください"
             />
-            <div className="mt-1 text-sm text-black">
-              {message.length}文字
-            </div>
+            <div className="mt-1 text-sm text-black">{message.length}文字</div>
           </div>
 
           {/* 送信結果 */}
@@ -333,5 +339,6 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+    </AdminLayout>
   );
 }

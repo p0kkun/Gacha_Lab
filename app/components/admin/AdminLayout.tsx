@@ -18,7 +18,8 @@ export default function AdminLayout({
     { href: "/admin/videos", label: "動画管理", icon: "🎬" },
     { href: "/admin/points", label: "ポイント管理", icon: "💰" },
     { href: "/admin/users", label: "ユーザー管理", icon: "👥" },
-    { href: "/admin/analytics", label: "配信・統計", icon: "📈" },
+    { href: "/admin/messages", label: "メッセージ配信", icon: "💬" },
+    { href: "/admin/statistics", label: "統計", icon: "📈" },
     { href: "/admin/system", label: "システム", icon: "⚙️" },
     { href: "/admin/help", label: "ヘルプ", icon: "❓" },
   ];
@@ -42,7 +43,8 @@ export default function AdminLayout({
         ],
         "/admin/points": ["/admin/point-plans"],
         "/admin/users": ["/admin/tags", "/admin/referrals"],
-        "/admin/analytics": ["/admin/messages", "/admin/statistics"],
+        "/admin/messages": [],
+        "/admin/statistics": [],
         "/admin/system": ["/admin/action-history"],
       };
 

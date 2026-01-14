@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 
@@ -31,7 +32,6 @@ const USAGE_TYPE_OPTIONS = [
 
 export default function ItemEditPage() {
   const params = useParams();
-  const router = useRouter();
   const id = parseInt(params.id as string);
 
   const [item, setItem] = useState<GachaItem | null>(null);
@@ -189,12 +189,12 @@ export default function ItemEditPage() {
             アイテムが見つかりませんでした
           </div>
           <div className="mt-4">
-            <button
-              onClick={() => router.push("/admin/items")}
+            <Link
+              href="/admin/items"
               className="text-blue-600 hover:underline"
             >
               ← アイテム一覧に戻る
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -564,12 +564,12 @@ export default function ItemEditPage() {
               >
                 保存
               </button>
-              <button
-                onClick={() => router.push("/admin/items")}
-                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              <Link
+                href="/admin/items"
+                className="inline-block rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
               >
                 キャンセル
-              </button>
+              </Link>
             </div>
           </div>
         </div>

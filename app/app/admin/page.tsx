@@ -2,21 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 export default function AdminPage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // 初期値をsessionStorageから取得（SSR対応のため、typeof window !== 'undefined'でチェック）
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("admin_authenticated") === "true";
+    }
+    return false;
+  });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  // 簡単な認証チェック（セッションストレージを使用）
-  useEffect(() => {
-    const authStatus = sessionStorage.getItem("admin_authenticated");
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,13 +89,13 @@ export default function AdminPage() {
           <h1 className="text-xl font-bold text-gray-800 lg:text-2xl">
             ダッシュボード
           </h1>
-          <a
+          <Link
             href="/admin/help"
             className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
           >
             <span>❓</span>
             <span>ヘルプを見る</span>
-          </a>
+          </Link>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
@@ -110,12 +109,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ユーザー一覧と詳細情報を確認できます
             </p>
-            <a
+            <Link
               href="/admin/users"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ユーザー管理へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -128,12 +127,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ユーザータグの追加・編集・一括割当ができます
             </p>
-            <a
+            <Link
               href="/admin/users?tab=tags"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               タグ管理へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -146,12 +145,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               LINEユーザーへのメッセージ配信ができます
             </p>
-            <a
-              href="/admin/analytics?tab=messages"
+            <Link
+              href="/admin/messages"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               メッセージ配信へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -164,12 +163,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ユーザーへのポイント付与ができます
             </p>
-            <a
+            <Link
               href="/admin/points?tab=points"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ポイント管理へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -182,12 +181,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ポイント購入プランの追加・編集ができます
             </p>
-            <a
+            <Link
               href="/admin/points?tab=point-plans"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ポイント購入プランへ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -200,12 +199,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャタイプの確率設定ができます
             </p>
-            <a
+            <Link
               href="/admin/gacha?tab=gacha-types"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               ガチャ設定へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -218,12 +217,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               友達紹介システムの無料ガチャ設定ができます
             </p>
-            <a
+            <Link
               href="/admin/free-gacha-settings"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               無料ガチャ設定へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -236,12 +235,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャ結果メッセージのテンプレートを管理できます
             </p>
-            <a
+            <Link
               href="/admin/gacha?tab=result-message-templates"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               結果メッセージテンプレートへ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -254,12 +253,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャの等級（1等、2等など）を追加・編集できます
             </p>
-            <a
+            <Link
               href="/admin/prize-tiers"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               等級マスタ管理へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -272,12 +271,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャタイプごとに景品の等級割当を設定できます
             </p>
-            <a
+            <Link
               href="/admin/gacha?tab=prize-assignments"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               景品割当へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -290,12 +289,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャアイテムの追加・編集ができます
             </p>
-            <a
+            <Link
               href="/admin/items"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               アイテム設定へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -320,18 +319,18 @@ export default function AdminPage() {
             <div className="mb-2 flex items-center gap-2">
               <span className="text-xl">📈</span>
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
-                統計・購入状況
+                統計
               </h2>
             </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
-              ガチャごとの課金人数や金額を確認できます
+              ガチャやアイテムの統計情報を確認できます
             </p>
-            <a
-              href="/admin/analytics?tab=statistics"
+            <Link
+              href="/admin/statistics"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               統計へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -344,12 +343,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               設定したガチャの排出率を確認できます
             </p>
-            <a
+            <Link
               href="/admin/gacha?tab=simulator"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               シミュレータへ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -362,12 +361,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               友達紹介システムの履歴と無料ガチャ付与状況を確認できます
             </p>
-            <a
+            <Link
               href="/admin/users?tab=referrals"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               友達紹介履歴へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
@@ -380,12 +379,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               管理画面での操作履歴を確認できます
             </p>
-            <a
+            <Link
               href="/admin/system?tab=action-history"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               操作履歴へ
-            </a>
+            </Link>
           </div>
         </div>
       </div>

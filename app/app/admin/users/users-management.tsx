@@ -78,9 +78,13 @@ export default function UsersManagementContent() {
       setPagination(
         data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 }
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error("ユーザー一覧取得エラー:", err);
-      setError(err.message || "ユーザー一覧の取得に失敗しました");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "ユーザー一覧の取得に失敗しました"
+      );
     } finally {
       setLoading(false);
     }

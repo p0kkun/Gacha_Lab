@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 
@@ -125,12 +126,12 @@ export default function TagDetailPage() {
             タグが見つかりませんでした
           </div>
           <div className="mt-4">
-            <button
-              onClick={() => router.push("/admin/tags")}
+            <Link
+              href="/admin/tags"
               className="text-blue-600 hover:underline"
             >
               ← タグ一覧に戻る
-            </button>
+            </Link>
           </div>
         </div>
       </AdminLayout>
@@ -214,12 +215,12 @@ export default function TagDetailPage() {
               >
                 保存
               </button>
-              <button
-                onClick={() => router.push("/admin/tags")}
-                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              <Link
+                href="/admin/tags"
+                className="inline-block rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
               >
                 キャンセル
-              </button>
+              </Link>
             </div>
           </div>
         </div>

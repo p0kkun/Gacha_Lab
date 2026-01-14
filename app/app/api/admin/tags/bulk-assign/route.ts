@@ -64,11 +64,14 @@ export async function POST(request: NextRequest) {
         // NOTE: 外部からはガチャタイプcodeを受け取る想定
         const gt = await prisma.gachaType.findUnique({
           where: { code: String(gachaTypeId) },
-          select: { id: true },
+          select: { id: true, code: true, name: true },
         });
         if (!gt) {
+          console.error(
+            `ガチャタイプが見つかりません: code=${gachaTypeId}`
+          );
           return NextResponse.json(
-            { error: "ガチャタイプが見つかりません" },
+            { error: `ガチャタイプが見つかりません: ${gachaTypeId}` },
             { status: 404 }
           );
         }
@@ -77,6 +80,9 @@ export async function POST(request: NextRequest) {
           select: { userId: true },
           distinct: ["userId"],
         });
+        console.log(
+          `ガチャタイプ ${gt.name} (code: ${gt.code}, id: ${gt.id}) を引いたユーザー数: ${userIds.length}`
+        );
         userIdSets.push(new Set(userIds.map((h) => h.userId)));
       }
 
