@@ -233,7 +233,9 @@ export default function VideosPage() {
       }
 
       await fetchVideos();
-      setSuccess(`動画の状態を「${nextStatus ? "有効" : "無効"}」に変更しました`);
+      setSuccess(
+        `動画の状態を「${nextStatus ? "有効" : "無効"}」に変更しました`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "更新に失敗しました");
     }
@@ -337,7 +339,9 @@ export default function VideosPage() {
       await fetchVideos();
 
       setSuccess(
-        warningMessage ? `動画を削除しました。\n\n${warningMessage}` : "動画を削除しました。"
+        warningMessage
+          ? `動画を削除しました。\n\n${warningMessage}`
+          : "動画を削除しました。"
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "削除に失敗しました");
@@ -565,7 +569,7 @@ export default function VideosPage() {
               ここで設定した動画は、個別設定がないすべてのガチャタイプで使用されます。
             </p>
             {loadingDefaultSettings ? (
-              <div className="py-8 text-center text-gray-500">
+              <div className="py-8 text-center text-black">
                 読み込み中...
               </div>
             ) : defaultSettings ? (
@@ -616,7 +620,7 @@ export default function VideosPage() {
                     {videos.filter(
                       (v) => v.videoType === "COMMON" && v.isActive
                     ).length === 0 && (
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-black">
                         共通動画が登録されていません
                       </p>
                     )}
@@ -646,15 +650,18 @@ export default function VideosPage() {
                                 <input
                                   type="checkbox"
                                   checked={
-                                    defaultSettings.tierVideoAssetIds?.[key]?.includes(video.id) ||
-                                    false
+                                    defaultSettings.tierVideoAssetIds?.[
+                                      key
+                                    ]?.includes(video.id) || false
                                   }
                                   onChange={(e) => {
                                     const currentIds =
-                                      defaultSettings.tierVideoAssetIds?.[key] ||
-                                      [];
+                                      defaultSettings.tierVideoAssetIds?.[
+                                        key
+                                      ] || [];
                                     const newRarityVideoIds = {
-                                      ...(defaultSettings.tierVideoAssetIds || {}),
+                                      ...(defaultSettings.tierVideoAssetIds ||
+                                        {}),
                                       [key]: e.target.checked
                                         ? [...currentIds, video.id]
                                         : currentIds.filter(
@@ -676,7 +683,7 @@ export default function VideosPage() {
                           {videos.filter(
                             (v) => v.videoType === "RARITY" && v.isActive
                           ).length === 0 && (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-black">
                               等級別動画が登録されていません
                             </p>
                           )}
@@ -703,7 +710,7 @@ export default function VideosPage() {
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center text-gray-500">
+              <div className="py-8 text-center text-black">
                 設定を読み込めませんでした
               </div>
             )}
@@ -726,14 +733,14 @@ export default function VideosPage() {
                   onChange={(e) => {
                     setSelectedVideoType(e.target.value as "COMMON" | "RARITY");
                   }}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="COMMON">
                     共通動画（あたりかハズレの判定動画まで）
                   </option>
                   <option value="RARITY">等級別動画（あたりの等級別）</option>
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-black">
                   {selectedVideoType === "RARITY" &&
                     "等級はガチャ設定画面で選択してください"}
                 </p>
@@ -747,10 +754,10 @@ export default function VideosPage() {
                   type="file"
                   accept="video/mp4,video/webm,video/quicktime"
                   onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {uploadFile && (
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-black">
                     選択: {uploadFile.name} ({formatFileSize(uploadFile.size)})
                   </p>
                 )}
@@ -764,7 +771,7 @@ export default function VideosPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="動画の説明を入力してください"
                 />
               </div>
@@ -794,7 +801,7 @@ export default function VideosPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-gray-500">読み込み中...</div>
+            <div className="text-black">読み込み中...</div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -821,11 +828,11 @@ export default function VideosPage() {
                             />
                           )}
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-black">
                               {video.fileName}
                             </div>
                             {video.description && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-black">
                                 {video.description}
                               </div>
                             )}
@@ -862,7 +869,7 @@ export default function VideosPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-sm text-gray-500">
+                <div className="py-8 text-center text-sm text-black">
                   共通動画が登録されていません
                 </div>
               )}
@@ -894,11 +901,11 @@ export default function VideosPage() {
                             />
                           )}
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-black">
                               {video.fileName}
                             </div>
                             {video.description && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-black">
                                 {video.description}
                               </div>
                             )}
@@ -935,7 +942,7 @@ export default function VideosPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-sm text-gray-500">
+                <div className="py-8 text-center text-sm text-black">
                   等級別動画が登録されていません
                 </div>
               )}
@@ -1011,7 +1018,11 @@ export default function VideosPage() {
           ]}
           onConfirm={confirmToggle}
           onCancel={() =>
-            setToggleConfirm({ isOpen: false, videoId: null, currentStatus: true })
+            setToggleConfirm({
+              isOpen: false,
+              videoId: null,
+              currentStatus: true,
+            })
           }
         />
 

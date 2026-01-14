@@ -106,7 +106,9 @@ export default function PrizeAssignmentsPage() {
     setError(null);
     try {
       const res = await fetch(
-        `/api/admin/prize-assignments?gachaTypeId=${encodeURIComponent(gachaTypeId)}`,
+        `/api/admin/prize-assignments?gachaTypeId=${encodeURIComponent(
+          gachaTypeId
+        )}`,
         { headers: { "X-Admin-Auth": token } }
       );
       if (res.status === 401) {
@@ -115,7 +117,8 @@ export default function PrizeAssignmentsPage() {
         return;
       }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "景品割当一覧の取得に失敗しました");
+      if (!res.ok)
+        throw new Error(data.error || "景品割当一覧の取得に失敗しました");
       setAssignments(Array.isArray(data.assignments) ? data.assignments : []);
     } finally {
       setLoading(false);
@@ -176,7 +179,11 @@ export default function PrizeAssignmentsPage() {
       changes: [
         { label: "ガチャタイプ", from: "-", to: selectedGachaTypeId },
         { label: "等級", from: "-", to: tierLabel(newRow.tierCode) },
-        { label: "景品", from: "-", to: item ? `${item.name}（ID:${item.id}）` : `ID:${itemId}` },
+        {
+          label: "景品",
+          from: "-",
+          to: item ? `${item.name}（ID:${item.id}）` : `ID:${itemId}`,
+        },
         { label: "重み", from: "-", to: String(weight) },
         { label: "状態", from: "-", to: newRow.isActive ? "有効" : "無効" },
       ],
@@ -203,9 +210,15 @@ export default function PrizeAssignmentsPage() {
             return;
           }
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "景品割当の追加に失敗しました");
+          if (!res.ok)
+            throw new Error(data.error || "景品割当の追加に失敗しました");
           setSuccess("景品割当を追加しました");
-          setNewRow({ tierCode: newRow.tierCode, itemId: "", weight: "1", isActive: true });
+          setNewRow({
+            tierCode: newRow.tierCode,
+            itemId: "",
+            weight: "1",
+            isActive: true,
+          });
           await fetchAssignments(selectedGachaTypeId);
         } finally {
           setSavingId(null);
@@ -224,7 +237,11 @@ export default function PrizeAssignmentsPage() {
       variant: "info",
       changes: [
         { label: "等級", from: "-", to: tierLabel(row.tierCode) },
-        { label: "景品", from: "-", to: `${row.item.name}（ID:${row.item.id}）` },
+        {
+          label: "景品",
+          from: "-",
+          to: `${row.item.name}（ID:${row.item.id}）`,
+        },
         { label: "重み", from: "-", to: String(row.weight) },
         { label: "状態", from: "-", to: row.isActive ? "有効" : "無効" },
       ],
@@ -250,7 +267,8 @@ export default function PrizeAssignmentsPage() {
             return;
           }
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "景品割当の保存に失敗しました");
+          if (!res.ok)
+            throw new Error(data.error || "景品割当の保存に失敗しました");
           setSuccess("保存しました");
           await fetchAssignments(selectedGachaTypeId);
         } finally {
@@ -269,8 +287,16 @@ export default function PrizeAssignmentsPage() {
       confirmText: "削除",
       variant: "danger",
       changes: [
-        { label: "等級", from: "割当済み", to: `削除（${tierLabel(row.tierCode)}）` },
-        { label: "景品", from: "割当済み", to: `${row.item.name}（ID:${row.item.id}）` },
+        {
+          label: "等級",
+          from: "割当済み",
+          to: `削除（${tierLabel(row.tierCode)}）`,
+        },
+        {
+          label: "景品",
+          from: "割当済み",
+          to: `${row.item.name}（ID:${row.item.id}）`,
+        },
       ],
       onConfirm: async () => {
         setSavingId(`__delete__:${row.id}`);
@@ -285,7 +311,8 @@ export default function PrizeAssignmentsPage() {
             return;
           }
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "景品割当の削除に失敗しました");
+          if (!res.ok)
+            throw new Error(data.error || "景品割当の削除に失敗しました");
           setSuccess("削除しました");
           await fetchAssignments(selectedGachaTypeId);
         } finally {
@@ -297,265 +324,281 @@ export default function PrizeAssignmentsPage() {
 
   return (
     <div className="w-full">
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 whitespace-pre-wrap">
-            {success}
-          </div>
-        )}
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 whitespace-pre-wrap">
+          {success}
+        </div>
+      )}
 
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700">
-                ガチャタイプ
-              </label>
+      <div className="mb-6 rounded-lg bg-white p-6 shadow">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700">
+              ガチャタイプ
+            </label>
+            <select
+              value={selectedGachaTypeId}
+              onChange={(e) => setSelectedGachaTypeId(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+            >
+              {gachaTypes.map((gt) => (
+                <option key={gt.id} value={gt.id}>
+                  {gt.name}（{gt.id}）
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              ここで「このガチャではこの景品を何等扱いにするか」を設定します
+            </p>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">
+              割当を追加
+            </label>
+            <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
               <select
-                value={selectedGachaTypeId}
-                onChange={(e) => setSelectedGachaTypeId(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                value={newRow.tierCode}
+                onChange={(e) =>
+                  setNewRow((p) => ({ ...p, tierCode: e.target.value }))
+                }
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
               >
-                {gachaTypes.map((gt) => (
-                  <option key={gt.id} value={gt.id}>
-                    {gt.name}（{gt.id}）
+                {RARITIES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
-                ここで「このガチャではこの景品を何等扱いにするか」を設定します
-              </p>
+              <select
+                value={newRow.itemId}
+                onChange={(e) =>
+                  setNewRow((p) => ({ ...p, itemId: e.target.value }))
+                }
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 md:col-span-2"
+              >
+                <option value="">景品（アイテム）を選択</option>
+                {items.map((it) => (
+                  <option key={it.id} value={String(it.id)}>
+                    {it.name}（ID:{it.id}）
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min={1}
+                value={newRow.weight}
+                onChange={(e) =>
+                  setNewRow((p) => ({ ...p, weight: e.target.value }))
+                }
+                className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                placeholder="重み"
+              />
             </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                割当を追加
-              </label>
-              <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
-                <select
-                  value={newRow.tierCode}
-                  onChange={(e) => setNewRow((p) => ({ ...p, tierCode: e.target.value }))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
-                >
-                  {RARITIES.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newRow.itemId}
-                  onChange={(e) => setNewRow((p) => ({ ...p, itemId: e.target.value }))}
-                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 md:col-span-2"
-                >
-                  <option value="">景品（アイテム）を選択</option>
-                  {items.map((it) => (
-                    <option key={it.id} value={String(it.id)}>
-                      {it.name}（ID:{it.id}）
-                    </option>
-                  ))}
-                </select>
+            <div className="mt-2 flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-gray-900">
                 <input
-                  type="number"
-                  min={1}
-                  value={newRow.weight}
-                  onChange={(e) => setNewRow((p) => ({ ...p, weight: e.target.value }))}
-                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="重み"
+                  type="checkbox"
+                  checked={newRow.isActive}
+                  onChange={(e) =>
+                    setNewRow((p) => ({ ...p, isActive: e.target.checked }))
+                  }
                 />
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-gray-900">
-                  <input
-                    type="checkbox"
-                    checked={newRow.isActive}
-                    onChange={(e) => setNewRow((p) => ({ ...p, isActive: e.target.checked }))}
-                  />
-                  有効
-                </label>
-                <button
-                  onClick={createAssignment}
-                  disabled={savingId === "__create__"}
-                  className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {savingId === "__create__" ? "追加中..." : "追加"}
-                </button>
-              </div>
+                有効
+              </label>
+              <button
+                onClick={createAssignment}
+                disabled={savingId === "__create__"}
+                className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+              >
+                {savingId === "__create__" ? "追加中..." : "追加"}
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">割当一覧</h2>
-            <button
-              onClick={() => fetchAssignments(selectedGachaTypeId)}
-              className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-            >
-              再読み込み
-            </button>
+      <div className="rounded-lg bg-white p-6 shadow">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800">割当一覧</h2>
+          <button
+            onClick={() => fetchAssignments(selectedGachaTypeId)}
+            className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+          >
+            再読み込み
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-gray-600">読み込み中...</div>
+        ) : assignments.length === 0 ? (
+          <div className="text-gray-600">
+            まだ割当がありません（上で追加してください）
           </div>
-
-          {loading ? (
-            <div className="text-gray-600">読み込み中...</div>
-          ) : assignments.length === 0 ? (
-            <div className="text-gray-600">
-              まだ割当がありません（上で追加してください）
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      等級
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      景品
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      重み
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      状態
-                    </th>
-                    <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignments.map((a) => (
-                    <tr key={a.id} className="border-b last:border-b-0">
-                      <td className="px-3 py-2 text-sm text-gray-900">
-                        <select
-                          value={a.tierCode}
-                          onChange={(e) =>
-                            setAssignments((prev) =>
-                              prev.map((x) =>
-                                x.id === a.id ? { ...x, tierCode: e.target.value } : x
-                              )
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    等級
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    景品
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    重み
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    状態
+                  </th>
+                  <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.map((a) => (
+                  <tr key={a.id} className="border-b last:border-b-0">
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      <select
+                        value={a.tierCode}
+                        onChange={(e) =>
+                          setAssignments((prev) =>
+                            prev.map((x) =>
+                              x.id === a.id
+                                ? { ...x, tierCode: e.target.value }
+                                : x
                             )
-                          }
-                          className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
-                        >
-                          {RARITIES.map((r) => (
-                            <option key={r.value} value={r.value}>
-                              {r.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-900">
-                        <select
-                          value={String(a.itemId)}
-                          onChange={(e) => {
-                            const nextId = Number(e.target.value);
-                            const it = items.find((i) => i.id === nextId);
-                            setAssignments((prev) =>
-                              prev.map((x) =>
-                                x.id === a.id
-                                  ? {
-                                      ...x,
-                                      itemId: nextId,
-                                      item: it
-                                        ? { id: it.id, name: it.name, isActive: it.isActive }
-                                        : x.item,
-                                    }
-                                  : x
-                              )
-                            );
-                          }}
-                          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
-                        >
-                          {items.map((it) => (
-                            <option key={it.id} value={String(it.id)}>
-                              {it.name}（ID:{it.id}）
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-900">
+                          )
+                        }
+                        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+                      >
+                        {RARITIES.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      <select
+                        value={String(a.itemId)}
+                        onChange={(e) => {
+                          const nextId = Number(e.target.value);
+                          const it = items.find((i) => i.id === nextId);
+                          setAssignments((prev) =>
+                            prev.map((x) =>
+                              x.id === a.id
+                                ? {
+                                    ...x,
+                                    itemId: nextId,
+                                    item: it
+                                      ? {
+                                          id: it.id,
+                                          name: it.name,
+                                          isActive: it.isActive,
+                                        }
+                                      : x.item,
+                                  }
+                                : x
+                            )
+                          );
+                        }}
+                        className="w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+                      >
+                        {items.map((it) => (
+                          <option key={it.id} value={String(it.id)}>
+                            {it.name}（ID:{it.id}）
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      <input
+                        type="number"
+                        min={1}
+                        value={a.weight}
+                        onChange={(e) =>
+                          setAssignments((prev) =>
+                            prev.map((x) =>
+                              x.id === a.id
+                                ? { ...x, weight: Number(e.target.value) }
+                                : x
+                            )
+                          )
+                        }
+                        className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      <label className="inline-flex items-center gap-2">
                         <input
-                          type="number"
-                          min={1}
-                          value={a.weight}
+                          type="checkbox"
+                          checked={a.isActive}
                           onChange={(e) =>
                             setAssignments((prev) =>
                               prev.map((x) =>
                                 x.id === a.id
-                                  ? { ...x, weight: Number(e.target.value) }
+                                  ? { ...x, isActive: e.target.checked }
                                   : x
                               )
                             )
                           }
-                          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
                         />
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-900">
-                        <label className="inline-flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={a.isActive}
-                            onChange={(e) =>
-                              setAssignments((prev) =>
-                                prev.map((x) =>
-                                  x.id === a.id ? { ...x, isActive: e.target.checked } : x
-                                )
-                              )
-                            }
-                          />
-                          {a.isActive ? "有効" : "無効"}
-                        </label>
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <div className="inline-flex gap-2">
-                          <button
-                            onClick={() => saveAssignment(a)}
-                            disabled={savingId === String(a.id)}
-                            className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-                          >
-                            {savingId === String(a.id) ? "保存中..." : "保存"}
-                          </button>
-                          <button
-                            onClick={() => deleteAssignment(a)}
-                            disabled={savingId === `__delete__:${a.id}`}
-                            className="rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 transition-colors hover:bg-red-200 disabled:opacity-50"
-                          >
-                            {savingId === `__delete__:${a.id}` ? "削除中..." : "削除"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                        {a.isActive ? "有効" : "無効"}
+                      </label>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <div className="inline-flex gap-2">
+                        <button
+                          onClick={() => saveAssignment(a)}
+                          disabled={savingId === String(a.id)}
+                          className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                        >
+                          {savingId === String(a.id) ? "保存中..." : "保存"}
+                        </button>
+                        <button
+                          onClick={() => deleteAssignment(a)}
+                          disabled={savingId === `__delete__:${a.id}`}
+                          className="rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 transition-colors hover:bg-red-200 disabled:opacity-50"
+                        >
+                          {savingId === `__delete__:${a.id}`
+                            ? "削除中..."
+                            : "削除"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-        <ConfirmModal
-          isOpen={!!confirm?.isOpen}
-          title={confirm?.title ?? ""}
-          message={confirm?.message ?? ""}
-          confirmText={confirm?.confirmText ?? "OK"}
-          cancelText="キャンセル"
-          variant={confirm?.variant ?? "info"}
-          changes={confirm?.changes}
-          isConfirmDisabled={savingId !== null}
-          onConfirm={async () => {
-            if (!confirm) return;
-            const fn = confirm.onConfirm;
-            closeConfirm();
-            await fn();
-          }}
-          onCancel={closeConfirm}
-        />
+      <ConfirmModal
+        isOpen={!!confirm?.isOpen}
+        title={confirm?.title ?? ""}
+        message={confirm?.message ?? ""}
+        confirmText={confirm?.confirmText ?? "OK"}
+        cancelText="キャンセル"
+        variant={confirm?.variant ?? "info"}
+        changes={confirm?.changes}
+        isConfirmDisabled={savingId !== null}
+        onConfirm={async () => {
+          if (!confirm) return;
+          const fn = confirm.onConfirm;
+          closeConfirm();
+          await fn();
+        }}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
-
-

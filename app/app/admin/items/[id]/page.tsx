@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { getAdminAuthToken } from '@/lib/admin-auth';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaItem = {
   id: number;
@@ -25,8 +25,8 @@ type GachaItem = {
 // NOTE: 等級（1等/2等…）は「景品割当（ガチャ別）」で管理するため、アイテムマスタ側では管理しない
 
 const USAGE_TYPE_OPTIONS = [
-  { value: 'IMAGE', label: '画像' },
-  { value: 'SHOW_TO_STAFF', label: '見せて使用' },
+  { value: "IMAGE", label: "画像" },
+  { value: "SHOW_TO_STAFF", label: "見せて使用" },
 ];
 
 export default function ItemEditPage() {
@@ -41,18 +41,19 @@ export default function ItemEditPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [descriptionTextareaRef, setDescriptionTextareaRef] = useState<HTMLTextAreaElement | null>(null);
+  const [descriptionTextareaRef, setDescriptionTextareaRef] =
+    useState<HTMLTextAreaElement | null>(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
-  const [linkData, setLinkData] = useState({ text: '', url: '' });
+  const [linkData, setLinkData] = useState({ text: "", url: "" });
 
   const toDatetimeLocalValue = (iso: string | null | undefined): string => {
-    if (!iso) return '';
+    if (!iso) return "";
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-      d.getHours()
-    )}:${pad(d.getMinutes())}`;
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   const fromDatetimeLocalValue = (value: string): string | null => {
@@ -69,15 +70,15 @@ export default function ItemEditPage() {
     const textarea = descriptionTextareaRef;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const currentText = formData.description || '';
+    const currentText = formData.description || "";
     const selectedText = currentText.substring(start, end);
 
     // 選択テキストがある場合はそれをリンクテキストとして使用
-    const linkText = linkData.text || selectedText || 'リンク';
-    const linkUrl = linkData.url || '';
+    const linkText = linkData.text || selectedText || "リンク";
+    const linkUrl = linkData.url || "";
 
     if (!linkUrl) {
-      alert('URLを入力してください');
+      alert("URLを入力してください");
       return;
     }
 
@@ -89,7 +90,7 @@ export default function ItemEditPage() {
 
     setFormData({ ...formData, description: newText });
     setShowLinkModal(false);
-    setLinkData({ text: '', url: '' });
+    setLinkData({ text: "", url: "" });
 
     // テキストエリアのフォーカスを復帰し、カーソル位置を調整
     setTimeout(() => {
@@ -109,26 +110,26 @@ export default function ItemEditPage() {
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/items/${id}`, {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
-        throw new Error('アイテム詳細の取得に失敗しました');
+        throw new Error("アイテム詳細の取得に失敗しました");
       }
 
       const data = await res.json();
       setItem(data.item);
       setFormData(data.item);
     } catch (error) {
-      console.error('アイテム取得エラー:', error);
-      setError('アイテム詳細の取得に失敗しました');
+      console.error("アイテム取得エラー:", error);
+      setError("アイテム詳細の取得に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -136,37 +137,37 @@ export default function ItemEditPage() {
 
   const handleSave = async () => {
     if (!formData.name) {
-      setError('名前は必須です');
+      setError("名前は必須です");
       return;
     }
 
     try {
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/items/${id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': authToken || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": authToken || "",
         },
         body: JSON.stringify(formData),
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || '保存に失敗しました');
+        throw new Error(errorData.error || "保存に失敗しました");
       }
 
-      setSuccess('保存しました');
+      setSuccess("保存しました");
       await fetchItem();
     } catch (error) {
-      console.error('保存エラー:', error);
-      setError(error instanceof Error ? error.message : '保存に失敗しました');
+      console.error("保存エラー:", error);
+      setError(error instanceof Error ? error.message : "保存に失敗しました");
     }
   };
 
@@ -174,7 +175,7 @@ export default function ItemEditPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <div className="text-gray-500">読み込み中...</div>
+          <div className="text-black">読み込み中...</div>
         </div>
       </AdminLayout>
     );
@@ -189,7 +190,7 @@ export default function ItemEditPage() {
           </div>
           <div className="mt-4">
             <button
-              onClick={() => router.push('/admin/items')}
+              onClick={() => router.push("/admin/items")}
               className="text-blue-600 hover:underline"
             >
               ← アイテム一覧に戻る
@@ -201,7 +202,7 @@ export default function ItemEditPage() {
         {showLinkModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
             onClick={() => setShowLinkModal(false)}
           >
             <div
@@ -222,10 +223,10 @@ export default function ItemEditPage() {
                     onChange={(e) =>
                       setLinkData({ ...linkData, text: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                     placeholder="例: 詳細はこちら"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-black">
                     テキストエリアで選択したテキストがある場合は、それがリンクテキストとして使用されます
                   </p>
                 </div>
@@ -239,7 +240,7 @@ export default function ItemEditPage() {
                     onChange={(e) =>
                       setLinkData({ ...linkData, url: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                     placeholder="https://example.com"
                     required
                   />
@@ -249,7 +250,7 @@ export default function ItemEditPage() {
                 <button
                   onClick={() => {
                     setShowLinkModal(false);
-                    setLinkData({ text: '', url: '' });
+                    setLinkData({ text: "", url: "" });
                   }}
                   className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
                 >
@@ -274,7 +275,7 @@ export default function ItemEditPage() {
       <div className="p-6">
         <div className="mb-4">
           <button
-            onClick={() => router.push('/admin/items')}
+            onClick={() => router.push("/admin/items")}
             className="text-blue-600 hover:underline"
           >
             ← アイテム一覧に戻る
@@ -298,17 +299,23 @@ export default function ItemEditPage() {
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">ID</label>
-              <div className="mt-1 text-gray-900">{item.id}</div>
+              <label className="block text-sm font-medium text-gray-700">
+                ID
+              </label>
+              <div className="mt-1 text-black">{item.id}</div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">名前</label>
+              <label className="block text-sm font-medium text-gray-700">
+                名前
+              </label>
               <input
                 type="text"
-                value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                value={formData.name || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
               />
             </div>
 
@@ -319,11 +326,11 @@ export default function ItemEditPage() {
               <div className="mt-1 flex gap-2">
                 <textarea
                   ref={(el) => setDescriptionTextareaRef(el)}
-                  value={formData.description || ''}
+                  value={formData.description || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-black"
                   rows={4}
                   placeholder="アイテムの説明を入力してください。リンクは[リンク挿入]ボタンから追加できます。"
                 />
@@ -336,28 +343,35 @@ export default function ItemEditPage() {
                   リンク挿入
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-black">
                 Markdown形式でリンクを記述できます: [リンクテキスト](URL)
               </p>
             </div>
 
             <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
-              等級（1等/2等…）は <code>/admin/prize-assignments</code> の「景品割当（ガチャ別）」で設定します。
+              等級（1等/2等…）は <code>/admin/prize-assignments</code>{" "}
+              の「景品割当（ガチャ別）」で設定します。
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">（参考）動画URL</label>
+              <label className="block text-sm font-medium text-gray-700">
+                （参考）動画URL
+              </label>
               <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                 ガチャ演出動画は「動画管理」「ガチャ設定」で管理します（アイテムマスタでは管理しません）。
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">使用方法</label>
+              <label className="block text-sm font-medium text-gray-700">
+                使用方法
+              </label>
               <select
-                value={formData.usageType || 'IMAGE'}
-                onChange={(e) => setFormData({ ...formData, usageType: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                value={formData.usageType || "IMAGE"}
+                onChange={(e) =>
+                  setFormData({ ...formData, usageType: e.target.value })
+                }
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
               >
                 {USAGE_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -381,26 +395,26 @@ export default function ItemEditPage() {
                     grantFreePoints: parseInt(e.target.value) || 0,
                   })
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                 placeholder="0"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-black">
                 ガチャでこのアイテムが当選した際に付与する無償ポイント数（0の場合は付与しない）
               </p>
             </div>
-            {formData.usageType === 'IMAGE' && (
+            {formData.usageType === "IMAGE" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   使用画像
                 </label>
-                <p className="mb-2 text-xs text-gray-500">
+                <p className="mb-2 text-xs text-black">
                   アイテム使用時に表示する画像をアップロードしてください
                 </p>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
                   onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black"
                 />
                 {formData.imageUrl && (
                   <div className="mt-2">
@@ -412,7 +426,9 @@ export default function ItemEditPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, imageUrl: null })}
+                      onClick={() =>
+                        setFormData({ ...formData, imageUrl: null })
+                      }
                       className="mt-2 text-xs text-red-600 hover:text-red-800"
                     >
                       画像を削除
@@ -427,30 +443,39 @@ export default function ItemEditPage() {
                       try {
                         setUploadingImage(true);
                         const uploadFormData = new FormData();
-                        uploadFormData.append('file', imageFile);
-                        uploadFormData.append('itemId', id.toString());
+                        uploadFormData.append("file", imageFile);
+                        uploadFormData.append("itemId", id.toString());
 
                         const authToken = getAdminAuthToken();
-                        const res = await fetch('/api/admin/items/upload-image', {
-                          method: 'POST',
-                          headers: {
-                            'X-Admin-Auth': authToken || '',
-                          },
-                          body: uploadFormData,
-                        });
+                        const res = await fetch(
+                          "/api/admin/items/upload-image",
+                          {
+                            method: "POST",
+                            headers: {
+                              "X-Admin-Auth": authToken || "",
+                            },
+                            body: uploadFormData,
+                          }
+                        );
 
                         if (!res.ok) {
                           const data = await res.json();
-                          throw new Error(data.error || 'アップロードに失敗しました');
+                          throw new Error(
+                            data.error || "アップロードに失敗しました"
+                          );
                         }
 
                         const data = await res.json();
                         setFormData({ ...formData, imageUrl: data.imageUrl });
                         setImageFile(null);
-                        setSuccess('画像をアップロードしました');
+                        setSuccess("画像をアップロードしました");
                       } catch (error) {
-                        console.error('画像アップロードエラー:', error);
-                        setError(error instanceof Error ? error.message : '画像のアップロードに失敗しました');
+                        console.error("画像アップロードエラー:", error);
+                        setError(
+                          error instanceof Error
+                            ? error.message
+                            : "画像のアップロードに失敗しました"
+                        );
                       } finally {
                         setUploadingImage(false);
                       }
@@ -458,7 +483,9 @@ export default function ItemEditPage() {
                     disabled={uploadingImage}
                     className="mt-2 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
                   >
-                    {uploadingImage ? 'アップロード中...' : '画像をアップロード'}
+                    {uploadingImage
+                      ? "アップロード中..."
+                      : "画像をアップロード"}
                   </button>
                 )}
               </div>
@@ -492,9 +519,9 @@ export default function ItemEditPage() {
                       useStartAt: fromDatetimeLocalValue(e.target.value),
                     })
                   }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-black">
                   未設定の場合は使用開始の制限なし
                 </p>
               </div>
@@ -511,9 +538,9 @@ export default function ItemEditPage() {
                       useEndAt: fromDatetimeLocalValue(e.target.value),
                     })
                   }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-black">
                   未設定の場合は使用期限の制限なし
                 </p>
               </div>
@@ -524,7 +551,9 @@ export default function ItemEditPage() {
                 <label className="block text-sm font-medium text-gray-700">
                   ガチャ実行回数
                 </label>
-                <div className="mt-1 text-gray-900">{item._count.gachaHistories} 回</div>
+                <div className="mt-1 text-black">
+                  {item._count.gachaHistories} 回
+                </div>
               </div>
             )}
 
@@ -536,7 +565,7 @@ export default function ItemEditPage() {
                 保存
               </button>
               <button
-                onClick={() => router.push('/admin/items')}
+                onClick={() => router.push("/admin/items")}
                 className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
               >
                 キャンセル
@@ -545,11 +574,11 @@ export default function ItemEditPage() {
           </div>
         </div>
       </div>
-        {/* リンク挿入モーダル */}
-        {showLinkModal && (
+      {/* リンク挿入モーダル */}
+      {showLinkModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
           onClick={() => setShowLinkModal(false)}
         >
           <div
@@ -570,10 +599,10 @@ export default function ItemEditPage() {
                   onChange={(e) =>
                     setLinkData({ ...linkData, text: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                   placeholder="例: 詳細はこちら"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-black">
                   テキストエリアで選択したテキストがある場合は、それがリンクテキストとして使用されます
                 </p>
               </div>
@@ -587,7 +616,7 @@ export default function ItemEditPage() {
                   onChange={(e) =>
                     setLinkData({ ...linkData, url: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                   placeholder="https://example.com"
                   required
                 />
@@ -597,7 +626,7 @@ export default function ItemEditPage() {
               <button
                 onClick={() => {
                   setShowLinkModal(false);
-                  setLinkData({ text: '', url: '' });
+                  setLinkData({ text: "", url: "" });
                 }}
                 className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
               >
@@ -616,9 +645,3 @@ export default function ItemEditPage() {
     </AdminLayout>
   );
 }
-
-
-
-
-
-

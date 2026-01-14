@@ -424,335 +424,333 @@ export default function AdminPointPlansPage() {
 
   return (
     <div className="w-full">
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 whitespace-pre-wrap">
-            {success}
-          </div>
-        )}
-
-        {/* 新規作成 */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-lg font-semibold text-gray-800">新規作成</h2>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-6 xl:grid-cols-8">
-            <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-gray-700">
-                プランID
-              </label>
-              <input
-                value={newPlan.id}
-                onChange={(e) =>
-                  setNewPlan((p) => ({ ...p, id: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                placeholder="例: p100"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                英数字/ハイフン/アンダースコア
-              </p>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                ラベル
-              </label>
-              <input
-                value={newPlan.label}
-                onChange={(e) =>
-                  setNewPlan((p) => ({ ...p, label: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                placeholder="例: 100ポイント"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                ポイント
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={newPlan.points}
-                onChange={(e) =>
-                  setNewPlan((p) => ({ ...p, points: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                おまけ無償ポイント
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={newPlan.bonusFreePoints}
-                onChange={(e) =>
-                  setNewPlan((p) => ({ ...p, bonusFreePoints: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-              />
-              <p className="mt-1 text-xs text-gray-500">0以上</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                価格(円)
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={newPlan.price}
-                onChange={(e) =>
-                  setNewPlan((p) => ({ ...p, price: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                表示順
-              </label>
-              <input
-                type="number"
-                value={newPlan.displayOrder}
-                onChange={(e) =>
-                  setNewPlan((p) => ({ ...p, displayOrder: e.target.value }))
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-              />
-            </div>
-            <div className="flex items-end gap-3 lg:col-span-6 xl:col-span-8">
-              <label className="flex items-center gap-2 text-sm text-gray-900">
-                <input
-                  type="checkbox"
-                  checked={newPlan.isActive}
-                  onChange={(e) =>
-                    setNewPlan((p) => ({ ...p, isActive: e.target.checked }))
-                  }
-                />
-                有効
-              </label>
-              <button
-                onClick={requestCreateConfirm}
-                disabled={savingId === "__create__"}
-                className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-              >
-                {savingId === "__create__" ? "作成中..." : "作成"}
-              </button>
-            </div>
-          </div>
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+          {error}
         </div>
+      )}
+      {success && (
+        <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 whitespace-pre-wrap">
+          {success}
+        </div>
+      )}
 
-        {/* 一覧 */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">一覧</h2>
+      {/* 新規作成 */}
+      <div className="mb-6 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-lg font-semibold text-gray-800">新規作成</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-6 xl:grid-cols-8">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700">
+              プランID
+            </label>
+            <input
+              value={newPlan.id}
+              onChange={(e) =>
+                setNewPlan((p) => ({ ...p, id: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+              placeholder="例: p100"
+            />
+            <p className="mt-1 text-xs text-black">
+              英数字/ハイフン/アンダースコア
+            </p>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">
+              ラベル
+            </label>
+            <input
+              value={newPlan.label}
+              onChange={(e) =>
+                setNewPlan((p) => ({ ...p, label: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+              placeholder="例: 100ポイント"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              ポイント
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={newPlan.points}
+              onChange={(e) =>
+                setNewPlan((p) => ({ ...p, points: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              おまけ無償ポイント
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={newPlan.bonusFreePoints}
+              onChange={(e) =>
+                setNewPlan((p) => ({ ...p, bonusFreePoints: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+            />
+            <p className="mt-1 text-xs text-black">0以上</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              価格(円)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={newPlan.price}
+              onChange={(e) =>
+                setNewPlan((p) => ({ ...p, price: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              表示順
+            </label>
+            <input
+              type="number"
+              value={newPlan.displayOrder}
+              onChange={(e) =>
+                setNewPlan((p) => ({ ...p, displayOrder: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+            />
+          </div>
+          <div className="flex items-end gap-3 lg:col-span-6 xl:col-span-8">
+            <label className="flex items-center gap-2 text-sm text-black">
+              <input
+                type="checkbox"
+                checked={newPlan.isActive}
+                onChange={(e) =>
+                  setNewPlan((p) => ({ ...p, isActive: e.target.checked }))
+                }
+              />
+              有効
+            </label>
             <button
-              onClick={fetchPlans}
-              className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              onClick={requestCreateConfirm}
+              disabled={savingId === "__create__"}
+              className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
             >
-              再読み込み
+              {savingId === "__create__" ? "作成中..." : "作成"}
             </button>
           </div>
+        </div>
+      </div>
 
-          {loading ? (
-            <div className="text-gray-600">読み込み中...</div>
-          ) : plans.length === 0 ? (
-            <div className="text-gray-600">プランがありません</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      ID
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      ラベル
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      ポイント
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      おまけ無償
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      価格(円)
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      表示順
-                    </th>
-                    <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                      状態
-                    </th>
-                    <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plans.map((p) => (
-                    <tr key={p.id} className="border-b last:border-b-0">
-                      <td className="px-3 py-2 text-sm text-gray-900">
-                        {p.id}
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={p.label}
-                          onChange={(e) =>
-                            setPlans((prev) =>
-                              prev.map((x) =>
-                                x.id === p.id
-                                  ? { ...x, label: e.target.value }
-                                  : x
-                              )
-                            )
-                          }
-                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={1}
-                          value={p.points}
-                          onChange={(e) =>
-                            setPlans((prev) =>
-                              prev.map((x) =>
-                                x.id === p.id
-                                  ? { ...x, points: Number(e.target.value) }
-                                  : x
-                              )
-                            )
-                          }
-                          className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={0}
-                          value={p.bonusFreePoints}
-                          onChange={(e) =>
-                            setPlans((prev) =>
-                              prev.map((x) =>
-                                x.id === p.id
-                                  ? {
-                                      ...x,
-                                      bonusFreePoints: Number(e.target.value),
-                                    }
-                                  : x
-                              )
-                            )
-                          }
-                          className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={1}
-                          value={p.price}
-                          onChange={(e) =>
-                            setPlans((prev) =>
-                              prev.map((x) =>
-                                x.id === p.id
-                                  ? { ...x, price: Number(e.target.value) }
-                                  : x
-                              )
-                            )
-                          }
-                          className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          value={p.displayOrder}
-                          onChange={(e) =>
-                            setPlans((prev) =>
-                              prev.map((x) =>
-                                x.id === p.id
-                                  ? {
-                                      ...x,
-                                      displayOrder: Number(e.target.value),
-                                    }
-                                  : x
-                              )
-                            )
-                          }
-                          className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-sm">
-                        {p.isActive ? (
-                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                            有効
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
-                            無効
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <div className="inline-flex gap-2">
-                          <button
-                            onClick={() => requestUpdateConfirm(p)}
-                            disabled={savingId === p.id}
-                            className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-                          >
-                            {savingId === p.id ? "保存中..." : "保存"}
-                          </button>
-                          {p.isActive ? (
-                            <button
-                              onClick={() => requestToggleConfirm(p.id, false)}
-                              className="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-yellow-600"
-                            >
-                              無効化
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => requestToggleConfirm(p.id, true)}
-                              className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
-                            >
-                              有効化
-                            </button>
-                          )}
-                          <button
-                            onClick={() => requestDeleteConfirm(p.id)}
-                            disabled={savingId === `__delete__:${p.id}`}
-                            className="rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 transition-colors hover:bg-red-200 disabled:opacity-50"
-                          >
-                            {savingId === `__delete__:${p.id}`
-                              ? "削除中..."
-                              : "削除"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* 一覧 */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800">一覧</h2>
+          <button
+            onClick={fetchPlans}
+            className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+          >
+            再読み込み
+          </button>
         </div>
 
-        <ConfirmModal
-          isOpen={!!confirmModal?.isOpen}
-          title={confirmModal?.title ?? ""}
-          message={confirmModal?.message ?? ""}
-          changes={confirmModal?.changes}
-          confirmText={confirmModal?.confirmText ?? "OK"}
-          cancelText="キャンセル"
-          variant={confirmModal?.variant ?? "info"}
-          isConfirmDisabled={savingId !== null}
-          onConfirm={runConfirm}
-          onCancel={closeConfirm}
-        />
+        {loading ? (
+          <div className="text-gray-600">読み込み中...</div>
+        ) : plans.length === 0 ? (
+          <div className="text-gray-600">プランがありません</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    ID
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    ラベル
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    ポイント
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    おまけ無償
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    価格(円)
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    表示順
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    状態
+                  </th>
+                  <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {plans.map((p) => (
+                  <tr key={p.id} className="border-b last:border-b-0">
+                    <td className="px-3 py-2 text-sm text-black">{p.id}</td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={p.label}
+                        onChange={(e) =>
+                          setPlans((prev) =>
+                            prev.map((x) =>
+                              x.id === p.id
+                                ? { ...x, label: e.target.value }
+                                : x
+                            )
+                          )
+                        }
+                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-black"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={p.points}
+                        onChange={(e) =>
+                          setPlans((prev) =>
+                            prev.map((x) =>
+                              x.id === p.id
+                                ? { ...x, points: Number(e.target.value) }
+                                : x
+                            )
+                          )
+                        }
+                        className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-black"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={0}
+                        value={p.bonusFreePoints}
+                        onChange={(e) =>
+                          setPlans((prev) =>
+                            prev.map((x) =>
+                              x.id === p.id
+                                ? {
+                                    ...x,
+                                    bonusFreePoints: Number(e.target.value),
+                                  }
+                                : x
+                            )
+                          )
+                        }
+                        className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-black"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={p.price}
+                        onChange={(e) =>
+                          setPlans((prev) =>
+                            prev.map((x) =>
+                              x.id === p.id
+                                ? { ...x, price: Number(e.target.value) }
+                                : x
+                            )
+                          )
+                        }
+                        className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-black"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={p.displayOrder}
+                        onChange={(e) =>
+                          setPlans((prev) =>
+                            prev.map((x) =>
+                              x.id === p.id
+                                ? {
+                                    ...x,
+                                    displayOrder: Number(e.target.value),
+                                  }
+                                : x
+                            )
+                          )
+                        }
+                        className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-black"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {p.isActive ? (
+                        <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                          有効
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
+                          無効
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <div className="inline-flex gap-2">
+                        <button
+                          onClick={() => requestUpdateConfirm(p)}
+                          disabled={savingId === p.id}
+                          className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                        >
+                          {savingId === p.id ? "保存中..." : "保存"}
+                        </button>
+                        {p.isActive ? (
+                          <button
+                            onClick={() => requestToggleConfirm(p.id, false)}
+                            className="rounded-md bg-yellow-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-yellow-600"
+                          >
+                            無効化
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => requestToggleConfirm(p.id, true)}
+                            className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                          >
+                            有効化
+                          </button>
+                        )}
+                        <button
+                          onClick={() => requestDeleteConfirm(p.id)}
+                          disabled={savingId === `__delete__:${p.id}`}
+                          className="rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-800 transition-colors hover:bg-red-200 disabled:opacity-50"
+                        >
+                          {savingId === `__delete__:${p.id}`
+                            ? "削除中..."
+                            : "削除"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <ConfirmModal
+        isOpen={!!confirmModal?.isOpen}
+        title={confirmModal?.title ?? ""}
+        message={confirmModal?.message ?? ""}
+        changes={confirmModal?.changes}
+        confirmText={confirmModal?.confirmText ?? "OK"}
+        cancelText="キャンセル"
+        variant={confirmModal?.variant ?? "info"}
+        isConfirmDisabled={savingId !== null}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

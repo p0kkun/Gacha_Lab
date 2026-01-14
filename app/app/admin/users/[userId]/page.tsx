@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import AdminLayout from '@/components/admin/AdminLayout';
-import ConfirmModal from '@/components/admin/ConfirmModal';
-import { getAdminAuthToken } from '@/lib/admin-auth';
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import AdminLayout from "@/components/admin/AdminLayout";
+import ConfirmModal from "@/components/admin/ConfirmModal";
+import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaHistory = {
   id: number;
@@ -81,9 +81,9 @@ export default function UserDetailPage() {
   const fetchPrizeTiers = async () => {
     try {
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/prize-tiers', {
+      const res = await fetch("/api/admin/prize-tiers", {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
       if (res.ok) {
@@ -97,7 +97,7 @@ export default function UserDetailPage() {
         setPrizeTiers(tierMap);
       }
     } catch (error) {
-      console.error('等級マスタ取得エラー:', error);
+      console.error("等級マスタ取得エラー:", error);
     }
   };
 
@@ -107,26 +107,26 @@ export default function UserDetailPage() {
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}`, {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
-        throw new Error('ユーザー詳細の取得に失敗しました');
+        throw new Error("ユーザー詳細の取得に失敗しました");
       }
 
       const data = await res.json();
       setUser(data.user);
       setGachaHistories(data.gachaHistories);
     } catch (error) {
-      console.error('ユーザー詳細取得エラー:', error);
-      setError('ユーザー詳細の取得に失敗しました');
+      console.error("ユーザー詳細取得エラー:", error);
+      setError("ユーザー詳細の取得に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export default function UserDetailPage() {
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}/tags`, {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
@@ -146,16 +146,16 @@ export default function UserDetailPage() {
         setUserTags(data.userTags);
       }
     } catch (error) {
-      console.error('ユーザータグ取得エラー:', error);
+      console.error("ユーザータグ取得エラー:", error);
     }
   };
 
   const fetchAllTags = async () => {
     try {
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/tags', {
+      const res = await fetch("/api/admin/tags", {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
@@ -164,7 +164,7 @@ export default function UserDetailPage() {
         setAllTags(data.tags);
       }
     } catch (error) {
-      console.error('タグ一覧取得エラー:', error);
+      console.error("タグ一覧取得エラー:", error);
     }
   };
 
@@ -172,35 +172,35 @@ export default function UserDetailPage() {
     try {
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}/tags`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': authToken || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": authToken || "",
         },
         body: JSON.stringify({
           tagId,
-          adminUserId: sessionStorage.getItem('admin_user_id') || null,
-          adminName: sessionStorage.getItem('admin_name') || null,
+          adminUserId: sessionStorage.getItem("admin_user_id") || null,
+          adminName: sessionStorage.getItem("admin_name") || null,
         }),
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
         const errorData = await res.json();
-        setError(errorData.error || 'タグの付与に失敗しました');
+        setError(errorData.error || "タグの付与に失敗しました");
         return;
       }
 
       await fetchUserTags();
       setShowTagModal(false);
     } catch (error) {
-      console.error('タグ付与エラー:', error);
-      setError('タグの付与に失敗しました');
+      console.error("タグ付与エラー:", error);
+      setError("タグの付与に失敗しました");
     }
   };
 
@@ -217,28 +217,28 @@ export default function UserDetailPage() {
     try {
       const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}/tags/${tagId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
         const errorData = await res.json();
-        setError(errorData.error || 'タグの削除に失敗しました');
+        setError(errorData.error || "タグの削除に失敗しました");
         return;
       }
 
       await fetchUserTags();
     } catch (error) {
-      console.error('タグ削除エラー:', error);
-      setError('タグの削除に失敗しました');
+      console.error("タグ削除エラー:", error);
+      setError("タグの削除に失敗しました");
     }
   };
 
@@ -250,7 +250,7 @@ export default function UserDetailPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <div className="text-gray-500">読み込み中...</div>
+          <div className="text-black">読み込み中...</div>
         </div>
       </AdminLayout>
     );
@@ -290,45 +290,49 @@ export default function UserDetailPage() {
             {user.pictureUrl && (
               <img
                 src={user.pictureUrl}
-                alt={user.displayName || ''}
+                alt={user.displayName || ""}
                 className="h-16 w-16 rounded-full"
               />
             )}
             <div>
               <h2 className="text-xl font-semibold text-gray-800">
-                {user.displayName || '（表示名なし）'}
+                {user.displayName || "（表示名なし）"}
               </h2>
-              <p className="text-sm text-gray-500">ID: {user.userId}</p>
+              <p className="text-sm text-black">ID: {user.userId}</p>
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
-              <div className="text-sm text-gray-500">ガチャ実行回数</div>
-              <div className="text-lg font-semibold">{user.counts.gachaHistories}</div>
+              <div className="text-sm text-black">ガチャ実行回数</div>
+              <div className="text-lg font-semibold">
+                {user.counts.gachaHistories}
+              </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">紹介した人数</div>
+              <div className="text-sm text-black">紹介した人数</div>
               <div className="text-lg font-semibold">
                 {user.counts.referralHistoriesAsReferrer}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">紹介された回数</div>
+              <div className="text-sm text-black">紹介された回数</div>
               <div className="text-lg font-semibold">
                 {user.counts.referralHistoriesAsReferee}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">無料ガチャ</div>
-              <div className="text-lg font-semibold">{user.counts.freeGachaHistories}</div>
+              <div className="text-sm text-black">無料ガチャ</div>
+              <div className="text-lg font-semibold">
+                {user.counts.freeGachaHistories}
+              </div>
             </div>
           </div>
 
           <div className="mt-4">
-            <div className="text-sm text-gray-500">登録日時</div>
+            <div className="text-sm text-black">登録日時</div>
             <div className="text-gray-800">
-              {new Date(user.createdAt).toLocaleString('ja-JP')}
+              {new Date(user.createdAt).toLocaleString("ja-JP")}
             </div>
           </div>
         </div>
@@ -345,7 +349,7 @@ export default function UserDetailPage() {
             </button>
           </div>
           {userTags.length === 0 ? (
-            <div className="text-center text-gray-500">タグがありません</div>
+            <div className="text-center text-black">タグがありません</div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {userTags.map((userTag) => (
@@ -372,15 +376,17 @@ export default function UserDetailPage() {
             {/* オーバーレイ */}
             <div
               className="absolute inset-0 backdrop-blur-sm transition-opacity"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
+              style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
               onClick={() => setShowTagModal(false)}
             />
             {/* モーダル */}
-            <div 
+            <div
               className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-lg"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="mb-4 text-lg font-semibold text-gray-800">タグを追加</h3>
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                タグを追加
+              </h3>
               <div className="max-h-64 space-y-2 overflow-y-auto">
                 {allTags
                   .filter((tag) => !userTags.some((ut) => ut.tag.id === tag.id))
@@ -390,15 +396,20 @@ export default function UserDetailPage() {
                       onClick={() => handleAddTag(tag.id)}
                       className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-left transition-colors hover:bg-gray-50"
                     >
-                      <div className="font-medium text-gray-900">{tag.name}</div>
+                      <div className="font-medium text-black">
+                        {tag.name}
+                      </div>
                       {tag.description && (
-                        <div className="text-sm text-gray-500">{tag.description}</div>
+                        <div className="text-sm text-black">
+                          {tag.description}
+                        </div>
                       )}
                     </button>
                   ))}
-                {allTags.filter((tag) => !userTags.some((ut) => ut.tag.id === tag.id))
-                  .length === 0 && (
-                  <div className="text-center text-gray-500">
+                {allTags.filter(
+                  (tag) => !userTags.some((ut) => ut.tag.id === tag.id)
+                ).length === 0 && (
+                  <div className="text-center text-black">
                     追加できるタグがありません
                   </div>
                 )}
@@ -418,11 +429,15 @@ export default function UserDetailPage() {
         {/* レアリティ別統計 */}
         {Object.keys(user.rarityStats).length > 0 && (
           <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-semibold text-gray-800">レアリティ別獲得数</h2>
+            <h2 className="mb-4 text-xl font-semibold text-gray-800">
+              レアリティ別獲得数
+            </h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {Object.entries(user.rarityStats).map(([rarity, count]) => (
                 <div key={rarity} className="rounded-md bg-gray-50 p-3">
-                  <div className="text-sm text-gray-500">{getRarityLabel(rarity)}</div>
+                  <div className="text-sm text-black">
+                    {getRarityLabel(rarity)}
+                  </div>
                   <div className="text-lg font-semibold">{count}</div>
                 </div>
               ))}
@@ -432,24 +447,28 @@ export default function UserDetailPage() {
 
         {/* ガチャ履歴 */}
         <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">ガチャ履歴（最新50件）</h2>
+          <h2 className="mb-4 text-xl font-semibold text-gray-800">
+            ガチャ履歴（最新50件）
+          </h2>
           {gachaHistories.length === 0 ? (
-            <div className="text-center text-gray-500">ガチャ履歴がありません</div>
+            <div className="text-center text-black">
+              ガチャ履歴がありません
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black">
                       実行日時
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black">
                       ガチャタイプ
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black">
                       獲得アイテム
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black">
                       レアリティ
                     </th>
                   </tr>
@@ -457,18 +476,20 @@ export default function UserDetailPage() {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {gachaHistories.map((history) => (
                     <tr key={history.id} className="hover:bg-gray-50">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                        {new Date(history.createdAt).toLocaleString('ja-JP')}
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-black">
+                        {new Date(history.createdAt).toLocaleString("ja-JP")}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-black">
                         {history.gachaType.name}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-black">
                         {history.item.name}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-black">
                         <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                          {getRarityLabel((history as any).tierCode || "UNKNOWN")}
+                          {getRarityLabel(
+                            (history as any).tierCode || "UNKNOWN"
+                          )}
                         </span>
                       </td>
                     </tr>
@@ -484,22 +505,24 @@ export default function UserDetailPage() {
           isOpen={deleteTagConfirm.isOpen}
           title="タグの削除"
           message="このタグをユーザーから削除しますか？"
-          changes={
-            (() => {
-              const tag = allTags.find((t) => t.id === deleteTagConfirm.tagId);
-              if (!tag) return [];
-              return [
-                {
-                  label: "対象ユーザー",
-                  from: "-",
-                  to: user?.displayName
-                    ? `${user.displayName}（${user.userId}）`
-                    : user?.userId || userId,
-                },
-                { label: "対象タグ", from: "付与済み", to: `削除（${tag.name}）` },
-              ];
-            })()
-          }
+          changes={(() => {
+            const tag = allTags.find((t) => t.id === deleteTagConfirm.tagId);
+            if (!tag) return [];
+            return [
+              {
+                label: "対象ユーザー",
+                from: "-",
+                to: user?.displayName
+                  ? `${user.displayName}（${user.userId}）`
+                  : user?.userId || userId,
+              },
+              {
+                label: "対象タグ",
+                from: "付与済み",
+                to: `削除（${tag.name}）`,
+              },
+            ];
+          })()}
           confirmText="削除"
           cancelText="キャンセル"
           variant="danger"
@@ -510,9 +533,3 @@ export default function UserDetailPage() {
     </AdminLayout>
   );
 }
-
-
-
-
-
-

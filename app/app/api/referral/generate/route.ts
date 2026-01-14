@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateReferralLink } from '@/lib/referral-management';
+import { NextRequest, NextResponse } from "next/server";
+import { generateReferralLink } from "@/lib/referral-management";
 
 /**
  * 紹介リンク生成API
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'ユーザーIDが必要です' },
+        { error: "ユーザーIDが必要です" },
         { status: 400 }
       );
     }
@@ -25,18 +25,10 @@ export async function POST(request: NextRequest) {
       referralLink: result.referralLink,
     });
   } catch (error) {
-    console.error('紹介リンク生成エラー:', error);
+    console.error("紹介リンク生成エラー:", error);
     return NextResponse.json(
-      { error: '紹介リンクの生成に失敗しました' },
+      { error: "紹介リンクの生成に失敗しました" },
       { status: 500 }
     );
   }
 }
-
-
-
-
-
-
-
-

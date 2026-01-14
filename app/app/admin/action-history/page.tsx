@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 import {
   AdminActionTypeLabels,
@@ -107,8 +106,7 @@ export default function ActionHistoryPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="w-full">
+    <div className="w-full">
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
             {error}
@@ -128,7 +126,7 @@ export default function ActionHistoryPage() {
                 onChange={(e) =>
                   handleFilterChange("actionType", e.target.value)
                 }
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black"
               >
                 <option value="">すべて</option>
                 {Object.entries(AdminActionTypeLabels).map(([value, label]) => (
@@ -149,7 +147,7 @@ export default function ActionHistoryPage() {
                 onChange={(e) =>
                   handleFilterChange("adminUserId", e.target.value)
                 }
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black"
                 placeholder="管理者ユーザーID"
               />
             </div>
@@ -164,7 +162,7 @@ export default function ActionHistoryPage() {
                 onChange={(e) =>
                   handleFilterChange("targetUserId", e.target.value)
                 }
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black"
                 placeholder="対象ユーザーID"
               />
             </div>
@@ -179,7 +177,7 @@ export default function ActionHistoryPage() {
                 onChange={(e) =>
                   handleFilterChange("startDate", e.target.value)
                 }
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black"
               />
             </div>
 
@@ -191,7 +189,7 @@ export default function ActionHistoryPage() {
                 type="date"
                 value={filters.endDate}
                 onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black"
               />
             </div>
           </div>
@@ -225,7 +223,7 @@ export default function ActionHistoryPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-4 py-8 text-center text-gray-500"
+                      className="px-4 py-8 text-center text-black"
                     >
                       読み込み中...
                     </td>
@@ -234,7 +232,7 @@ export default function ActionHistoryPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-4 py-8 text-center text-gray-500"
+                      className="px-4 py-8 text-center text-black"
                     >
                       履歴がありません
                     </td>
@@ -242,7 +240,7 @@ export default function ActionHistoryPage() {
                 ) : (
                   histories.map((history) => (
                     <tr key={history.id} className="hover:bg-gray-50">
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-black">
                         {formatDate(history.createdAt)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
@@ -252,10 +250,10 @@ export default function ActionHistoryPage() {
                           ] || history.actionType}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-black">
                         {history.adminName || history.adminUserId || "（不明）"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-black">
                         {history.targetUserId ? (
                           <div className="text-xs">
                             {history.targetUserId.substring(0, 10)}...
@@ -278,11 +276,11 @@ export default function ActionHistoryPage() {
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-black">
                         <div className="max-w-md">{history.description}</div>
                         {history.metadata && (
                           <details className="mt-1">
-                            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+                            <summary className="cursor-pointer text-xs text-black hover:text-gray-700">
                               詳細を見る
                             </summary>
                             <pre className="mt-1 max-h-40 overflow-auto rounded bg-gray-50 p-2 text-xs">
@@ -324,6 +322,5 @@ export default function ActionHistoryPage() {
           )}
         </div>
       </div>
-    </AdminLayout>
   );
 }

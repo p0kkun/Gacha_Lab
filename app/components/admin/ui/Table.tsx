@@ -1,16 +1,28 @@
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
 
 interface TableProps {
-  headers: Array<{ key: string; label: string; align?: 'left' | 'center' | 'right' }>;
+  headers: Array<{
+    key: string;
+    label: string;
+    align?: "left" | "center" | "right";
+  }>;
   data: Array<Record<string, ReactNode>>;
   emptyMessage?: string;
   className?: string;
   onRowClick?: (row: Record<string, ReactNode>, index: number) => void;
 }
 
-export default function Table({ headers, data, emptyMessage = 'データがありません', className = '', onRowClick }: TableProps) {
+export default function Table({
+  headers,
+  data,
+  emptyMessage = "データがありません",
+  className = "",
+  onRowClick,
+}: TableProps) {
   return (
-    <div className={`overflow-hidden rounded-lg border border-gray-200 bg-white ${className}`}>
+    <div
+      className={`overflow-hidden rounded-lg border border-gray-200 bg-white ${className}`}
+    >
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -19,8 +31,14 @@ export default function Table({ headers, data, emptyMessage = 'データがあ�
                 <th
                   key={header.key}
                   className={`
-                    px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500
-                    ${header.align === 'center' ? 'text-center' : header.align === 'right' ? 'text-right' : 'text-left'}
+                    px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black
+                    ${
+                      header.align === "center"
+                        ? "text-center"
+                        : header.align === "right"
+                        ? "text-right"
+                        : "text-left"
+                    }
                   `}
                 >
                   {header.label}
@@ -31,7 +49,10 @@ export default function Table({ headers, data, emptyMessage = 'データがあ�
           <tbody className="divide-y divide-gray-200 bg-white">
             {data.length === 0 ? (
               <tr>
-                <td colSpan={headers.length} className="px-6 py-8 text-center text-sm text-gray-500">
+                <td
+                  colSpan={headers.length}
+                  className="px-6 py-8 text-center text-sm text-black"
+                >
                   {emptyMessage}
                 </td>
               </tr>
@@ -40,17 +61,27 @@ export default function Table({ headers, data, emptyMessage = 'データがあ�
                 <tr
                   key={index}
                   onClick={() => onRowClick?.(row, index)}
-                  className={onRowClick ? 'cursor-pointer transition-colors hover:bg-gray-50' : ''}
+                  className={
+                    onRowClick
+                      ? "cursor-pointer transition-colors hover:bg-gray-50"
+                      : ""
+                  }
                 >
                   {headers.map((header) => (
                     <td
                       key={header.key}
                       className={`
-                        whitespace-nowrap px-6 py-4 text-sm text-gray-900
-                        ${header.align === 'center' ? 'text-center' : header.align === 'right' ? 'text-right' : 'text-left'}
+                        whitespace-nowrap px-6 py-4 text-sm text-black
+                        ${
+                          header.align === "center"
+                            ? "text-center"
+                            : header.align === "right"
+                            ? "text-right"
+                            : "text-left"
+                        }
                       `}
                     >
-                      {row[header.key] ?? '-'}
+                      {row[header.key] ?? "-"}
                     </td>
                   ))}
                 </tr>
@@ -62,7 +93,3 @@ export default function Table({ headers, data, emptyMessage = 'データがあ�
     </div>
   );
 }
-
-
-
-

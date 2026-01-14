@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, forwardRef } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,9 +10,21 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, leftIcon, rightIcon, fullWidth = true, className = '', ...props }, ref) => {
+  (
+    {
+      label,
+      error,
+      helperText,
+      leftIcon,
+      rightIcon,
+      fullWidth = true,
+      className = "",
+      ...props
+    },
+    ref
+  ) => {
     return (
-      <div className={fullWidth ? 'w-full' : ''}>
+      <div className={fullWidth ? "w-full" : ""}>
         {label && (
           <label className="mb-1.5 block text-sm font-medium text-gray-700">
             {label}
@@ -28,13 +40,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             className={`
-              block w-full rounded-lg border px-3 py-2 text-gray-900
+              block w-full rounded-lg border px-3 py-2 text-black
               placeholder:text-gray-400
               focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0
-              disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500
-              ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'}
-              ${leftIcon ? 'pl-10' : ''}
-              ${rightIcon ? 'pr-10' : ''}
+              disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-black
+              ${
+                error
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-gray-300"
+              }
+              ${leftIcon ? "pl-10" : ""}
+              ${rightIcon ? "pr-10" : ""}
               ${className}
             `}
             {...props}
@@ -46,16 +62,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-        {!error && helperText && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
+        {!error && helperText && (
+          <p className="mt-1 text-sm text-black">{helperText}</p>
+        )}
       </div>
     );
   }
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";
 
 export default Input;
-
-
-
-

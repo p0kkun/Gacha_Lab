@@ -261,7 +261,7 @@ export default function BulkAssignTagsPage() {
               <select
                 value={selectedTagId || ''}
                 onChange={(e) => setSelectedTagId(parseInt(e.target.value) || null)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
               >
                 <option value="">タグを選択してください</option>
                 {tags.map((tag) => (
@@ -289,7 +289,7 @@ export default function BulkAssignTagsPage() {
                         gachaTypeId: e.target.value || undefined,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                   >
                     <option value="">指定なし</option>
                     {gachaTypes.map((type) => (
@@ -316,7 +316,7 @@ export default function BulkAssignTagsPage() {
                           : undefined,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                     min="0"
                     placeholder="例: 1000"
                   />
@@ -338,7 +338,7 @@ export default function BulkAssignTagsPage() {
                           : undefined,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                     min="0"
                     placeholder="例: 3"
                   />
@@ -357,7 +357,7 @@ export default function BulkAssignTagsPage() {
                         rarity: e.target.value || undefined,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                   >
                     <option value="">指定なし</option>
                     {rarityOptions.map((option) => (
@@ -404,7 +404,7 @@ export default function BulkAssignTagsPage() {
                           : undefined,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                     min="0"
                     placeholder="例: 10"
                   />

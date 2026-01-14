@@ -59,7 +59,7 @@ export default function TabbedPage({
                   ${
                     isActive
                       ? "bg-white text-blue-600 border-t border-l border-r border-gray-300 rounded-t-lg -mb-px z-10"
-                      : "text-gray-600 hover:text-gray-900 border-b border-gray-300 bg-gray-50"
+                      : "text-gray-600 hover:text-black border-b border-gray-300 bg-gray-50"
                   }
                 `}
                 aria-current={isActive ? "page" : undefined}
