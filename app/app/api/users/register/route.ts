@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logError } from '@/lib/error-logger';
 
 /**
  * ユーザーを登録または更新
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('ユーザー登録エラー:', error);
+    await logError(error, { route: '/api/users/register' }, request);
     return NextResponse.json(
       { error: 'ユーザー登録に失敗しました' },
       { status: 500 }

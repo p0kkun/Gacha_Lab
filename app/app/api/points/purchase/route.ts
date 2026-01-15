@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { logError } from "@/lib/error-logger";
 
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
@@ -27,6 +28,11 @@ export async function POST(request: NextRequest) {
     };
 
     if (!userId) {
+      await logError(
+        new Error("ユーザーIDが必要です"),
+        { route: "/api/points/purchase", customData: { body } },
+        request
+      );
       return NextResponse.json(
         { error: "ユーザーIDが必要です" },
         { status: 400 }
@@ -100,7 +106,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
-    console.error("ポイント購入PaymentIntent作成エラー:", error);
+    await logError(error, { route: "/api/points/purchase" }, request);
     return NextResponse.json(
       { error: "ポイント購入の処理に失敗しました" },
       { status: 500 }

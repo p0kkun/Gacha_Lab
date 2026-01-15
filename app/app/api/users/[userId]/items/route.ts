@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logError } from '@/lib/error-logger';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  let userId: string | undefined;
   try {
     // Next.js 16ではparamsがPromiseなので、awaitでアンラップする必要がある
-    const { userId } = await params;
+    userId = (await params).userId;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -82,7 +84,11 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('アイテム取得エラー:', error);
+    await logError(
+      error,
+      { userId, route: '/api/users/[userId]/items' },
+      request
+    );
     return NextResponse.json(
       { error: 'アイテムの取得に失敗しました' },
       { status: 500 }

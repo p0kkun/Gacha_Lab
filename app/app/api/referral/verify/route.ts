@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyReferralLink } from '@/lib/referral-management';
+import { logError } from '@/lib/error-logger';
 
 /**
  * 紹介リンク検証API
@@ -31,6 +32,15 @@ export async function POST(request: NextRequest) {
     const result = await verifyReferralLink(referralLinkId, ipAddress, deviceInfo, userId);
 
     if (!result.isValid) {
+      await logError(
+        new Error(`紹介リンク検証失敗: ${result.reason}`),
+        {
+          userId,
+          route: '/api/referral/verify',
+          customData: { referralLinkId, reason: result.reason },
+        },
+        request
+      );
       return NextResponse.json(
         {
           isValid: false,
@@ -45,7 +55,7 @@ export async function POST(request: NextRequest) {
       referralId: result.referralId,
     });
   } catch (error) {
-    console.error('紹介リンク検証エラー:', error);
+    await logError(error, { route: '/api/referral/verify' }, request);
     return NextResponse.json(
       { error: '紹介リンクの検証に失敗しました' },
       { status: 500 }

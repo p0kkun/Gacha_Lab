@@ -17,6 +17,7 @@ const PointTransactionType = {
   REFUND: "REFUND" as const,
 } as const;
 import { sendGachaResultMessage } from "@/lib/line-messaging";
+import { logError, logErrorSimple } from "@/lib/error-logger";
 
 type TierWeightRow = { tierCode: string; weight: number };
 type PrizeItemRow = {
@@ -102,6 +103,15 @@ export async function POST(request: NextRequest) {
 
     // ステップ4: ガチャが有効か判定する
     if (!gachaType || !gachaType.isActive) {
+      await logError(
+        new Error("ガチャタイプが見つからないか、無効です"),
+        {
+          userId,
+          route: "/api/gacha",
+          customData: { gachaTypeCode, gachaTypeId: gachaType?.id },
+        },
+        request
+      );
       return NextResponse.json(
         { error: "ガチャタイプが見つからないか、無効です" },
         { status: 404 }
@@ -401,7 +411,7 @@ export async function POST(request: NextRequest) {
             balanceBefore: beforeTotal,
             balanceAfter: totalBalances,
             description: `${gachaType.name}ガチャ実行`,
-            historyTable: 'gacha_histories',
+            historyTable: "gacha_histories",
             historyTableId: gachaHistory.id,
           },
         });
@@ -470,7 +480,11 @@ export async function POST(request: NextRequest) {
       result.grantedPoints || 0
     ).catch((error) => {
       // LINEメッセージ送信のエラーはログに記録するが、ガチャ結果には影響しない
-      console.error("LINEメッセージ送信エラー（ガチャ結果は正常）:", error);
+      logErrorSimple(error, {
+        userId,
+        route: "/api/gacha",
+        customData: { phase: "LINEメッセージ送信", historyId: result.gachaHistory.id },
+      });
     });
 
     // 被紹介者行動を更新する（将来の追加報酬機能用）
@@ -496,7 +510,8 @@ export async function POST(request: NextRequest) {
       pointsRemaining: result.newBalance,
     });
   } catch (error) {
-    console.error("ガチャエラー:", error);
+    // 共通エラーログ出力（ユーザーID、ルーティング情報などを自動付加）
+    await logError(error, { route: "/api/gacha" }, request);
     return NextResponse.json(
       { error: "ガチャ抽選に失敗しました" },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getPointBalances } from '@/lib/point-management';
+import { logError } from '@/lib/error-logger';
 
 /**
  * ユーザーのポイント残高を取得
@@ -12,6 +13,11 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
 
     if (!userId) {
+      await logError(
+        new Error('ユーザーIDが必要です'),
+        { route: '/api/points/balance' },
+        request
+      );
       return NextResponse.json(
         { error: 'ユーザーIDが必要です' },
         { status: 400 }
@@ -44,7 +50,7 @@ export async function GET(request: NextRequest) {
       lastUpdated: balances.lastUpdated,
     });
   } catch (error) {
-    console.error('ポイント残高取得エラー:', error);
+    await logError(error, { route: '/api/points/balance' }, request);
     return NextResponse.json(
       { error: 'ポイント残高の取得に失敗しました' },
       { status: 500 }

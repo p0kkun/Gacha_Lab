@@ -62,7 +62,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { tagIds, conditions } = body;
+    const { tagIds, conditions: conditionsFromBody } = body;
+
+    // bodyに直接条件が含まれている場合（フロントエンドから直接送信される場合）
+    // または conditions プロパティが含まれている場合の両方に対応
+    const conditions = conditionsFromBody || 
+      (body.gachaTypeId || body.minPurchaseAmount !== undefined || body.minReferralCount !== undefined || 
+       body.rarity || body.hasUsedItem !== undefined || body.minGachaCount !== undefined ? body : null);
 
     let userIds: string[] = [];
 
@@ -106,6 +112,7 @@ export async function POST(request: NextRequest) {
           where: { code: String(gachaTypeId) },
           select: { id: true, code: true, name: true },
         });
+        
         if (!gt) {
           console.error(
             `ガチャタイプが見つかりません: code=${gachaTypeId}`
@@ -113,15 +120,15 @@ export async function POST(request: NextRequest) {
           // プレビューの場合は空の結果を返す（エラーにしない）
           return NextResponse.json({ count: 0 });
         }
-        const gachaUserIds = await prisma.gachaHistory.findMany({
+        
+        // 統計APIと同じ方法で取得（期間フィルタなしで全期間）
+        // 統計APIでは findMany + distinct を使用しているため、同じ方法を使用
+        const uniqueUsers = await prisma.gachaHistory.findMany({
           where: { gachaTypeId: gt.id },
           select: { userId: true },
           distinct: ['userId'],
         });
-        console.log(
-          `ガチャタイプ ${gt.name} (code: ${gt.code}, id: ${gt.id}) を引いたユーザー数: ${gachaUserIds.length}`
-        );
-        userIdSets.push(new Set(gachaUserIds.map((h) => h.userId)));
+        userIdSets.push(new Set(uniqueUsers.map((u) => u.userId)));
       }
 
       // 最小課金額
@@ -158,14 +165,13 @@ export async function POST(request: NextRequest) {
 
       // 特定等級で当選したユーザー（tierCode）
       if (rarity) {
-        const rarityUserIds = await prisma.gachaHistory.findMany({
+        const rarityUserGroups = await prisma.gachaHistory.groupBy({
+          by: ['userId'],
           where: {
             tierCode: String(rarity),
           },
-          select: { userId: true },
-          distinct: ['userId'],
         });
-        userIdSets.push(new Set(rarityUserIds.map((h) => h.userId)));
+        userIdSets.push(new Set(rarityUserGroups.map((g) => g.userId)));
       }
 
       // アイテム使用済み
@@ -173,18 +179,16 @@ export async function POST(request: NextRequest) {
         let itemUserIds: { userId: string }[] = [];
         if (hasUsedItem) {
           // アイテムを使用したユーザーを取得
-          const usageLogs = await prisma.itemUsageLog.findMany({
-            select: { userId: true },
-            distinct: ['userId'],
+          const usageGroups = await prisma.itemUsageLog.groupBy({
+            by: ['userId'],
           });
-          itemUserIds = usageLogs.map((log) => ({ userId: log.userId }));
+          itemUserIds = usageGroups.map((g) => ({ userId: g.userId }));
         } else {
           // アイテムを使用していないユーザーを取得（全ユーザーから使用済みユーザーを除外）
-          const usedUserIds = await prisma.itemUsageLog.findMany({
-            select: { userId: true },
-            distinct: ['userId'],
+          const usedUserGroups = await prisma.itemUsageLog.groupBy({
+            by: ['userId'],
           });
-          const usedUserIdSet = new Set(usedUserIds.map((log) => log.userId));
+          const usedUserIdSet = new Set(usedUserGroups.map((g) => g.userId));
           const allUsers = await prisma.user.findMany({
             select: { userId: true },
           });
@@ -209,13 +213,14 @@ export async function POST(request: NextRequest) {
         userIdSets.push(new Set(gachaCountUserIds));
       }
 
-      // すべての条件を満たすユーザーIDを取得（AND条件）
+      // いずれかの条件に合致するユーザーIDを取得（OR条件）
       if (userIdSets.length > 0) {
-        let finalUserIds = Array.from(userIdSets[0]);
-        for (let i = 1; i < userIdSets.length; i++) {
-          finalUserIds = finalUserIds.filter((id) => userIdSets[i].has(id));
+        // すべてのSetを結合して重複を除去
+        const allUserIds = new Set<string>();
+        for (const userIdSet of userIdSets) {
+          userIdSet.forEach((userId) => allUserIds.add(userId));
         }
-        userIds = finalUserIds;
+        userIds = Array.from(allUserIds);
       }
     } else {
       return NextResponse.json({ users: [], count: 0 });

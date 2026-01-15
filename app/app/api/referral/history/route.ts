@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReferralCount, getReferralHistory } from '@/lib/referral-management';
+import { logError } from '@/lib/error-logger';
 
 /**
  * 紹介履歴取得API
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('紹介履歴取得エラー:', error);
+    await logError(error, { route: '/api/referral/history' }, request);
     return NextResponse.json(
       { error: '紹介履歴の取得に失敗しました' },
       { status: 500 }

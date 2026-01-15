@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import AdminLayout from '@/components/admin/AdminLayout';
-import ConfirmModal from '@/components/admin/ConfirmModal';
-import { getAdminAuthToken } from '@/lib/admin-auth';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import AdminLayout from "@/components/admin/AdminLayout";
+import ConfirmModal from "@/components/admin/ConfirmModal";
+import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Tag = {
   id: number;
@@ -28,7 +28,6 @@ type SearchConditions = {
 };
 
 export default function BulkAssignTagsPage() {
-  const router = useRouter();
   const [tags, setTags] = useState<Tag[]>([]);
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
@@ -53,9 +52,9 @@ export default function BulkAssignTagsPage() {
   const fetchTags = async () => {
     try {
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/tags', {
+      const res = await fetch("/api/admin/tags", {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
@@ -64,16 +63,16 @@ export default function BulkAssignTagsPage() {
         setTags(data.tags);
       }
     } catch (error) {
-      console.error('タグ取得エラー:', error);
+      console.error("タグ取得エラー:", error);
     }
   };
 
   const fetchGachaTypes = async () => {
     try {
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/gacha-types', {
+      const res = await fetch("/api/admin/gacha-types", {
         headers: {
-          'X-Admin-Auth': authToken || '',
+          "X-Admin-Auth": authToken || "",
         },
       });
 
@@ -82,13 +81,13 @@ export default function BulkAssignTagsPage() {
         setGachaTypes(data.gachaTypes || []);
       }
     } catch (error) {
-      console.error('ガチャタイプ取得エラー:', error);
+      console.error("ガチャタイプ取得エラー:", error);
     }
   };
 
   const handlePreview = async () => {
     if (!hasAnyCondition()) {
-      setError('少なくとも1つの条件を指定してください');
+      setError("少なくとも1つの条件を指定してください");
       return;
     }
 
@@ -98,31 +97,33 @@ export default function BulkAssignTagsPage() {
 
     try {
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/users/search', {
-        method: 'POST',
+      const res = await fetch("/api/admin/users/search", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': authToken || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": authToken || "",
         },
         body: JSON.stringify(conditions),
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'プレビューに失敗しました');
+        throw new Error(errorData.error || "プレビューに失敗しました");
       }
 
       const data = await res.json();
       setPreviewCount(data.count);
     } catch (error) {
-      console.error('プレビューエラー:', error);
-      setError(error instanceof Error ? error.message : 'プレビューに失敗しました');
+      console.error("プレビューエラー:", error);
+      setError(
+        error instanceof Error ? error.message : "プレビューに失敗しました"
+      );
     } finally {
       setLoading(false);
     }
@@ -130,17 +131,17 @@ export default function BulkAssignTagsPage() {
 
   const handleAssign = async () => {
     if (!selectedTagId) {
-      setError('タグを選択してください');
+      setError("タグを選択してください");
       return;
     }
 
     if (!hasAnyCondition()) {
-      setError('少なくとも1つの条件を指定してください');
+      setError("少なくとも1つの条件を指定してください");
       return;
     }
 
     if (previewCount === null || previewCount === 0) {
-      setError('対象ユーザー数を確認してください');
+      setError("対象ユーザー数を確認してください");
       return;
     }
 
@@ -156,39 +157,41 @@ export default function BulkAssignTagsPage() {
 
     try {
       const authToken = getAdminAuthToken();
-      const res = await fetch('/api/admin/tags/bulk-assign', {
-        method: 'POST',
+      const res = await fetch("/api/admin/tags/bulk-assign", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Auth': authToken || '',
+          "Content-Type": "application/json",
+          "X-Admin-Auth": authToken || "",
         },
         body: JSON.stringify({
           tagId: selectedTagId,
           conditions,
-          adminUserId: sessionStorage.getItem('admin_user_id') || null,
-          adminName: sessionStorage.getItem('admin_name') || null,
+          adminUserId: sessionStorage.getItem("admin_user_id") || null,
+          adminName: sessionStorage.getItem("admin_name") || null,
         }),
       });
 
       if (res.status === 401) {
-        sessionStorage.removeItem('admin_authenticated');
-        window.location.href = '/admin';
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
         return;
       }
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'タグの一括付与に失敗しました');
+        throw new Error(errorData.error || "タグの一括付与に失敗しました");
       }
 
       const data = await res.json();
       setResult(data);
-      setSuccess('タグの一括付与が完了しました');
+      setSuccess("タグの一括付与が完了しました");
       setPreviewCount(null);
       setConditions({});
     } catch (error) {
-      console.error('一括付与エラー:', error);
-      setError(error instanceof Error ? error.message : 'タグの一括付与に失敗しました');
+      console.error("一括付与エラー:", error);
+      setError(
+        error instanceof Error ? error.message : "タグの一括付与に失敗しました"
+      );
     } finally {
       setAssigning(false);
     }
@@ -206,24 +209,24 @@ export default function BulkAssignTagsPage() {
   };
 
   const rarityOptions = [
-    { value: 'FIRST_PRIZE', label: '1等' },
-    { value: 'SECOND_PRIZE', label: '2等' },
-    { value: 'THIRD_PRIZE', label: '3等' },
-    { value: 'FOURTH_PRIZE', label: '4等' },
-    { value: 'FIFTH_PRIZE', label: '5等' },
-    { value: 'LOSER', label: 'ハズレ' },
+    { value: "FIRST_PRIZE", label: "1等" },
+    { value: "SECOND_PRIZE", label: "2等" },
+    { value: "THIRD_PRIZE", label: "3等" },
+    { value: "FOURTH_PRIZE", label: "4等" },
+    { value: "FIFTH_PRIZE", label: "5等" },
+    { value: "LOSER", label: "ハズレ" },
   ];
 
   return (
     <AdminLayout>
       <div className="p-6">
         <div className="mb-4">
-          <button
-            onClick={() => router.push('/admin/tags')}
+          <Link
+            href="/admin/tags"
             className="text-blue-600 hover:underline"
           >
             ← タグ一覧に戻る
-          </button>
+          </Link>
         </div>
 
         <h1 className="mb-6 text-2xl font-bold text-gray-800">タグ一括付与</h1>
@@ -245,8 +248,12 @@ export default function BulkAssignTagsPage() {
             <h3 className="mb-2 font-semibold text-gray-800">付与結果</h3>
             <div className="space-y-1 text-sm">
               <div>対象ユーザー数: {result.total}人</div>
-              <div className="text-gray-600">既に付与済み: {result.alreadyAssigned}人</div>
-              <div className="text-green-600">新規付与: {result.newlyAssigned}人</div>
+              <div className="text-gray-600">
+                既に付与済み: {result.alreadyAssigned}人
+              </div>
+              <div className="text-green-600">
+                新規付与: {result.newlyAssigned}人
+              </div>
             </div>
           </div>
         )}
@@ -259,8 +266,10 @@ export default function BulkAssignTagsPage() {
                 付与するタグ *
               </label>
               <select
-                value={selectedTagId || ''}
-                onChange={(e) => setSelectedTagId(parseInt(e.target.value) || null)}
+                value={selectedTagId || ""}
+                onChange={(e) =>
+                  setSelectedTagId(parseInt(e.target.value) || null)
+                }
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
               >
                 <option value="">タグを選択してください</option>
@@ -274,7 +283,9 @@ export default function BulkAssignTagsPage() {
 
             {/* 条件設定 */}
             <div>
-              <h2 className="mb-4 text-lg font-semibold text-gray-800">条件設定</h2>
+              <h2 className="mb-4 text-lg font-semibold text-gray-800">
+                条件設定
+              </h2>
               <div className="space-y-4">
                 {/* 特定ガチャタイプを引いたユーザー */}
                 <div>
@@ -282,7 +293,7 @@ export default function BulkAssignTagsPage() {
                     特定ガチャタイプを引いたユーザー
                   </label>
                   <select
-                    value={conditions.gachaTypeId || ''}
+                    value={conditions.gachaTypeId || ""}
                     onChange={(e) =>
                       setConditions({
                         ...conditions,
@@ -307,7 +318,7 @@ export default function BulkAssignTagsPage() {
                   </label>
                   <input
                     type="number"
-                    value={conditions.minPurchaseAmount || ''}
+                    value={conditions.minPurchaseAmount || ""}
                     onChange={(e) =>
                       setConditions({
                         ...conditions,
@@ -329,7 +340,7 @@ export default function BulkAssignTagsPage() {
                   </label>
                   <input
                     type="number"
-                    value={conditions.minReferralCount || ''}
+                    value={conditions.minReferralCount || ""}
                     onChange={(e) =>
                       setConditions({
                         ...conditions,
@@ -350,7 +361,7 @@ export default function BulkAssignTagsPage() {
                     特定レアリティで当選したユーザー
                   </label>
                   <select
-                    value={conditions.rarity || ''}
+                    value={conditions.rarity || ""}
                     onChange={(e) =>
                       setConditions({
                         ...conditions,
@@ -395,7 +406,7 @@ export default function BulkAssignTagsPage() {
                   </label>
                   <input
                     type="number"
-                    value={conditions.minGachaCount || ''}
+                    value={conditions.minGachaCount || ""}
                     onChange={(e) =>
                       setConditions({
                         ...conditions,
@@ -416,8 +427,12 @@ export default function BulkAssignTagsPage() {
             {previewCount !== null && (
               <div className="rounded-md bg-blue-50 p-4">
                 <div className="text-sm">
-                  <span className="font-semibold">条件に合致するユーザー数:</span>{' '}
-                  <span className="text-lg font-bold text-blue-600">{previewCount}人</span>
+                  <span className="font-semibold text-gray-600">
+                    条件に合致するユーザー数:
+                  </span>{" "}
+                  <span className="text-lg font-bold text-blue-600">
+                    {previewCount}人
+                  </span>
                 </div>
               </div>
             )}
@@ -429,14 +444,19 @@ export default function BulkAssignTagsPage() {
                 disabled={loading || !hasAnyCondition()}
                 className="rounded-md bg-gray-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:bg-gray-300"
               >
-                {loading ? '検索中...' : '対象ユーザー数を確認'}
+                {loading ? "検索中..." : "対象ユーザー数を確認"}
               </button>
               <button
                 onClick={handleAssign}
-                disabled={assigning || !selectedTagId || !hasAnyCondition() || previewCount === null}
+                disabled={
+                  assigning ||
+                  !selectedTagId ||
+                  !hasAnyCondition() ||
+                  previewCount === null
+                }
                 className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:bg-gray-300"
               >
-                {assigning ? '付与中...' : 'タグを一括付与'}
+                {assigning ? "付与中..." : "タグを一括付与"}
               </button>
             </div>
           </div>
@@ -446,7 +466,9 @@ export default function BulkAssignTagsPage() {
         <ConfirmModal
           isOpen={assignConfirm}
           title="タグの一括付与"
-          message={`条件に合致する${previewCount || 0}人のユーザーにタグを付与しますか？`}
+          message={`条件に合致する${
+            previewCount || 0
+          }人のユーザーにタグを付与しますか？`}
           confirmText="付与"
           cancelText="キャンセル"
           variant="info"
@@ -457,4 +479,3 @@ export default function BulkAssignTagsPage() {
     </AdminLayout>
   );
 }
-

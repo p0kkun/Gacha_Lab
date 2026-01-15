@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { logError } from "@/lib/error-logger";
 
 // Stripeインスタンスは関数内で作成（モジュールレベルでは作成しない）
 function getStripeInstance(): Stripe {
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       clientSecret: paymentIntent.client_secret,
     });
   } catch (error) {
-    console.error("PaymentIntent作成エラー:", error);
+    await logError(error, { route: "/api/payment/create-intent" }, request);
     return NextResponse.json(
       { error: "決済の準備に失敗しました" },
       { status: 500 }

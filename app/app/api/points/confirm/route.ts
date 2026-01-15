@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { logError } from "@/lib/error-logger";
 // PointTransactionTypeの一時的な回避策（Prismaクライアントの型解決問題のため）
 const PointTransactionType = {
   PURCHASE: "PURCHASE" as const,
@@ -51,6 +52,15 @@ export async function POST(request: NextRequest) {
 
     // 決済が成功していない場合はエラー
     if (paymentIntent.status !== "succeeded") {
+      await logError(
+        new Error(`決済が成功していません。状態: ${paymentIntent.status}`),
+        {
+          userId,
+          route: "/api/points/confirm",
+          customData: { paymentIntentId, status: paymentIntent.status },
+        },
+        request
+      );
       return NextResponse.json(
         { error: `決済が成功していません。状態: ${paymentIntent.status}` },
         { status: 400 }
@@ -59,6 +69,18 @@ export async function POST(request: NextRequest) {
 
     // メタデータを確認
     if (paymentIntent.metadata.type !== "point_purchase") {
+      await logError(
+        new Error("ポイント購入用の決済ではありません"),
+        {
+          userId,
+          route: "/api/points/confirm",
+          customData: {
+            paymentIntentId,
+            metadataType: paymentIntent.metadata.type,
+          },
+        },
+        request
+      );
       return NextResponse.json(
         { error: "ポイント購入用の決済ではありません" },
         { status: 400 }
@@ -80,6 +102,15 @@ export async function POST(request: NextRequest) {
     );
 
     if (points <= 0 || bonusFreePoints < 0) {
+      await logError(
+        new Error("無効なポイント数"),
+        {
+          userId,
+          route: "/api/points/confirm",
+          customData: { paymentIntentId, points, bonusFreePoints },
+        },
+        request
+      );
       return NextResponse.json({ error: "無効なポイント数" }, { status: 400 });
     }
 
@@ -177,7 +208,7 @@ export async function POST(request: NextRequest) {
       points: result,
     });
   } catch (error) {
-    console.error("ポイント付与エラー:", error);
+    await logError(error, { route: "/api/points/confirm" }, request);
     return NextResponse.json(
       { error: "ポイント付与に失敗しました" },
       { status: 500 }

@@ -16,6 +16,8 @@ type Tag = {
 type User = {
   userId: string;
   displayName: string | null;
+  pictureUrl?: string | null;
+  createdAt?: string;
 };
 
 export default function MessagesPage() {
@@ -34,6 +36,9 @@ export default function MessagesPage() {
     failed: number;
     errors: Array<{ userId: string; error: string }>;
   } | null>(null);
+  const [showTagUsersModal, setShowTagUsersModal] = useState(false);
+  const [tagUsers, setTagUsers] = useState<User[]>([]);
+  const [loadingTagUsers, setLoadingTagUsers] = useState(false);
 
   useEffect(() => {
     fetchTags();
@@ -73,6 +78,48 @@ export default function MessagesPage() {
       }
     } catch (error) {
       console.error("ユーザー取得エラー:", error);
+    }
+  };
+
+  const fetchTagUsers = async () => {
+    if (selectedTagIds.length === 0) return;
+
+    setLoadingTagUsers(true);
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch("/api/admin/users/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Auth": authToken || "",
+        },
+        body: JSON.stringify({
+          tagIds: selectedTagIds,
+        }),
+      });
+
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error("ユーザー一覧の取得に失敗しました");
+      }
+
+      const data = await res.json();
+      setTagUsers(data.users || []);
+      setShowTagUsersModal(true);
+    } catch (error) {
+      console.error("タグユーザー取得エラー:", error);
+      setSendError(
+        error instanceof Error
+          ? error.message
+          : "ユーザー一覧の取得に失敗しました"
+      );
+    } finally {
+      setLoadingTagUsers(false);
     }
   };
 
@@ -228,8 +275,52 @@ export default function MessagesPage() {
                 )}
               </div>
               {selectedTagIds.length > 0 && (
-                <div className="mt-2 text-sm text-gray-600">
-                  選択中のタグ: {selectedTagIds.length}個
+                <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                  <span>選択中のタグ: {selectedTagIds.length}個</span>
+                  <button
+                    type="button"
+                    onClick={fetchTagUsers}
+                    disabled={loadingTagUsers}
+                    className="flex items-center justify-center rounded-full bg-blue-100 p-1.5 text-blue-600 transition-colors hover:bg-blue-200 disabled:opacity-50"
+                    title="選択中のタグに含まれるユーザー一覧を表示"
+                    aria-label="ユーザー一覧を表示"
+                  >
+                    {loadingTagUsers ? (
+                      <svg
+                        className="h-4 w-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               )}
             </div>
@@ -338,6 +429,89 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+
+      {/* タグユーザー一覧モーダル */}
+      {showTagUsersModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* オーバーレイ */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowTagUsersModal(false)}
+          />
+          {/* モーダル */}
+          <div className="relative z-10 w-full max-w-2xl max-h-[80vh] rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                選択中のタグに含まれるユーザー一覧
+              </h3>
+              <button
+                onClick={() => setShowTagUsersModal(false)}
+                className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                aria-label="閉じる"
+              >
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto px-6 py-4 max-h-[calc(80vh-80px)]">
+              {tagUsers.length === 0 ? (
+                <div className="py-8 text-center text-gray-600">
+                  ユーザーが見つかりませんでした
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="mb-4 text-sm text-gray-600">
+                    合計: {tagUsers.length}人
+                  </div>
+                  <div className="space-y-1">
+                    {tagUsers.map((user) => (
+                      <div
+                        key={user.userId}
+                        className="flex items-center gap-3 rounded-md border border-gray-200 p-3 hover:bg-gray-50"
+                      >
+                        {user.pictureUrl && (
+                          <img
+                            src={user.pictureUrl}
+                            alt={user.displayName || ""}
+                            className="h-10 w-10 rounded-full"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-black">
+                            {user.displayName || "（表示名なし）"}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {user.userId}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="border-t border-gray-200 px-6 py-4">
+              <button
+                onClick={() => setShowTagUsersModal(false)}
+                className="w-full rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </AdminLayout>
   );

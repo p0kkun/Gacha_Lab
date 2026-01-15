@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateReferralLink } from "@/lib/referral-management";
+import { logError } from "@/lib/error-logger";
 
 /**
  * 紹介リンク生成API
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       referralLink: result.referralLink,
     });
   } catch (error) {
-    console.error("紹介リンク生成エラー:", error);
+    await logError(error, { route: "/api/referral/generate" }, request);
     return NextResponse.json(
       { error: "紹介リンクの生成に失敗しました" },
       { status: 500 }

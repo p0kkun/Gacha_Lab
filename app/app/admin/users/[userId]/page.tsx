@@ -294,45 +294,36 @@ export default function UserDetailPage() {
                 className="h-16 w-16 rounded-full"
               />
             )}
-            <div>
+            <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-800">
                 {user.displayName || "（表示名なし）"}
               </h2>
-              <p className="text-sm text-black">ID: {user.userId}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-black">
+                <span>ID: {user.userId}</span>
+                <span className="text-gray-500">|</span>
+                <span>登録日時: {new Date(user.createdAt).toLocaleString("ja-JP")}</span>
+              </div>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3">
             <div>
               <div className="text-sm text-black">ガチャ実行回数</div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold text-gray-600">
                 {user.counts.gachaHistories}
               </div>
             </div>
             <div>
               <div className="text-sm text-black">紹介した人数</div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold text-gray-600">
                 {user.counts.referralHistoriesAsReferrer}
               </div>
             </div>
             <div>
-              <div className="text-sm text-black">紹介された回数</div>
-              <div className="text-lg font-semibold">
-                {user.counts.referralHistoriesAsReferee}
-              </div>
-            </div>
-            <div>
               <div className="text-sm text-black">無料ガチャ</div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold text-gray-600">
                 {user.counts.freeGachaHistories}
               </div>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-sm text-black">登録日時</div>
-            <div className="text-gray-800">
-              {new Date(user.createdAt).toLocaleString("ja-JP")}
             </div>
           </div>
         </div>
@@ -396,9 +387,7 @@ export default function UserDetailPage() {
                       onClick={() => handleAddTag(tag.id)}
                       className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-left transition-colors hover:bg-gray-50"
                     >
-                      <div className="font-medium text-black">
-                        {tag.name}
-                      </div>
+                      <div className="font-medium text-black">{tag.name}</div>
                       {tag.description && (
                         <div className="text-sm text-black">
                           {tag.description}
@@ -438,7 +427,9 @@ export default function UserDetailPage() {
                   <div className="text-sm text-black">
                     {getRarityLabel(rarity)}
                   </div>
-                  <div className="text-lg font-semibold">{count}</div>
+                  <div className="text-lg font-semibold text-gray-600">
+                    {count}
+                  </div>
                 </div>
               ))}
             </div>
@@ -451,9 +442,7 @@ export default function UserDetailPage() {
             ガチャ履歴（最新50件）
           </h2>
           {gachaHistories.length === 0 ? (
-            <div className="text-center text-black">
-              ガチャ履歴がありません
-            </div>
+            <div className="text-center text-black">ガチャ履歴がありません</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">

@@ -7,15 +7,19 @@ import AdminLayout from "@/components/admin/AdminLayout";
 
 export default function AdminPage() {
   const router = useRouter();
-  // 初期値をsessionStorageから取得（SSR対応のため、typeof window !== 'undefined'でチェック）
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window !== "undefined") {
-      return sessionStorage.getItem("admin_authenticated") === "true";
-    }
-    return false;
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  // クライアント側でのみ認証状態をチェック（ハイドレーションエラー回避）
+  useEffect(() => {
+    setMounted(true);
+    const authStatus = sessionStorage.getItem("admin_authenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +37,15 @@ export default function AdminPage() {
       setError("パスワードが正しくありません");
     }
   };
+
+  // マウント前はローディング状態を表示（ハイドレーションエラー回避）
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="text-gray-500">読み込み中...</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
