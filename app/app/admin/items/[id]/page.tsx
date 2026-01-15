@@ -274,12 +274,12 @@ export default function ItemEditPage() {
     <AdminLayout>
       <div className="p-6">
         <div className="mb-4">
-          <button
-            onClick={() => router.push("/admin/items")}
+          <Link
+            href="/admin/items"
             className="text-blue-600 hover:underline"
           >
             ← アイテム一覧に戻る
-          </button>
+          </Link>
         </div>
 
         <h1 className="mb-6 text-2xl font-bold text-gray-800">アイテム編集</h1>

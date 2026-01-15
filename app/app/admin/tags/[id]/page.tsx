@@ -19,7 +19,6 @@ type Tag = {
 
 export default function TagDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = parseInt(params.id as string);
 
   const [tag, setTag] = useState<Tag | null>(null);
@@ -142,12 +141,12 @@ export default function TagDetailPage() {
     <AdminLayout>
       <div className="p-6">
         <div className="mb-4">
-          <button
-            onClick={() => router.push("/admin/tags")}
+          <Link
+            href="/admin/tags"
             className="text-blue-600 hover:underline"
           >
             ← タグ一覧に戻る
-          </button>
+          </Link>
         </div>
 
         <h1 className="mb-6 text-2xl font-bold text-gray-800">タグ詳細</h1>
