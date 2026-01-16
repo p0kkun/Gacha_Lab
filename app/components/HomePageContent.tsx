@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import type { LiffProfile } from '@/lib/liff';
-import BottomNavigation from './BottomNavigation';
-import PointCard from './PointCard';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { LiffProfile } from "@/lib/liff";
+import BottomNavigation from "./BottomNavigation";
+import PointCard from "./PointCard";
 
 type GachaType = {
   id: string;
@@ -49,13 +49,13 @@ export default function HomePageContent({
     // ガチャタイプ一覧を取得
     const fetchGachaTypes = async () => {
       try {
-        const res = await fetch('/api/gacha/types');
+        const res = await fetch("/api/gacha/types");
         if (res.ok) {
           const data = await res.json();
           setGachaTypes(data.gachaTypes || []);
         }
       } catch (error) {
-        console.error('ガチャタイプ取得エラー:', error);
+        console.error("ガチャタイプ取得エラー:", error);
       } finally {
         setLoadingGacha(false);
       }
@@ -70,7 +70,7 @@ export default function HomePageContent({
           setStats(data);
         }
       } catch (error) {
-        console.error('統計情報取得エラー:', error);
+        console.error("統計情報取得エラー:", error);
       } finally {
         setLoadingStats(false);
       }
@@ -93,11 +93,15 @@ export default function HomePageContent({
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
-            
+
             <div className="relative z-10 text-center text-white">
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">Gacha Lab</h1>
-              <p className="mb-6 text-sm text-green-200">ポーカー風ガチャでアイテムを獲得しよう！</p>
-              
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">
+                Gacha Lab
+              </h1>
+              <p className="mb-6 text-sm text-green-200">
+                ポーカー風ガチャでアイテムを獲得しよう！
+              </p>
+
               {/* ポイント表示 - 共通コンポーネント */}
               <div className="mb-6">
                 <PointCard pointBalances={pointBalances} variant="home" />
@@ -111,14 +115,14 @@ export default function HomePageContent({
               >
                 {/* 光るエフェクト */}
                 <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
-                
+
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   <img
                     src="/icons/navigation/icon-gacha.svg"
                     alt="ガチャ"
                     className="h-6 w-6"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
                   <span>ガチャを引く</span>
@@ -137,10 +141,11 @@ export default function HomePageContent({
                     alt="ポイント購入"
                     className="h-5 w-5"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      const fallback = e.target.nextElementSibling as HTMLElement;
+                      const img = e.target as HTMLImageElement;
+                      img.style.display = "none";
+                      const fallback = img.nextElementSibling as HTMLElement;
                       if (fallback) {
-                        fallback.style.display = 'inline';
+                        fallback.style.display = "inline";
                       }
                     }}
                   />
@@ -163,7 +168,7 @@ export default function HomePageContent({
                   alt="履歴"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
                 <div className="text-xs font-semibold">履歴</div>
@@ -177,7 +182,7 @@ export default function HomePageContent({
                   alt="アイテム"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
                 <div className="text-xs font-semibold">アイテム</div>
@@ -191,7 +196,7 @@ export default function HomePageContent({
                   alt="マイページ"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
                 <div className="text-xs font-semibold">マイページ</div>
@@ -200,14 +205,18 @@ export default function HomePageContent({
 
             {/* ガチャタイプ一覧 */}
             <div className="mb-6">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">利用可能なガチャ</h2>
+              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+                利用可能なガチャ
+              </h2>
               {loadingGacha ? (
                 <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center">
                   <div className="text-white">読み込み中...</div>
                 </div>
               ) : gachaTypes.length === 0 ? (
                 <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center">
-                  <div className="text-white">現在利用可能なガチャがありません</div>
+                  <div className="text-white">
+                    現在利用可能なガチャがありません
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -220,7 +229,8 @@ export default function HomePageContent({
                       <div className="flex items-center gap-4">
                         <img
                           src={
-                            gacha.iconImageUrl && gacha.iconImageUrl.trim() !== ""
+                            gacha.iconImageUrl &&
+                            gacha.iconImageUrl.trim() !== ""
                               ? gacha.iconImageUrl
                               : "/images/gacha/default-icon.png"
                           }
@@ -229,11 +239,15 @@ export default function HomePageContent({
                           onError={(e) => {
                             // 画像読み込みエラー時はデフォルト画像にフォールバック
                             const target = e.target as HTMLImageElement;
-                            const defaultImagePath = "/images/gacha/default-icon.png";
+                            const defaultImagePath =
+                              "/images/gacha/default-icon.png";
                             const currentSrc = target.src;
-                            
+
                             // 既にデフォルト画像を試している場合は非表示
-                            if (currentSrc.includes(defaultImagePath) || currentSrc.endsWith(defaultImagePath)) {
+                            if (
+                              currentSrc.includes(defaultImagePath) ||
+                              currentSrc.endsWith(defaultImagePath)
+                            ) {
                               target.style.display = "none";
                             } else {
                               // デフォルト画像にフォールバック
@@ -242,7 +256,9 @@ export default function HomePageContent({
                           }}
                         />
                         <div className="flex-1 text-left">
-                          <h3 className="mb-1 font-bold text-gray-800">{gacha.name}</h3>
+                          <h3 className="mb-1 font-bold text-gray-800">
+                            {gacha.name}
+                          </h3>
                           {gacha.description && (
                             <p className="mb-2 text-xs text-gray-600 line-clamp-2">
                               {gacha.description}
@@ -252,7 +268,7 @@ export default function HomePageContent({
                             <span className="rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
                               {gacha.pointCost > 0
                                 ? `$${gacha.pointCost.toLocaleString()}`
-                                : '無料'}
+                                : "無料"}
                             </span>
                           </div>
                         </div>
@@ -280,7 +296,9 @@ export default function HomePageContent({
 
             {/* お知らせ・ヘルプ */}
             <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">お知らせ・ヘルプ</h2>
+              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+                お知らせ・ヘルプ
+              </h2>
               <div className="space-y-2">
                 <Link
                   href="/?action=help"
@@ -292,15 +310,18 @@ export default function HomePageContent({
                       alt="ヘルプ"
                       className="h-5 w-5"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        const fallback = e.target.nextElementSibling as HTMLElement;
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const fallback = e.target
+                          .nextElementSibling as HTMLElement;
                         if (fallback) {
-                          fallback.style.display = 'block';
+                          fallback.style.display = "block";
                         }
                       }}
                     />
                     <div className="text-xl hidden">❓</div>
-                    <span className="text-sm font-medium">ヘルプ・お知らせ</span>
+                    <span className="text-sm font-medium">
+                      ヘルプ・お知らせ
+                    </span>
                   </div>
                   <svg
                     className="h-5 w-5 text-white/70"
@@ -326,10 +347,11 @@ export default function HomePageContent({
                       alt="友達紹介"
                       className="h-5 w-5"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        const fallback = e.target.nextElementSibling as HTMLElement;
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const fallback = e.target
+                          .nextElementSibling as HTMLElement;
                         if (fallback) {
-                          fallback.style.display = 'block';
+                          fallback.style.display = "block";
                         }
                       }}
                     />
