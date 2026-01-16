@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import type { LiffProfile } from '@/lib/liff';
-import BottomNavigation from './BottomNavigation';
-import PointCard from './PointCard';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { LiffProfile } from "@/lib/liff";
+import BottomNavigation from "./BottomNavigation";
+import PointCard from "./PointCard";
 
 type MyPageProps = {
   profile: LiffProfile;
@@ -48,7 +48,9 @@ export default function MyPage({ profile }: MyPageProps) {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
-  const [pointBalances, setPointBalances] = useState<PointBalances | null>(null);
+  const [pointBalances, setPointBalances] = useState<PointBalances | null>(
+    null
+  );
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loadingPoints, setLoadingPoints] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
@@ -65,7 +67,7 @@ export default function MyPage({ profile }: MyPageProps) {
 
   const fetchPrizeTiers = async () => {
     try {
-      const res = await fetch('/api/prize-tiers');
+      const res = await fetch("/api/prize-tiers");
       if (res.ok) {
         const data = await res.json();
         const tierMap: Record<string, string> = {};
@@ -77,7 +79,7 @@ export default function MyPage({ profile }: MyPageProps) {
         setPrizeTiers(tierMap);
       }
     } catch (error) {
-      console.error('等級マスタ取得エラー:', error);
+      console.error("等級マスタ取得エラー:", error);
     }
   };
 
@@ -89,7 +91,7 @@ export default function MyPage({ profile }: MyPageProps) {
         setStats(data);
       }
     } catch (error) {
-      console.error('統計情報取得エラー:', error);
+      console.error("統計情報取得エラー:", error);
     } finally {
       setLoading(false);
     }
@@ -110,7 +112,7 @@ export default function MyPage({ profile }: MyPageProps) {
         });
       }
     } catch (error) {
-      console.error('ポイント残高取得エラー:', error);
+      console.error("ポイント残高取得エラー:", error);
     } finally {
       setLoadingPoints(false);
     }
@@ -118,13 +120,15 @@ export default function MyPage({ profile }: MyPageProps) {
 
   const fetchRecentItems = async () => {
     try {
-      const res = await fetch(`/api/users/${profile.userId}/items?page=1&limit=5`);
+      const res = await fetch(
+        `/api/users/${profile.userId}/items?page=1&limit=5`
+      );
       if (res.ok) {
         const data = await res.json();
         setRecentItems(data.items || []);
       }
     } catch (error) {
-      console.error('最近のアイテム取得エラー:', error);
+      console.error("最近のアイテム取得エラー:", error);
     } finally {
       setLoadingItems(false);
     }
@@ -156,14 +160,14 @@ export default function MyPage({ profile }: MyPageProps) {
 
   const getRarityColor = (rarity: string): string => {
     const colors: Record<string, string> = {
-      'FIRST_PRIZE': 'from-yellow-500 to-yellow-600',
-      'SECOND_PRIZE': 'from-purple-500 to-purple-600',
-      'THIRD_PRIZE': 'from-blue-500 to-blue-600',
-      'FOURTH_PRIZE': 'from-green-500 to-green-600',
-      'FIFTH_PRIZE': 'from-gray-400 to-gray-500',
-      'LOSER': 'from-gray-300 to-gray-400',
+      FIRST_PRIZE: "from-yellow-500 to-yellow-600",
+      SECOND_PRIZE: "from-purple-500 to-purple-600",
+      THIRD_PRIZE: "from-blue-500 to-blue-600",
+      FOURTH_PRIZE: "from-green-500 to-green-600",
+      FIFTH_PRIZE: "from-gray-400 to-gray-500",
+      LOSER: "from-gray-300 to-gray-400",
     };
-    return colors[rarity] || 'from-gray-400 to-gray-500';
+    return colors[rarity] || "from-gray-400 to-gray-500";
   };
 
   return (
@@ -179,23 +183,25 @@ export default function MyPage({ profile }: MyPageProps) {
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
-            
+
             <div className="relative z-10 text-center text-white">
-              <h1 className="mb-6 text-3xl font-bold drop-shadow-lg">マイページ</h1>
-              
+              <h1 className="mb-6 text-3xl font-bold drop-shadow-lg">
+                マイページ
+              </h1>
+
               {/* プロフィールカード */}
               <div className="mx-auto mb-6 max-w-xs rounded-xl border-2 border-yellow-400/50 bg-gradient-to-br from-white/95 to-white/90 p-6 shadow-2xl backdrop-blur-sm">
                 <div className="flex flex-col items-center gap-4">
                   {profile.pictureUrl && (
                     <img
                       src={profile.pictureUrl}
-                      alt={profile.displayName || 'ユーザー'}
+                      alt={profile.displayName || "ユーザー"}
                       className="h-20 w-20 rounded-full border-4 border-yellow-400 shadow-lg"
                     />
                   )}
                   <div className="text-center">
                     <div className="mb-1 text-xl font-bold text-gray-800">
-                      {profile.displayName || 'ユーザー'}
+                      {profile.displayName || "ユーザー"}
                     </div>
                     <div className="text-xs text-gray-500">
                       ID: {profile.userId.substring(0, 8)}...
@@ -242,7 +248,7 @@ export default function MyPage({ profile }: MyPageProps) {
                   alt="履歴"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
                 <div className="text-xs font-semibold">履歴</div>
@@ -256,7 +262,7 @@ export default function MyPage({ profile }: MyPageProps) {
                   alt="アイテム"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
                 <div className="text-xs font-semibold">アイテム</div>
@@ -270,7 +276,7 @@ export default function MyPage({ profile }: MyPageProps) {
                   alt="友達紹介"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
                 <div className="text-xs font-semibold">紹介</div>
@@ -279,27 +285,35 @@ export default function MyPage({ profile }: MyPageProps) {
 
             {/* 統計情報 */}
             <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
-              <h2 className="mb-4 text-lg font-bold text-white drop-shadow-md">統計情報</h2>
+              <h2 className="mb-4 text-lg font-bold text-white drop-shadow-md">
+                統計情報
+              </h2>
               {loading ? (
                 <div className="text-center text-white/70">読み込み中...</div>
               ) : stats ? (
                 <div className="space-y-4">
                   <div className="rounded-lg bg-white/10 p-4 backdrop-blur-sm">
-                    <div className="mb-1 text-xs text-white/70">ガチャ実行回数</div>
+                    <div className="mb-1 text-xs text-white/70">
+                      ガチャ実行回数
+                    </div>
                     <div className="text-3xl font-bold text-yellow-300 drop-shadow-md">
                       {stats.totalGachaCount.toLocaleString()} 回
                     </div>
                   </div>
                   {Object.keys(stats.rarityStats).length > 0 && (
                     <div>
-                      <div className="mb-3 text-sm font-semibold text-white">レアリティ別獲得数</div>
+                      <div className="mb-3 text-sm font-semibold text-white">
+                        レアリティ別獲得数
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         {Object.entries(stats.rarityStats)
                           .sort(([, a], [, b]) => b - a)
                           .map(([rarity, count]) => (
                             <div
                               key={rarity}
-                              className={`rounded-lg bg-gradient-to-br ${getRarityColor(rarity)} p-3 shadow-md`}
+                              className={`rounded-lg bg-gradient-to-br ${getRarityColor(
+                                rarity
+                              )} p-3 shadow-md`}
                             >
                               <div className="mb-1 text-xs font-medium text-white/90">
                                 {getRarityLabel(rarity)}
@@ -314,14 +328,18 @@ export default function MyPage({ profile }: MyPageProps) {
                   )}
                 </div>
               ) : (
-                <div className="text-center text-white/70">統計情報がありません</div>
+                <div className="text-center text-white/70">
+                  統計情報がありません
+                </div>
               )}
             </div>
 
             {/* 最近の獲得アイテム */}
             <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white drop-shadow-md">最近の獲得アイテム</h2>
+                <h2 className="text-lg font-bold text-white drop-shadow-md">
+                  最近の獲得アイテム
+                </h2>
                 <Link
                   href="/?action=items"
                   className="text-xs text-white/80 underline hover:text-white"
@@ -346,16 +364,21 @@ export default function MyPage({ profile }: MyPageProps) {
                             className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border border-gray-200"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const fallback = target.nextElementSibling as HTMLElement;
+                              target.style.display = "none";
+                              const fallback =
+                                target.nextElementSibling as HTMLElement;
                               if (fallback) {
-                                fallback.style.display = 'flex';
+                                fallback.style.display = "flex";
                               }
                             }}
                           />
                         ) : null}
                         <div
-                          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getRarityColor(item.item.rarity)} text-lg text-white shadow-sm ${item.item.imageUrl ? 'hidden' : ''}`}
+                          className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getRarityColor(
+                            item.item.rarity
+                          )} text-lg text-white shadow-sm ${
+                            item.item.imageUrl ? "hidden" : ""
+                          }`}
                         >
                           🎁
                         </div>
@@ -365,12 +388,16 @@ export default function MyPage({ profile }: MyPageProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`rounded-full bg-gradient-to-r ${getRarityColor(item.item.rarity)} px-2 py-0.5 text-xs font-semibold text-white shadow-sm`}
+                              className={`rounded-full bg-gradient-to-r ${getRarityColor(
+                                item.item.rarity
+                              )} px-2 py-0.5 text-xs font-semibold text-white shadow-sm`}
                             >
                               {getRarityLabel(item.item.rarity)}
                             </span>
                             {item.usedAt && (
-                              <span className="text-xs text-gray-500">使用済み</span>
+                              <span className="text-xs text-gray-500">
+                                使用済み
+                              </span>
                             )}
                           </div>
                         </div>
@@ -387,7 +414,9 @@ export default function MyPage({ profile }: MyPageProps) {
 
             {/* お知らせ・ヘルプ */}
             <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">お知らせ・ヘルプ</h2>
+              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+                お知らせ・ヘルプ
+              </h2>
               <div className="space-y-2">
                 <Link
                   href="/?action=help"
@@ -400,15 +429,17 @@ export default function MyPage({ profile }: MyPageProps) {
                       className="h-5 w-5"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        img.style.display = 'none';
+                        img.style.display = "none";
                         const fallback = img.nextElementSibling as HTMLElement;
                         if (fallback) {
-                          fallback.style.display = 'block';
+                          fallback.style.display = "block";
                         }
                       }}
                     />
                     <div className="text-xl hidden">❓</div>
-                    <span className="text-sm font-medium">ヘルプ・お知らせ</span>
+                    <span className="text-sm font-medium">
+                      ヘルプ・お知らせ
+                    </span>
                   </div>
                   <svg
                     className="h-5 w-5 text-white/70"
@@ -434,7 +465,7 @@ export default function MyPage({ profile }: MyPageProps) {
                       alt="ホーム"
                       className="h-5 w-5"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                     <span className="text-sm font-medium">ホームに戻る</span>
