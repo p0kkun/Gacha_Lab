@@ -70,8 +70,9 @@ export default function PointCard({
             alt="ポイント購入"
             className="h-6 w-6"
             onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-              const fallback = e.target.nextElementSibling as HTMLElement;
+              const img = e.target as HTMLImageElement;
+              img.style.display = "none";
+              const fallback = img.nextElementSibling as HTMLElement;
               if (fallback) {
                 fallback.style.display = "block";
               }
