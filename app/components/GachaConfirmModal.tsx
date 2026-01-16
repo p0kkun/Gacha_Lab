@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
+import PointIcon from "./PointIcon";
 
 type GachaConfirmModalProps = {
   isOpen: boolean;
@@ -37,8 +38,16 @@ export default function GachaConfirmModal({
                 {gachaName}を実行しますか？
               </p>
               {pointCost > 0 && (
-                <p className="text-sm text-gray-600">
-                  必要ポイント: <span className="font-bold text-yellow-600">${pointCost.toLocaleString()}</span>
+                <p className="text-sm text-gray-600 flex items-center gap-1 justify-center">
+                  必要ポイント:{" "}
+                  <span className="font-bold text-yellow-600 flex items-center gap-0.5">
+                    <PointIcon
+                      size={14}
+                      className="h-3.5 w-3.5"
+                      active={true}
+                    />
+                    {pointCost.toLocaleString()}
+                  </span>
                 </p>
               )}
             </div>
@@ -78,7 +87,9 @@ export default function GachaConfirmModal({
           {/* 法的リンク */}
           <div className="mb-6 border-t border-gray-200 pt-4">
             <div className="space-y-2 text-center text-xs text-gray-600">
-              <p className="mb-2 font-medium text-gray-700">以下の規約に同意の上、実行してください：</p>
+              <p className="mb-2 font-medium text-gray-700">
+                以下の規約に同意の上、実行してください：
+              </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="/terms"

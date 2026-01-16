@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
+import PointIcon from "./PointIcon";
 
 type PointBalances = {
   paid: number;
@@ -13,7 +14,7 @@ type PointBalances = {
 
 type PointCardProps = {
   pointBalances: PointBalances | null;
-  variant?: 'home' | 'mypage'; // ホーム画面用 or マイページ用
+  variant?: "home" | "mypage"; // ホーム画面用 or マイページ用
   className?: string;
 };
 
@@ -23,12 +24,14 @@ type PointCardProps = {
  */
 export default function PointCard({
   pointBalances,
-  variant = 'home',
-  className = '',
+  variant = "home",
+  className = "",
 }: PointCardProps) {
   if (!pointBalances) {
     return (
-      <div className={`mx-auto max-w-xs rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 p-4 shadow-lg backdrop-blur-sm ${className}`}>
+      <div
+        className={`mx-auto max-w-xs rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 p-4 shadow-lg backdrop-blur-sm ${className}`}
+      >
         <div className="text-center text-yellow-200">読み込み中...</div>
       </div>
     );
@@ -42,13 +45,22 @@ export default function PointCard({
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="text-xs text-yellow-200">所持ポイント</div>
-          <div className="text-4xl font-bold text-yellow-300 drop-shadow-md">
-            ${pointBalances.total.toLocaleString()}
+          <div className="text-4xl font-bold text-yellow-300 drop-shadow-md flex items-center gap-2">
+            <PointIcon size={32} className="h-8 w-8" active={true} />
+            {pointBalances.total.toLocaleString()}
           </div>
-          {variant === 'mypage' && (
+          {variant === "mypage" && (
             <div className="mt-2 flex justify-center gap-4 text-xs text-yellow-200/80">
-              <span>有償: ${pointBalances.paid.toLocaleString()}</span>
-              <span>無償: ${pointBalances.free.toLocaleString()}</span>
+              <span className="flex items-center gap-0.5">
+                有償:{" "}
+                <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
+                {pointBalances.paid.toLocaleString()}
+              </span>
+              <span className="flex items-center gap-0.5">
+                無償:{" "}
+                <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
+                {pointBalances.free.toLocaleString()}
+              </span>
             </div>
           )}
         </div>
@@ -58,10 +70,10 @@ export default function PointCard({
             alt="ポイント購入"
             className="h-6 w-6"
             onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).style.display = "none";
               const fallback = e.target.nextElementSibling as HTMLElement;
               if (fallback) {
-                fallback.style.display = 'block';
+                fallback.style.display = "block";
               }
             }}
           />

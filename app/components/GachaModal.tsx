@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import GachaMenu from './GachaMenu';
-import GachaContent from './GachaContent';
-import PointDisplay from './PointDisplay';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import GachaMenu from "./GachaMenu";
+import GachaContent from "./GachaContent";
+import PointDisplay from "./PointDisplay";
+import PointIcon from "./PointIcon";
 
 export type GachaType = {
   id: string;
@@ -42,7 +43,7 @@ export default function GachaModal({
       const fetchData = async () => {
         try {
           // ガチャタイプ一覧を取得
-          const typesRes = await fetch('/api/gacha/types');
+          const typesRes = await fetch("/api/gacha/types");
           if (typesRes.ok) {
             const typesData = await typesRes.json();
             setGachaTypes(typesData.gachaTypes || []);
@@ -65,7 +66,7 @@ export default function GachaModal({
             });
           }
         } catch (error) {
-          console.error('データ取得エラー:', error);
+          console.error("データ取得エラー:", error);
         } finally {
           setLoading(false);
         }
@@ -122,45 +123,27 @@ export default function GachaModal({
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div className="flex-shrink-0">
-                    <img
-                      src="/icons/navigation/icon-point.svg"
-                      alt="ポイント"
-                      className="h-5 w-5"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        const fallback = e.target.nextElementSibling as HTMLElement;
-                        if (fallback) {
-                          fallback.style.display = 'block';
-                        }
-                      }}
-                    />
-                    <svg
-                      className="h-5 w-5 text-yellow-600 hidden"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                    <PointIcon size={20} className="h-5 w-5" active={true} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-xs font-medium text-yellow-700">$</span>
+                      <PointIcon
+                        size={14}
+                        className="h-3.5 w-3.5"
+                        active={true}
+                      />
                       <span className="text-lg font-bold text-yellow-800 truncate">
                         {pointBalances.total.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-medium text-yellow-600">
-                        有償: ${pointBalances.paid.toLocaleString()}
+                      <span className="text-[10px] font-medium text-yellow-600 flex items-center gap-0.5">
+                        <PointIcon size={10} className="h-2.5 w-2.5" />
+                        有償: {pointBalances.paid.toLocaleString()}
                       </span>
-                      <span className="text-[10px] font-medium text-green-600">
-                        無償: ${pointBalances.free.toLocaleString()}
+                      <span className="text-[10px] font-medium text-green-600 flex items-center gap-0.5">
+                        <PointIcon size={10} className="h-2.5 w-2.5" />
+                        無償: {pointBalances.free.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -186,15 +169,25 @@ export default function GachaModal({
                 onClick={() => setIsMenuOpen(true)}
                 className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-lg active:scale-95"
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 </svg>
                 <span className="hidden sm:inline">ガチャ選択</span>
               </button>
             </div>
           </div>
         )}
-        
+
         {/* メインコンテンツ */}
         <div className="flex-1 overflow-hidden">
           <GachaContent
@@ -217,7 +210,7 @@ export default function GachaModal({
                   });
                 }
               } catch (error) {
-                console.error('ポイント残高取得エラー:', error);
+                console.error("ポイント残高取得エラー:", error);
               }
             }}
           />
@@ -229,15 +222,15 @@ export default function GachaModal({
         {/* 半透明背景（フェードイン） */}
         <div
           className={`fixed inset-0 z-[60] bg-white backdrop-blur-sm transition-opacity duration-300 ease-out ${
-            isMenuOpen ? 'opacity-70' : 'pointer-events-none opacity-0'
+            isMenuOpen ? "opacity-70" : "pointer-events-none opacity-0"
           }`}
           onClick={() => setIsMenuOpen(false)}
         />
-        
+
         {/* メニューパネル（スライドイン） */}
-        <div 
+        <div
           className={`fixed inset-y-0 left-0 z-[70] w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-out ${
-            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            isMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <GachaMenu
@@ -251,5 +244,3 @@ export default function GachaModal({
     </div>
   );
 }
-
-

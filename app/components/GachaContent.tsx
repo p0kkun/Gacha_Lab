@@ -6,6 +6,7 @@ import MultiVideoPlayer from "./MultiVideoPlayer";
 import BottomNavigation from "./BottomNavigation";
 import PrizeListModal from "./PrizeListModal";
 import GachaConfirmModal from "./GachaConfirmModal";
+import PointIcon from "./PointIcon";
 
 type GachaResult = {
   item: {
@@ -54,7 +55,7 @@ export default function GachaContent({
           messageQueueId,
         }),
       });
-      
+
       const data = await response.json();
       if (data.success) {
         console.log("メッセージ送信成功");
@@ -74,7 +75,7 @@ export default function GachaContent({
   const handleConfirmGacha = async () => {
     // 確認モーダルを閉じる
     setShowConfirmModal(false);
-    
+
     // ポイント確認とガチャ実行
     setIsDrawing(true);
     setShowVideo(false);
@@ -98,7 +99,7 @@ export default function GachaContent({
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.error || "ガチャ抽選に失敗しました";
-        
+
         // ポイント不足の場合は購入ページへリダイレクト
         if (
           response.status === 403 &&
@@ -109,12 +110,12 @@ export default function GachaContent({
           window.location.href = "/points";
           return;
         }
-        
+
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      
+
       // ポイント残高を更新（コールバックを呼び出して親コンポーネントに通知）
       if (onPointsUpdated) {
         // APIレスポンスにpointsRemainingが含まれている場合はそれを使用
@@ -150,7 +151,7 @@ export default function GachaContent({
         const validVideoUrls = data.videoUrls.filter(
           (url: string) => url && url.trim() !== ""
         );
-        
+
         if (validVideoUrls.length > 0) {
           // 有効な動画URLがある場合は動画を再生
           setIsDrawing(false);
@@ -165,7 +166,7 @@ export default function GachaContent({
           setVideoError(false);
           setIsDrawing(false);
           onVideoStateChange?.(false);
-          
+
           // メッセージ送信（動画がない場合）
           if (data.messageQueueId) {
             sendMessageAsync(data.messageQueueId);
@@ -178,7 +179,7 @@ export default function GachaContent({
         setVideoError(false);
         setIsDrawing(false);
         onVideoStateChange?.(false);
-        
+
         // メッセージ送信（動画がない場合）
         if (data.messageQueueId) {
           sendMessageAsync(data.messageQueueId);
@@ -199,7 +200,7 @@ export default function GachaContent({
 
   const handleVideoEnd = async () => {
     onVideoStateChange?.(false);
-    
+
     // メッセージ送信（動画終了後）
     if (result?.messageQueueId) {
       try {
@@ -212,7 +213,7 @@ export default function GachaContent({
             messageQueueId: result.messageQueueId,
           }),
         });
-        
+
         const data = await response.json();
         if (data.success) {
           console.log("メッセージ送信成功");
@@ -225,7 +226,7 @@ export default function GachaContent({
         // エラー時も処理を続行
       }
     }
-    
+
     // 既存の処理
     setIsDrawing(false);
     setVideoUrlsToPlay([]);
@@ -237,12 +238,12 @@ export default function GachaContent({
     // モバイルアプリではアラートを表示しない（ユーザー体験を損なうため）
     // 代わりに結果画面を表示
     onVideoStateChange?.(false);
-    
+
     // メッセージ送信（動画エラー時も送信）
     if (result?.messageQueueId) {
       await sendMessageAsync(result.messageQueueId);
     }
-    
+
     setVideoError(true);
     setIsDrawing(false);
     setVideoUrlsToPlay([]);
@@ -261,15 +262,15 @@ export default function GachaContent({
 
   // 動画再生中は全画面
   if (showVideo && videoUrlsToPlay.length > 0) {
-      return (
-        <div className="fixed inset-0 z-[60] bg-black">
-          <MultiVideoPlayer
+    return (
+      <div className="fixed inset-0 z-[60] bg-black">
+        <MultiVideoPlayer
           videoUrls={videoUrlsToPlay}
-            onEnd={handleVideoEnd}
-            onError={handleVideoError}
-          />
-        </div>
-      );
+          onEnd={handleVideoEnd}
+          onError={handleVideoError}
+        />
+      </div>
+    );
   }
 
   const getRarityColor = (rarity: string) => {
@@ -295,7 +296,7 @@ export default function GachaContent({
   };
 
   return (
-    <div 
+    <div
       className="relative flex h-full flex-col overflow-hidden"
       style={{ touchAction: "none" }}
       onTouchStart={(e) => e.preventDefault()}
@@ -321,8 +322,10 @@ export default function GachaContent({
                 }}
               />
             ) : null}
-            <div 
-              className={`text-2xl flex-shrink-0 ${selectedGacha.iconImageUrl ? 'hidden' : ''}`}
+            <div
+              className={`text-2xl flex-shrink-0 ${
+                selectedGacha.iconImageUrl ? "hidden" : ""
+              }`}
             >
               🂡
             </div>
@@ -331,8 +334,10 @@ export default function GachaContent({
                 {selectedGacha.name}
               </h1>
               {(selectedGacha.pointCost ?? 0) > 0 ? (
-                <p className="mt-1 text-sm font-semibold text-yellow-300">
-                  必要: ${(selectedGacha.pointCost ?? 0).toLocaleString()}
+                <p className="mt-1 text-sm font-semibold text-yellow-300 flex items-center gap-1">
+                  必要:{" "}
+                  <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
+                  {(selectedGacha.pointCost ?? 0).toLocaleString()}
                 </p>
               ) : (
                 <p className="mt-1 text-sm font-semibold text-green-200">
@@ -379,26 +384,30 @@ export default function GachaContent({
             <div className="w-full overflow-hidden">
               <img
                 src={
-                  selectedGacha.iconImageUrl && selectedGacha.iconImageUrl.trim() !== ""
+                  selectedGacha.iconImageUrl &&
+                  selectedGacha.iconImageUrl.trim() !== ""
                     ? selectedGacha.iconImageUrl
                     : "/images/gacha/default-icon.png"
                 }
                 alt={selectedGacha.name}
                 className="w-full object-cover"
-                style={{ 
+                style={{
                   maxHeight: "40vh",
                   minHeight: "200px",
                   objectFit: "cover",
-                  display: "block"
+                  display: "block",
                 }}
                 onError={(e) => {
                   // 画像読み込みエラー時はデフォルト画像にフォールバック
                   const target = e.target as HTMLImageElement;
                   const defaultImagePath = "/images/gacha/default-icon.png";
                   const currentSrc = target.src;
-                  
+
                   // 既にデフォルト画像を試している場合は非表示（無限ループ防止）
-                  if (currentSrc.includes(defaultImagePath) || currentSrc.endsWith(defaultImagePath)) {
+                  if (
+                    currentSrc.includes(defaultImagePath) ||
+                    currentSrc.endsWith(defaultImagePath)
+                  ) {
                     target.style.display = "none";
                   } else {
                     // デフォルト画像にフォールバック
@@ -417,7 +426,7 @@ export default function GachaContent({
                   </p>
                 </div>
               )}
-              
+
               {/* トランプのスーツ装飾 */}
               <div className="mt-4 flex justify-center gap-4 text-2xl opacity-50 sm:gap-6 sm:text-3xl">
                 <span className="text-red-400">♥</span>
@@ -485,7 +494,7 @@ export default function GachaContent({
           >
             {/* 光るエフェクト */}
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
-            
+
             <span className="relative z-10 flex items-center justify-center gap-2 flex-wrap">
               {isDrawing ? (
                 <>
@@ -499,15 +508,21 @@ export default function GachaContent({
                     alt="ガチャ"
                     className="h-5 w-5 flex-shrink-0"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
-                  <span className="whitespace-nowrap">
+                  <span className="whitespace-nowrap flex items-center gap-1">
                     カードを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
-                      <span className="hidden sm:inline">
+                      <span className="hidden sm:inline flex items-center gap-0.5">
                         {" "}
-                        (${(selectedGacha.pointCost ?? 0).toLocaleString()})
+                        (
+                        <PointIcon
+                          size={12}
+                          className="h-3 w-3"
+                          active={true}
+                        />
+                        {(selectedGacha.pointCost ?? 0).toLocaleString()})
                       </span>
                     ) : (
                       <span className="hidden sm:inline"> (無料)</span>
@@ -522,7 +537,13 @@ export default function GachaContent({
       )}
 
       {/* ボトムナビゲーション - 動画再生中は非表示 */}
-      {!showVideo && <BottomNavigation currentPage="gacha" hideSpacer={true} transparent={true} />}
+      {!showVideo && (
+        <BottomNavigation
+          currentPage="gacha"
+          hideSpacer={true}
+          transparent={true}
+        />
+      )}
 
       {/* 景品一覧モーダル */}
       <PrizeListModal

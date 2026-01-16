@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
 import type { PointPlan } from "@/lib/point-plan-types";
+import PointIcon from "@/components/PointIcon";
 import {
   Elements,
   PaymentElement,
@@ -692,7 +693,8 @@ function PointsPageContent() {
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
           <div className="text-center">
             <div className="mb-2 text-sm text-gray-500">現在のポイント</div>
-            <div className="mb-4 text-3xl font-bold text-blue-600">
+            <div className="mb-4 text-3xl font-bold text-blue-600 flex items-center justify-center gap-2">
+              <PointIcon size={32} className="h-8 w-8" active={true} />
               {points !== null ? points.toLocaleString() : "-"}
             </div>
             
@@ -701,8 +703,9 @@ function PointsPageContent() {
               <div className="mt-4 space-y-2 border-t pt-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">有償ポイント</span>
-                  <span className="font-semibold text-gray-800">
-                    {pointBalances.paid.toLocaleString()}pt
+                  <span className="font-semibold text-gray-800 flex items-center gap-1">
+                    <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
+                    {pointBalances.paid.toLocaleString()}
                   </span>
                 </div>
                 {pointBalances.paidExpiresAt && (
@@ -717,8 +720,9 @@ function PointsPageContent() {
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">無償ポイント</span>
-                  <span className="font-semibold text-gray-800">
-                    {pointBalances.free.toLocaleString()}pt
+                  <span className="font-semibold text-gray-800 flex items-center gap-1">
+                    <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
+                    {pointBalances.free.toLocaleString()}
                   </span>
                 </div>
                 {pointBalances.freeExpiresAt && (

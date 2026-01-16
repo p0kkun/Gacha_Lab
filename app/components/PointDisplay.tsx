@@ -1,6 +1,7 @@
 'use client';
 
 import { formatExpiryText, formatExpiryDate } from '@/lib/point-utils';
+import PointIcon from './PointIcon';
 
 type PointBalances = {
   paid: number;
@@ -64,7 +65,8 @@ export default function PointDisplay({
     return (
       <div className={`${className}`}>
         <div className={`${currentSize.label} text-gray-500`}>ポイント</div>
-        <div className={`${currentSize.total} font-bold text-blue-600`}>
+        <div className={`${currentSize.total} font-bold text-blue-600 flex items-center gap-2`}>
+          <PointIcon size={size === 'small' ? 20 : size === 'medium' ? 24 : 32} className={size === 'small' ? 'h-5 w-5' : size === 'medium' ? 'h-6 w-6' : 'h-8 w-8'} active={true} />
           {pointBalances.total.toLocaleString()}
         </div>
         {showExpiry && (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
@@ -100,7 +102,7 @@ export default function PointDisplay({
     <div className={`flex items-center gap-4 ${className}`}>
       {/* 合計ポイント */}
       <div className="flex items-baseline gap-1">
-        <span className={`${currentSize.label} text-gray-500`}>$</span>
+        <PointIcon size={14} className="h-3.5 w-3.5" />
         <span className={`${currentSize.total} font-bold text-gray-800`}>
           {pointBalances.total.toLocaleString()}
         </span>
@@ -109,16 +111,18 @@ export default function PointDisplay({
       {/* 有償ポイント */}
       <div className="flex items-baseline gap-1">
         <span className={`${currentSize.label} text-gray-500`}>有償</span>
-        <span className={`text-sm font-semibold text-blue-600`}>
-          ${pointBalances.paid.toLocaleString()}
+        <span className={`text-sm font-semibold text-blue-600 flex items-center gap-0.5`}>
+          <PointIcon size={12} className="h-3 w-3" />
+          {pointBalances.paid.toLocaleString()}
         </span>
       </div>
       
       {/* 無償ポイント */}
       <div className="flex items-baseline gap-1">
         <span className={`${currentSize.label} text-gray-500`}>無償</span>
-        <span className={`text-sm font-semibold text-green-600`}>
-          +${pointBalances.free.toLocaleString()}
+        <span className={`text-sm font-semibold text-green-600 flex items-center gap-0.5`}>
+          +<PointIcon size={12} className="h-3 w-3" />
+          {pointBalances.free.toLocaleString()}
         </span>
       </div>
       
