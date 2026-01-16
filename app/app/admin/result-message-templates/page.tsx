@@ -256,21 +256,32 @@ export default function ResultMessageTemplatesPage() {
                 className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 font-mono"
                 rows={8}
               />
-              <div className="mt-2 flex items-center gap-2">
-                <p className="text-xs text-gray-600">
-                  使用可能な変数: {"{itemName}"} / {"{rarity}"} / {"{rarityEmoji}"} / {"{gachaTypeName}"} / {"{handName}"} / {"{grantedPoints}"} / {"{grantedPointsMessage}"}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowVariableInfo(true)}
-                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-                  aria-label="変数の詳細を見る"
-                  title="変数の詳細を見る"
-                >
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
-                </button>
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-600">
+                    使用可能な変数: {"{itemName}"} / {"{rarity}"} / {"{rarityEmoji}"} / {"{gachaTypeName}"} / {"{handName}"} / {"{grantedPoints}"} / {"{grantedPointsMessage}"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowVariableInfo(true)}
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                    aria-label="変数の詳細を見る"
+                    title="変数の詳細を見る"
+                  >
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className={`text-xs ${newRow.template.length > 120 ? 'text-red-600 font-semibold' : newRow.template.length > 100 ? 'text-orange-600' : 'text-gray-600'}`}>
+                    テンプレート文字数: {newRow.template.length} / 120
+                    {newRow.template.length <= 120 && ` (残り ${120 - newRow.template.length} 文字)`}
+                  </p>
+                  {newRow.template.length > 120 && (
+                    <span className="text-xs text-red-600">⚠️ 変数展開後は120文字以内に収まるようにしてください</span>
+                  )}
+                </div>
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -395,13 +406,24 @@ export default function ResultMessageTemplatesPage() {
                         </label>
                         <textarea
                           disabled={!isEditing}
-                          value={String(view.template ?? "")}
+                          value={isEditing ? String(editRow.template ?? view.template ?? "") : String(view.template ?? "")}
                           onChange={(e) =>
                             setEditRow({ ...editRow, template: e.target.value })
                           }
                           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 font-mono disabled:bg-gray-50"
                           rows={8}
                         />
+                        {isEditing && (
+                          <div className="mt-2">
+                            <p className={`text-xs ${(editRow.template ?? view.template ?? "").length > 120 ? 'text-red-600 font-semibold' : (editRow.template ?? view.template ?? "").length > 100 ? 'text-orange-600' : 'text-gray-600'}`}>
+                              テンプレート文字数: {(editRow.template ?? view.template ?? "").length} / 120
+                              {(editRow.template ?? view.template ?? "").length <= 120 && ` (残り ${120 - (editRow.template ?? view.template ?? "").length} 文字)`}
+                            </p>
+                            {(editRow.template ?? view.template ?? "").length > 120 && (
+                              <p className="mt-1 text-xs text-red-600">⚠️ 変数展開後は120文字以内に収まるようにしてください</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <label className="flex items-center gap-2 text-sm text-gray-700">
                         <input

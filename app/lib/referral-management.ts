@@ -1,6 +1,7 @@
 import { ReferralStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { deleteCache } from "./cache";
 
 /**
  * 紹介リンクを生成（1ユーザー1リンク固定、期限切れでも再利用）
@@ -337,8 +338,9 @@ export async function completeReferral(
 
     // 紹介報酬ポイント設定を取得
     const referralRewardSettings = await tx.freeGachaSettings.findFirst();
-    const referrerPoints = referralRewardSettings?.referrerPoints ?? 100;
-    const refereePoints = referralRewardSettings?.refereePoints ?? 100;
+    referrerPoints = referralRewardSettings?.referrerPoints ?? 100;
+    refereePoints = referralRewardSettings?.refereePoints ?? 100;
+    referrerUserId = referral.userId;
 
     // 紹介者と被紹介者に無償ポイントを付与
     const { grantFreePoints } = await import("@/lib/point-management");
@@ -353,6 +355,7 @@ export async function completeReferral(
         `友だち紹介特典（紹介者）: ${referrerPoints}ポイント`,
         PointTransactionType.REFERRAL_REWARD
       );
+      // grantFreePoints内でキャッシュ削除されるが、念のためトランザクション完了後にも削除
     }
 
     // 被紹介者への特典（設定されたポイント）
@@ -364,6 +367,7 @@ export async function completeReferral(
         `友だち紹介特典（被紹介者）: ${refereePoints}ポイント`,
         PointTransactionType.REFERRAL_REWARD
       );
+      // grantFreePoints内でキャッシュ削除されるが、念のためトランザクション完了後にも削除
     }
 
     // 無料ガチャ設定を取得
@@ -419,6 +423,15 @@ export async function completeReferral(
 
     console.log(`紹介成立: 紹介者 ${referral.userId} → 被紹介者 ${refereeId}`);
   });
+
+  // トランザクション完了後、キャッシュを削除（念のため）
+  // grantFreePoints内でも削除されるが、トランザクション完了後に確実に削除
+  if (referrerPoints > 0) {
+    await deleteCache(`point-balance:${referral.userId}`);
+  }
+  if (refereePoints > 0) {
+    await deleteCache(`point-balance:${refereeId}`);
+  }
 }
 
 /**

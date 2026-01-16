@@ -1,5 +1,6 @@
 import { PointTransactionType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { deleteCache } from './cache';
 
 async function ensureUserPointBalance(userId: string) {
   const existing = await prisma.userPointBalance.findUnique({
@@ -18,7 +19,12 @@ async function ensureUserPointBalance(userId: string) {
 export async function getPointBalances(userId: string) {
   await ensureUserPointBalance(userId);
   // 有効期限切れのポイントを0に更新
-  await expirePoints(userId);
+  const wasUpdated = await expirePoints(userId);
+
+  // 有効期限切れポイントが更新された場合、キャッシュを削除
+  if (wasUpdated) {
+    await deleteCache(`point-balance:${userId}`);
+  }
 
   const balance = await prisma.userPointBalance.findUnique({ where: { userId } });
   const paid = balance?.paidAmount ?? 0;
@@ -43,10 +49,11 @@ export async function getPointBalances(userId: string) {
 /**
  * 有効期限切れのポイントを0に更新
  * 注意: スキーマにexpiresAtフィールドがないため、この機能は無効化されています
+ * @returns 更新があった場合true、更新がなかった場合false
  */
-async function expirePoints(userId: string) {
+async function expirePoints(userId: string): Promise<boolean> {
   // スキーマにexpiresAtフィールドがないため、何もしない
-  return;
+  return false;
 }
 
 /**
@@ -73,7 +80,7 @@ export async function grantPaidPoints(
   // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
   const now = new Date();
 
-  return await prisma.$transaction(async (tx) => {
+  const updatedBalance = await prisma.$transaction(async (tx) => {
     // 残高行を確実に作成
     const existing = await tx.userPointBalance.findUnique({ where: { userId } });
     if (!existing) {
@@ -117,6 +124,11 @@ export async function grantPaidPoints(
 
     return updatedBalance;
   });
+
+  // トランザクション完了後にキャッシュを削除
+  await deleteCache(`point-balance:${userId}`);
+  
+  return updatedBalance;
 }
 
 /**
@@ -145,7 +157,7 @@ export async function grantPurchasePoints(
   // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
   const now = new Date();
 
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // 既に付与済みなら何もしない（idempotent）
     const existing = purchaseLogId
       ? await tx.pointHistory.findFirst({
@@ -220,6 +232,13 @@ export async function grantPurchasePoints(
     const updatedBalance = await tx.userPointBalance.findUnique({ where: { userId } });
     return { alreadyGranted: false, updatedBalance };
   });
+
+  // トランザクション完了後にキャッシュを削除
+  if (!result.alreadyGranted) {
+    await deleteCache(`point-balance:${userId}`);
+  }
+  
+  return result;
 }
 
 /**
@@ -245,7 +264,7 @@ export async function grantFreePoints(
   // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
   const now = new Date();
 
-  return await prisma.$transaction(async (tx) => {
+  const updatedBalance = await prisma.$transaction(async (tx) => {
     const existing = await tx.userPointBalance.findUnique({ where: { userId } });
     if (!existing) {
       await tx.userPointBalance.create({
@@ -285,6 +304,11 @@ export async function grantFreePoints(
 
     return updatedBalance;
   });
+
+  // トランザクション完了後にキャッシュを削除
+  await deleteCache(`point-balance:${userId}`);
+  
+  return updatedBalance;
 }
 
 /**
@@ -304,7 +328,7 @@ export async function consumePoints(
     throw new Error('消費ポイント数は1以上である必要があります');
   }
 
-  return await prisma.$transaction(async (tx) => {
+  const newTotal = await prisma.$transaction(async (tx) => {
     const now = new Date();
     // updatedAtが自動更新されるため、有効期限は updatedAt + 1年で計算される
 
@@ -364,6 +388,11 @@ export async function consumePoints(
 
     return newTotal;
   });
+
+  // トランザクション完了後にキャッシュを削除
+  await deleteCache(`point-balance:${userId}`);
+  
+  return newTotal;
 }
 
 /**

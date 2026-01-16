@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logError } from "@/lib/error-logger";
+import { getCache, setCache } from "@/lib/cache";
 
 /**
  * ユーザー統計情報を取得
  * GET /api/users/[userId]/stats
- * 
+ *
  * フロー:
  * 1. バリデーション（400エラー、ログ不要）
  * 2. キャッシュ確認（オプション、未実装）
@@ -22,10 +23,10 @@ export async function GET(
     const { userId } = await params;
 
     // Try①：バリデーション
-    if (!userId || userId.trim() === '') {
+    if (!userId || userId.trim() === "") {
       // バリデーションNG: 400エラー（ログ不要）
       return NextResponse.json(
-        { error: 'ユーザーIDが必要です' },
+        { error: "ユーザーIDが必要です" },
         { status: 400 }
       );
     }
@@ -50,7 +51,7 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json(
-        { error: 'ユーザーが見つかりません' },
+        { error: "ユーザーが見つかりません" },
         { status: 404 }
       );
     }
@@ -84,14 +85,19 @@ export async function GET(
     await setCache(cacheKey, stats, 300);
 
     return NextResponse.json(stats);
-      totalGachaCount,
-      rarityStats,
-    });
   } catch (error) {
     // Catch：例外処理
-    await logError(error, { route: '/api/users/[userId]/stats' }, request);
+    console.error("ユーザー統計情報取得エラー:", error);
+    console.error("エラー詳細:", {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+    });
+    await logError(error, { route: "/api/users/[userId]/stats" }, request);
     return NextResponse.json(
-      { error: "統計情報の取得に失敗しました" },
+      { 
+        error: "統計情報の取得に失敗しました",
+        details: process.env.NODE_ENV === "development" ? (error as Error).message : undefined
+      },
       { status: 500 }
     );
   }

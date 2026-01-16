@@ -49,6 +49,7 @@ export async function GET() {
     }
 
     // Try③：キャッシュ更新（TTL: 3600秒）
+    const cacheKey = 'point-purchase-plans';
     await setCache(cacheKey, plans, 3600);
 
     return NextResponse.json({ plans });

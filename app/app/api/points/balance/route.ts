@@ -29,8 +29,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Try②：キャッシュ確認（オプション、未実装）
-    // TODO: キャッシュレイヤー実装時に追加
+    // Try②：キャッシュ確認（オプション）
+    const cacheKey = `point-balance:${userId}`;
+    const cachedBalance = await getCache<{
+      paid: number;
+      free: number;
+      total: number;
+      paidExpiresAt: string | null;
+      freeExpiresAt: string | null;
+      lastUpdated: string | null;
+    }>(cacheKey);
+
+    if (cachedBalance) {
+      // キャッシュヒット
+      return NextResponse.json({
+        points: cachedBalance.total, // 後方互換性のため
+        paid: cachedBalance.paid,
+        free: cachedBalance.free,
+        total: cachedBalance.total,
+        paidExpiresAt: cachedBalance.paidExpiresAt,
+        freeExpiresAt: cachedBalance.freeExpiresAt,
+        lastUpdated: cachedBalance.lastUpdated,
+      });
+    }
 
     // Try③：DB処理（User + UserPointBalance取得、JOIN）
     // ユーザーとポイント残高を同時に取得（リレーションがないため、別々に取得）
@@ -70,9 +91,17 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     // Catch：例外処理
+    console.error("ポイント残高取得エラー:", error);
+    console.error("エラー詳細:", {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+    });
     await logError(error, { route: '/api/points/balance' }, request);
     return NextResponse.json(
-      { error: 'ポイント残高の取得に失敗しました' },
+      { 
+        error: 'ポイント残高の取得に失敗しました',
+        details: process.env.NODE_ENV === "development" ? (error as Error).message : undefined
+      },
       { status: 500 }
     );
   }

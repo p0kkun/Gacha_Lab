@@ -17,6 +17,7 @@ const PointTransactionType = {
   REFUND: "REFUND" as const,
 } as const;
 import { logError } from "@/lib/error-logger";
+import { deleteCache } from "@/lib/cache";
 
 type TierWeightRow = { tierCode: string; weight: number };
 type PrizeItemRow = {
@@ -461,6 +462,12 @@ export async function POST(request: NextRequest) {
       // ステップ16: DBコミットを行う（トランザクション成功時）
       return { gachaHistory, newBalance, grantedPoints: 0, messageQueue };
     });
+
+    // ガチャ実行完了後、キャッシュを削除
+    // ポイント残高キャッシュ（consumePoints内で削除されるが、念のため）
+    await deleteCache(`point-balance:${userId}`);
+    // ユーザー統計情報キャッシュ（ガチャ履歴が追加されたので）
+    await deleteCache(`user-stats:${userId}`);
 
     // ステップ10（続き）: 動画URLを取得（新しい動画システム、ガチャタイプの設定を使用）
     const { getGachaVideoUrls } = await import("@/lib/gacha-video");

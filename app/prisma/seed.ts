@@ -41,15 +41,10 @@ async function main() {
 
   // 0. 結果メッセージテンプレート（マスタ）
   console.log("📝 結果メッセージテンプレートを作成中...");
-  const defaultTemplateText = `🎰 ガチャ結果
-
-{rarityEmoji} {itemName}
+  // LINE Messaging APIのtextフィールドは最大120文字（改行を含む）のため、短縮版テンプレート
+  const defaultTemplateText = `{rarityEmoji} {itemName}
 レアリティ: {rarity}
-ガチャタイプ: {gachaTypeName}
-
-🃏 ポーカーハンド: {handName}
-
-おめでとうございます！🎉`;
+{grantedPointsMessage}`;
 
   const defaultTemplate = await prisma.resultMessageTemplate.upsert({
     where: { code: "default" },
