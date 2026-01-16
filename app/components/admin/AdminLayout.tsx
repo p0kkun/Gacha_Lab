@@ -214,7 +214,7 @@ export default function AdminLayout({
       )}
 
       {/* メインコンテンツ */}
-      <main className="flex-1 overflow-auto lg:ml-72">
+      <main className="flex-1 overflow-auto lg:ml-72 text-gray-800">
         <div className="min-h-screen">
           {children}
         </div>

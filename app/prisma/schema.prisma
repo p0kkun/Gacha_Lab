@@ -499,3 +499,20 @@ model FreeGachaSettings {
 
   @@map("free_gacha_settings")
 }
+
+model MessageQueue {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  isSent      Boolean   @default(false)
+  type        Int       // 1: ガチャ結果
+  templateId  Int?
+  jsonData    Json
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, isSent, type])
+  @@index([userId, createdAt])
+  @@index([isSent, type])
+  @@map("message_queues")
+}

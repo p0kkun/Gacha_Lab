@@ -165,6 +165,7 @@ async function getGachaTypes() {
         name: true,
         description: true,
         pointCost: true,
+        iconImageUrl: true,
       },
       orderBy: { createdAt: 'asc' },
       take: 10, // カルーセルは最大10個まで
@@ -193,6 +194,26 @@ async function sendGachaSelectionCard(
       return;
     }
 
+    // 画像URLをフルURLに変換する関数
+    const getFullImageUrl = (imageUrl: string | null | undefined): string => {
+      if (!imageUrl || imageUrl.trim() === '') {
+        // デフォルト画像のフルURL
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+        return baseUrl 
+          ? `${baseUrl}/images/gacha/default-icon.png`
+          : 'https://via.placeholder.com/1024x1024/FF6B6B/FFFFFF?text=GACHA';
+      }
+      
+      // 既にフルURLの場合はそのまま返す
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl;
+      }
+      
+      // 相対パスの場合はフルURLに変換
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+      return baseUrl ? `${baseUrl}${imageUrl}` : imageUrl;
+    };
+
     // カルーセルカラムを作成
     const columns: CarouselColumn[] = gachaTypes.map((gachaType) => {
       const pointCostText = gachaType.pointCost > 0 
@@ -200,7 +221,7 @@ async function sendGachaSelectionCard(
         : '無料';
       
       return {
-        thumbnailImageUrl: 'https://via.placeholder.com/1024x1024/FF6B6B/FFFFFF?text=GACHA', // プレースホルダー画像
+        thumbnailImageUrl: getFullImageUrl(gachaType.iconImageUrl),
         title: gachaType.name,
         text: `${gachaType.description || ''}\n💰 ${pointCostText}`,
         actions: [

@@ -52,12 +52,15 @@ export default function MyPage({ profile }: MyPageProps) {
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loadingPoints, setLoadingPoints] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [hasPendingMessages, setHasPendingMessages] = useState(false);
+  const [pendingMessageCount, setPendingMessageCount] = useState(0);
 
   useEffect(() => {
     fetchPrizeTiers();
     fetchUserStats();
     fetchPointBalances();
     fetchRecentItems();
+    checkPendingMessages();
   }, [profile.userId]);
 
   const fetchPrizeTiers = async () => {
@@ -127,6 +130,26 @@ export default function MyPage({ profile }: MyPageProps) {
     }
   };
 
+  const checkPendingMessages = async () => {
+    try {
+      const response = await fetch(
+        `/api/messages/pending?userId=${profile.userId}&type=1`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.count > 0) {
+          setHasPendingMessages(true);
+          setPendingMessageCount(data.count);
+        } else {
+          setHasPendingMessages(false);
+          setPendingMessageCount(0);
+        }
+      }
+    } catch (error) {
+      console.error("未送信メッセージ確認エラー:", error);
+    }
+  };
+
   const getRarityLabel = (rarity: string): string => {
     return prizeTiers[rarity] || rarity;
   };
@@ -189,6 +212,25 @@ export default function MyPage({ profile }: MyPageProps) {
           </div>
 
           <div className="px-4 py-4">
+            {/* 未送信メッセージ通知 */}
+            {hasPendingMessages && (
+              <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">
+                      未確認のガチャ結果があります（{pendingMessageCount}件）
+                    </p>
+                  </div>
+                  <Link
+                    href={`/items?userId=${profile.userId}`}
+                    className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
+                  >
+                    確認する
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {/* クイックアクション */}
             <div className="mb-6 grid grid-cols-3 gap-3">
               <Link
@@ -352,7 +394,19 @@ export default function MyPage({ profile }: MyPageProps) {
                   className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="text-xl">❓</div>
+                    <img
+                      src="/icons/navigation/icon-help.svg"
+                      alt="ヘルプ"
+                      className="h-5 w-5"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const fallback = e.target.nextElementSibling as HTMLElement;
+                        if (fallback) {
+                          fallback.style.display = 'block';
+                        }
+                      }}
+                    />
+                    <div className="text-xl hidden">❓</div>
                     <span className="text-sm font-medium">ヘルプ・お知らせ</span>
                   </div>
                   <svg

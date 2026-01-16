@@ -16,8 +16,7 @@ const PointTransactionType = {
   GRANT: "GRANT" as const,
   REFUND: "REFUND" as const,
 } as const;
-import { sendGachaResultMessage } from "@/lib/line-messaging";
-import { logError, logErrorSimple } from "@/lib/error-logger";
+import { logError } from "@/lib/error-logger";
 
 type TierWeightRow = { tierCode: string; weight: number };
 type PrizeItemRow = {
@@ -425,67 +424,50 @@ export async function POST(request: NextRequest) {
         newBalance = (balance?.paidAmount ?? 0) + (balance?.freeAmount ?? 0);
       }
 
-      // ステップ15: DBコミットを行う（トランザクション成功時）
-      return { gachaHistory, newBalance, grantedPoints: 0 };
+      // ステップ15: メッセージ管理テーブルにレコード作成
+      const templateId = (
+        gachaType as unknown as { resultMessageTemplateId?: number | null }
+      ).resultMessageTemplateId;
+      
+      const messageQueue = await tx.messageQueue.create({
+        data: {
+          userId,
+          isSent: false,
+          type: 1, // ガチャ結果
+          templateId:
+            typeof templateId === "number" &&
+            Number.isFinite(templateId) &&
+            templateId > 0
+              ? templateId
+              : null,
+          jsonData: {
+            gachaHistoryId: gachaHistory.id,
+            itemName: selectedItem.name,
+            tierCode: selectedTierCode,
+            gachaTypeName: gachaType.name,
+            gachaTypeId: gachaTypeInternalId,
+            pokerHand: pokerHand && pokerHand.handName
+              ? {
+                  handName: pokerHand.handName,
+                  holeCards: [],
+                  communityCards: [],
+                }
+              : undefined,
+            grantedPoints: 0,
+          },
+        },
+      });
+
+      // ステップ16: DBコミットを行う（トランザクション成功時）
+      return { gachaHistory, newBalance, grantedPoints: 0, messageQueue };
     });
 
     // ステップ10（続き）: 動画URLを取得（新しい動画システム、ガチャタイプの設定を使用）
     const { getGachaVideoUrls } = await import("@/lib/gacha-video");
     const videoUrls = await getGachaVideoUrls(gachaTypeCode, selectedTierCode);
 
-    // ステップ16: 抽選結果を含むレスポンスを返却する
-    // （ステップ17の非同期処理はレスポンス返却後に実行される）
-
-    // ステップ17: 非同期処理（エラーが発生してもガチャ結果には影響しない）
-    // LINEメッセージを送信する
-    // 役が設定されている場合のみポーカーハンド情報を送信
-    // メッセージテンプレートはマスタ参照（未設定ならnull）
-    let messageTemplate: string | null = null;
-    const templateId = (
-      gachaType as unknown as { resultMessageTemplateId?: number | null }
-    ).resultMessageTemplateId;
-    if (
-      typeof templateId === "number" &&
-      Number.isFinite(templateId) &&
-      templateId > 0
-    ) {
-      // Prisma Client未再生成でも型エラーにしないため、delegateはunknown経由で呼ぶ
-      const prismaAny = prisma as unknown as {
-        resultMessageTemplate: {
-          findFirst: (args: {
-            where: { id: number };
-          }) => Promise<{ template: string } | null>;
-        };
-      };
-      const t = await prismaAny.resultMessageTemplate.findFirst({
-        where: { id: templateId },
-      });
-      messageTemplate = t?.template ?? null;
-    }
-
-    sendGachaResultMessage(
-      userId,
-      selectedItem.name,
-      selectedTierCode,
-      gachaType.name,
-      messageTemplate,
-      pokerHand && pokerHand.handName
-        ? {
-            handName: pokerHand.handName,
-            // 手札とコミュニティカードは送信しない（空配列として送信）
-            holeCards: [],
-            communityCards: [],
-          }
-        : undefined,
-      result.grantedPoints || 0
-    ).catch((error) => {
-      // LINEメッセージ送信のエラーはログに記録するが、ガチャ結果には影響しない
-      logErrorSimple(error, {
-        userId,
-        route: "/api/gacha",
-        customData: { phase: "LINEメッセージ送信", historyId: result.gachaHistory.id },
-      });
-    });
+    // ステップ17: 抽選結果を含むレスポンスを返却する
+    // メッセージ送信は動画終了後にフロントエンドから実行される
 
     // 被紹介者行動を更新する（将来の追加報酬機能用）
     const { updateRefereeActivity } = await import("@/lib/referral-management");
@@ -506,6 +488,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
       pokerHand: pokerHand,
       historyId: result.gachaHistory.id,
+      messageQueueId: result.messageQueue.id, // メッセージ送信用ID
       pointsUsed: pointCost,
       pointsRemaining: result.newBalance,
     });

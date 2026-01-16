@@ -132,7 +132,19 @@ export default function HomePageContent({
                 className="mx-auto block w-full max-w-xs rounded-xl border-2 border-yellow-400/50 bg-white/10 backdrop-blur-sm px-6 py-3 text-sm font-semibold text-white transition-all hover:border-yellow-400 hover:bg-white/20 hover:shadow-lg active:scale-95"
               >
                 <span className="flex items-center justify-center gap-2">
-                  <span>💰</span>
+                  <img
+                    src="/icons/navigation/icon-point.svg"
+                    alt="ポイント購入"
+                    className="h-5 w-5"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      const fallback = e.target.nextElementSibling as HTMLElement;
+                      if (fallback) {
+                        fallback.style.display = 'inline';
+                      }
+                    }}
+                  />
+                  <span className="hidden">💰</span>
                   <span>ポイントを購入</span>
                 </span>
               </Link>
@@ -206,27 +218,29 @@ export default function HomePageContent({
                       className="group w-full rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-lg transition-all hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/20 active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-4">
-                        {gacha.iconImageUrl ? (
-                          <img
-                            src={gacha.iconImageUrl}
-                            alt={gacha.name}
-                            className="h-16 w-16 flex-shrink-0 rounded-lg object-cover border-2 border-gray-200 shadow-sm"
-                            onError={(e) => {
-                              // 画像読み込みエラー時はフォールバック表示
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              const fallback = target.nextElementSibling as HTMLElement;
-                              if (fallback) {
-                                fallback.style.display = 'flex';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <div 
-                          className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-2xl text-white shadow-sm ${gacha.iconImageUrl ? 'hidden' : ''}`}
-                        >
-                          🎰
-                        </div>
+                        <img
+                          src={
+                            gacha.iconImageUrl && gacha.iconImageUrl.trim() !== ""
+                              ? gacha.iconImageUrl
+                              : "/images/gacha/default-icon.png"
+                          }
+                          alt={gacha.name}
+                          className="h-16 w-16 flex-shrink-0 rounded-lg object-cover border-2 border-gray-200 shadow-sm"
+                          onError={(e) => {
+                            // 画像読み込みエラー時はデフォルト画像にフォールバック
+                            const target = e.target as HTMLImageElement;
+                            const defaultImagePath = "/images/gacha/default-icon.png";
+                            const currentSrc = target.src;
+                            
+                            // 既にデフォルト画像を試している場合は非表示
+                            if (currentSrc.includes(defaultImagePath) || currentSrc.endsWith(defaultImagePath)) {
+                              target.style.display = "none";
+                            } else {
+                              // デフォルト画像にフォールバック
+                              target.src = defaultImagePath;
+                            }
+                          }}
+                        />
                         <div className="flex-1 text-left">
                           <h3 className="mb-1 font-bold text-gray-800">{gacha.name}</h3>
                           {gacha.description && (
@@ -273,7 +287,19 @@ export default function HomePageContent({
                   className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="text-xl">❓</div>
+                    <img
+                      src="/icons/navigation/icon-help.svg"
+                      alt="ヘルプ"
+                      className="h-5 w-5"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const fallback = e.target.nextElementSibling as HTMLElement;
+                        if (fallback) {
+                          fallback.style.display = 'block';
+                        }
+                      }}
+                    />
+                    <div className="text-xl hidden">❓</div>
                     <span className="text-sm font-medium">ヘルプ・お知らせ</span>
                   </div>
                   <svg
@@ -295,7 +321,19 @@ export default function HomePageContent({
                   className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="text-xl">👥</div>
+                    <img
+                      src="/icons/navigation/icon-referral.svg"
+                      alt="友達紹介"
+                      className="h-5 w-5"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const fallback = e.target.nextElementSibling as HTMLElement;
+                        if (fallback) {
+                          fallback.style.display = 'block';
+                        }
+                      }}
+                    />
+                    <div className="text-xl hidden">👥</div>
                     <span className="text-sm font-medium">友達紹介</span>
                   </div>
                   <svg

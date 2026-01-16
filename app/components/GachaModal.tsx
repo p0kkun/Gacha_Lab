@@ -121,9 +121,21 @@ export default function GachaModal({
                 className="group flex flex-1 items-center gap-3 rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-yellow-50 to-yellow-100/50 px-4 py-2.5 transition-all hover:border-yellow-400/60 hover:from-yellow-100 hover:to-yellow-200/50 hover:shadow-md active:scale-95"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="flex-shrink-0 text-yellow-600">
-                    <svg
+                  <div className="flex-shrink-0">
+                    <img
+                      src="/icons/navigation/icon-point.svg"
+                      alt="ポイント"
                       className="h-5 w-5"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const fallback = e.target.nextElementSibling as HTMLElement;
+                        if (fallback) {
+                          fallback.style.display = 'block';
+                        }
+                      }}
+                    />
+                    <svg
+                      className="h-5 w-5 text-yellow-600 hidden"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

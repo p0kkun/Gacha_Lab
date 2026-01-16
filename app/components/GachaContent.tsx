@@ -5,6 +5,7 @@ import { GachaType } from "./GachaModal";
 import MultiVideoPlayer from "./MultiVideoPlayer";
 import BottomNavigation from "./BottomNavigation";
 import PrizeListModal from "./PrizeListModal";
+import GachaConfirmModal from "./GachaConfirmModal";
 
 type GachaResult = {
   item: {
@@ -14,6 +15,7 @@ type GachaResult = {
   };
   videoUrls?: string[]; // 新しい動画システム（複数動画対応）
   timestamp: string;
+  messageQueueId?: number; // メッセージ送信用ID
 };
 
 export default function GachaContent({
@@ -38,8 +40,41 @@ export default function GachaContent({
   // 再生用URLはstateに保持して参照を安定化（再レンダーで新しい配列を渡さない）
   const [videoUrlsToPlay, setVideoUrlsToPlay] = useState<string[]>([]);
   const [showPrizeList, setShowPrizeList] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const handleDrawGacha = async () => {
+  // メッセージ送信の共通関数
+  const sendMessageAsync = async (messageQueueId: number) => {
+    try {
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messageQueueId,
+        }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        console.log("メッセージ送信成功");
+      } else {
+        console.error("メッセージ送信失敗:", data.error);
+      }
+    } catch (error) {
+      console.error("メッセージ送信エラー:", error);
+    }
+  };
+
+  const handleDrawGachaClick = () => {
+    // 確認モーダルを表示
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmGacha = async () => {
+    // 確認モーダルを閉じる
+    setShowConfirmModal(false);
+    
     // ポイント確認とガチャ実行
     setIsDrawing(true);
     setShowVideo(false);
@@ -130,6 +165,11 @@ export default function GachaContent({
           setVideoError(false);
           setIsDrawing(false);
           onVideoStateChange?.(false);
+          
+          // メッセージ送信（動画がない場合）
+          if (data.messageQueueId) {
+            sendMessageAsync(data.messageQueueId);
+          }
         }
       } else {
         // 動画がない場合は結果画面を直接表示
@@ -138,6 +178,11 @@ export default function GachaContent({
         setVideoError(false);
         setIsDrawing(false);
         onVideoStateChange?.(false);
+        
+        // メッセージ送信（動画がない場合）
+        if (data.messageQueueId) {
+          sendMessageAsync(data.messageQueueId);
+        }
       }
     } catch (error) {
       console.error("ガチャエラー:", error);
@@ -152,22 +197,56 @@ export default function GachaContent({
     }
   };
 
-  const handleVideoEnd = () => {
+  const handleVideoEnd = async () => {
+    onVideoStateChange?.(false);
+    
+    // メッセージ送信（動画終了後）
+    if (result?.messageQueueId) {
+      try {
+        const response = await fetch("/api/messages/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messageQueueId: result.messageQueueId,
+          }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          console.log("メッセージ送信成功");
+        } else {
+          console.error("メッセージ送信失敗:", data.error);
+          // エラー時も処理を続行（ユーザー体験を優先）
+        }
+      } catch (error) {
+        console.error("メッセージ送信エラー:", error);
+        // エラー時も処理を続行
+      }
+    }
+    
+    // 既存の処理
     setIsDrawing(false);
     setVideoUrlsToPlay([]);
     setShowVideo(false);
     setVideoError(false);
-    onVideoStateChange?.(false);
   };
 
-  const handleVideoError = () => {
+  const handleVideoError = async () => {
     // モバイルアプリではアラートを表示しない（ユーザー体験を損なうため）
     // 代わりに結果画面を表示
+    onVideoStateChange?.(false);
+    
+    // メッセージ送信（動画エラー時も送信）
+    if (result?.messageQueueId) {
+      await sendMessageAsync(result.messageQueueId);
+    }
+    
     setVideoError(true);
     setIsDrawing(false);
     setVideoUrlsToPlay([]);
     setShowVideo(false);
-    onVideoStateChange?.(false);
   };
 
   const handleCloseResult = () => {
@@ -251,46 +330,96 @@ export default function GachaContent({
               <h1 className="text-2xl font-bold text-yellow-300 drop-shadow-lg break-words">
                 {selectedGacha.name}
               </h1>
-              {selectedGacha.description && (
-                <p className="mt-1 text-sm text-green-200 break-words leading-relaxed">
-                  {selectedGacha.description}
+              {(selectedGacha.pointCost ?? 0) > 0 ? (
+                <p className="mt-1 text-sm font-semibold text-yellow-300">
+                  必要: ${(selectedGacha.pointCost ?? 0).toLocaleString()}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm font-semibold text-green-200">
+                  無料
                 </p>
               )}
             </div>
+            {/* 景品一覧・確率表示ボタン */}
+            <button
+              onClick={() => setShowPrizeList(true)}
+              className="flex-shrink-0 rounded-lg border-2 border-yellow-400/50 bg-yellow-500/20 px-4 py-2 text-sm font-semibold text-yellow-200 transition-all hover:bg-yellow-500/30 hover:border-yellow-400 active:scale-95"
+              title="景品一覧・確率を表示"
+            >
+              <div className="flex items-center gap-2">
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                <span className="hidden sm:inline">景品・確率</span>
+              </div>
+            </button>
           </div>
         </div>
       )}
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
       <div
-        className={`flex-1 overflow-hidden bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${
-          showVideo ? "" : "p-8"
+        className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${
+          showVideo ? "" : ""
         }`}
       >
         {!result && (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              {/* ポーカーチップ風の装飾 */}
-              <div className="mb-8 flex justify-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-600 to-red-800 shadow-xl ring-4 ring-yellow-400"></div>
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 shadow-xl ring-4 ring-yellow-400"></div>
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-green-800 shadow-xl ring-4 ring-yellow-400"></div>
-              </div>
-              
-              <p className="mb-4 text-2xl font-bold text-yellow-300 drop-shadow-lg whitespace-nowrap">
-                🎰 ポーカー風ガチャ
-              </p>
-              <p className="mb-2 text-lg text-green-200 break-words px-4">
-                カードを引いてアイテムを獲得しましょう！
-              </p>
-              {(selectedGacha.pointCost ?? 0) > 0 && (
-                <p className="text-lg font-semibold text-yellow-300 whitespace-nowrap">
-                  必要: ${(selectedGacha.pointCost ?? 0).toLocaleString()}
-                </p>
+          <div className="flex min-h-full flex-col">
+            {/* アイコン画像またはデフォルト画像 - 横幅いっぱい */}
+            <div className="w-full overflow-hidden">
+              <img
+                src={
+                  selectedGacha.iconImageUrl && selectedGacha.iconImageUrl.trim() !== ""
+                    ? selectedGacha.iconImageUrl
+                    : "/images/gacha/default-icon.png"
+                }
+                alt={selectedGacha.name}
+                className="w-full object-cover"
+                style={{ 
+                  maxHeight: "40vh",
+                  minHeight: "200px",
+                  objectFit: "cover",
+                  display: "block"
+                }}
+                onError={(e) => {
+                  // 画像読み込みエラー時はデフォルト画像にフォールバック
+                  const target = e.target as HTMLImageElement;
+                  const defaultImagePath = "/images/gacha/default-icon.png";
+                  const currentSrc = target.src;
+                  
+                  // 既にデフォルト画像を試している場合は非表示（無限ループ防止）
+                  if (currentSrc.includes(defaultImagePath) || currentSrc.endsWith(defaultImagePath)) {
+                    target.style.display = "none";
+                  } else {
+                    // デフォルト画像にフォールバック
+                    target.src = defaultImagePath;
+                  }
+                }}
+              />
+            </div>
+
+            {/* 説明文 */}
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-4 sm:py-6">
+              {selectedGacha.description && (
+                <div className="mb-4 w-full max-w-2xl">
+                  <p className="text-center text-base leading-relaxed text-green-200 break-words sm:text-lg">
+                    {selectedGacha.description}
+                  </p>
+                </div>
               )}
               
               {/* トランプのスーツ装飾 */}
-              <div className="mt-8 flex justify-center gap-6 text-4xl opacity-50">
+              <div className="mt-4 flex justify-center gap-4 text-2xl opacity-50 sm:gap-6 sm:text-3xl">
                 <span className="text-red-400">♥</span>
                 <span className="text-black">♠</span>
                 <span className="text-red-400">♦</span>
@@ -350,7 +479,7 @@ export default function GachaContent({
       {!showVideo && (
         <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 pb-24 shadow-lg">
           <button
-            onClick={handleDrawGacha}
+            onClick={handleDrawGachaClick}
             disabled={isDrawing}
             className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
           >
@@ -400,6 +529,16 @@ export default function GachaContent({
         isOpen={showPrizeList}
         onClose={() => setShowPrizeList(false)}
         gachaTypeId={selectedGacha.id}
+      />
+
+      {/* ガチャ実行確認モーダル */}
+      <GachaConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmGacha}
+        gachaName={selectedGacha.name}
+        pointCost={selectedGacha.pointCost ?? 0}
+        onShowPrizeList={() => setShowPrizeList(true)}
       />
     </div>
   );

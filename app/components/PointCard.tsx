@@ -53,8 +53,20 @@ export default function PointCard({
           )}
         </div>
         <div className="text-yellow-300 opacity-70 transition-opacity group-hover:opacity-100">
-          <svg
+          <img
+            src="/icons/navigation/icon-point.svg"
+            alt="ポイント購入"
             className="h-6 w-6"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const fallback = e.target.nextElementSibling as HTMLElement;
+              if (fallback) {
+                fallback.style.display = 'block';
+              }
+            }}
+          />
+          <svg
+            className="h-6 w-6 hidden"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

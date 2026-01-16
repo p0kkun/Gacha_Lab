@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -16,14 +16,14 @@ export async function GET(
 
     // 等級別の集計（tierCode）
     const rarityStatsByHistory = await prisma.gachaHistory.groupBy({
-      by: ['tierCode'],
+      by: ["tierCode"],
       where: { userId, tierCode: { not: null } },
       _count: { id: true },
     });
 
     const rarityStats: Record<string, number> = {};
     for (const stat of rarityStatsByHistory) {
-      const key = stat.tierCode || 'UNKNOWN';
+      const key = stat.tierCode || "UNKNOWN";
       rarityStats[key] = (rarityStats[key] || 0) + stat._count.id;
     }
 
@@ -32,12 +32,10 @@ export async function GET(
       rarityStats,
     });
   } catch (error) {
-    console.error('統計情報取得エラー:', error);
+    console.error("統計情報取得エラー:", error);
     return NextResponse.json(
-      { error: '統計情報の取得に失敗しました' },
+      { error: "統計情報の取得に失敗しました" },
       { status: 500 }
     );
   }
 }
-
-

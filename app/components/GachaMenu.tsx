@@ -45,27 +45,29 @@ export default function GachaMenu({
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {gacha.iconImageUrl ? (
-                    <img
-                      src={gacha.iconImageUrl}
-                      alt={gacha.name}
-                      className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border border-gray-200 shadow-sm"
-                      onError={(e) => {
-                        // 画像読み込みエラー時はフォールバック表示
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const fallback = target.nextElementSibling as HTMLElement;
-                        if (fallback) {
-                          fallback.style.display = 'flex';
-                        }
-                      }}
-                    />
-                  ) : null}
-                  <div 
-                    className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 text-xl text-white shadow-sm ${gacha.iconImageUrl ? 'hidden' : ''}`}
-                  >
-                    🎰
-                  </div>
+                  <img
+                    src={
+                      gacha.iconImageUrl && gacha.iconImageUrl.trim() !== ""
+                        ? gacha.iconImageUrl
+                        : "/images/gacha/default-icon.png"
+                    }
+                    alt={gacha.name}
+                    className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border border-gray-200 shadow-sm"
+                    onError={(e) => {
+                      // 画像読み込みエラー時はデフォルト画像にフォールバック
+                      const target = e.target as HTMLImageElement;
+                      const defaultImagePath = "/images/gacha/default-icon.png";
+                      const currentSrc = target.src;
+                      
+                      // 既にデフォルト画像を試している場合は非表示
+                      if (currentSrc.includes(defaultImagePath) || currentSrc.endsWith(defaultImagePath)) {
+                        target.style.display = "none";
+                      } else {
+                        // デフォルト画像にフォールバック
+                        target.src = defaultImagePath;
+                      }
+                    }}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className={`mb-1 font-semibold leading-tight ${
                       selectedGacha.id === gacha.id ? 'text-white' : 'text-gray-900'
