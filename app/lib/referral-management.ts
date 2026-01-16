@@ -238,6 +238,11 @@ export async function completeReferral(
   referralId: number,
   refereeId: string
 ): Promise<void> {
+  // トランザクション外で使用するため、変数を宣言（トランザクション内で管理画面の設定値を代入）
+  let referrerPoints: number | undefined;
+  let refereePoints: number | undefined;
+  let referrerUserId: string | undefined;
+
   await prisma.$transaction(async (tx) => {
     const referral = await tx.referral.findUnique({
       where: { id: referralId },
@@ -336,7 +341,7 @@ export async function completeReferral(
       });
     }
 
-    // 紹介報酬ポイント設定を取得
+    // 紹介報酬ポイント設定を取得（管理画面で設定した値を使用、設定がない場合は100をデフォルト値として使用）
     const referralRewardSettings = await tx.freeGachaSettings.findFirst();
     referrerPoints = referralRewardSettings?.referrerPoints ?? 100;
     refereePoints = referralRewardSettings?.refereePoints ?? 100;
@@ -426,10 +431,11 @@ export async function completeReferral(
 
   // トランザクション完了後、キャッシュを削除（念のため）
   // grantFreePoints内でも削除されるが、トランザクション完了後に確実に削除
-  if (referrerPoints > 0) {
-    await deleteCache(`point-balance:${referral.userId}`);
+  // 不正検知の場合は早期リターンするため、変数は初期化されない（その場合はポイント付与も行われないため、キャッシュ削除も不要）
+  if (referrerPoints !== undefined && referrerPoints > 0 && referrerUserId) {
+    await deleteCache(`point-balance:${referrerUserId}`);
   }
-  if (refereePoints > 0) {
+  if (refereePoints !== undefined && refereePoints > 0) {
     await deleteCache(`point-balance:${refereeId}`);
   }
 }
