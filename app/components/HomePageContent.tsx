@@ -310,9 +310,9 @@ export default function HomePageContent({
                       alt="ヘルプ"
                       className="h-5 w-5"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                        const fallback = e.target
-                          .nextElementSibling as HTMLElement;
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "none";
+                        const fallback = img.nextElementSibling as HTMLElement;
                         if (fallback) {
                           fallback.style.display = "block";
                         }
@@ -347,9 +347,9 @@ export default function HomePageContent({
                       alt="友達紹介"
                       className="h-5 w-5"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                        const fallback = e.target
-                          .nextElementSibling as HTMLElement;
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "none";
+                        const fallback = img.nextElementSibling as HTMLElement;
                         if (fallback) {
                           fallback.style.display = "block";
                         }
