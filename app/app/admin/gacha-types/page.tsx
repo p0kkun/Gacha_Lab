@@ -957,6 +957,47 @@ export default function GachaTypesPage() {
     return (weight / total) * 100;
   };
 
+  // ガチャタイプが無効な理由を取得
+  const getInactiveReasons = (gachaType: GachaType): string[] => {
+    const reasons: string[] = [];
+
+    // isActiveがfalseの場合のみ理由をチェック
+    if (!gachaType.isActive) {
+      // 動画設定をチェック
+      if (gachaType.useDefaultVideos === false) {
+        // 個別設定を使用する場合
+        const commonVideoIds = gachaType.commonVideoIds || [];
+        const rarityVideoIds = gachaType.rarityVideoIds || {};
+
+        if (commonVideoIds.length === 0) {
+          reasons.push("共通動画が設定されていません");
+        }
+
+        const requiredRarities = [
+          "FIRST_PRIZE",
+          "SECOND_PRIZE",
+          "THIRD_PRIZE",
+          "FOURTH_PRIZE",
+          "FIFTH_PRIZE",
+        ];
+        const missingRarities: string[] = [];
+        for (const rarity of requiredRarities) {
+          const rarityVideos = (rarityVideoIds as Record<string, number[]>)[rarity] || [];
+          if (rarityVideos.length === 0) {
+            missingRarities.push(RARITY_LABELS[rarity] || rarity);
+          }
+        }
+
+        if (missingRarities.length > 0) {
+          reasons.push(`等級別動画が設定されていません（${missingRarities.join("、")}）`);
+        }
+      }
+      // デフォルト設定を使用する場合や、動画設定以外の理由は実行時のバリデーションでチェックされるため表示しない
+    }
+
+    return reasons;
+  };
+
   return (
     <div className="w-full">
       {/* 新規ガチャ追加ボタン（PageHeaderの代わり） */}
@@ -1303,6 +1344,13 @@ export default function GachaTypesPage() {
                       <Badge variant={gachaType.isActive ? "success" : "gray"}>
                         {gachaType.isActive ? "有効" : "無効"}
                       </Badge>
+                      {!gachaType.isActive && (
+                        <span className="text-xs text-red-600">
+                          {getInactiveReasons(gachaType).length > 0
+                            ? `（${getInactiveReasons(gachaType).join("、")}）`
+                            : "（手動で無効化されています）"}
+                        </span>
+                      )}
                       <Button
                         variant="primary"
                         size="sm"
