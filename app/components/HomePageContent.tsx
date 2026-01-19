@@ -93,7 +93,7 @@ export default function HomePageContent({
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
-
+            
             <div className="relative z-10 text-center text-white">
               <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">
                 Gacha Lab
@@ -101,7 +101,7 @@ export default function HomePageContent({
               <p className="mb-6 text-sm text-green-200">
                 ポーカー風ガチャでアイテムを獲得しよう！
               </p>
-
+              
               {/* ポイント表示 - 共通コンポーネント */}
               <div className="mb-6">
                 <PointCard pointBalances={pointBalances} variant="home" />
@@ -115,7 +115,7 @@ export default function HomePageContent({
               >
                 {/* 光るエフェクト */}
                 <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
-
+                
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   <img
                     src="/icons/navigation/icon-gacha.svg"
@@ -242,7 +242,7 @@ export default function HomePageContent({
                             const defaultImagePath =
                               "/images/gacha/default-icon.png";
                             const currentSrc = target.src;
-
+                            
                             // 既にデフォルト画像を試している場合は非表示
                             if (
                               currentSrc.includes(defaultImagePath) ||

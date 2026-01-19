@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logError } from "@/lib/error-logger";
 import { getCache, setCache } from "@/lib/cache";
+import { CacheKeys } from "@/lib/cache-keys";
 
 /**
  * ユーザー統計情報を取得
@@ -31,16 +32,16 @@ export async function GET(
       );
     }
 
-    // Try②：キャッシュ確認（オプション）
-    const cacheKey = `user-stats:${userId}`;
-    const cachedStats = await getCache<{
+    // Try②：キャッシュ確認（ガチャ実行情報のみ）
+    const cacheKey = CacheKeys.userStatsGacha(userId);
+    const cachedGachaStats = await getCache<{
       totalGachaCount: number;
       rarityStats: Record<string, number>;
     }>(cacheKey);
 
-    if (cachedStats) {
+    if (cachedGachaStats) {
       // キャッシュヒット
-      return NextResponse.json(cachedStats);
+      return NextResponse.json(cachedGachaStats);
     }
 
     // Try③：ユーザー存在確認
@@ -78,6 +79,7 @@ export async function GET(
     }
 
     // Try⑤：キャッシュ更新（TTL: 300秒）
+    // ガチャ実行情報のみをキャッシュ（部分的なキーを使用）
     const stats = {
       totalGachaCount,
       rarityStats,

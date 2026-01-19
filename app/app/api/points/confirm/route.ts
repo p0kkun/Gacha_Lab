@@ -153,42 +153,31 @@ export async function POST(request: NextRequest) {
         })
       ).id;
 
-    // 既にポイントが付与されているか確認（重複付与を防ぐ）
-    const existingHistory = await prismaAny.pointHistory.findFirst({
-      where: {
-        historyTable: "point_purchase_logs",
-        historyTableId: purchaseLogId,
-      },
-      select: { id: true },
-    });
-
-    if (existingHistory) {
-      console.log("既にポイントが付与されています:", {
-        paymentIntentId,
-        historyId: existingHistory.id,
-      });
-      // 既に付与されている場合は、現在のポイント残高を返す
-      const { getPointBalances } = await import("@/lib/point-management");
-      const balances = await getPointBalances(userId);
-
-      return NextResponse.json({
-        success: true,
-        alreadyGranted: true,
-        points: balances.total,
-      });
-    }
-
-    // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
-    const { grantPurchasePoints, getPointBalances } = await import(
-      "@/lib/point-management"
-    );
-    await grantPurchasePoints(
+    // 有償 + おまけ無償ポイントを付与（重複付与チェックは grantPurchasePoints 内で実施）
+    const { grantPurchasePoints } = await import("@/lib/point-service");
+    const { getPointBalances } = await import("@/lib/point-management");
+    
+    const grantResult = await grantPurchasePoints(
       userId,
       points,
       bonusFreePoints,
       paymentIntentId,
       purchaseLogId
     );
+
+    // 既に付与済みの場合は、現在のポイント残高を返す
+    if (grantResult.alreadyGranted) {
+      console.log("既にポイントが付与されています:", {
+        paymentIntentId,
+        purchaseLogId,
+      });
+      const balances = await getPointBalances(userId);
+      return NextResponse.json({
+        success: true,
+        alreadyGranted: true,
+        points: balances.total,
+      });
+    }
 
     // 現在のポイント残高を取得
     const balances = await getPointBalances(userId);

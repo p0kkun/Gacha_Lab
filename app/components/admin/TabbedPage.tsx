@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useCallback, useMemo } from "react";
 
 type Tab = {
   id: string;
@@ -25,15 +25,28 @@ export default function TabbedPage({
   const router = useRouter();
   const pathname = usePathname();
 
-  const activeTabId =
-    searchParams.get("tab") || defaultTab || tabs[0]?.id || "";
-  const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
+  const activeTabId = useMemo(
+    () => searchParams.get("tab") || defaultTab || tabs[0]?.id || "",
+    [searchParams, defaultTab, tabs]
+  );
+  
+  const activeTab = useMemo(
+    () => tabs.find((t) => t.id === activeTabId) || tabs[0],
+    [tabs, activeTabId]
+  );
 
-  const handleTabChange = (tabId: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tabId);
-    router.push(`${pathname}?${params.toString()}`);
-  };
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      // 現在のタブと同じ場合は何もしない
+      if (tabId === activeTabId) {
+        return;
+      }
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", tabId);
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [activeTabId, searchParams, router, pathname]
+  );
 
   return (
     <div className="w-full p-4 lg:p-6">

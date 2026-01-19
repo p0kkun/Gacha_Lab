@@ -15,6 +15,10 @@ const ItemStatisticsContent = dynamic(
   () => import("@/app/admin/statistics/item-content"),
   { ssr: false }
 );
+const PurchaseHistoryContent = dynamic(
+  () => import("@/app/admin/statistics/purchase-history-content"),
+  { ssr: false }
+);
 
 function StatisticsContent() {
   const searchParams = useSearchParams();
@@ -36,6 +40,12 @@ function StatisticsContent() {
           label: "アイテム統計",
           icon: "📦",
           content: <ItemStatisticsContent />,
+        },
+        {
+          id: "purchase-history",
+          label: "購入履歴",
+          icon: "💰",
+          content: <PurchaseHistoryContent />,
         },
       ]}
     />

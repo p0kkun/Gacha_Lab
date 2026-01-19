@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getPointBalances } from '@/lib/point-management';
 import { logError } from '@/lib/error-logger';
 import { getCache, setCache } from '@/lib/cache';
+import { CacheKeys } from '@/lib/cache-keys';
 
 /**
  * ユーザーのポイント残高を取得
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try②：キャッシュ確認（オプション）
-    const cacheKey = `point-balance:${userId}`;
+    const cacheKey = CacheKeys.pointBalance(userId);
     const cachedBalance = await getCache<{
       paid: number;
       free: number;

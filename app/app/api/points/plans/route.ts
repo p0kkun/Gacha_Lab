@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logError } from "@/lib/error-logger";
 import { getCache, setCache } from "@/lib/cache";
+import { CacheKeys } from "@/lib/cache-keys";
 
 /**
  * 購入可能なポイントプラン一覧（公開）
@@ -40,7 +41,7 @@ export async function GET() {
       await logError(
         new Error('ポイント購入プランの取得に失敗しました'),
         { route: '/api/points/plans' },
-        null as any
+        null as unknown as NextRequest
       );
       return NextResponse.json(
         { error: "ポイント購入プランの取得に失敗しました" },
@@ -48,14 +49,16 @@ export async function GET() {
       );
     }
 
-    // Try③：キャッシュ更新（TTL: 3600秒）
-    const cacheKey = 'point-purchase-plans';
-    await setCache(cacheKey, plans, 3600);
+    // Try③：キャッシュ更新（TTL: 86400秒 = 1日）
+    // マスターデータは頻繁に更新されないため、1日キャッシュ
+    // 管理ツールでの更新時にキャッシュ削除を行う
+    const cacheKey = CacheKeys.pointPurchasePlans();
+    await setCache(cacheKey, plans, 86400);
 
     return NextResponse.json({ plans });
   } catch (error) {
     // Catch：例外処理
-    await logError(error, { route: '/api/points/plans' }, null as any);
+    await logError(error, { route: '/api/points/plans' }, null as unknown as NextRequest);
     return NextResponse.json(
       { error: "ポイント購入プランの取得に失敗しました" },
       { status: 500 }

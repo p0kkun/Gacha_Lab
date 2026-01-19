@@ -258,20 +258,20 @@ export default function ResultMessageTemplatesPage() {
               />
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-600">
-                    使用可能な変数: {"{itemName}"} / {"{rarity}"} / {"{rarityEmoji}"} / {"{gachaTypeName}"} / {"{handName}"} / {"{grantedPoints}"} / {"{grantedPointsMessage}"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowVariableInfo(true)}
-                    className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-                    aria-label="変数の詳細を見る"
-                    title="変数の詳細を見る"
-                  >
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                    </svg>
-                  </button>
+                <p className="text-xs text-gray-600">
+                  使用可能な変数: {"{itemName}"} / {"{rarity}"} / {"{rarityEmoji}"} / {"{gachaTypeName}"} / {"{handName}"} / {"{grantedPoints}"} / {"{grantedPointsMessage}"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowVariableInfo(true)}
+                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                  aria-label="変数の詳細を見る"
+                  title="変数の詳細を見る"
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <p className={`text-xs ${newRow.template.length > 120 ? 'text-red-600 font-semibold' : newRow.template.length > 100 ? 'text-orange-600' : 'text-gray-600'}`}>

@@ -336,6 +336,18 @@ function PointsPageContent() {
     freeExpiresAt: string | null;
     lastUpdated: string | null;
   } | null>(null);
+  const [purchaseHistory, setPurchaseHistory] = useState<Array<{
+    id: number;
+    paidPoints: number;
+    freePoints: number;
+    amount: number;
+    planId: string | null;
+    planLabel: string | null;
+    createdAt: string;
+  }>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
 
   // 購入プランを取得（公開API）
   useEffect(() => {
@@ -379,6 +391,27 @@ function PointsPageContent() {
     }
   };
 
+  // 購入履歴を取得するヘルパー関数
+  const fetchPurchaseHistory = async (userId: string, page: number = 1) => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/points/purchase-history?userId=${userId}&page=${page}&limit=29`);
+      if (res.ok) {
+        const data = await res.json();
+        if (page === 1) {
+          setPurchaseHistory(data.history || []);
+        } else {
+          setPurchaseHistory((prev) => [...prev, ...(data.history || [])]);
+        }
+        setHasMoreHistory(data.pagination?.hasMore || false);
+      }
+    } catch (e) {
+      console.error("購入履歴取得エラー:", e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   useEffect(() => {
     const initialize = async () => {
       try {
@@ -400,6 +433,8 @@ function PointsPageContent() {
 
         // ポイント残高を取得
         await updatePointBalances(userProfile.userId);
+        // 購入履歴を取得（初回は1ページ目）
+        await fetchPurchaseHistory(userProfile.userId, 1);
       } catch (err) {
         console.error("初期化エラー:", err);
       } finally {
@@ -817,6 +852,80 @@ function PointsPageContent() {
             }}
           />
         )}
+
+        {/* 購入履歴 */}
+        <div className="mb-6">
+          <h2 className="mb-4 text-lg font-semibold text-gray-800">
+            決済履歴
+          </h2>
+          {historyLoading ? (
+            <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+              読み込み中...
+            </div>
+          ) : purchaseHistory.length === 0 ? (
+            <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+              決済履歴がありません。
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {purchaseHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg bg-white p-4 shadow"
+                  >
+                    <div className="mb-2 flex justify-between text-sm">
+                      <span className="text-gray-600">有償ポイント</span>
+                      <span className="font-semibold text-gray-800">
+                        {item.paidPoints.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mb-2 flex justify-between text-sm">
+                      <span className="text-gray-600">無償ポイント</span>
+                      <span className="font-semibold text-gray-800">
+                        {item.freePoints.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mb-2 flex justify-between text-sm">
+                      <span className="text-gray-600">金額</span>
+                      <span className="font-semibold text-gray-800">
+                        ¥{item.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    {item.planLabel && (
+                      <div className="mb-2 flex justify-between text-sm">
+                        <span className="text-gray-600">プラン</span>
+                        <span className="text-gray-800">{item.planLabel}</span>
+                      </div>
+                    )}
+                    <div className="mt-2 border-t pt-2 text-xs text-gray-500">
+                      {new Date(item.createdAt).toLocaleString('ja-JP')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* もっと見る */}
+              {hasMoreHistory && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => {
+                      const nextPage = historyPage + 1;
+                      setHistoryPage(nextPage);
+                      if (profile) {
+                        fetchPurchaseHistory(profile.userId, nextPage);
+                      }
+                    }}
+                    disabled={historyLoading}
+                    className="rounded-lg bg-blue-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
+                  >
+                    {historyLoading ? '読み込み中...' : 'もっと見る'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

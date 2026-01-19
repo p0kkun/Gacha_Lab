@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { recordAdminAction } from "@/lib/admin-action-history";
 import { AdminActionType } from "@/lib/admin-action-types";
+import { deleteCache } from "@/lib/cache";
+import { CacheKeys } from "@/lib/cache-keys";
 
 /**
  * ポイント購入プラン更新（管理者用）
@@ -135,6 +137,9 @@ export async function PUT(
       },
     });
 
+    // キャッシュ削除（マスターデータ更新時）
+    await deleteCache(CacheKeys.pointPurchasePlans());
+
     return NextResponse.json({ plan: updated });
   } catch (error: any) {
     if (typeof error?.code === "string" && error.code === "P2025") {
@@ -193,6 +198,9 @@ export async function DELETE(
         },
       });
     }
+
+    // キャッシュ削除（マスターデータ削除時）
+    await deleteCache(CacheKeys.pointPurchasePlans());
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {

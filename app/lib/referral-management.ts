@@ -2,6 +2,7 @@ import { ReferralStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { deleteCache } from "./cache";
+import { CacheKeys } from "./cache-keys";
 
 /**
  * 紹介リンクを生成（1ユーザー1リンク固定、期限切れでも再利用）
@@ -433,10 +434,10 @@ export async function completeReferral(
   // grantFreePoints内でも削除されるが、トランザクション完了後に確実に削除
   // 不正検知の場合は早期リターンするため、変数は初期化されない（その場合はポイント付与も行われないため、キャッシュ削除も不要）
   if (referrerPoints !== undefined && referrerPoints > 0 && referrerUserId) {
-    await deleteCache(`point-balance:${referrerUserId}`);
+    await deleteCache(CacheKeys.pointBalance(referrerUserId));
   }
   if (refereePoints !== undefined && refereePoints > 0) {
-    await deleteCache(`point-balance:${refereeId}`);
+    await deleteCache(CacheKeys.pointBalance(refereeId));
   }
 }
 

@@ -49,7 +49,7 @@ function replaceMessageTemplate(
   // 手札とコミュニティカードは使用しない（常に空文字に置換）
   message = message.replace(/{holeCards}/g, "");
   message = message.replace(/{communityCards}/g, "");
-
+  
   // 個別の手札カード変数を空文字に置換
   for (let i = 1; i <= 2; i++) {
     message = message.replace(new RegExp(`\\{holeCard${i}\\}`, "g"), "");
@@ -89,16 +89,16 @@ function getFullImageUrl(imageUrl: string | null | undefined): string {
   if (!imageUrl || imageUrl.trim() === "") {
     // デフォルト画像のフルURL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
-    return baseUrl
+    return baseUrl 
       ? `${baseUrl}/images/gacha/default-icon.png`
       : "https://via.placeholder.com/1024x1024/FF6B6B/FFFFFF?text=GACHA";
   }
-
+  
   // 既にフルURLの場合はそのまま返す
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
-
+  
   // 相対パスの場合はフルURLに変換
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
   return baseUrl ? `${baseUrl}${imageUrl}` : imageUrl;
@@ -151,7 +151,7 @@ export async function sendGachaResultMessage(
     // ポイント付与メッセージ（付与がある場合のみ）
     const grantedPointsMessage =
       grantedPoints && grantedPoints > 0
-        ? `💰 無償ポイント {grantedPoints}ポイントが付与されました！`
+      ? `💰 無償ポイント {grantedPoints}ポイントが付与されました！`
         : "";
 
     // LINE Messaging APIの文字数制限に合わせてテキストを切り詰め
@@ -166,7 +166,7 @@ export async function sendGachaResultMessage(
 
     // テンプレートが未設定の場合はデフォルトテンプレートを使用
     const template = messageTemplate || DEFAULT_MESSAGE_TEMPLATE;
-
+    
     // テンプレートからメッセージ本文を生成
     const messageText = replaceMessageTemplate(template, {
       itemName,
@@ -258,11 +258,11 @@ export async function sendGachaResultMessage(
     if (error && typeof error === "object" && "statusCode" in error) {
       const httpError = error as { statusCode: number };
       if (httpError.statusCode === 404) {
-        // ユーザーが友だち追加を解除した
-        console.log(`ユーザー ${userId} は友だち追加されていません`);
+      // ユーザーが友だち追加を解除した
+      console.log(`ユーザー ${userId} は友だち追加されていません`);
         return { success: false, error: "not_following" };
       } else if (httpError.statusCode === 429) {
-        // レート制限
+      // レート制限
         console.log("レート制限に達しました");
         return { success: false, error: "rate_limit" };
       }
@@ -303,15 +303,15 @@ export async function sendMessage(
     if (error && typeof error === "object" && "statusCode" in error) {
       const httpError = error as { statusCode: number };
       if (httpError.statusCode === 404) {
-        // ユーザーが友だち追加を解除した
-        console.log(`ユーザー ${userId} は友だち追加されていません`);
+      // ユーザーが友だち追加を解除した
+      console.log(`ユーザー ${userId} は友だち追加されていません`);
         return { success: false, error: "not_following" };
       } else if (httpError.statusCode === 429) {
-        // レート制限
+      // レート制限
         console.log("レート制限に達しました");
         return { success: false, error: "rate_limit" };
       }
     }
     return { success: false, error: "unknown" };
+    }
   }
-}

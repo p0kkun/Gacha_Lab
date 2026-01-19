@@ -562,7 +562,7 @@ export async function POST(request: NextRequest) {
       events: events.map((e) => ({
         type: e.type,
         source: e.source?.type,
-        message: e.type === 'message' && 'message' in e ? (e as any).message?.type : null,
+        message: e.type === 'message' && 'message' in e ? (e as { message?: { type?: string } }).message?.type : null,
       })),
     });
 

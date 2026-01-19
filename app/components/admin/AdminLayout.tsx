@@ -45,7 +45,7 @@ export default function AdminLayout({
         "/admin/users": ["/admin/tags", "/admin/referrals"],
         "/admin/messages": [],
         "/admin/statistics": [],
-        "/admin/system": ["/admin/action-history"],
+        "/admin/system": ["/admin/action-history", "/admin/cache"],
       };
 
       const subPaths = groupMappings[itemHref];

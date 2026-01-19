@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 
 // 各タブコンテンツを動的インポート
 const ActionHistoryContent = dynamic(() => import('@/app/admin/action-history/page'), { ssr: false });
+const CacheManagementContent = dynamic(() => import('@/app/admin/system/cache-management'), { ssr: false });
 
 function SystemContent() {
   const searchParams = useSearchParams();
@@ -23,6 +24,12 @@ function SystemContent() {
           label: '操作履歴',
           icon: '📋',
           content: <ActionHistoryContent />,
+        },
+        {
+          id: 'cache',
+          label: 'キャッシュ管理',
+          icon: '🗄️',
+          content: <CacheManagementContent />,
         },
       ]}
     />

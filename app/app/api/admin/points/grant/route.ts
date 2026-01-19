@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { grantFreePoints, grantPaidPoints } from '@/lib/point-management';
+import { grantFreePoints, grantPaidPoints } from '@/lib/point-service';
 import { PointTransactionType } from '@prisma/client';
 import { verifyAdminAuth } from '@/lib/admin-auth';
 import { sendMessage } from '@/lib/line-messaging';

@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 export default function AdminPage() {
-  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [password, setPassword] = useState("");
@@ -14,11 +12,18 @@ export default function AdminPage() {
 
   // クライアント側でのみ認証状態をチェック（ハイドレーションエラー回避）
   useEffect(() => {
-    setMounted(true);
-    const authStatus = sessionStorage.getItem("admin_authenticated");
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-    }
+    // setStateを非同期的に実行することで、カスケーディングレンダーを防ぐ
+    const initialize = () => {
+      setMounted(true);
+      const authStatus = sessionStorage.getItem("admin_authenticated");
+      if (authStatus === "true") {
+        setIsAuthenticated(true);
+      }
+    };
+    
+    // 次のイベントループで実行
+    const timeoutId = setTimeout(initialize, 0);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -249,10 +254,28 @@ export default function AdminPage() {
               ガチャ結果メッセージのテンプレートを管理できます
             </p>
             <Link
-              href="/admin/gacha?tab=result-message-templates"
+              href="/admin/result-message-templates"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
-              結果メッセージテンプレートへ
+              テンプレート管理へ
+            </Link>
+          </div>
+
+          <div className="rounded-lg bg-white p-4 shadow lg:p-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xl">⚙️</span>
+              <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
+                システム
+              </h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-600 lg:text-sm">
+              操作履歴やキャッシュ管理などシステム設定ができます
+            </p>
+            <Link
+              href="/admin/system"
+              className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
+            >
+              システム管理へ
             </Link>
           </div>
 

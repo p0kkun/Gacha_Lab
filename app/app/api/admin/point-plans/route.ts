@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 import { recordAdminAction } from "@/lib/admin-action-history";
 import { AdminActionType } from "@/lib/admin-action-types";
+import { deleteCache } from "@/lib/cache";
+import { CacheKeys } from "@/lib/cache-keys";
 
 function isValidPlanId(id: string): boolean {
   // URL/メタデータにも載るため、シンプルな文字種に限定
@@ -143,6 +145,9 @@ export async function POST(request: NextRequest) {
           : 0,
       },
     });
+
+    // キャッシュ削除（マスターデータ作成時）
+    await deleteCache(CacheKeys.pointPurchasePlans());
 
     return NextResponse.json({ plan: created });
   } catch (error: any) {
