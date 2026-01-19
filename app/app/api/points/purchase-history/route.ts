@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 
 /**
  * ユーザーの購入履歴を取得
@@ -21,30 +20,82 @@ export async function GET(request: NextRequest) {
     }
 
     // PointPurchaseLogとPointHistoryを結合して購入履歴を取得
+    type PointPurchaseLogWhere = {
+      userId: string;
+      status: 'SUCCEEDED';
+    };
+
+    type PointPurchaseLogOrderBy = {
+      createdAt: 'desc' | 'asc';
+    };
+
+    type PointHistoryWhere = {
+      userId: string;
+      historyTable: string;
+      historyTableId: number;
+    };
+
+    type PointHistorySelect = {
+      transactionType: boolean;
+      amount: boolean;
+      createdAt: boolean;
+    };
+
+    type PointHistoryOrderBy = {
+      createdAt: 'asc' | 'desc';
+    };
+
+    type PointPurchasePlanWhere = {
+      id?: { in: string[] };
+    };
+
+    type PointPurchaseLog = {
+      id: number;
+      userId: string;
+      planId: string | null;
+      amountYen: number;
+      createdAt: Date;
+    };
+
+    type PointHistory = {
+      transactionType: string;
+      amount: number;
+      createdAt: Date;
+    };
+
+    type PointPurchasePlan = {
+      id: string;
+      label: string;
+    };
+
     const prismaAny = prisma as unknown as {
       pointPurchaseLog: {
         findMany: (args: {
-          where: any;
-          orderBy: any;
+          where: PointPurchaseLogWhere;
+          orderBy: PointPurchaseLogOrderBy;
+          skip?: number;
           take?: number;
-        }) => Promise<any[]>;
+        }) => Promise<PointPurchaseLog[]>;
+        count: (args: {
+          where: PointPurchaseLogWhere;
+        }) => Promise<number>;
       };
       pointHistory: {
         findMany: (args: {
-          where: any;
-          select: any;
-          orderBy: any;
-        }) => Promise<any[]>;
+          where: PointHistoryWhere;
+          select: PointHistorySelect;
+          orderBy: PointHistoryOrderBy;
+        }) => Promise<PointHistory[]>;
       };
       pointPurchasePlan: {
         findMany: (args: {
-          where?: any;
-        }) => Promise<any[]>;
+          where?: PointPurchasePlanWhere;
+        }) => Promise<PointPurchasePlan[]>;
       };
     };
 
     // 総件数を取得
-    const totalCount = await (prismaAny.pointPurchaseLog as any).count({
+    const totalCount = await prismaAny.pointPurchaseLog.count({
       where: {
         userId,
         status: 'SUCCEEDED',
