@@ -74,7 +74,7 @@ export default function PurchaseHistoryContent() {
         }
 
         const res = await fetch(`/api/admin/statistics/purchase-history?${params.toString()}`, {
-          headers: { "X-Admin-Auth": token },
+          headers: { "X-Admin-Auth": token || "" },
         });
 
         if (res.status === 401) {
