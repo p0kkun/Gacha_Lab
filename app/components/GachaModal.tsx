@@ -6,6 +6,7 @@ import GachaMenu from "./GachaMenu";
 import GachaContent from "./GachaContent";
 import PointDisplay from "./PointDisplay";
 import PointIcon from "./PointIcon";
+import { formatExpiryText } from "@/lib/point-utils";
 
 export type GachaType = {
   id: string;
@@ -146,6 +147,12 @@ export default function GachaModal({
                         無償: {pointBalances.free.toLocaleString()}
                       </span>
                     </div>
+                    {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
+                    {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+                      <div className="mt-1 text-[9px] text-yellow-600/80">
+                        有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex-shrink-0 text-yellow-600 opacity-60 transition-opacity group-hover:opacity-100">

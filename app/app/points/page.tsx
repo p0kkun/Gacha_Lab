@@ -743,16 +743,6 @@ function PointsPageContent() {
                     {pointBalances.paid.toLocaleString()}
                   </span>
                 </div>
-                {pointBalances.paidExpiresAt && (
-                  <div className="text-xs text-gray-500">
-                    有効期限: {formatExpiryText(pointBalances.paidExpiresAt)}
-                    {formatExpiryDate(pointBalances.paidExpiresAt) && (
-                      <span className="ml-1">
-                        ({formatExpiryDate(pointBalances.paidExpiresAt)})
-                      </span>
-                    )}
-                  </div>
-                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">無償ポイント</span>
                   <span className="font-semibold text-gray-800 flex items-center gap-1">
@@ -760,12 +750,13 @@ function PointsPageContent() {
                     {pointBalances.free.toLocaleString()}
                   </span>
                 </div>
-                {pointBalances.freeExpiresAt && (
+                {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
+                {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
                   <div className="text-xs text-gray-500">
-                    有効期限: {formatExpiryText(pointBalances.freeExpiresAt)}
-                    {formatExpiryDate(pointBalances.freeExpiresAt) && (
+                    有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
+                    {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
                       <span className="ml-1">
-                        ({formatExpiryDate(pointBalances.freeExpiresAt)})
+                        ({formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)})
                       </span>
                     )}
                   </div>

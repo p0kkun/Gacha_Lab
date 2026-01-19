@@ -376,10 +376,27 @@ CREATE TABLE "free_gacha_settings" (
     "referrerGachaTypeId" INTEGER,
     "refereeGachaTypeId" INTEGER,
     "expirationDays" INTEGER,
+    "referrerPoints" INTEGER NOT NULL DEFAULT 100,
+    "refereePoints" INTEGER NOT NULL DEFAULT 100,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "free_gacha_settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "message_queues" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "isSent" BOOLEAN NOT NULL DEFAULT false,
+    "type" INTEGER NOT NULL,
+    "templateId" INTEGER,
+    "jsonData" JSONB NOT NULL,
+    "sentAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "message_queues_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -434,10 +451,10 @@ CREATE INDEX "item_usage_logs_usedAt_idx" ON "item_usage_logs"("usedAt");
 CREATE INDEX "user_items_userId_status_idx" ON "user_items"("userId", "status");
 
 -- CreateIndex
-CREATE INDEX "user_items_itemId_idx" ON "user_items"("itemId");
+CREATE INDEX "user_items_userId_itemId_idx" ON "user_items"("userId", "itemId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_items_userId_itemId_key" ON "user_items"("userId", "itemId");
+CREATE INDEX "user_items_itemId_idx" ON "user_items"("itemId");
 
 -- CreateIndex
 CREATE INDEX "gacha_prize_assignments_gachaTypeId_tierCode_isActive_idx" ON "gacha_prize_assignments"("gachaTypeId", "tierCode", "isActive");
@@ -576,6 +593,15 @@ CREATE UNIQUE INDEX "result_message_templates_code_key" ON "result_message_templ
 
 -- CreateIndex
 CREATE INDEX "result_message_templates_isActive_idx" ON "result_message_templates"("isActive");
+
+-- CreateIndex
+CREATE INDEX "message_queues_userId_isSent_type_idx" ON "message_queues"("userId", "isSent", "type");
+
+-- CreateIndex
+CREATE INDEX "message_queues_userId_createdAt_idx" ON "message_queues"("userId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "message_queues_isSent_type_idx" ON "message_queues"("isSent", "type");
 
 -- AddForeignKey
 ALTER TABLE "gacha_types" ADD CONSTRAINT "gacha_types_resultMessageTemplateId_fkey" FOREIGN KEY ("resultMessageTemplateId") REFERENCES "result_message_templates"("id") ON DELETE SET NULL ON UPDATE CASCADE;

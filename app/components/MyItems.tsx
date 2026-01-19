@@ -393,18 +393,25 @@ export default function MyItems({ userId }: MyItemsProps) {
                                       userItem.createdAt
                                     ).toLocaleDateString("ja-JP")}`}
                               </div>
-                              {status === "available" && userItem.item.useEndAt && (
+                              {/* 使用期限の表示（使用可能な場合のみ） */}
+                              {status === "available" && (
                                 <div className="mt-1 text-xs text-gray-500">
-                                  使用期限:{" "}
-                                  {new Date(userItem.item.useEndAt).toLocaleString(
-                                    "ja-JP",
-                                    {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    }
+                                  {userItem.item.useEndAt ? (
+                                    <>
+                                      使用期限:{" "}
+                                      {new Date(userItem.item.useEndAt).toLocaleString(
+                                        "ja-JP",
+                                        {
+                                          year: "numeric",
+                                          month: "short",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        }
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-400">期限なし</span>
                                   )}
                                 </div>
                               )}

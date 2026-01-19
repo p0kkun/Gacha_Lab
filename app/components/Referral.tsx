@@ -257,11 +257,13 @@ export default function Referral({ userId }: { userId: string }) {
                                 {history.referee?.displayName || "（表示名なし）"}
                               </div>
                               <div className="text-xs text-gray-500">
-                                {history.completedAt
-                                  ? new Date(
-                                      history.completedAt
-                                    ).toLocaleDateString("ja-JP")
-                                  : "-"}
+                                {history.completedAt ? (
+                                  <>
+                                    成立日: {new Date(history.completedAt).toLocaleDateString("ja-JP")}
+                                  </>
+                                ) : (
+                                  "成立日: -"
+                                )}
                               </div>
                             </div>
                           </div>

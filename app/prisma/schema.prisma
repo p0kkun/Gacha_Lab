@@ -123,8 +123,8 @@ model UserItem {
 
   item GachaItem? @relation(fields: [itemId], references: [id])
 
-  @@unique([userId, itemId])
   @@index([userId, status])
+  @@index([userId, itemId])
   @@index([itemId])
   @@map("user_items")
 }

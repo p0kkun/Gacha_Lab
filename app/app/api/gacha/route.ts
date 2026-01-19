@@ -340,21 +340,12 @@ export async function POST(request: NextRequest) {
       });
 
       // ステップ13: ユーザーのアイテム所持情報を保存する
-      // UserItemテーブルにupsert（既に同じアイテムを所持している場合は更新しない）
-      await tx.userItem.upsert({
-        where: {
-          userId_itemId: {
-            userId: userId,
-            itemId: selectedItem.id,
-          },
-        },
-        create: {
+      // UserItemテーブルにcreate（同じアイテムを複数所持できるようにする）
+      await tx.userItem.create({
+        data: {
           userId: userId,
           itemId: selectedItem.id,
           status: "UNUSED",
-        },
-        update: {
-          // 既に所持している場合は更新しない（statusは変更しない）
         },
       });
 

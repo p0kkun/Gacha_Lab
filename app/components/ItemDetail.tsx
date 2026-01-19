@@ -74,7 +74,7 @@ export default function ItemDetail({
     if (!text) {
       // 説明文がない場合はアイテム名から生成（後方互換性）
       const fallback = getItemDescription(userItem.item.name, userItem.item.rarity);
-      return <p className="text-gray-600">{fallback}</p>;
+      return <p className="text-white/90">{fallback}</p>;
     }
 
     // Markdownリンク [テキスト](URL) を検出して変換
@@ -95,7 +95,7 @@ export default function ItemDetail({
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 underline hover:text-blue-800"
+          className="text-yellow-300 underline hover:text-yellow-200"
         >
           {match[1]}
         </a>
@@ -108,10 +108,11 @@ export default function ItemDetail({
       parts.push(text.substring(lastIndex));
     }
 
-    return <p className="text-gray-600">{parts.length > 0 ? parts : text}</p>;
+    return <p className="text-white/90">{parts.length > 0 ? parts : text}</p>;
   };
 
-  const getItemDescription = (name: string, rarity: string): string => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const getItemDescription = (name: string, _rarity: string): string => {
     // アイテム名から説明文を生成（後方互換性）
     if (name.includes('1000円')) {
       return '1000円オフクーポン券';
@@ -194,33 +195,49 @@ export default function ItemDetail({
     const isImage = userItem.item.usageType === 'IMAGE';
 
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
         <div className="mx-auto max-w-md">
-          {/* ヘッダー */}
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          {/* 戻るボタン */}
+          <div className="px-4 pt-4">
             <button
               onClick={() => {
                 setShowUsageScreen(false);
                 onBack();
               }}
-              className="mb-4 text-blue-600 hover:text-blue-800"
+              className="text-white/80 hover:text-white transition-colors"
             >
               ← 戻る
             </button>
-            <h1 className="text-2xl font-bold text-gray-800">アイテム使用</h1>
           </div>
 
-          {/* アイテム情報 */}
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          {/* ヒーローセクション */}
+          <div className="relative overflow-hidden px-4 pt-4 pb-6">
+            {/* 背景装飾 */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-10 left-10 text-6xl">🂡</div>
+              <div className="absolute top-20 right-10 text-5xl">🂮</div>
+              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
+              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+            </div>
+            
+            <div className="relative z-10 text-center text-white">
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">アイテム使用</h1>
+              <p className="text-sm text-green-200">使用中のアイテム</p>
+            </div>
+          </div>
+
+          <div className="px-4 py-4">
+            {/* アイテム情報 */}
+            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
             <div className="mb-4 text-center">
-              <div className="mb-2 text-lg font-bold text-gray-800">
+              <div className="mb-2 text-lg font-bold text-white">
                 {userItem.item.name}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-white/90">
                 {userItem.item.description ? (
-                  renderDescription(userItem.item.description)
+                  <div className="text-white/90">{renderDescription(userItem.item.description)}</div>
                 ) : (
-                  getItemDescription(userItem.item.name, userItem.item.rarity)
+                  <div className="text-white/90">{getItemDescription(userItem.item.name, userItem.item.rarity)}</div>
                 )}
               </div>
             </div>
@@ -231,15 +248,29 @@ export default function ItemDetail({
                 {userItem.item.imageUrl ? (
                   <>
                     <div className="mb-6 flex justify-center">
-                      <div className="rounded-lg bg-white p-4 shadow-lg">
+                      <div className="rounded-xl bg-white/20 backdrop-blur-sm p-4 shadow-lg">
                         <img
                           src={userItem.item.imageUrl}
                           alt="アイテム画像"
                           className="h-64 w-64 object-contain"
+                          onError={(e) => {
+                            // 画像読み込み失敗時の処理
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const placeholder = target.parentElement?.querySelector('.image-placeholder') as HTMLElement;
+                            if (placeholder) {
+                              placeholder.style.display = 'flex';
+                            }
+                          }}
                         />
+                        {/* 画像読み込み失敗時のプレースホルダー */}
+                        <div className="image-placeholder hidden h-64 w-64 flex-col items-center justify-center rounded-lg bg-gradient-to-br from-yellow-500/30 to-yellow-600/30 border-2 border-yellow-400/50">
+                          <div className="mb-2 text-6xl">🎫</div>
+                          <div className="text-sm font-semibold text-yellow-200">COUPON</div>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-center text-sm text-gray-600">
+                    <div className="text-center text-sm text-white/90">
                       使用期限: {expirationDate.toLocaleString('ja-JP', {
                         year: 'numeric',
                         month: 'long',
@@ -250,37 +281,108 @@ export default function ItemDetail({
                     </div>
                   </>
                 ) : (
-                  <div className="mb-6 rounded-lg bg-yellow-50 p-6 text-center">
-                    <div className="mb-2 text-lg font-semibold text-yellow-800">
-                      画像が設定されていません
+                  <>
+                    {/* 画像がない場合: 必須情報を優先表示 */}
+                    <div className="mb-6 space-y-4">
+                      {/* プレースホルダー（ガチャ用デフォルト画像風） */}
+                      <div className="flex justify-center">
+                        <div className="relative h-64 w-64 rounded-xl bg-gradient-to-br from-yellow-500/30 via-yellow-400/20 to-yellow-600/30 border-2 border-yellow-400/50 shadow-lg overflow-hidden">
+                          {/* 背景装飾 */}
+                          <div className="absolute inset-0 opacity-20">
+                            <div className="absolute top-4 left-4 text-4xl">🂡</div>
+                            <div className="absolute bottom-4 right-4 text-4xl">🂮</div>
+                          </div>
+                          {/* 中央コンテンツ */}
+                          <div className="relative flex h-full w-full flex-col items-center justify-center p-4">
+                            <div className="mb-3 text-6xl">🎫</div>
+                            <div className="mb-1 text-lg font-bold text-yellow-200">COUPON</div>
+                            <div className="text-xs text-yellow-100/80">特典</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 必須情報セクション */}
+                      <div className="space-y-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 p-4">
+                        {/* クーポン名 */}
+                        <div>
+                          <div className="mb-1 text-xs font-semibold text-white/70">クーポン名</div>
+                          <div className="text-lg font-bold text-white">{userItem.item.name}</div>
+                        </div>
+
+                        {/* 割引内容（説明文から抽出） */}
+                        {userItem.item.description && (
+                          <div>
+                            <div className="mb-1 text-xs font-semibold text-white/70">割引内容</div>
+                            <div className="text-sm text-white/90">{userItem.item.description}</div>
+                          </div>
+                        )}
+
+                        {/* 有効期限 */}
+                        <div>
+                          <div className="mb-1 text-xs font-semibold text-white/70">有効期限</div>
+                          <div className="text-sm text-white/90">
+                            {userItem.item.useStartAt ? (
+                              <>
+                                {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })} 〜
+                              </>
+                            ) : null}
+                            {expirationDate.toLocaleString('ja-JP', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 提示方法 */}
+                        <div>
+                          <div className="mb-1 text-xs font-semibold text-white/70">提示方法</div>
+                          <div className="text-sm text-white/90">
+                            {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
+                          </div>
+                        </div>
+
+                        {/* 識別子（クーポンID） */}
+                        <div>
+                          <div className="mb-1 text-xs font-semibold text-white/70">クーポンID</div>
+                          <div className="rounded-lg bg-white/20 px-3 py-2 text-center font-mono text-sm font-bold text-yellow-200">
+                            {String(userItem.id).padStart(8, '0')}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-yellow-600">
-                      管理画面で画像を設定してください
-                    </div>
-                  </div>
+                  </>
                 )}
               </>
             ) : (
               <>
-                <div className="mb-6 rounded-lg bg-blue-50 p-6 text-center">
+                <div className="mb-6 rounded-xl bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 p-6 text-center">
                   <div className="mb-4 text-4xl">📱</div>
-                  <div className="mb-2 text-lg font-semibold text-gray-800">
+                  <div className="mb-2 text-lg font-semibold text-white">
                     店員にこの画面を見せてください
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-white/90">
                     店員が使用済みボタンを押して使用完了となります
                   </div>
                 </div>
-                <div className="mb-4 rounded-lg bg-gray-100 p-4">
-                  <div className="mb-2 text-sm font-semibold text-gray-700">
+                <div className="mb-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 p-4">
+                  <div className="mb-2 text-sm font-semibold text-white">
                     アイテム情報
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-white/90">
                     <div>アイテム名: {userItem.item.name}</div>
                     <div>獲得日: {new Date(userItem.createdAt).toLocaleDateString('ja-JP')}</div>
                   </div>
                 </div>
-                <div className="text-center text-sm text-gray-600">
+                <div className="text-center text-sm text-white/90">
                   使用期限: {expirationDate.toLocaleString('ja-JP', {
                     year: 'numeric',
                     month: 'long',
@@ -291,8 +393,8 @@ export default function ItemDetail({
                 </div>
               </>
             )}
+            </div>
           </div>
-
         </div>
       </div>
     );
@@ -300,42 +402,58 @@ export default function ItemDetail({
 
   // アイテム詳細画面
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
       <div className="mx-auto max-w-md">
-        {/* ヘッダー */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+        {/* 戻るボタン */}
+        <div className="px-4 pt-4">
           <button
             onClick={onBack}
-            className="mb-4 text-blue-600 hover:text-blue-800"
+            className="text-white/80 hover:text-white transition-colors"
           >
             ← 戻る
           </button>
-          <h1 className="text-2xl font-bold text-gray-800">アイテム詳細</h1>
         </div>
 
-        {/* アイテム情報 */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+        {/* ヒーローセクション */}
+        <div className="relative overflow-hidden px-4 pt-4 pb-6">
+          {/* 背景装飾 */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 left-10 text-6xl">🂡</div>
+            <div className="absolute top-20 right-10 text-5xl">🂮</div>
+            <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
+            <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+          </div>
+          
+          <div className="relative z-10 text-center text-white">
+            <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">アイテム詳細</h1>
+            <p className="text-sm text-green-200">獲得したアイテムの詳細</p>
+          </div>
+        </div>
+
+        <div className="px-4 py-4">
+          {/* アイテム情報 */}
+          <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
+          <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+            <span className="inline-flex rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-3 py-1 text-sm font-semibold text-white shadow-sm">
               {getRarityLabel(userItem.item.rarity)}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-white/80">
               獲得日: {new Date(userItem.createdAt).toLocaleDateString('ja-JP')}
             </span>
           </div>
 
           <div className="mb-4">
-            <h2 className="mb-2 text-xl font-bold text-gray-800">
+            <h2 className="mb-2 text-xl font-bold text-white">
               {userItem.item.name}
             </h2>
-            {renderDescription(userItem.item.description)}
+            <div className="text-white/90">{renderDescription(userItem.item.description)}</div>
           </div>
 
           {/* 使用開始前・使用期限切れの警告 */}
           {itemStatus === 'notStarted' && userItem.item.useStartAt && (
-            <div className="mb-4 rounded-lg bg-yellow-50 p-4">
-              <div className="text-sm font-semibold text-yellow-800">使用開始前</div>
-              <div className="mt-1 text-xs text-yellow-600">
+            <div className="mb-4 rounded-xl bg-yellow-500/20 backdrop-blur-sm border border-yellow-400/30 p-4">
+              <div className="text-sm font-semibold text-yellow-200">使用開始前</div>
+              <div className="mt-1 text-xs text-yellow-100">
                 使用開始日時: {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
                   year: 'numeric',
                   month: 'long',
@@ -348,9 +466,9 @@ export default function ItemDetail({
           )}
 
           {itemStatus === 'expired' && userItem.item.useEndAt && (
-            <div className="mb-4 rounded-lg bg-red-50 p-4">
-              <div className="text-sm font-semibold text-red-800">使用期限切れ</div>
-              <div className="mt-1 text-xs text-red-600">
+            <div className="mb-4 rounded-xl bg-red-500/20 backdrop-blur-sm border border-red-400/30 p-4">
+              <div className="text-sm font-semibold text-red-200">使用期限切れ</div>
+              <div className="mt-1 text-xs text-red-100">
                 使用期限: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
                   year: 'numeric',
                   month: 'long',
@@ -363,16 +481,22 @@ export default function ItemDetail({
           )}
 
           {/* 使用期限の表示（使用可能な場合のみ） */}
-          {itemStatus === 'available' && userItem.item.useEndAt && (
-            <div className="mb-4 rounded-lg bg-blue-50 p-4">
-              <div className="text-xs text-blue-700">
-                使用期限: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+          {itemStatus === 'available' && (
+            <div className="mb-4 rounded-xl bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 p-4">
+              <div className="text-xs text-blue-100">
+                {userItem.item.useEndAt ? (
+                  <>
+                    使用期限: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </>
+                ) : (
+                  <span className="text-white/70">期限なし</span>
+                )}
               </div>
             </div>
           )}
@@ -382,11 +506,11 @@ export default function ItemDetail({
             <div className="mt-4">
               <button
                 disabled
-                className="w-full rounded-md bg-gray-300 px-4 py-3 font-semibold text-gray-600"
+                className="w-full rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 px-4 py-3 font-semibold text-white/70"
               >
                 使用済み
               </button>
-              <p className="mt-2 text-center text-sm text-gray-500">
+              <p className="mt-2 text-center text-sm text-white/80">
                 使用日: {new Date(userItem.usedAt!).toLocaleDateString('ja-JP')}
               </p>
             </div>
@@ -394,10 +518,10 @@ export default function ItemDetail({
             <div className="mt-4">
               <button
                 disabled
-                className={`w-full rounded-md px-4 py-3 font-semibold ${
+                className={`w-full rounded-xl px-4 py-3 font-semibold ${
                   itemStatus === 'notStarted'
-                    ? 'bg-yellow-300 text-yellow-800'
-                    : 'bg-red-300 text-red-800'
+                    ? 'bg-yellow-500/30 border border-yellow-400/30 text-yellow-200'
+                    : 'bg-red-500/30 border border-red-400/30 text-red-200'
                 }`}
               >
                 {itemStatus === 'notStarted' ? '使用開始前' : '使用期限切れ'}
@@ -408,7 +532,7 @@ export default function ItemDetail({
               <button
                 onClick={handleUseClick}
                 disabled={isUsing}
-                className="w-full rounded-md bg-blue-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-600"
+                className="w-full rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-600 px-4 py-3 font-semibold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl disabled:bg-white/20 disabled:text-white/50"
               >
                 {isUsing ? '処理中...' : '使用する'}
               </button>
@@ -416,6 +540,7 @@ export default function ItemDetail({
           )}
         </div>
       </div>
+    </div>
 
       {/* 確認モーダル */}
       <ConfirmModal

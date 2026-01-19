@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import PointIcon from "./PointIcon";
+import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
 
 type PointBalances = {
   paid: number;
@@ -61,6 +62,17 @@ export default function PointCard({
                 <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
                 {pointBalances.free.toLocaleString()}
               </span>
+            </div>
+          )}
+          {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
+          {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+            <div className="mt-2 text-center text-xs text-yellow-200/70">
+              有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
+              {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+                <span className="ml-1">
+                  ({formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)})
+                </span>
+              )}
             </div>
           )}
         </div>
