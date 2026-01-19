@@ -9,6 +9,18 @@ type GachaType = {
   name: string;
 };
 
+type ItemProbability = {
+  tierCode: string;
+  itemId: number;
+  itemName: string;
+  tierProbability: number;
+  itemWeight: number;
+  itemProbability: number;
+  combinedProbability: number;
+  actualCount: number;
+  actualRate: number;
+};
+
 type SimulatorResult = {
   gachaTypeId: string;
   gachaTypeName: string;
@@ -17,6 +29,8 @@ type SimulatorResult = {
   results: Record<string, number>;
   actualRates: Record<string, number>;
   expectedRates: Record<string, number>;
+  includeItems?: boolean;
+  itemProbabilities?: ItemProbability[];
 };
 
 const RARITY_LABELS: Record<string, string> = {
@@ -32,6 +46,7 @@ export default function SimulatorPage() {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [selectedGachaTypeId, setSelectedGachaTypeId] = useState<string>("");
   const [iterations, setIterations] = useState<number>(10000);
+  const [includeItems, setIncludeItems] = useState<boolean>(false);
   const [result, setResult] = useState<SimulatorResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +106,7 @@ export default function SimulatorPage() {
         body: JSON.stringify({
           gachaTypeId: selectedGachaTypeId,
           iterations,
+          includeItems,
         }),
       });
 
@@ -165,6 +181,22 @@ export default function SimulatorPage() {
             />
             <p className="mt-1 text-xs text-gray-500">
               100 ～ 1,000,000 回の範囲で指定できます
+            </p>
+          </div>
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={includeItems}
+                onChange={(e) => setIncludeItems(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                アイテムの当選確率も表示する（アプリ側と同じ2段階抽選ロジック）
+              </span>
+            </label>
+            <p className="mt-1 text-xs text-gray-500">
+              チェックすると、等級抽選→アイテム抽選の2段階で確率を計算します
             </p>
           </div>
           <button
@@ -246,6 +278,91 @@ export default function SimulatorPage() {
               </tbody>
             </table>
           </div>
+
+          {/* アイテムの当選確率テーブル */}
+          {result.includeItems && result.itemProbabilities && result.itemProbabilities.length > 0 && (
+            <div className="mt-8">
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                アイテム別当選確率（等級×アイテムの組み合わせ確率）
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        等級
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        アイテム名
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        等級確率
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        アイテム重み
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        アイテム確率（等級内）
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        組み合わせ確率
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        実際の獲得数
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        実際の排出率
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        差分
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {result.itemProbabilities.map((item, index) => (
+                      <tr key={`${item.tierCode}-${item.itemId}-${index}`} className="hover:bg-gray-50">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                          {RARITY_LABELS[item.tierCode] || item.tierCode}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {item.itemName}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {item.tierProbability.toFixed(2)}%
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {item.itemWeight}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {item.itemProbability.toFixed(2)}%
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900">
+                          {item.combinedProbability.toFixed(4)}%
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {item.actualCount.toLocaleString()}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {item.actualRate.toFixed(4)}%
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          <span
+                            className={
+                              Math.abs(item.actualRate - item.combinedProbability) < 0.1
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {(item.actualRate - item.combinedProbability).toFixed(4)}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
