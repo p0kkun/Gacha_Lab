@@ -140,11 +140,13 @@ function getLiffUrl(params?: Record<string, string>): string {
   return `${baseUrl}?${queryString}`;
 }
 
-// ガチャタイプ一覧を取得
+// ガチャタイプ一覧を取得（引けるもののみ）
 async function getGachaTypes() {
   try {
     const now = new Date();
-    const gachaTypes = await prisma.gachaType.findMany({
+    
+    // 有効で期間内のガチャタイプを取得
+    const allGachaTypes = await prisma.gachaType.findMany({
       where: {
         isActive: true,
         OR: [
@@ -166,11 +168,82 @@ async function getGachaTypes() {
         description: true,
         pointCost: true,
         iconImageUrl: true,
+        useDefaultVideos: true,
+        commonVideoAssetIds: true,
+        tierVideoAssetIds: true,
       },
       orderBy: { createdAt: 'asc' },
-      take: 10, // カルーセルは最大10個まで
     });
-    return gachaTypes;
+
+    // デフォルト設定を取得
+    const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const hasDefaultVideos =
+      defaultSettings &&
+      (defaultSettings as any).commonVideoAssetIds &&
+      (defaultSettings as any).commonVideoAssetIds.length > 0;
+
+    // 動画設定があるガチャタイプのみをフィルタリング
+    const gachaTypesWithVideos = allGachaTypes.filter((gachaType) => {
+      // デフォルト動画を使用する場合
+      if (gachaType.useDefaultVideos) {
+        return hasDefaultVideos;
+      }
+      
+      // 個別設定の動画がある場合
+      const hasCommonVideos = 
+        gachaType.commonVideoAssetIds && 
+        Array.isArray(gachaType.commonVideoAssetIds) &&
+        gachaType.commonVideoAssetIds.length > 0;
+      
+      return hasCommonVideos;
+    });
+
+    // 等級マスタ（GachaTierWeight）が設定されているガチャタイプのみをフィルタリング
+    const gachaTypeIds = gachaTypesWithVideos.map((gt) => gt.id);
+    const tierWeights = await prisma.gachaTierWeight.findMany({
+      where: {
+        gachaTypeId: { in: gachaTypeIds },
+        isActive: true,
+      },
+      select: {
+        gachaTypeId: true,
+      },
+      distinct: ['gachaTypeId'],
+    });
+
+    const validGachaTypeIds = new Set(tierWeights.map((tw) => tw.gachaTypeId));
+    const gachaTypesWithTiers = gachaTypesWithVideos.filter((gt) =>
+      validGachaTypeIds.has(gt.id)
+    );
+
+    // 景品割当（GachaPrizeAssignment）が設定されているガチャタイプのみをフィルタリング
+    const prizeAssignments = await prisma.gachaPrizeAssignment.findMany({
+      where: {
+        gachaTypeId: { in: gachaTypesWithTiers.map((gt) => gt.id) },
+        isActive: true,
+      },
+      select: {
+        gachaTypeId: true,
+      },
+      distinct: ['gachaTypeId'],
+    });
+
+    const validGachaTypeIdsWithPrizes = new Set(prizeAssignments.map((pa) => pa.gachaTypeId));
+    const validGachaTypes = gachaTypesWithTiers.filter((gt) =>
+      validGachaTypeIdsWithPrizes.has(gt.id)
+    );
+
+    // 必要な情報のみを返す
+    return validGachaTypes.slice(0, 10).map((gt) => ({
+      id: gt.id,
+      name: gt.name,
+      description: gt.description,
+      pointCost: gt.pointCost,
+      iconImageUrl: gt.iconImageUrl,
+    }));
   } catch (error) {
     console.error('ガチャタイプ取得エラー:', error);
     return [];
@@ -412,28 +485,67 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
       select: { lastAccessedReferralLinkId: true, lastAccessedReferralAt: true },
     });
 
-    // lastAccessedReferralLinkIdが存在し、24時間以内にアクセスしている場合のみ処理
-    if (!user?.lastAccessedReferralLinkId) {
+    let referralLinkId: string | null = null;
+    let referral: { id: number; userId: string; referralLinkId: string } | null = null;
+
+    // 方法1: User.lastAccessedReferralLinkIdから取得（友だち追加前にLIFFアプリにアクセスした場合）
+    if (user?.lastAccessedReferralLinkId) {
+      // アクセスから24時間以内かチェック
+      if (user.lastAccessedReferralAt) {
+        const hoursSinceAccess = (Date.now() - user.lastAccessedReferralAt.getTime()) / (1000 * 60 * 60);
+        if (hoursSinceAccess <= 24) {
+          referralLinkId = user.lastAccessedReferralLinkId;
+        }
+      } else {
+        referralLinkId = user.lastAccessedReferralLinkId;
+      }
+    }
+
+    // 方法2: ReferralHistoryから最近のアクセス履歴を取得（友だち追加前にアクセスしたがuserIdが記録されていない場合）
+    if (!referralLinkId) {
+      const recentHistory = await prisma.referralHistory.findFirst({
+        where: {
+          status: ReferralStatus.PENDING,
+          referredAt: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24時間以内
+          },
+        },
+        orderBy: { referredAt: 'desc' },
+        select: {
+          referralLinkId: true,
+          referralId: true,
+        },
+      });
+
+      if (recentHistory) {
+        referralLinkId = recentHistory.referralLinkId;
+        // Referralテーブルから紹介情報を取得
+        const referralData = await prisma.referral.findUnique({
+          where: { id: recentHistory.referralId },
+          select: { id: true, userId: true, referralLinkId: true },
+        });
+        if (referralData) {
+          referral = referralData;
+        }
+      }
+    }
+
+    // 紹介リンクが見つからない場合
+    if (!referralLinkId) {
       console.log('紹介リンクのアクセス履歴がありません:', refereeId);
       return;
     }
 
-    // アクセスから24時間以上経過している場合は無視
-    if (user.lastAccessedReferralAt) {
-      const hoursSinceAccess = (Date.now() - user.lastAccessedReferralAt.getTime()) / (1000 * 60 * 60);
-      if (hoursSinceAccess > 24) {
-        console.log('紹介リンクのアクセスから24時間以上経過しています:', refereeId);
-        return;
-      }
+    // Referralテーブルから紹介リンクを取得（まだ取得していない場合）
+    if (!referral) {
+      referral = await prisma.referral.findUnique({
+        where: { referralLinkId },
+        select: { id: true, userId: true, referralLinkId: true },
+      });
     }
 
-    // Referralテーブルから紹介リンクを取得
-    const referral = await prisma.referral.findUnique({
-      where: { referralLinkId: user.lastAccessedReferralLinkId },
-    });
-
     if (!referral) {
-      console.log('紹介リンクが見つかりません:', user.lastAccessedReferralLinkId);
+      console.log('紹介リンクが見つかりません:', referralLinkId);
       return;
     }
 

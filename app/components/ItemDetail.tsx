@@ -264,9 +264,8 @@ export default function ItemDetail({
                           }}
                         />
                         {/* 画像読み込み失敗時のプレースホルダー */}
-                        <div className="image-placeholder hidden h-64 w-64 flex-col items-center justify-center rounded-lg bg-gradient-to-br from-yellow-500/30 to-yellow-600/30 border-2 border-yellow-400/50">
-                          <div className="mb-2 text-6xl">🎫</div>
-                          <div className="text-sm font-semibold text-yellow-200">COUPON</div>
+                        <div className="image-placeholder hidden h-64 w-64 flex-col items-center justify-center rounded-lg bg-gray-200 border-2 border-gray-300">
+                          <div className="text-2xl font-bold text-gray-500">NOIMAGE</div>
                         </div>
                       </div>
                     </div>
@@ -284,20 +283,10 @@ export default function ItemDetail({
                   <>
                     {/* 画像がない場合: 必須情報を優先表示 */}
                     <div className="mb-6 space-y-4">
-                      {/* プレースホルダー（ガチャ用デフォルト画像風） */}
+                      {/* プレースホルダー（NOIMAGE表示） */}
                       <div className="flex justify-center">
-                        <div className="relative h-64 w-64 rounded-xl bg-gradient-to-br from-yellow-500/30 via-yellow-400/20 to-yellow-600/30 border-2 border-yellow-400/50 shadow-lg overflow-hidden">
-                          {/* 背景装飾 */}
-                          <div className="absolute inset-0 opacity-20">
-                            <div className="absolute top-4 left-4 text-4xl">🂡</div>
-                            <div className="absolute bottom-4 right-4 text-4xl">🂮</div>
-                          </div>
-                          {/* 中央コンテンツ */}
-                          <div className="relative flex h-full w-full flex-col items-center justify-center p-4">
-                            <div className="mb-3 text-6xl">🎫</div>
-                            <div className="mb-1 text-lg font-bold text-yellow-200">COUPON</div>
-                            <div className="text-xs text-yellow-100/80">特典</div>
-                          </div>
+                        <div className="relative h-64 w-64 rounded-xl bg-gray-200 border-2 border-gray-300 shadow-lg flex items-center justify-center">
+                          <div className="text-2xl font-bold text-gray-500">NOIMAGE</div>
                         </div>
                       </div>
 
