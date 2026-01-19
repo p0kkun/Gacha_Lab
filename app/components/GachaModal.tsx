@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import GachaMenu from "./GachaMenu";
 import GachaContent from "./GachaContent";
-import PointDisplay from "./PointDisplay";
 import PointIcon from "./PointIcon";
 import { formatExpiryText } from "@/lib/point-utils";
 
@@ -201,7 +200,7 @@ export default function GachaModal({
             selectedGacha={selectedGacha}
             userId={userId}
             onClose={onClose}
-            onPointsUpdated={async (newPoints) => {
+            onPointsUpdated={async () => {
               // ポイント残高を再取得
               try {
                 const res = await fetch(`/api/points/balance?userId=${userId}`);
