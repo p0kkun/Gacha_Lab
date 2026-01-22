@@ -61,12 +61,12 @@ export default function VideosPage() {
   const [showDefaultSettings, setShowDefaultSettings] = useState(false);
   const [defaultSettings, setDefaultSettings] = useState<{
     id: number | null;
-    commonVideoAssetIds: number[];
+    // commonVideoAssetIds: number[]; // 共通動画は使用しないためコメントアウト
     tierVideoAssetIds: Record<string, number[]> | null;
   } | null>(null);
   const [savedDefaultSettings, setSavedDefaultSettings] = useState<{
     id: number | null;
-    commonVideoAssetIds: number[];
+    // commonVideoAssetIds: number[]; // 共通動画は使用しないためコメントアウト
     tierVideoAssetIds: Record<string, number[]> | null;
   } | null>(null);
   const [loadingDefaultSettings, setLoadingDefaultSettings] = useState(false);
@@ -466,7 +466,7 @@ export default function VideosPage() {
       console.log("[一括設定保存] 成功:", data);
       const nextSettings = {
         id: data.settings.id,
-        commonVideoAssetIds: data.settings.commonVideoAssetIds || [],
+        // commonVideoAssetIds: data.settings.commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
         tierVideoAssetIds: data.settings.tierVideoAssetIds
           ? typeof data.settings.tierVideoAssetIds === "string"
             ? JSON.parse(data.settings.tierVideoAssetIds)
@@ -492,15 +492,15 @@ export default function VideosPage() {
     const after = defaultSettings;
     const changes: Array<{ label: string; from: string; to: string }> = [];
 
-    const beforeCommon = before.commonVideoAssetIds?.length ?? 0;
-    const afterCommon = after.commonVideoAssetIds?.length ?? 0;
-    if (beforeCommon !== afterCommon) {
-      changes.push({
-        label: "共通動画（選択数）",
-        from: `${beforeCommon}件`,
-        to: `${afterCommon}件`,
-      });
-    }
+    // const beforeCommon = before.commonVideoAssetIds?.length ?? 0; // 共通動画は使用しないためコメントアウト
+    // const afterCommon = after.commonVideoAssetIds?.length ?? 0; // 共通動画は使用しないためコメントアウト
+    // if (beforeCommon !== afterCommon) {
+    //   changes.push({
+    //     label: "共通動画（選択数）",
+    //     from: `${beforeCommon}件`,
+    //     to: `${afterCommon}件`,
+    //   });
+    // }
 
     const beforeRarityKeys = before.tierVideoAssetIds
       ? Object.keys(before.tierVideoAssetIds).length

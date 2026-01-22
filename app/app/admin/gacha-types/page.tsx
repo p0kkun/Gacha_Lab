@@ -407,7 +407,7 @@ export default function GachaTypesPage() {
       const data = await res.json();
       setPrizeTiers(
         Array.isArray(data.tiers)
-          ? data.tiers.map((t: any) => ({
+          ? data.tiers.map((t: { code: string; label: string; isActive: boolean; displayOrder?: number }) => ({
               code: t.code,
               label: t.label,
               isActive: t.isActive,
@@ -487,17 +487,19 @@ export default function GachaTypesPage() {
               : gt.prizeOrder
             : undefined,
           // tierWeights がある場合はそれを prizeWeights/prizeOrder に反映（正を優先）
-          ...(Array.isArray((gt as any).tierWeights) &&
-          (gt as any).tierWeights.length > 0
+          ...(Array.isArray((gt as GachaType & { tierWeights?: Array<{ tierCode: string; weight: number; displayOrder?: number; isActive?: boolean }> }).tierWeights) &&
+          ((gt as GachaType & { tierWeights?: Array<{ tierCode: string; weight: number; displayOrder?: number; isActive?: boolean }> }).tierWeights?.length ?? 0) > 0
             ? (() => {
-                const rows = [...(gt as any).tierWeights]
-                  .filter((r: any) => r && r.isActive !== false)
-                  .sort(
-                    (a: any, b: any) =>
-                      (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
-                      String(a.tierCode).localeCompare(String(b.tierCode))
-                  );
-                const order = rows.map((r: any) => String(r.tierCode));
+                const tierWeights = (gt as GachaType & { tierWeights?: Array<{ tierCode: string; weight: number; displayOrder?: number; isActive?: boolean }> }).tierWeights ?? [];
+                const filteredRows = [...tierWeights].filter(
+                  (r) => r !== null && r !== undefined && r.isActive !== false
+                ) as Array<{ tierCode: string; weight: number; displayOrder?: number; isActive?: boolean }>;
+                const rows = filteredRows.sort(
+                  (a, b) =>
+                    (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
+                    String(a.tierCode).localeCompare(String(b.tierCode))
+                );
+                const order = rows.map((r) => String(r.tierCode));
                 const weights: Record<string, number> = {};
                 for (const r of rows) {
                   weights[String(r.tierCode)] = Number(r.weight) || 0;
