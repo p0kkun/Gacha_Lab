@@ -103,21 +103,31 @@ export async function GET(request: NextRequest) {
           skip?: number;
           take?: number;
         }) => Promise<PointPurchaseLog[]>;
-        count: (args: {
-          where: PointPurchaseLogWhere;
-        }) => Promise<number>;
-      };
-      pointHistory: {
-        findMany: (args: {
-          where: PointHistoryWhere;
-          select: PointHistorySelect;
-          orderBy: PointHistoryOrderBy;
-        }) => Promise<PointHistory[]>;
+        count: (args: { where: PointPurchaseLogWhere }) => Promise<number>;
       };
       pointPurchasePlan: {
         findMany: (args: {
-          where?: PointPurchasePlanWhere;
-        }) => Promise<PointPurchasePlan[]>;
+          where?: { isActive?: boolean };
+          select?: { id?: boolean; label?: boolean };
+        }) => Promise<Array<{ id: string; label: string }>>;
+      };
+      pointHistory: {
+        findMany: (args: {
+          where: {
+            userId: string;
+            historyTable: string;
+            historyTableId: number | { in: number[] };
+          };
+          select: {
+            pointType?: boolean;
+            amount: boolean;
+            transactionType: boolean;
+            createdAt: boolean;
+          };
+          orderBy?: {
+            createdAt: 'asc' | 'desc';
+          };
+        }) => Promise<Array<{ pointType?: string; amount: number; transactionType: string; createdAt: Date }>>;
       };
     };
 
