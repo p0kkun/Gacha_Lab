@@ -14,23 +14,43 @@ type ItemUsageStat = {
   usageRate: number;
 };
 
-const RARITY_LABELS: Record<string, string> = {
-  FIRST_PRIZE: "1等",
-  SECOND_PRIZE: "2等",
-  THIRD_PRIZE: "3等",
-  FOURTH_PRIZE: "4等",
-  FIFTH_PRIZE: "5等",
-  LOSER: "ハズレ",
+type PrizeTier = {
+  code: string;
+  label: string;
 };
 
 export default function ItemStatisticsContent() {
   const [itemStats, setItemStats] = useState<ItemUsageStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchItemStatistics();
+    fetchPrizeTiers();
   }, []);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const res = await fetch("/api/prize-tiers");
+      if (res.ok) {
+        const data = await res.json();
+        const tierMap: Record<string, string> = {};
+        if (Array.isArray(data.tiers)) {
+          data.tiers.forEach((tier: PrizeTier) => {
+            tierMap[tier.code] = tier.label;
+          });
+        }
+        setPrizeTiers(tierMap);
+      }
+    } catch (error) {
+      console.error("等級マスタ取得エラー:", error);
+    }
+  };
+
+  const getTierLabel = (tierCode: string): string => {
+    return prizeTiers[tierCode] || tierCode;
+  };
 
   const fetchItemStatistics = async () => {
     setLoading(true);
@@ -131,7 +151,7 @@ export default function ItemStatisticsContent() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                        {RARITY_LABELS[item.rarity] || item.rarity}
+                        {getTierLabel(item.rarity)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-medium text-black">

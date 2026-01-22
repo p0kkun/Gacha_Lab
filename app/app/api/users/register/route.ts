@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logError } from '@/lib/error-logger';
+import { getCache, setCache, deleteCache } from '@/lib/cache';
+import { CacheKeys } from '@/lib/cache-keys';
 
 /**
  * ユーザーを登録または更新
@@ -26,14 +28,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try②：ユーザー存在確認
-    const existingUser = await prisma.user.findUnique({
-      where: { userId },
-      select: { userId: true },
-    });
+    // Try②：Userデータキャッシュ取得
+    const userCacheKey = CacheKeys.user(userId);
+    let cachedUser = await getCache<{ userId: string; displayName: string | null; pictureUrl: string | null }>(userCacheKey);
+
+    // キャッシュがない場合はDBから取得
+    if (!cachedUser) {
+      const dbUser = await prisma.user.findUnique({
+        where: { userId },
+        select: { userId: true, displayName: true, pictureUrl: true },
+      });
+
+      if (dbUser) {
+        cachedUser = dbUser;
+        // Userデータキャッシュ保存
+        await setCache(userCacheKey, cachedUser, 300); // TTL: 5分
+      }
+    }
+
+    // キャッシュから取得したデータを使用（存在する場合）
+    const existingUser = cachedUser;
 
     if (existingUser) {
-      // 既存ユーザーの更新
+      // 既存ユーザーの更新判定フロー
+      // 更新データ有無判定（displayName / pictureUrl）
+      const needsUpdate = 
+        existingUser.displayName !== (displayName || null) ||
+        existingUser.pictureUrl !== (pictureUrl || null);
+
+      if (!needsUpdate) {
+        // 更新不要: 成功レスポンス返却（登録済み）
+        return NextResponse.json({
+          success: true,
+          user: {
+            userId: existingUser.userId,
+            displayName: existingUser.displayName,
+            pictureUrl: existingUser.pictureUrl,
+          },
+        });
+      }
+
+      // 更新が必要な場合
       const updatedUser = await prisma.$transaction(async (tx) => {
         // トランザクション開始
         const user = await tx.user.update({
@@ -48,6 +83,9 @@ export async function POST(request: NextRequest) {
         return user;
       });
 
+      // Userデータキャッシュ削除
+      await deleteCache(userCacheKey);
+
       return NextResponse.json({
         success: true,
         user: {
@@ -58,10 +96,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Try③：新規ユーザー登録
+    // Try③：新規ユーザー登録フロー
     const newUser = await prisma.$transaction(async (tx) => {
       // トランザクション開始
-      // ユーザー情報登録
+      // usersテーブル新規作成
       const user = await tx.user.create({
         data: {
           userId,
@@ -70,7 +108,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // ポイント残高初期登録（UserPointBalance: 0, 0）
+      // UserPointBalanceテーブル新規作成
       await tx.userPointBalance.create({
         data: {
           userId,
@@ -82,6 +120,13 @@ export async function POST(request: NextRequest) {
       // トランザクション終了（COMMIT）
       return user;
     });
+
+    // 新規登録時はキャッシュに保存（次回アクセス時にキャッシュヒットするように）
+    await setCache(userCacheKey, {
+      userId: newUser.userId,
+      displayName: newUser.displayName,
+      pictureUrl: newUser.pictureUrl,
+    }, 300); // TTL: 5分
 
     return NextResponse.json({
       success: true,

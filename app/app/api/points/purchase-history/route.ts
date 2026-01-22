@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCache, setCache } from '@/lib/cache';
+import { CacheKeys } from '@/lib/cache-keys';
+import { logError } from '@/lib/error-logger';
 
 /**
  * ユーザーの購入履歴を取得
@@ -12,11 +15,35 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '29', 10);
 
+    // バリデーションチェック
     if (!userId) {
       return NextResponse.json(
         { error: 'userIdが必要です' },
         { status: 400 }
       );
+    }
+
+    // Userデータキャッシュ取得
+    const userCacheKey = CacheKeys.user(userId);
+    let user = await getCache<{ userId: string }>(userCacheKey);
+
+    if (!user) {
+      // LineIDをもとにusersデータ取得
+      const dbUser = await prisma.user.findUnique({
+        where: { userId },
+        select: { userId: true },
+      });
+
+      if (!dbUser) {
+        return NextResponse.json(
+          { error: 'ユーザー未登録' },
+          { status: 404 }
+        );
+      }
+
+      // Userデータキャッシュ保存
+      user = dbUser;
+      await setCache(userCacheKey, user, 300); // TTL: 5分
     }
 
     // PointPurchaseLogとPointHistoryを結合して購入履歴を取得
@@ -121,12 +148,27 @@ export async function GET(request: NextRequest) {
       .map((log) => log.planId)
       .filter((id): id is string => id !== null);
 
+    // PointPurchasePlanデータキャッシュ取得（全プラン）
+    const plansCacheKey = CacheKeys.pointPurchasePlans();
+    let allPlans = await getCache<Array<{
+      id: string;
+      label: string;
+    }>>(plansCacheKey);
+
+    if (!allPlans) {
+      // DBから取得
+      const dbPlans = await prismaAny.pointPurchasePlan.findMany({
+        where: { isActive: true },
+        select: { id: true, label: true },
+      });
+      allPlans = dbPlans;
+      // キャッシュ保存
+      await setCache(plansCacheKey, allPlans, 86400); // TTL: 1日
+    }
+
+    // 必要なプランのみフィルタリング
     const plans = planIds.length > 0
-      ? await prismaAny.pointPurchasePlan.findMany({
-          where: {
-            id: { in: planIds },
-          },
-        })
+      ? allPlans.filter((plan) => planIds.includes(plan.id))
       : [];
 
     const planMap = new Map(plans.map((plan) => [plan.id, plan]));
@@ -186,7 +228,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('購入履歴取得エラー:', error);
+    await logError(error, { route: '/api/points/purchase-history' }, request);
     return NextResponse.json(
       { error: '購入履歴の取得に失敗しました' },
       { status: 500 }

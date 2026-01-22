@@ -23,18 +23,17 @@ export async function getGachaVideoUrls(
   }
 
   const urls: string[] = [];
-  let commonVideoAssetIds: number[] = [];
+  // let commonVideoAssetIds: number[] = []; // 共通動画は使用しないためコメントアウト
   let tierVideoAssetIdsObj: Record<string, number[]> | null = null;
 
   // 動画設定の取得（個別設定 or デフォルト設定）
   if (
     gachaType.useDefaultVideos === false &&
-    (gachaType as any).commonVideoAssetIds &&
-    (gachaType as any).commonVideoAssetIds.length > 0
+    (gachaType as any).tierVideoAssetIds
   ) {
     // 個別設定を使用
     console.log(`[動画選択] ガチャタイプ ${gachaTypeCode}: 個別設定を使用`);
-    commonVideoAssetIds = (gachaType as any).commonVideoAssetIds;
+    // commonVideoAssetIds = (gachaType as any).commonVideoAssetIds; // 共通動画は使用しないためコメントアウト
     if ((gachaType as any).tierVideoAssetIds) {
       try {
         tierVideoAssetIdsObj =
@@ -50,8 +49,6 @@ export async function getGachaVideoUrls(
     console.log(
       `[動画選択] ガチャタイプ ${gachaTypeCode}: デフォルト設定を使用 (useDefaultVideos=${
         gachaType.useDefaultVideos
-      }, commonVideoAssetIds.length=${
-        (gachaType as any).commonVideoAssetIds?.length || 0
       })`
     );
     const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
@@ -59,7 +56,7 @@ export async function getGachaVideoUrls(
     });
 
     if (defaultSettings) {
-      commonVideoAssetIds = (defaultSettings as any).commonVideoAssetIds || [];
+      // commonVideoAssetIds = (defaultSettings as any).commonVideoAssetIds || []; // 共通動画は使用しないためコメントアウト
       if ((defaultSettings as any).tierVideoAssetIds) {
         try {
           tierVideoAssetIdsObj =
@@ -74,16 +71,12 @@ export async function getGachaVideoUrls(
         }
       }
       console.log(
-        `[動画選択] デフォルト設定: 共通動画${
-          commonVideoAssetIds.length
-        }件, 等級別動画設定${
+        `[動画選択] デフォルト設定: 等級別動画設定${
           tierVideoAssetIdsObj ? Object.keys(tierVideoAssetIdsObj).length : 0
         }等級`
       );
       console.log(
-        `[動画選択] デフォルト設定詳細: commonVideoAssetIds=[${commonVideoAssetIds.join(
-          ","
-        )}], tierVideoAssetIds=${JSON.stringify(tierVideoAssetIdsObj)}`
+        `[動画選択] デフォルト設定詳細: tierVideoAssetIds=${JSON.stringify(tierVideoAssetIdsObj)}`
       );
     } else {
       console.warn(
@@ -95,41 +88,41 @@ export async function getGachaVideoUrls(
     }
   }
 
-  // 1. 共通動画を取得
-  if (commonVideoAssetIds.length > 0) {
-    const commonVideos = await prisma.videoAsset.findMany({
-      where: {
-        id: { in: commonVideoAssetIds },
-        isActive: true,
-      },
-    });
+  // 1. 共通動画を取得（共通動画は使用しないためコメントアウト）
+  // if (commonVideoAssetIds.length > 0) {
+  //   const commonVideos = await prisma.videoAsset.findMany({
+  //     where: {
+  //       id: { in: commonVideoAssetIds },
+  //       isActive: true,
+  //     },
+  //   });
 
-    console.log(
-      `[動画選択] 共通動画: ID${commonVideoAssetIds.join(",")}から${
-        commonVideos.length
-      }件取得`
-    );
+  //   console.log(
+  //     `[動画選択] 共通動画: ID${commonVideoAssetIds.join(",")}から${
+  //       commonVideos.length
+  //     }件取得`
+  //   );
 
-    // ランダムで1つ選択
-    if (commonVideos.length > 0) {
-      const selectedCommonVideo =
-        commonVideos[Math.floor(Math.random() * commonVideos.length)];
-      urls.push(getVideoUrl(selectedCommonVideo.s3Key));
-      console.log(
-        `[動画選択] 共通動画選択: ${selectedCommonVideo.fileName} (${getVideoUrl(
-          selectedCommonVideo.s3Key
-        )})`
-      );
-    } else {
-      console.warn(
-        `[動画選択] 共通動画が見つかりません (ID: ${commonVideoAssetIds.join(
-          ","
-        )})`
-      );
-    }
-  } else {
-    console.warn(`[動画選択] 共通動画IDが設定されていません`);
-  }
+  //   // ランダムで1つ選択
+  //   if (commonVideos.length > 0) {
+  //     const selectedCommonVideo =
+  //       commonVideos[Math.floor(Math.random() * commonVideos.length)];
+  //     urls.push(getVideoUrl(selectedCommonVideo.s3Key));
+  //     console.log(
+  //       `[動画選択] 共通動画選択: ${selectedCommonVideo.fileName} (${getVideoUrl(
+  //         selectedCommonVideo.s3Key
+  //       )})`
+  //     );
+  //   } else {
+  //     console.warn(
+  //       `[動画選択] 共通動画が見つかりません (ID: ${commonVideoAssetIds.join(
+  //         ","
+  //       )})`
+  //     );
+  //   }
+  // } else {
+  //   console.warn(`[動画選択] 共通動画IDが設定されていません`);
+  // }
 
   // 2. 等級別動画を取得（ハズレを含むすべてのレアリティ）
   if (tierVideoAssetIdsObj) {

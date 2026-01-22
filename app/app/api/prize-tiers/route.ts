@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
         code: true,
         label: true,
         displayOrder: true,
+        isActive: true,
       },
     });
 

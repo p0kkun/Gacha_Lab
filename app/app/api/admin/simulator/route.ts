@@ -205,13 +205,7 @@ export async function POST(request: NextRequest) {
       itemProbabilities.sort((a, b) => b.combinedProbability - a.combinedProbability);
     }
 
-    // 旧UI互換のため、固定キーも埋める（存在しない等級は0）
-    const fixedKeys = ['FIRST_PRIZE','SECOND_PRIZE','THIRD_PRIZE','FOURTH_PRIZE','FIFTH_PRIZE','LOSER'];
-    for (const k of fixedKeys) {
-      if (tierResults[k] === undefined) tierResults[k] = 0;
-      if (tierActualRates[k] === undefined) tierActualRates[k] = 0;
-      if (tierExpectedRates[k] === undefined) tierExpectedRates[k] = 0;
-    }
+    // 固定キーは削除し、PrizeTierテーブルから動的に取得した等級のみを使用
 
     return NextResponse.json({
       gachaTypeId: gachaTypeCode,

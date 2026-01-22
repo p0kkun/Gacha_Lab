@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logError } from '@/lib/error-logger';
 
 /**
  * ガチャタイプの景品一覧と確率を取得（ユーザー向け）
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest) {
       tiers: tierInfo,
     });
   } catch (error) {
-    console.error('景品一覧取得エラー:', error);
+    await logError(error, { route: '/api/gacha/prizes' }, request);
     return NextResponse.json(
       { error: '景品一覧の取得に失敗しました' },
       { status: 500 }

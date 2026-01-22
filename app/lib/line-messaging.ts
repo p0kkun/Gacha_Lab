@@ -136,17 +136,26 @@ export async function sendGachaResultMessage(
       return { success: false, error: "LINE client initialization failed" };
     }
 
-    // レアリティに応じた絵文字とラベル
-    const rarityInfo: Record<string, { emoji: string; label: string }> = {
-      FIRST_PRIZE: { emoji: "🏆", label: "1等" },
-      SECOND_PRIZE: { emoji: "🥈", label: "2等" },
-      THIRD_PRIZE: { emoji: "🥉", label: "3等" },
-      FOURTH_PRIZE: { emoji: "🎖️", label: "4等" },
-      FIFTH_PRIZE: { emoji: "🎗️", label: "5等" },
-      LOSER: { emoji: "💫", label: "ハズレ" },
+    // レアリティに応じた絵文字とラベルをPrizeTierテーブルから取得
+    const { prisma } = await import("@/lib/prisma");
+    const tier = await prisma.prizeTier.findUnique({
+      where: { code: rarity },
+      select: { label: true },
+    });
+
+    // 絵文字はコード内でマッピング（DBに保存する必要はない）
+    const emojiMap: Record<string, string> = {
+      FIRST_PRIZE: "🏆",
+      SECOND_PRIZE: "🥈",
+      THIRD_PRIZE: "🥉",
+      FOURTH_PRIZE: "🎖️",
+      FIFTH_PRIZE: "🎗️",
+      LOSER: "💫",
     };
 
-    const rarityData = rarityInfo[rarity] || { emoji: "🎁", label: rarity };
+    const rarityData = tier
+      ? { emoji: emojiMap[rarity] || "🎁", label: tier.label }
+      : { emoji: emojiMap[rarity] || "🎁", label: rarity };
 
     // ポイント付与メッセージ（付与がある場合のみ）
     const grantedPointsMessage =

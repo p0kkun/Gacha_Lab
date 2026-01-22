@@ -38,15 +38,6 @@ type Statistics = {
   dailyStats: Array<{ date: string; count: number }>;
 };
 
-const RARITY_LABELS: Record<string, string> = {
-  FIRST_PRIZE: "1等",
-  SECOND_PRIZE: "2等",
-  THIRD_PRIZE: "3等",
-  FOURTH_PRIZE: "4等",
-  FIFTH_PRIZE: "5等",
-  LOSER: "ハズレ",
-};
-
 const COLORS = [
   "#3b82f6",
   "#10b981",
@@ -63,10 +54,16 @@ type GachaTypeOption = {
   isActive: boolean;
 };
 
+type PrizeTier = {
+  code: string;
+  label: string;
+};
+
 export default function GachaStatisticsContent() {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const [period, setPeriod] = useState<"day" | "month" | "custom">("month");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -85,11 +82,34 @@ export default function GachaStatisticsContent() {
 
   useEffect(() => {
     fetchGachaTypeOptions();
+    fetchPrizeTiers();
   }, []);
 
   useEffect(() => {
     fetchStatistics();
   }, [period, startDate, endDate, filterType, selectedGachaTypeIds]);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const res = await fetch("/api/prize-tiers");
+      if (res.ok) {
+        const data = await res.json();
+        const tierMap: Record<string, string> = {};
+        if (Array.isArray(data.tiers)) {
+          data.tiers.forEach((tier: PrizeTier) => {
+            tierMap[tier.code] = tier.label;
+          });
+        }
+        setPrizeTiers(tierMap);
+      }
+    } catch (error) {
+      console.error("等級マスタ取得エラー:", error);
+    }
+  };
+
+  const getTierLabel = (tierCode: string): string => {
+    return prizeTiers[tierCode] || tierCode;
+  };
 
   const fetchGachaTypeOptions = async () => {
     try {
@@ -540,7 +560,7 @@ export default function GachaStatisticsContent() {
                 <Pie
                   data={Object.entries(statistics.rarityStats).map(
                     ([rarity, count]) => ({
-                      name: RARITY_LABELS[rarity] || rarity,
+                      name: getTierLabel(rarity),
                       value: count,
                     })
                   )}
@@ -571,7 +591,7 @@ export default function GachaStatisticsContent() {
             {Object.entries(statistics.rarityStats).map(([rarity, count]) => (
               <div key={rarity} className="rounded-md bg-gray-50 p-3">
                 <div className="text-sm text-black">
-                  {RARITY_LABELS[rarity] || rarity}
+                  {getTierLabel(rarity)}
                 </div>
                 <div className="text-lg font-semibold">
                   {count.toLocaleString()}

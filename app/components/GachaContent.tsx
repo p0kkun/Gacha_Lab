@@ -46,7 +46,7 @@ export default function GachaContent({
   // メッセージ送信の共通関数
   const sendMessageAsync = async (messageQueueId: number) => {
     try {
-      const response = await fetch("/api/messages/send", {
+      const response = await fetch("/api/gacha/send-result", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -204,7 +204,7 @@ export default function GachaContent({
     // メッセージ送信（動画終了後）
     if (result?.messageQueueId) {
       try {
-        const response = await fetch("/api/messages/send", {
+        const response = await fetch("/api/gacha/send-result", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

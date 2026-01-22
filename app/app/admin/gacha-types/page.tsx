@@ -88,7 +88,7 @@ type GachaType = {
     displayOrder: number;
     isActive: boolean;
   }>;
-  commonVideoIds: number[];
+  // commonVideoIds: number[]; // 共通動画は使用しないためコメントアウト
   rarityVideoIds: Record<string, number[]> | null;
   useDefaultVideos?: boolean;
   resultMessageTemplateId?: number | null;
@@ -113,14 +113,7 @@ type GachaVideo = {
   isActive: boolean;
 };
 
-const RARITY_LABELS: Record<string, string> = {
-  FIRST_PRIZE: "1等",
-  SECOND_PRIZE: "2等",
-  THIRD_PRIZE: "3等",
-  FOURTH_PRIZE: "4等",
-  FIFTH_PRIZE: "5等",
-  LOSER: "ハズレ",
-};
+// RARITY_LABELSは削除し、PrizeTierテーブルから動的に取得する
 
 export default function GachaTypesPage() {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
@@ -144,7 +137,7 @@ export default function GachaTypesPage() {
   >([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [prizeTiers, setPrizeTiers] = useState<
-    Array<{ code: string; label: string; isActive: boolean }>
+    Array<{ code: string; label: string; isActive: boolean; displayOrder: number }>
   >([]);
   const [loadingPrizeTiers, setLoadingPrizeTiers] = useState(false);
   const [showAddPrizeModal, setShowAddPrizeModal] = useState(false);
@@ -418,6 +411,7 @@ export default function GachaTypesPage() {
               code: t.code,
               label: t.label,
               isActive: t.isActive,
+              displayOrder: t.displayOrder ?? 0,
             }))
           : []
       );
@@ -428,10 +422,10 @@ export default function GachaTypesPage() {
     }
   };
 
-  // 等級コードから表示名を取得（PrizeTierマスタ優先、フォールバックはRARITY_LABELS）
+  // 等級コードから表示名を取得（PrizeTierマスタから取得）
   const getTierLabel = (tierCode: string): string => {
     const tier = prizeTiers.find((t) => t.code === tierCode && t.isActive);
-    return tier ? tier.label : RARITY_LABELS[tierCode] || tierCode;
+    return tier ? tier.label : tierCode;
   };
 
   const fetchGachaTypes = async () => {
@@ -471,7 +465,7 @@ export default function GachaTypesPage() {
           gt: GachaType & { rarityVideoIds?: string | Record<string, number[]> }
         ) => ({
           ...gt,
-          commonVideoIds: gt.commonVideoIds || [],
+          // commonVideoIds: gt.commonVideoIds || [], // 共通動画は使用しないためコメントアウト
           rarityVideoIds: gt.rarityVideoIds
             ? typeof gt.rarityVideoIds === "string"
               ? JSON.parse(gt.rarityVideoIds)
@@ -573,7 +567,7 @@ export default function GachaTypesPage() {
 
     setFormData({
       ...gachaType,
-      commonVideoIds: gachaType.commonVideoIds || [],
+      // commonVideoIds: gachaType.commonVideoIds || [], // 共通動画は使用しないためコメントアウト
       rarityVideoIds: gachaType.rarityVideoIds || {},
       prizeWeights,
       prizeHands,
@@ -603,7 +597,7 @@ export default function GachaTypesPage() {
       pointCost: 0,
       startAt: null,
       endAt: null,
-      commonVideoIds: [],
+      // commonVideoIds: [], // 共通動画は使用しないためコメントアウト
       rarityVideoIds: {},
       prizeWeights: {},
       prizeHands: {},
@@ -644,39 +638,41 @@ export default function GachaTypesPage() {
   };
 
   const handlePreview = async () => {
-    const commonVideoIds = formData.commonVideoIds || [];
+    // const commonVideoIds = formData.commonVideoIds || []; // 共通動画は使用しないためコメントアウト
     const rarityVideoIds =
       (formData.rarityVideoIds as Record<string, number[]>) || {};
 
-    if (commonVideoIds.length === 0) {
-      setError("共通動画を選択してください");
-      return;
-    }
+    // if (commonVideoIds.length === 0) {
+    //   setError("共通動画を選択してください");
+    //   return;
+    // } // 共通動画は使用しないためコメントアウト
 
     const selectedRarityVideoIds = rarityVideoIds[previewRarity] || [];
     if (selectedRarityVideoIds.length === 0) {
-      setError(`${RARITY_LABELS[previewRarity]}の動画を選択してください`);
+      const tierLabel = getTierLabel(previewRarity);
+      setError(`${tierLabel}の動画を選択してください`);
       return;
     }
 
     try {
       setError(null);
-      // 選択された動画IDから動画URLを取得
-      const allVideoIds = [...commonVideoIds, ...selectedRarityVideoIds];
+      // 選択された動画IDから動画URLを取得（共通動画は使用しないためコメントアウト）
+      // const allVideoIds = [...commonVideoIds, ...selectedRarityVideoIds];
+      const allVideoIds = [...selectedRarityVideoIds];
       const selectedVideos = videos.filter((v) => allVideoIds.includes(v.id));
 
-      // 共通動画と等級別動画を分ける（最初に見つかったものを使用）
-      const commonVideo = selectedVideos.find(
-        (v) => v.videoType === "COMMON" && commonVideoIds.includes(v.id)
-      );
+      // 共通動画と等級別動画を分ける（最初に見つかったものを使用）（共通動画は使用しないためコメントアウト）
+      // const commonVideo = selectedVideos.find(
+      //   (v) => v.videoType === "COMMON" && commonVideoIds.includes(v.id)
+      // );
       const rarityVideo = selectedVideos.find(
         (v) => v.videoType === "RARITY" && selectedRarityVideoIds.includes(v.id)
       );
 
       const videoUrls: string[] = [];
-      if (commonVideo) {
-        videoUrls.push(commonVideo.s3Url);
-      }
+      // if (commonVideo) {
+      //   videoUrls.push(commonVideo.s3Url);
+      // } // 共通動画は使用しないためコメントアウト
       if (rarityVideo) {
         videoUrls.push(rarityVideo.s3Url);
       }
@@ -810,29 +806,24 @@ export default function GachaTypesPage() {
     if (formData.useDefaultVideos !== false) {
       // デフォルト動画を使用する場合は、動画設定のバリデーションをスキップ
     } else {
-      const commonVideoIds = formData.commonVideoIds || [];
+      // const commonVideoIds = formData.commonVideoIds || []; // 共通動画は使用しないためコメントアウト
       const rarityVideoIds =
         (formData.rarityVideoIds as Record<string, number[]>) || {};
 
-      // 共通動画が設定されていない場合
-      if (commonVideoIds.length === 0) {
-        setError("共通動画を少なくとも1つ選択してください");
-        return;
-      }
+      // 共通動画が設定されていない場合（共通動画は使用しないためコメントアウト）
+      // if (commonVideoIds.length === 0) {
+      //   setError("共通動画を少なくとも1つ選択してください");
+      //   return;
+      // }
 
-      // 各レアリティの動画が設定されているか確認（あたりの場合のみ）
-      const requiredRarities = [
-        "FIRST_PRIZE",
-        "SECOND_PRIZE",
-        "THIRD_PRIZE",
-        "FOURTH_PRIZE",
-        "FIFTH_PRIZE",
-      ];
+      // 各レアリティの動画が設定されているか確認（あたりの場合のみ、PrizeTierテーブルから動的に取得）
+      // LOSERコード以外の等級（あたり）のみをチェック
+      const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive && t.code !== "LOSER");
       const missingRarities: string[] = [];
-      for (const rarity of requiredRarities) {
-        const rarityVideos = rarityVideoIds[rarity] || [];
+      for (const tier of prizeTiersForValidation) {
+        const rarityVideos = rarityVideoIds[tier.code] || [];
         if (rarityVideos.length === 0) {
-          missingRarities.push(RARITY_LABELS[rarity]);
+          missingRarities.push(tier.label);
         }
       }
 
@@ -845,11 +836,10 @@ export default function GachaTypesPage() {
         return;
       }
 
-      // 動画が設定されていない場合はガチャを無効にする
+      // 動画が設定されていない場合はガチャを無効にする（共通動画は使用しないためコメントアウト）
       if (
         formData.isActive &&
-        (commonVideoIds.length === 0 ||
-          Object.keys(rarityVideoIds).length === 0)
+        Object.keys(rarityVideoIds).length === 0
       ) {
         setFormData({ ...formData, isActive: false });
         setError(
@@ -966,25 +956,20 @@ export default function GachaTypesPage() {
       // 動画設定をチェック
       if (gachaType.useDefaultVideos === false) {
         // 個別設定を使用する場合
-        const commonVideoIds = gachaType.commonVideoIds || [];
+        // const commonVideoIds = gachaType.commonVideoIds || []; // 共通動画は使用しないためコメントアウト
         const rarityVideoIds = gachaType.rarityVideoIds || {};
 
-        if (commonVideoIds.length === 0) {
-          reasons.push("共通動画が設定されていません");
-        }
+        // if (commonVideoIds.length === 0) {
+        //   reasons.push("共通動画が設定されていません");
+        // } // 共通動画は使用しないためコメントアウト
 
-        const requiredRarities = [
-          "FIRST_PRIZE",
-          "SECOND_PRIZE",
-          "THIRD_PRIZE",
-          "FOURTH_PRIZE",
-          "FIFTH_PRIZE",
-        ];
+        // PrizeTierテーブルからあたりの等級（LOSER以外）を動的に取得
+        const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive && t.code !== "LOSER");
         const missingRarities: string[] = [];
-        for (const rarity of requiredRarities) {
-          const rarityVideos = (rarityVideoIds as Record<string, number[]>)[rarity] || [];
+        for (const tier of prizeTiersForValidation) {
+          const rarityVideos = (rarityVideoIds as Record<string, number[]>)[tier.code] || [];
           if (rarityVideos.length === 0) {
-            missingRarities.push(RARITY_LABELS[rarity] || rarity);
+            missingRarities.push(tier.label);
           }
         }
 
@@ -1430,22 +1415,22 @@ export default function GachaTypesPage() {
                           <div className="font-medium text-blue-700">
                             ✓ デフォルト設定を使用
                           </div>
-                          <div className="text-gray-500">
+                          {/* <div className="text-gray-500">
                             共通動画: デフォルト設定から取得
-                          </div>
+                          </div> */}{/* 共通動画は使用しないためコメントアウト */}
                           <div className="text-gray-500">
                             等級別動画: デフォルト設定から取得
                           </div>
                         </div>
                       ) : (
                         <>
-                          <div>
+                          {/* <div>
                             共通動画:{" "}
                             {gachaType.commonVideoIds &&
                             gachaType.commonVideoIds.length > 0
                               ? `${gachaType.commonVideoIds.length}個設定済み`
                               : "未設定"}
-                          </div>
+                          </div> */}{/* 共通動画は使用しないためコメントアウト */}
                           <div>
                             等級別動画:{" "}
                             {gachaType.rarityVideoIds &&
@@ -1455,9 +1440,7 @@ export default function GachaTypesPage() {
                                 }レアリティ設定済み`
                               : "未設定"}
                           </div>
-                          {(!gachaType.commonVideoIds ||
-                            gachaType.commonVideoIds.length === 0 ||
-                            !gachaType.rarityVideoIds ||
+                          {(!gachaType.rarityVideoIds ||
                             Object.keys(gachaType.rarityVideoIds).length ===
                               0) && (
                             <div className="mt-2 text-xs text-red-600">
@@ -1827,11 +1810,11 @@ export default function GachaTypesPage() {
                       <p className="text-sm text-gray-600">
                         {formData.useDefaultVideos !== false
                           ? "デフォルト動画を使用します。個別設定する場合は「デフォルト動画を使用」のチェックを外してください。"
-                          : "共通動画と各レアリティの当たり判定動画を設定してください。設定されていない場合はガチャを有効にできません。"}
+                          : "各レアリティの当たり判定動画を設定してください。設定されていない場合はガチャを有効にできません。"}
                       </p>
 
-                      {/* 共通動画選択 */}
-                      {formData.useDefaultVideos === false && (
+                      {/* 共通動画選択（共通動画は使用しないためコメントアウト） */}
+                      {/* {formData.useDefaultVideos === false && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             共通動画（前半部分）
@@ -1897,7 +1880,7 @@ export default function GachaTypesPage() {
                             </div>
                           )}
                         </div>
-                      )}
+                      )} */}
 
                       {/* 等級別動画選択 */}
                       {formData.useDefaultVideos === false && (
@@ -1909,93 +1892,90 @@ export default function GachaTypesPage() {
                           <p className="mb-2 text-xs text-gray-500">
                             各レアリティごとに複数選択可能。ランダムで1つが再生されます。
                           </p>
-                          {[
-                            "FIRST_PRIZE",
-                            "SECOND_PRIZE",
-                            "THIRD_PRIZE",
-                            "FOURTH_PRIZE",
-                            "FIFTH_PRIZE",
-                            "LOSER",
-                          ].map((rarity) => (
-                            <div key={rarity} className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {RARITY_LABELS[rarity]}
-                              </label>
-                              {loadingVideos ? (
-                                <div className="text-sm text-gray-500">
-                                  読み込み中...
-                                </div>
-                              ) : (
-                                <div className="max-h-32 space-y-2 overflow-y-auto rounded-md border border-gray-300 bg-white p-2">
-                                  {videos
-                                    .filter(
-                                      (v) =>
-                                        v.videoType === "RARITY" &&
-                                        v.rarity === rarity &&
-                                        v.isActive
-                                    )
-                                    .map((video) => (
-                                      <label
-                                        key={video.id}
-                                        className="flex items-center gap-2 rounded p-2 hover:bg-gray-50"
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={
-                                            ((formData.rarityVideoIds as Record<
-                                              string,
-                                              number[]
-                                            >) || {})[rarity]?.includes(
-                                              video.id
-                                            ) || false
-                                          }
-                                          onChange={(e) => {
-                                            const currentRarityIds =
+                          {prizeTiers
+                            .filter((t) => t.isActive)
+                            .sort((a, b) => {
+                              // displayOrderでソート、同じ場合はcodeでソート
+                              const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
+                              return orderDiff !== 0 ? orderDiff : a.code.localeCompare(b.code);
+                            })
+                            .map((tier) => (
+                              <div key={tier.code} className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  {tier.label}
+                                </label>
+                                {loadingVideos ? (
+                                  <div className="text-sm text-gray-500">
+                                    読み込み中...
+                                  </div>
+                                ) : (
+                                  <div className="max-h-32 space-y-2 overflow-y-auto rounded-md border border-gray-300 bg-white p-2">
+                                    {videos
+                                      .filter(
+                                        (v) =>
+                                          v.videoType === "RARITY" &&
+                                          v.isActive
+                                      )
+                                      .map((video) => (
+                                        <label
+                                          key={video.id}
+                                          className="flex items-center gap-2 rounded p-2 hover:bg-gray-50"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={
                                               ((formData.rarityVideoIds as Record<
                                                 string,
                                                 number[]
-                                              >) || {})[rarity] || [];
-                                            const newRarityIds = e.target
-                                              .checked
-                                              ? [...currentRarityIds, video.id]
-                                              : currentRarityIds.filter(
-                                                  (id) => id !== video.id
-                                                );
-                                            setFormData({
-                                              ...formData,
-                                              rarityVideoIds: {
-                                                ...((formData.rarityVideoIds as Record<
+                                              >) || {})[tier.code]?.includes(
+                                                video.id
+                                              ) || false
+                                            }
+                                            onChange={(e) => {
+                                              const currentRarityIds =
+                                                ((formData.rarityVideoIds as Record<
                                                   string,
                                                   number[]
-                                                >) || {}),
-                                                [rarity]: newRarityIds,
-                                              },
-                                            });
-                                          }}
-                                          className="rounded border-gray-300"
-                                        />
-                                        <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900">
-                                            {video.fileName}
+                                                >) || {})[tier.code] || [];
+                                              const newRarityIds = e.target
+                                                .checked
+                                                ? [...currentRarityIds, video.id]
+                                                : currentRarityIds.filter(
+                                                    (id) => id !== video.id
+                                                  );
+                                              setFormData({
+                                                ...formData,
+                                                rarityVideoIds: {
+                                                  ...((formData.rarityVideoIds as Record<
+                                                    string,
+                                                    number[]
+                                                  >) || {}),
+                                                  [tier.code]: newRarityIds,
+                                                },
+                                              });
+                                            }}
+                                            className="rounded border-gray-300"
+                                          />
+                                          <div className="flex-1">
+                                            <div className="text-sm font-medium text-gray-900">
+                                              {video.fileName}
+                                            </div>
                                           </div>
-                                        </div>
-                                      </label>
-                                    ))}
-                                  {videos.filter(
-                                    (v) =>
-                                      v.videoType === "RARITY" &&
-                                      v.rarity === rarity &&
-                                      v.isActive
-                                  ).length === 0 && (
-                                    <div className="py-2 text-center text-xs text-gray-500">
-                                      {RARITY_LABELS[rarity]}
-                                      の動画が登録されていません
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                                        </label>
+                                      ))}
+                                    {videos.filter(
+                                      (v) =>
+                                        v.videoType === "RARITY" &&
+                                        v.isActive
+                                    ).length === 0 && (
+                                      <div className="py-2 text-center text-xs text-gray-500">
+                                        等級別動画が登録されていません
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                         </div>
                       )}
 
@@ -2006,8 +1986,8 @@ export default function GachaTypesPage() {
                             type="button"
                             onClick={handlePreview}
                             disabled={
-                              !formData.commonVideoIds ||
-                              formData.commonVideoIds.length === 0 ||
+                              // !formData.commonVideoIds ||
+                              // formData.commonVideoIds.length === 0 || // 共通動画は使用しないためコメントアウト
                               !formData.rarityVideoIds ||
                               Object.keys(
                                 formData.rarityVideoIds as Record<
@@ -2025,17 +2005,17 @@ export default function GachaTypesPage() {
                             onChange={(e) => setPreviewRarity(e.target.value)}
                             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                           >
-                            {[
-                              "FIRST_PRIZE",
-                              "SECOND_PRIZE",
-                              "THIRD_PRIZE",
-                              "FOURTH_PRIZE",
-                              "FIFTH_PRIZE",
-                            ].map((rarity) => (
-                              <option key={rarity} value={rarity}>
-                                {RARITY_LABELS[rarity]}でプレビュー
-                              </option>
-                            ))}
+                            {prizeTiers
+                              .filter((t) => t.isActive && t.code !== "LOSER")
+                              .sort((a, b) => {
+                                const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
+                                return orderDiff !== 0 ? orderDiff : a.code.localeCompare(b.code);
+                              })
+                              .map((tier) => (
+                                <option key={tier.code} value={tier.code}>
+                                  {tier.label}でプレビュー
+                                </option>
+                              ))}
                           </select>
                         </div>
                       )}
@@ -2728,8 +2708,7 @@ export default function GachaTypesPage() {
                                 className="rounded-md bg-gray-50 p-3 lg:p-4"
                               >
                                 <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                                  {RARITY_LABELS[config.rarity] ||
-                                    config.rarity}
+                                  {getTierLabel(config.rarity)}
                                 </div>
                                 <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
                                   {weight} ({percentage.toFixed(1)}%)

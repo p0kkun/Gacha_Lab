@@ -376,7 +376,6 @@ model Tag {
   updatedAt   DateTime  @updatedAt
   userTags    UserTag[]
 
-  @@index([name])
   @@map("tags")
 }
 

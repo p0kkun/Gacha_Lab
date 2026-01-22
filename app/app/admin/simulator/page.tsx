@@ -33,13 +33,9 @@ type SimulatorResult = {
   itemProbabilities?: ItemProbability[];
 };
 
-const RARITY_LABELS: Record<string, string> = {
-  FIRST_PRIZE: "1等",
-  SECOND_PRIZE: "2等",
-  THIRD_PRIZE: "3等",
-  FOURTH_PRIZE: "4等",
-  FIFTH_PRIZE: "5等",
-  LOSER: "ハズレ",
+type PrizeTier = {
+  code: string;
+  label: string;
 };
 
 export default function SimulatorPage() {
@@ -50,10 +46,34 @@ export default function SimulatorPage() {
   const [result, setResult] = useState<SimulatorResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchGachaTypes();
+    fetchPrizeTiers();
   }, []);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const res = await fetch("/api/prize-tiers");
+      if (res.ok) {
+        const data = await res.json();
+        const tierMap: Record<string, string> = {};
+        if (Array.isArray(data.tiers)) {
+          data.tiers.forEach((tier: PrizeTier) => {
+            tierMap[tier.code] = tier.label;
+          });
+        }
+        setPrizeTiers(tierMap);
+      }
+    } catch (error) {
+      console.error("等級マスタ取得エラー:", error);
+    }
+  };
+
+  const getTierLabel = (tierCode: string): string => {
+    return prizeTiers[tierCode] || tierCode;
+  };
 
   const fetchGachaTypes = async () => {
     try {
@@ -244,7 +264,7 @@ export default function SimulatorPage() {
                 {Object.keys(result.results).map((rarity) => (
                   <tr key={rarity} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                      {RARITY_LABELS[rarity] || rarity}
+                      {getTierLabel(rarity)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                       {result.results[rarity].toLocaleString()}
@@ -322,7 +342,7 @@ export default function SimulatorPage() {
                     {result.itemProbabilities.map((item, index) => (
                       <tr key={`${item.tierCode}-${item.itemId}-${index}`} className="hover:bg-gray-50">
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                          {RARITY_LABELS[item.tierCode] || item.tierCode}
+                          {getTierLabel(item.tierCode)}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                           {item.itemName}

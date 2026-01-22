@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { logError } from "@/lib/error-logger";
+import { getCache, setCache } from "@/lib/cache";
+import { CacheKeys } from "@/lib/cache-keys";
 
 function getStripeInstance(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
@@ -70,6 +72,34 @@ export async function POST(request: NextRequest) {
         { error: "無効な購入プランです" },
         { status: 400 }
       );
+    }
+
+    // ユーザー取得（バリデーション用）
+    const userCacheKey = CacheKeys.user(userId);
+    let user = await getCache<{ userId: string }>(userCacheKey);
+
+    if (!user) {
+      // LineIDをもとにusersデータ取得
+      const dbUser = await prisma.user.findUnique({
+        where: { userId },
+        select: { userId: true },
+      });
+
+      if (!dbUser) {
+        await logError(
+          new Error("ユーザー未登録"),
+          { userId, route: "/api/points/purchase", customData: { planId } },
+          request
+        );
+        return NextResponse.json(
+          { error: "ユーザー未登録" },
+          { status: 404 }
+        );
+      }
+
+      // Userデータキャッシュ保存
+      user = dbUser;
+      await setCache(userCacheKey, user, 300); // TTL: 5分
     }
 
     const stripe = getStripeInstance();

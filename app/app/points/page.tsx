@@ -75,7 +75,7 @@ function CheckoutSection({
     };
 
     createPaymentIntent();
-  }, [plan.price, plan.points, userId]);
+  }, [plan.price ?? 0, plan.points, userId]);
 
   if (loading) {
     return (
@@ -118,7 +118,7 @@ function CheckoutSection({
           {plan.points.toLocaleString()}ポイント
         </div>
         <div className="mt-2 text-sm text-gray-600">
-          金額: ¥{plan.price.toLocaleString()}
+          金額: ¥{plan.price?.toLocaleString() ?? '0'}
         </div>
       </div>
 
@@ -132,7 +132,7 @@ function CheckoutSection({
         }}
       >
         <CheckoutForm
-          amount={plan.price}
+          amount={plan.price ?? 0}
           points={plan.points}
           userId={userId}
           onSuccess={onSuccess}
@@ -806,7 +806,7 @@ function PointsPageContent() {
                       </div>
                     )}
                   <div className="text-sm text-gray-600">
-                    ¥{plan.price.toLocaleString()}
+                    ¥{plan.price?.toLocaleString() ?? '0'}
                   </div>
                 </button>
               ))}

@@ -82,23 +82,23 @@ export default function HomePageContent({
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション - ポーカーテーブル風 */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute top-10 left-10 text-6xl">🂡</div>
               <div className="absolute top-20 right-10 text-5xl">🂮</div>
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
             
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-md">
                 Gacha Lab
               </h1>
-              <p className="mb-6 text-sm text-green-200">
+              <p className="mb-6 text-sm" style={{ color: '#6b5a4a' }}>
                 ポーカー風ガチャでアイテムを獲得しよう！
               </p>
               
@@ -133,7 +133,20 @@ export default function HomePageContent({
               {/* ポイント購入ボタン */}
               <Link
                 href="/points"
-                className="mx-auto block w-full max-w-xs rounded-xl border-2 border-yellow-400/50 bg-white/10 backdrop-blur-sm px-6 py-3 text-sm font-semibold text-white transition-all hover:border-yellow-400 hover:bg-white/20 hover:shadow-lg active:scale-95"
+                className="mx-auto block w-full max-w-xs rounded-xl border-2 px-6 py-3 text-sm font-semibold transition-all hover:shadow-lg active:scale-95"
+                style={{ 
+                  borderColor: '#8b6f47',
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  e.currentTarget.style.borderColor = '#9b7f57';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                  e.currentTarget.style.borderColor = '#8b6f47';
+                }}
               >
                 <span className="flex items-center justify-center gap-2">
                   <img
@@ -175,7 +188,17 @@ export default function HomePageContent({
               </Link>
               <Link
                 href="/?action=items"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-items.svg"
@@ -205,16 +228,16 @@ export default function HomePageContent({
 
             {/* ガチャタイプ一覧 */}
             <div className="mb-6">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+              <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 利用可能なガチャ
               </h2>
               {loadingGacha ? (
-                <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center">
-                  <div className="text-white">読み込み中...</div>
+                <div className="rounded-xl p-8 text-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                  <div style={{ color: '#5a4a3a' }}>読み込み中...</div>
                 </div>
               ) : gachaTypes.length === 0 ? (
-                <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center">
-                  <div className="text-white">
+                <div className="rounded-xl p-8 text-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                  <div style={{ color: '#5a4a3a' }}>
                     現在利用可能なガチャがありません
                   </div>
                 </div>
@@ -265,14 +288,19 @@ export default function HomePageContent({
                             </p>
                           )}
                           <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
+                            <span 
+                              className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
+                              style={{
+                                background: 'linear-gradient(to right, #8b6f47, #7a5f37)'
+                              }}
+                            >
                               {gacha.pointCost > 0
                                 ? `$${gacha.pointCost.toLocaleString()}`
                                 : "無料"}
                             </span>
                           </div>
                         </div>
-                        <div className="text-yellow-600 transition-transform group-hover:translate-x-1">
+                        <div className="transition-transform group-hover:translate-x-1" style={{ color: '#8b6f47' }}>
                           <svg
                             className="h-6 w-6"
                             fill="none"
@@ -295,14 +323,24 @@ export default function HomePageContent({
             </div>
 
             {/* お知らせ・ヘルプ */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl p-4 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 お知らせ・ヘルプ
               </h2>
               <div className="space-y-2">
                 <Link
                   href="/?action=help"
-                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: '#5a4a3a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -324,10 +362,11 @@ export default function HomePageContent({
                     </span>
                   </div>
                   <svg
-                    className="h-5 w-5 text-white/70"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: '#8b6f47' }}
                   >
                     <path
                       strokeLinecap="round"
@@ -339,7 +378,17 @@ export default function HomePageContent({
                 </Link>
                 <Link
                   href="/?action=referral"
-                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: '#5a4a3a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -359,10 +408,11 @@ export default function HomePageContent({
                     <span className="text-sm font-medium">友達紹介</span>
                   </div>
                   <svg
-                    className="h-5 w-5 text-white/70"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: '#8b6f47' }}
                   >
                     <path
                       strokeLinecap="round"

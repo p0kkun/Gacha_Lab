@@ -21,13 +21,11 @@ type GachaVideo = {
   categories?: string[];
 };
 
-const RARITY_LABELS: Record<string, string> = {
-  FIRST_PRIZE: "1等",
-  SECOND_PRIZE: "2等",
-  THIRD_PRIZE: "3等",
-  FOURTH_PRIZE: "4等",
-  FIFTH_PRIZE: "5等",
-  LOSER: "ハズレ",
+type PrizeTier = {
+  code: string;
+  label: string;
+  isActive: boolean;
+  displayOrder: number;
 };
 
 export default function VideosPage() {
@@ -39,9 +37,10 @@ export default function VideosPage() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [selectedVideoType, setSelectedVideoType] = useState<
     "COMMON" | "RARITY"
-  >("COMMON");
+  >("RARITY"); // 共通動画は使用しないため、デフォルトをRARITYに変更
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
+  const [prizeTiers, setPrizeTiers] = useState<PrizeTier[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     videoId: number | null;
@@ -101,7 +100,27 @@ export default function VideosPage() {
 
   useEffect(() => {
     fetchVideos();
+    fetchPrizeTiers();
   }, []);
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const res = await fetch("/api/prize-tiers");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.tiers)) {
+          console.log("[一括設定] 等級マスタ取得:", data.tiers);
+          setPrizeTiers(data.tiers);
+        } else {
+          console.warn("[一括設定] 等級マスタのデータ形式が不正:", data);
+        }
+      } else {
+        console.error("[一括設定] 等級マスタ取得失敗:", res.status);
+      }
+    } catch (error) {
+      console.error("等級マスタ取得エラー:", error);
+    }
+  };
 
   // 動画をアップロード
   const handleUpload = async () => {
@@ -385,7 +404,7 @@ export default function VideosPage() {
       const data = await res.json();
       const nextSettings = {
         id: data.settings.id,
-        commonVideoAssetIds: data.settings.commonVideoAssetIds || [],
+        // commonVideoAssetIds: data.settings.commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
         tierVideoAssetIds: data.settings.tierVideoAssetIds
           ? typeof data.settings.tierVideoAssetIds === "string"
             ? JSON.parse(data.settings.tierVideoAssetIds)
@@ -421,7 +440,7 @@ export default function VideosPage() {
           "X-Admin-Auth": token || "",
         },
         body: JSON.stringify({
-          commonVideoAssetIds: defaultSettings.commonVideoAssetIds,
+          // commonVideoAssetIds: defaultSettings.commonVideoAssetIds, // 共通動画は使用しないためコメントアウト
           tierVideoAssetIds: defaultSettings.tierVideoAssetIds,
         }),
       });
@@ -507,7 +526,7 @@ export default function VideosPage() {
   // 注意: 新しいスキーマでは、等級別動画の等級割当は GachaType/DefaultGachaVideoSettings で管理されるため、
   // 動画管理画面では等級別にグループ化しない（すべての等級別動画を1つのセクションに表示）
   const groupedVideos = {
-    COMMON: videos.filter((v) => v.videoType === "COMMON"),
+    // COMMON: videos.filter((v) => v.videoType === "COMMON"), // 共通動画は使用しないためコメントアウト
     RARITY: videos.filter((v) => v.videoType === "RARITY"),
   };
 
@@ -574,7 +593,8 @@ export default function VideosPage() {
               </div>
             ) : defaultSettings ? (
               <div className="space-y-4">
-                <div>
+                {/* 共通動画セクション（共通動画は使用しないためコメントアウト） */}
+                {/* <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     共通動画（複数選択可能）
                   </label>
@@ -625,18 +645,29 @@ export default function VideosPage() {
                       </p>
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     等級別動画（各等級ごとに複数選択可能）
                   </label>
+                  {prizeTiers.length === 0 ? (
+                    <div className="rounded-md border border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                      等級マスタが登録されていません。等級マスタ管理画面で等級を登録してください。
+                    </div>
+                  ) : (
                   <div className="space-y-3">
-                    {Object.entries(RARITY_LABELS).map(([key, label]) => (
-                      <div key={key}>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                          {label}
-                        </label>
+                    {prizeTiers
+                      .filter((t) => t.isActive !== false)
+                      .sort((a, b) => {
+                        const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
+                        return orderDiff !== 0 ? orderDiff : a.code.localeCompare(b.code);
+                      })
+                      .map((tier) => (
+                        <div key={tier.code}>
+                          <label className="mb-1 block text-sm font-medium text-gray-700">
+                            {tier.label}
+                          </label>
                         <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-gray-300 p-3">
                           {videos
                             .filter(
@@ -651,18 +682,18 @@ export default function VideosPage() {
                                   type="checkbox"
                                   checked={
                                     defaultSettings.tierVideoAssetIds?.[
-                                      key
+                                      tier.code
                                     ]?.includes(video.id) || false
                                   }
                                   onChange={(e) => {
                                     const currentIds =
                                       defaultSettings.tierVideoAssetIds?.[
-                                        key
+                                        tier.code
                                       ] || [];
                                     const newRarityVideoIds = {
                                       ...(defaultSettings.tierVideoAssetIds ||
                                         {}),
-                                      [key]: e.target.checked
+                                      [tier.code]: e.target.checked
                                         ? [...currentIds, video.id]
                                         : currentIds.filter(
                                             (id) => id !== video.id
@@ -691,6 +722,7 @@ export default function VideosPage() {
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -735,9 +767,9 @@ export default function VideosPage() {
                   }}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="COMMON">
+                  {/* <option value="COMMON">
                     共通動画（あたりかハズレの判定動画まで）
-                  </option>
+                  </option> */}{/* 共通動画は使用しないためコメントアウト */}
                   <option value="RARITY">等級別動画（あたりの等級別）</option>
                 </select>
                 <p className="mt-1 text-xs text-black">
@@ -805,8 +837,8 @@ export default function VideosPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* 共通動画 */}
-            <div className="rounded-lg bg-white p-6 shadow">
+            {/* 共通動画（共通動画は使用しないためコメントアウト） */}
+            {/* <div className="rounded-lg bg-white p-6 shadow">
               <h2 className="mb-4 text-xl font-semibold text-gray-800">
                 共通動画（あたりかハズレの判定動画まで）
               </h2>
@@ -873,7 +905,7 @@ export default function VideosPage() {
                   共通動画が登録されていません
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* 等級別動画 */}
             <div className="rounded-lg bg-white p-6 shadow">

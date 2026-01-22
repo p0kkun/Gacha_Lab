@@ -1,7 +1,7 @@
 import { ReferralStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
-import { deleteCache } from "./cache";
+import { deleteCache, getCache, setCache } from "./cache";
 import { CacheKeys } from "./cache-keys";
 
 /**
@@ -83,6 +83,26 @@ export async function verifyReferralLink(
   reason?: string;
   referralId?: number;
 }> {
+  // Userデータキャッシュ取得（userIdが指定されている場合のみ）
+  if (userId) {
+    const userCacheKey = CacheKeys.user(userId);
+    let user = await getCache<{ userId: string }>(userCacheKey);
+
+    if (!user) {
+      // LineIDをもとにusersデータ取得
+      const dbUser = await prisma.user.findUnique({
+        where: { userId },
+        select: { userId: true },
+      });
+
+      if (dbUser) {
+        // Userデータキャッシュ保存
+        user = dbUser;
+        await setCache(userCacheKey, user, 300); // TTL: 5分
+      }
+    }
+  }
+
   const referral = await prisma.referral.findUnique({
     where: { referralLinkId },
   });

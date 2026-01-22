@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { logError } from "@/lib/error-logger";
+import { deleteCache } from "@/lib/cache";
+import { CacheKeys } from "@/lib/cache-keys";
 // PointTransactionTypeの一時的な回避策（Prismaクライアントの型解決問題のため）
 const PointTransactionType = {
   PURCHASE: "PURCHASE" as const,
@@ -164,6 +166,9 @@ export async function POST(request: NextRequest) {
       paymentIntentId,
       purchaseLogId
     );
+
+    // userPointBalanceキャッシュ削除（ポイント付与後）
+    await deleteCache(CacheKeys.pointBalance(userId));
 
     // 既に付与済みの場合は、現在のポイント残高を返す
     if (grantResult.alreadyGranted) {

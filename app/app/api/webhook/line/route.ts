@@ -175,30 +175,76 @@ async function getGachaTypes() {
       orderBy: { createdAt: 'asc' },
     });
 
-    // デフォルト設定を取得
+    // デフォルト設定を取得（共通動画は使用しないため、等級別動画のみチェック）
     const defaultSettings = await prisma.defaultGachaVideoSettings.findFirst({
       orderBy: { createdAt: 'desc' },
     });
 
-    const hasDefaultVideos =
-      defaultSettings &&
-      (defaultSettings as any).commonVideoAssetIds &&
-      (defaultSettings as any).commonVideoAssetIds.length > 0;
+    // PrizeTierテーブルからあたりの等級（LOSER以外）を動的に取得（filterの前に取得）
+    const prizeTiers = await prisma.prizeTier.findMany({
+      where: { isActive: true, code: { not: "LOSER" } },
+      select: { code: true },
+    });
+    const requiredRarities = prizeTiers.map(t => t.code);
+
+    // const hasDefaultVideos =
+    //   defaultSettings &&
+    //   (defaultSettings as any).commonVideoAssetIds &&
+    //   (defaultSettings as any).commonVideoAssetIds.length > 0; // 共通動画は使用しないためコメントアウト
+
+    // デフォルト設定の等級別動画をチェック
+    let hasDefaultTierVideos = false;
+    if (defaultSettings && (defaultSettings as any).tierVideoAssetIds) {
+      try {
+        const tierVideoIdsObj =
+          typeof (defaultSettings as any).tierVideoAssetIds === 'string'
+            ? JSON.parse((defaultSettings as any).tierVideoAssetIds)
+            : (defaultSettings as any).tierVideoAssetIds;
+        if (typeof tierVideoIdsObj === 'object' && tierVideoIdsObj !== null) {
+          hasDefaultTierVideos = requiredRarities.every((rarity) => {
+            const videoIds = (tierVideoIdsObj as Record<string, number[]>)[rarity] || [];
+            return videoIds.length > 0;
+          });
+        }
+      } catch (error) {
+        console.error('デフォルト設定の等級別動画解析エラー:', error);
+      }
+    }
 
     // 動画設定があるガチャタイプのみをフィルタリング
     const gachaTypesWithVideos = allGachaTypes.filter((gachaType) => {
       // デフォルト動画を使用する場合
       if (gachaType.useDefaultVideos) {
-        return hasDefaultVideos;
+        return hasDefaultTierVideos;
       }
       
-      // 個別設定の動画がある場合
-      const hasCommonVideos = 
-        gachaType.commonVideoAssetIds && 
-        Array.isArray(gachaType.commonVideoAssetIds) &&
-        gachaType.commonVideoAssetIds.length > 0;
+      // 個別設定の動画がある場合（共通動画は使用しないためコメントアウト）
+      // const hasCommonVideos = 
+      //   gachaType.commonVideoAssetIds && 
+      //   Array.isArray(gachaType.commonVideoAssetIds) &&
+      //   gachaType.commonVideoAssetIds.length > 0;
       
-      return hasCommonVideos;
+      // 等級別動画の設定を確認
+      let hasRarityVideos = false;
+      if ((gachaType as any).tierVideoAssetIds) {
+        try {
+          const rarityVideoIdsObj =
+            typeof (gachaType as any).tierVideoAssetIds === 'string'
+              ? JSON.parse((gachaType as any).tierVideoAssetIds)
+              : (gachaType as any).tierVideoAssetIds;
+          
+          if (typeof rarityVideoIdsObj === 'object' && rarityVideoIdsObj !== null) {
+            hasRarityVideos = requiredRarities.every((rarity) => {
+              const videoIds = (rarityVideoIdsObj as Record<string, number[]>)[rarity] || [];
+              return videoIds.length > 0;
+            });
+          }
+        } catch (error) {
+          console.error(`ガチャタイプ ${gachaType.code} の等級別動画設定解析エラー:`, error);
+        }
+      }
+      
+      return hasRarityVideos;
     });
 
     // 等級マスタ（GachaTierWeight）が設定されているガチャタイプのみをフィルタリング

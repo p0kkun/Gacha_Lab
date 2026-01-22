@@ -85,7 +85,13 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
     <>
       {/* スペーサー（ナビゲーションの高さ分） */}
       {!hideSpacer && <div className="h-20" />}
-      <nav className={`fixed bottom-0 left-0 right-0 z-50 border-t ${transparent ? 'border-transparent bg-transparent shadow-none' : 'border-gray-200 bg-white shadow-lg'}`}>
+      <nav 
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t ${transparent ? 'border-transparent bg-transparent shadow-none' : 'shadow-lg'}`}
+        style={transparent ? {} : {
+          backgroundColor: '#d4c4b0',
+          borderColor: '#b8a896'
+        }}
+      >
         <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
           {menuItems.map((item) => {
             const active = isActive(item);
@@ -111,11 +117,16 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
                   className="h-6 w-6 flex-shrink-0"
                   aria-hidden="true"
                 />
-                <span className={`text-[10px] font-medium leading-tight ${
-                  transparent
-                    ? active ? 'text-yellow-300' : 'text-green-200'
-                    : active ? 'text-blue-600' : 'text-gray-600'
-                }`}>
+                <span 
+                  className={`whitespace-nowrap text-[10px] font-medium leading-tight ${
+                    transparent
+                      ? active ? 'text-yellow-300' : 'text-green-200'
+                      : ''
+                  }`}
+                  style={transparent ? {} : {
+                    color: active ? '#5a4a3a' : '#6b5a4a'
+                  }}
+                >
                   {item.label}
                 </span>
               </Link>

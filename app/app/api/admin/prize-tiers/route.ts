@@ -14,6 +14,15 @@ export async function GET(request: NextRequest) {
   try {
     const tiers = await prisma.prizeTier.findMany({
       orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        code: true,
+        label: true,
+        displayOrder: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return NextResponse.json({ tiers });

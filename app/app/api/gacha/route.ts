@@ -17,7 +17,7 @@ const PointTransactionType = {
   REFUND: "REFUND" as const,
 } as const;
 import { logError } from "@/lib/error-logger";
-import { deleteCache } from "@/lib/cache";
+import { deleteCache, getCache, setCache } from "@/lib/cache";
 import { CacheKeys } from "@/lib/cache-keys";
 
 type TierWeightRow = { tierCode: string; weight: number };
@@ -123,48 +123,47 @@ export async function POST(request: NextRequest) {
     // デフォルト設定を使用する場合は、動画選択ロジック側で処理されるため、ここではバリデーションしない
     if (gachaType.useDefaultVideos === false) {
       const gachaTypeForVideos = gachaType as unknown as {
-        commonVideoAssetIds?: number[];
+        // commonVideoAssetIds?: number[]; // 共通動画は使用しないためコメントアウト
         tierVideoAssetIds?: unknown;
       };
-      const commonVideoIds = gachaTypeForVideos.commonVideoAssetIds || [];
+      // const commonVideoIds = gachaTypeForVideos.commonVideoAssetIds || []; // 共通動画は使用しないためコメントアウト
       const rarityVideoIds = gachaTypeForVideos.tierVideoAssetIds
         ? typeof gachaTypeForVideos.tierVideoAssetIds === "string"
           ? JSON.parse(gachaTypeForVideos.tierVideoAssetIds)
           : gachaTypeForVideos.tierVideoAssetIds
         : {};
 
-      // 共通動画が設定されていない場合
-      if (commonVideoIds.length === 0) {
-        return NextResponse.json(
-          { error: "このガチャタイプには共通動画が設定されていません" },
-          { status: 400 }
-        );
-      }
+      // 各レアリティの動画が設定されているか確認（あたりの場合のみ、PrizeTierテーブルから動的に取得）
+      // LOSERコード以外の等級（あたり）のみをチェック
+      const prizeTiers = await prisma.prizeTier.findMany({
+        where: { isActive: true, code: { not: "LOSER" } },
+        select: { code: true, label: true },
+      });
 
-      // 各レアリティの動画が設定されているか確認（あたりの場合のみ）
-      const requiredRarities = [
-        "FIRST_PRIZE",
-        "SECOND_PRIZE",
-        "THIRD_PRIZE",
-        "FOURTH_PRIZE",
-        "FIFTH_PRIZE",
-      ];
       const missingRarities: string[] = [];
-      for (const rarity of requiredRarities) {
+      for (const tier of prizeTiers) {
         const rarityVideos =
-          (rarityVideoIds as Record<string, number[]>)[rarity] || [];
+          (rarityVideoIds as Record<string, number[]>)[tier.code] || [];
         if (rarityVideos.length === 0) {
-          missingRarities.push(rarity);
+          missingRarities.push(tier.label);
         }
       }
 
       if (missingRarities.length > 0) {
         return NextResponse.json(
           {
-            error: `このガチャタイプには以下のレアリティの動画が設定されていません: ${missingRarities.join(
+            error: `このガチャタイプには以下の等級の動画が設定されていません: ${missingRarities.join(
               "、"
             )}`,
           },
+          { status: 400 }
+        );
+      }
+
+      // 等級別動画が設定されていない場合はエラー（共通動画は使用しないためコメントアウト）
+      if (Object.keys(rarityVideoIds).length === 0) {
+        return NextResponse.json(
+          { error: "このガチャタイプには等級別動画が設定されていません" },
           { status: 400 }
         );
       }
@@ -193,6 +192,34 @@ export async function POST(request: NextRequest) {
     }
 
     // ステップ7: ユーザーデータを取得する
+    // Userデータキャッシュ取得
+    const userCacheKey = CacheKeys.user(userId);
+    let user = await getCache<{ userId: string }>(userCacheKey);
+
+    if (!user) {
+      // LineIDをもとにusersデータ取得
+      const dbUser = await prisma.user.findUnique({
+        where: { userId },
+        select: { userId: true },
+      });
+
+      if (!dbUser) {
+        await logError(
+          new Error("ユーザー未登録"),
+          { userId, route: "/api/gacha", customData: { gachaTypeCode } },
+          request
+        );
+        return NextResponse.json(
+          { error: "ユーザー未登録" },
+          { status: 404 }
+        );
+      }
+
+      // Userデータキャッシュ保存
+      user = dbUser;
+      await setCache(userCacheKey, user, 300); // TTL: 5分
+    }
+
     const { getPointBalances } = await import("@/lib/point-management");
     const balances = await getPointBalances(userId);
 

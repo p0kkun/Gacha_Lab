@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         settings: {
           id: null,
-          commonVideoAssetIds: [],
+          // commonVideoAssetIds: [], // 共通動画は使用しないためコメントアウト
           tierVideoAssetIds: null,
         },
       });
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       settings: {
         id: settings.id,
-        commonVideoAssetIds: (settings as any).commonVideoAssetIds || [],
+        // commonVideoAssetIds: (settings as any).commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
         tierVideoAssetIds: (settings as any).tierVideoAssetIds,
       },
     });
@@ -63,21 +63,22 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { commonVideoAssetIds, tierVideoAssetIds } = body;
+    // const { commonVideoAssetIds, tierVideoAssetIds } = body; // 共通動画は使用しないためコメントアウト
+    const { tierVideoAssetIds } = body;
 
     console.log('[デフォルト設定保存] リクエスト受信:', {
-      commonVideoAssetIds: commonVideoAssetIds?.length || 0,
+      // commonVideoAssetIds: commonVideoAssetIds?.length || 0, // 共通動画は使用しないためコメントアウト
       tierVideoAssetIds: tierVideoAssetIds ? Object.keys(tierVideoAssetIds).length : 0,
     });
 
-    // バリデーション
-    if (!Array.isArray(commonVideoAssetIds)) {
-      console.error('[デフォルト設定保存] バリデーションエラー: commonVideoIdsが配列ではありません');
-      return NextResponse.json(
-        { error: 'commonVideoAssetIdsは配列である必要があります' },
-        { status: 400 }
-      );
-    }
+    // バリデーション（共通動画は使用しないためコメントアウト）
+    // if (!Array.isArray(commonVideoAssetIds)) {
+    //   console.error('[デフォルト設定保存] バリデーションエラー: commonVideoIdsが配列ではありません');
+    //   return NextResponse.json(
+    //     { error: 'commonVideoAssetIdsは配列である必要があります' },
+    //     { status: 400 }
+    //   );
+    // }
 
     // 既存の設定を取得
     const existingSettings = await prisma.defaultGachaVideoSettings.findFirst({
@@ -90,14 +91,14 @@ export async function POST(request: NextRequest) {
       const updated = await prisma.defaultGachaVideoSettings.update({
         where: { id: existingSettings.id },
         data: {
-          commonVideoAssetIds: commonVideoAssetIds || [],
+          // commonVideoAssetIds: commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
           tierVideoAssetIds: tierVideoAssetIds || null,
         },
       });
 
       console.log('[デフォルト設定保存] 更新成功:', {
         id: updated.id,
-        commonVideoAssetIds: (updated as any).commonVideoAssetIds?.length || 0,
+        // commonVideoAssetIds: (updated as any).commonVideoAssetIds?.length || 0, // 共通動画は使用しないためコメントアウト
         tierVideoAssetIds: (updated as any).tierVideoAssetIds ? Object.keys((updated as any).tierVideoAssetIds as Record<string, number[]>).length : 0,
       });
 
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
         success: true,
         settings: {
           id: updated.id,
-          commonVideoAssetIds: (updated as any).commonVideoAssetIds || [],
+          // commonVideoAssetIds: (updated as any).commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
           tierVideoAssetIds: (updated as any).tierVideoAssetIds,
         },
       });
@@ -114,14 +115,14 @@ export async function POST(request: NextRequest) {
       // 新規作成
       const created = await prisma.defaultGachaVideoSettings.create({
         data: {
-          commonVideoAssetIds: commonVideoAssetIds || [],
+          // commonVideoAssetIds: commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
           tierVideoAssetIds: tierVideoAssetIds || null,
         },
       });
 
       console.log('[デフォルト設定保存] 作成成功:', {
         id: created.id,
-        commonVideoAssetIds: (created as any).commonVideoAssetIds?.length || 0,
+        // commonVideoAssetIds: (created as any).commonVideoAssetIds?.length || 0, // 共通動画は使用しないためコメントアウト
         tierVideoAssetIds: (created as any).tierVideoAssetIds ? Object.keys((created as any).tierVideoAssetIds as Record<string, number[]>).length : 0,
       });
 
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
         success: true,
         settings: {
           id: created.id,
-          commonVideoAssetIds: (created as any).commonVideoAssetIds || [],
+          // commonVideoAssetIds: (created as any).commonVideoAssetIds || [], // 共通動画は使用しないためコメントアウト
           tierVideoAssetIds: (created as any).tierVideoAssetIds,
         },
       });

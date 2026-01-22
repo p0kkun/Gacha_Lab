@@ -35,6 +35,16 @@ export class CacheKeys {
     return 'user-stats*:*';
   }
 
+  // ========== ユーザーデータ ==========
+  /** ユーザーデータキャッシュキー */
+  static user(userId: string): string {
+    return `user:${userId}`;
+  }
+  /** ユーザーデータキャッシュのパターン（全ユーザー） */
+  static userPattern(): string {
+    return 'user:*';
+  }
+
   // ========== マスターデータ ==========
   /** ポイント購入プラン一覧キャッシュキー */
   static pointPurchasePlans(): string {
