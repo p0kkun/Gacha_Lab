@@ -164,6 +164,7 @@ async function getGachaTypes() {
       },
       select: {
         id: true,
+        code: true,
         name: true,
         description: true,
         pointCost: true,
