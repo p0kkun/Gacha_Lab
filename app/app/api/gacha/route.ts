@@ -25,6 +25,8 @@ type PrizeItemRow = {
   id: number;
   name: string;
   isActive: boolean;
+  useStartAt: Date | null;
+  useEndAt: Date | null;
 };
 type AssignmentRow = { weight: number; item: PrizeItemRow };
 
@@ -46,7 +48,7 @@ type PrismaClientForTiers = {
       select: {
         weight: true;
         item: {
-          select: { id: true; name: true; isActive: true };
+          select: { id: true; name: true; isActive: true; useStartAt: true; useEndAt: true };
         };
       };
     }): Promise<AssignmentRow[]>;
