@@ -172,20 +172,20 @@ export default function MyPage({ profile }: MyPageProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション - プロフィール */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute top-10 left-10 text-6xl">🂡</div>
               <div className="absolute top-20 right-10 text-5xl">🂮</div>
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
 
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-6 text-3xl font-bold drop-shadow-lg">
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-6 text-3xl font-bold drop-shadow-md">
                 マイページ
               </h1>
 
@@ -196,14 +196,15 @@ export default function MyPage({ profile }: MyPageProps) {
                     <img
                       src={profile.pictureUrl}
                       alt={profile.displayName || "ユーザー"}
-                      className="h-20 w-20 rounded-full border-4 border-yellow-400 shadow-lg"
+                      className="h-20 w-20 rounded-full border-4 shadow-lg"
+                      style={{ borderColor: '#8b6f47' }}
                     />
                   )}
                   <div className="text-center">
-                    <div className="mb-1 text-xl font-bold text-gray-800">
+                    <div className="mb-1 text-xl font-bold" style={{ color: '#4a3a2a' }}>
                       {profile.displayName || "ユーザー"}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs" style={{ color: '#6b5a4a' }}>
                       ID: {profile.userId.substring(0, 8)}...
                     </div>
                   </div>
@@ -241,7 +242,17 @@ export default function MyPage({ profile }: MyPageProps) {
             <div className="mb-6 grid grid-cols-3 gap-3">
               <Link
                 href="/?action=history"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-history.svg"
@@ -255,7 +266,17 @@ export default function MyPage({ profile }: MyPageProps) {
               </Link>
               <Link
                 href="/?action=items"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-items.svg"
@@ -269,11 +290,21 @@ export default function MyPage({ profile }: MyPageProps) {
               </Link>
               <Link
                 href="/?action=referral"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-referral.svg"
-                  alt="友達紹介"
+                  alt="友だち紹介"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
@@ -284,19 +315,19 @@ export default function MyPage({ profile }: MyPageProps) {
             </div>
 
             {/* 統計情報 */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
-              <h2 className="mb-4 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h2 className="mb-4 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 統計情報
               </h2>
               {loading ? (
-                <div className="text-center text-white/70">読み込み中...</div>
+                <div className="text-center" style={{ color: '#6b5a4a' }}>読み込み中...</div>
               ) : stats ? (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-white/10 p-4 backdrop-blur-sm">
-                    <div className="mb-1 text-xs text-white/70">
+                  <div className="rounded-lg p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}>
+                    <div className="mb-1 text-xs" style={{ color: '#6b5a4a' }}>
                       ガチャ実行回数
                     </div>
-                    <div className="text-3xl font-bold text-yellow-300 drop-shadow-md">
+                    <div className="text-3xl font-bold drop-shadow-md" style={{ color: '#8b6f47' }}>
                       {stats.totalGachaCount.toLocaleString()} 回
                     </div>
                   </div>
@@ -335,26 +366,33 @@ export default function MyPage({ profile }: MyPageProps) {
             </div>
 
             {/* 最近の獲得アイテム */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
+            <div className="mb-6 rounded-xl p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white drop-shadow-md">
+                <h2 className="text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                   最近の獲得アイテム
                 </h2>
                 <Link
                   href="/?action=items"
-                  className="text-xs text-white/80 underline hover:text-white"
+                  className="text-xs underline"
+                  style={{ color: '#8b6f47' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#9b7f57';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#8b6f47';
+                  }}
                 >
                   すべて見る
                 </Link>
               </div>
               {loadingItems ? (
-                <div className="text-center text-white/70">読み込み中...</div>
+                <div className="text-center" style={{ color: '#6b5a4a' }}>読み込み中...</div>
               ) : recentItems.length > 0 ? (
                 <div className="space-y-3">
                   {recentItems.map((item) => (
                     <div
                       key={item.id}
-                      className="group rounded-lg border-2 border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90 p-3 shadow-md transition-all hover:border-yellow-400/60 hover:shadow-lg"
+                      className="group rounded-lg border-2 border-yellow-400/50 bg-gradient-to-r from-white/95 to-white/90 p-3 shadow-md transition-all hover:border-yellow-400 hover:shadow-lg"
                     >
                       <div className="flex items-center gap-3">
                         {item.item.imageUrl ? (
@@ -413,14 +451,24 @@ export default function MyPage({ profile }: MyPageProps) {
             </div>
 
             {/* お知らせ・ヘルプ */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl p-4 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 お知らせ・ヘルプ
               </h2>
               <div className="space-y-2">
                 <Link
                   href="/?action=help"
-                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: '#5a4a3a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -442,10 +490,11 @@ export default function MyPage({ profile }: MyPageProps) {
                     </span>
                   </div>
                   <svg
-                    className="h-5 w-5 text-white/70"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: '#8b6f47' }}
                   >
                     <path
                       strokeLinecap="round"
@@ -457,7 +506,17 @@ export default function MyPage({ profile }: MyPageProps) {
                 </Link>
                 <Link
                   href="/?action=home"
-                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: '#5a4a3a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -471,10 +530,11 @@ export default function MyPage({ profile }: MyPageProps) {
                     <span className="text-sm font-medium">ホームに戻る</span>
                   </div>
                   <svg
-                    className="h-5 w-5 text-white/70"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: '#8b6f47' }}
                   >
                     <path
                       strokeLinecap="round"

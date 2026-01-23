@@ -57,7 +57,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ assignments });
+    // 等級の重み情報を取得
+    const tierWeights = await prisma.gachaTierWeight.findMany({
+      where: { 
+        gachaTypeId: gachaType.id,
+        isActive: true,
+      },
+      include: {
+        tier: { select: { code: true, label: true } },
+      },
+    });
+
+    return NextResponse.json({ assignments, tierWeights });
   } catch (error) {
     console.error("管理者: 景品割当一覧取得エラー:", error);
     return NextResponse.json(

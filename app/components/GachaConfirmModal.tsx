@@ -24,23 +24,23 @@ export default function GachaConfirmModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-md rounded-2xl shadow-2xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
         {/* ヘッダー */}
-        <div className="border-b border-gray-200 bg-gradient-to-r from-green-900 to-green-800 px-6 py-4">
-          <h2 className="text-xl font-bold text-yellow-300">ガチャ実行確認</h2>
+        <div className="border-b px-6 py-4" style={{ borderColor: '#8b6f47', background: 'linear-gradient(to right, #d4af37, #b8941f)' }}>
+          <h2 className="text-xl font-bold text-white drop-shadow-md">ガチャ実行確認</h2>
         </div>
 
         {/* コンテンツ */}
         <div className="p-6">
           <div className="mb-6 space-y-4">
             <div className="text-center">
-              <p className="mb-2 text-lg font-semibold text-gray-800">
+              <p className="mb-2 text-lg font-semibold" style={{ color: '#4a3a2a' }}>
                 {gachaName}を実行しますか？
               </p>
               {pointCost > 0 && (
-                <p className="text-sm text-gray-600 flex items-center gap-1 justify-center">
+                <p className="text-sm flex items-center gap-1 justify-center" style={{ color: '#6b5a4a' }}>
                   必要ポイント:{" "}
-                  <span className="font-bold text-yellow-600 flex items-center gap-0.5">
+                  <span className="font-bold flex items-center gap-0.5" style={{ color: '#8b6f47' }}>
                     <PointIcon
                       size={14}
                       className="h-3.5 w-3.5"
@@ -52,8 +52,8 @@ export default function GachaConfirmModal({
               )}
             </div>
 
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-              <p className="text-sm text-gray-700">
+            <div className="rounded-lg border p-4 shadow-sm" style={{ borderColor: '#d4af37', backgroundColor: 'rgba(212, 175, 55, 0.1)' }}>
+              <p className="text-sm" style={{ color: '#5a4a3a' }}>
                 ※ ガチャを実行すると、ポイントが消費され、抽選結果が確定します。
               </p>
             </div>
@@ -63,7 +63,20 @@ export default function GachaConfirmModal({
               <div className="flex justify-center">
                 <button
                   onClick={onShowPrizeList}
-                  className="flex items-center gap-2 rounded-lg border-2 border-blue-400 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition-all hover:bg-blue-100 hover:border-blue-500 active:scale-95"
+                  className="flex items-center gap-2 rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all active:scale-95"
+                  style={{ 
+                    borderColor: '#8b6f47',
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    color: '#5a4a3a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                    e.currentTarget.style.borderColor = '#9b7f57';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                    e.currentTarget.style.borderColor = '#8b6f47';
+                  }}
                 >
                   <svg
                     className="h-5 w-5"
@@ -85,16 +98,23 @@ export default function GachaConfirmModal({
           </div>
 
           {/* 法的リンク */}
-          <div className="mb-6 border-t border-gray-200 pt-4">
-            <div className="space-y-2 text-center text-xs text-gray-600">
-              <p className="mb-2 font-medium text-gray-700">
+          <div className="mb-6 border-t pt-4" style={{ borderColor: '#8b6f47' }}>
+            <div className="space-y-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
+              <p className="mb-2 font-medium" style={{ color: '#4a3a2a' }}>
                 以下の規約に同意の上、実行してください：
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="/terms"
                   target="_blank"
-                  className="text-blue-600 hover:underline"
+                  className="underline transition-colors"
+                  style={{ color: '#8b6f47' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#9b7f57';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#8b6f47';
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   利用規約
@@ -102,7 +122,14 @@ export default function GachaConfirmModal({
                 <Link
                   href="/privacy"
                   target="_blank"
-                  className="text-blue-600 hover:underline"
+                  className="underline transition-colors"
+                  style={{ color: '#8b6f47' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#9b7f57';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#8b6f47';
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   プライバシーポリシー
@@ -110,7 +137,14 @@ export default function GachaConfirmModal({
                 <Link
                   href="/commercial-transaction"
                   target="_blank"
-                  className="text-blue-600 hover:underline"
+                  className="underline transition-colors"
+                  style={{ color: '#8b6f47' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#9b7f57';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#8b6f47';
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   特定商取引法に基づく表記
@@ -123,13 +157,33 @@ export default function GachaConfirmModal({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50 active:scale-95"
+              className="flex-1 rounded-lg border-2 px-4 py-3 font-semibold transition-colors active:scale-95"
+              style={{ 
+                borderColor: '#8b6f47',
+                backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                color: '#5a4a3a'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                e.currentTarget.style.borderColor = '#9b7f57';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                e.currentTarget.style.borderColor = '#8b6f47';
+              }}
             >
               キャンセル
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3 font-semibold text-white shadow-lg transition-all hover:from-green-700 hover:to-green-800 hover:shadow-xl active:scale-95"
+              className="flex-1 rounded-lg px-4 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl active:scale-95"
+              style={{ background: 'linear-gradient(to right, #d4af37, #b8941f)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(to right, #e5c158, #c9a42f)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(to right, #d4af37, #b8941f)';
+              }}
             >
               実行する
             </button>

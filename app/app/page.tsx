@@ -123,10 +123,28 @@ function HomeContent() {
                 console.log("紹介リンクが適用されました:", referralLinkId);
                 // 注意: 友だち追加時の判定は、User.lastAccessedReferralLinkIdを参照するため、
                 // セッションストレージへの保存は不要（既にDBに記録されている）
+              } else {
+                // 有効期限切れなどのエラーをユーザーに通知
+                if (verifyData.reason) {
+                  alert(verifyData.reason);
+                }
+              }
+            } else {
+              // APIエラーの場合もレスポンスを確認
+              try {
+                const errorData = await verifyRes.json();
+                if (errorData.reason) {
+                  alert(errorData.reason);
+                } else {
+                  alert("紹介リンクの検証に失敗しました");
+                }
+              } catch {
+                alert("紹介リンクの検証に失敗しました");
               }
             }
           } catch (error) {
             console.error("紹介リンク検証エラー:", error);
+            alert("紹介リンクの検証中にエラーが発生しました");
           }
         }
 

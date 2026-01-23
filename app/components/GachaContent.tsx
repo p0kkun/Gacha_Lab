@@ -7,13 +7,17 @@ import BottomNavigation from "./BottomNavigation";
 import PrizeListModal from "./PrizeListModal";
 import GachaConfirmModal from "./GachaConfirmModal";
 import PointIcon from "./PointIcon";
+import { renderMarkdownLinks } from "@/lib/markdown-utils";
 
 type GachaResult = {
   item: {
     id: number;
     name: string;
     rarity: "common" | "rare" | "epic";
+    useStartAt?: string | null;
+    useEndAt?: string | null;
   };
+  gachaTypeName?: string; // ガチャ名
   videoUrls?: string[]; // 新しい動画システム（複数動画対応）
   timestamp: string;
   messageQueueId?: number; // メッセージ送信用ID
@@ -298,19 +302,20 @@ export default function GachaContent({
   return (
     <div
       className="relative flex h-full flex-col overflow-hidden"
-      style={{ touchAction: "none" }}
+      style={{ touchAction: "none", backgroundColor: '#e9dacb' }}
       onTouchStart={(e) => e.preventDefault()}
       onTouchMove={(e) => e.preventDefault()}
     >
-      {/* ヘッダー - ポーカーテーブル風 */}
+      {/* ヘッダー - シャンパンゴールド風 */}
       {!showVideo && (
-        <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
+        <div className="border-b px-6 py-4 shadow-lg" style={{ borderColor: '#8b6f47', backgroundColor: '#e9dacb' }}>
           <div className="flex items-center gap-3">
             {selectedGacha.iconImageUrl ? (
               <img
                 src={selectedGacha.iconImageUrl}
                 alt={selectedGacha.name}
-                className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border-2 border-yellow-400 shadow-md"
+                className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border-2 shadow-md"
+                style={{ borderColor: '#8b6f47' }}
                 onError={(e) => {
                   // 画像読み込みエラー時はフォールバック表示
                   const target = e.target as HTMLImageElement;
@@ -330,17 +335,17 @@ export default function GachaContent({
               🂡
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-bold text-yellow-300 drop-shadow-lg break-words">
+              <h1 className="text-2xl font-bold drop-shadow-md break-words" style={{ color: '#4a3a2a' }}>
                 {selectedGacha.name}
               </h1>
               {(selectedGacha.pointCost ?? 0) > 0 ? (
-                <p className="mt-1 text-sm font-semibold text-yellow-300 flex items-center gap-1">
+                <p className="mt-1 text-sm font-semibold flex items-center gap-1" style={{ color: '#6b5a4a' }}>
                   必要:{" "}
                   <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
                   {(selectedGacha.pointCost ?? 0).toLocaleString()}
                 </p>
               ) : (
-                <p className="mt-1 text-sm font-semibold text-green-200">
+                <p className="mt-1 text-sm font-semibold" style={{ color: '#6b5a4a' }}>
                   無料
                 </p>
               )}
@@ -348,7 +353,20 @@ export default function GachaContent({
             {/* 景品一覧・確率表示ボタン */}
             <button
               onClick={() => setShowPrizeList(true)}
-              className="flex-shrink-0 rounded-lg border-2 border-yellow-400/50 bg-yellow-500/20 px-4 py-2 text-sm font-semibold text-yellow-200 transition-all hover:bg-yellow-500/30 hover:border-yellow-400 active:scale-95"
+              className="flex-shrink-0 rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all active:scale-95"
+              style={{ 
+                borderColor: '#8b6f47',
+                backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                color: '#5a4a3a'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                e.currentTarget.style.borderColor = '#9b7f57';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                e.currentTarget.style.borderColor = '#8b6f47';
+              }}
               title="景品一覧・確率を表示"
             >
               <div className="flex items-center gap-2">
@@ -372,11 +390,12 @@ export default function GachaContent({
         </div>
       )}
 
-      {/* メインコンテンツ - ポーカーテーブル風 */}
+      {/* メインコンテンツ - シャンパンゴールド風 */}
       <div
-        className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${
+        className={`flex-1 overflow-y-auto ${
           showVideo ? "" : ""
         }`}
+        style={{ backgroundColor: '#e9dacb' }}
       >
         {!result && (
           <div className="flex min-h-full flex-col">
@@ -421,9 +440,9 @@ export default function GachaContent({
             <div className="flex flex-1 flex-col items-center justify-center px-4 py-4 sm:py-6">
               {selectedGacha.description && (
                 <div className="mb-4 w-full max-w-2xl">
-                  <p className="text-center text-base leading-relaxed text-green-200 break-words sm:text-lg">
-                    {selectedGacha.description}
-                  </p>
+                  <div className="text-center text-base leading-relaxed break-words sm:text-lg whitespace-pre-line" style={{ color: '#5a4a3a' }}>
+                    {renderMarkdownLinks(selectedGacha.description)}
+                  </div>
                 </div>
               )}
 
@@ -438,19 +457,25 @@ export default function GachaContent({
           </div>
         )}
 
-        {/* 結果表示 - ポーカー風 */}
+        {/* 結果表示 - シャンパンゴールド風 */}
         {result && !showVideo && (
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border-4 border-yellow-400 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 shadow-2xl ring-4 ring-yellow-500 ring-opacity-50">
+          <div className="mx-auto mt-6 max-w-md rounded-2xl border-4 p-8 shadow-2xl ring-4 ring-opacity-50" style={{ borderColor: '#8b6f47', backgroundColor: 'rgba(255, 255, 255, 0.95)', ringColor: '#d4af37' }}>
             {videoError && (
-              <div className="mb-4 rounded-lg bg-red-900 bg-opacity-50 p-4 text-center text-red-200">
+              <div className="mb-4 rounded-lg p-4 text-center shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#7f1d1d' }}>
                 <p className="font-semibold">⚠️ エラーが発生しました</p>
                 <p className="mt-1 text-sm">動画の再生に失敗しました</p>
               </div>
             )}
-            <h3 className="mb-6 text-center text-2xl font-bold text-yellow-300 drop-shadow-lg">
+            <h3 className="mb-6 text-center text-2xl font-bold drop-shadow-md" style={{ color: '#8b6f47' }}>
               🎉 獲得！
             </h3>
             <div className="text-center">
+              {/* ガチャ名 */}
+              {result.gachaTypeName && (
+                <div className="mb-3 text-sm text-gray-300">
+                  {result.gachaTypeName}
+                </div>
+              )}
               <div
                 className={`mb-4 text-2xl font-bold drop-shadow-lg break-words px-2 ${
                   result.item.rarity === "epic"
@@ -463,7 +488,7 @@ export default function GachaContent({
                 {result.item.name}
               </div>
               <div
-                className={`inline-block rounded-full px-4 py-2 text-sm font-semibold ${
+                className={`mb-4 inline-block rounded-full px-4 py-2 text-sm font-semibold ${
                   result.item.rarity === "epic"
                     ? "bg-purple-600 text-white"
                     : result.item.rarity === "rare"
@@ -473,10 +498,74 @@ export default function GachaContent({
               >
                 レアリティ: {getRarityLabel(result.item.rarity)}
               </div>
+              {/* アイテム有効期限 */}
+              {(result.item.useStartAt || result.item.useEndAt) && (
+                <div className="mb-4 text-sm text-gray-300">
+                  <div className="font-semibold text-gray-200 mb-1">有効期限</div>
+                  {result.item.useStartAt && (
+                    <div className="text-xs">
+                      使用開始: {new Date(result.item.useStartAt).toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  )}
+                  {result.item.useEndAt && (
+                    <div className="text-xs">
+                      使用期限: {new Date(result.item.useEndAt).toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* 各種メニューへのリンク */}
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              <a
+                href="/?action=items"
+                className="rounded-lg px-4 py-2 text-center text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl"
+                style={{ background: 'linear-gradient(to right, #8b6f47, #7a5f37)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #9b7f57, #8b6f47)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #8b6f47, #7a5f37)';
+                }}
+              >
+                アイテム一覧
+              </a>
+              <a
+                href="/?action=history"
+                className="rounded-lg px-4 py-2 text-center text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl"
+                style={{ background: 'linear-gradient(to right, #8b6f47, #7a5f37)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #9b7f57, #8b6f47)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #8b6f47, #7a5f37)';
+                }}
+              >
+                ガチャ履歴
+              </a>
             </div>
             <button
               onClick={handleCloseResult}
-              className="mt-6 w-full rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-3 font-bold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl"
+              className="mt-2 w-full rounded-lg px-6 py-3 font-bold text-white shadow-lg transition-all hover:shadow-xl"
+              style={{ background: 'linear-gradient(to right, #d4af37, #b8941f)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(to right, #e5c158, #c9a42f)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(to right, #d4af37, #b8941f)';
+              }}
             >
               ✓ 閉じる
             </button>
@@ -484,9 +573,9 @@ export default function GachaContent({
         )}
       </div>
 
-      {/* フッター（ガチャを引くボタン） - ポーカー風 */}
+      {/* フッター（ガチャを引くボタン） - シャンパンゴールド風 */}
       {!showVideo && (
-        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 pb-24 shadow-lg">
+        <div className="border-t px-6 py-4 pb-24 shadow-lg" style={{ borderColor: '#8b6f47', backgroundColor: '#e9dacb' }}>
           <button
             onClick={handleDrawGachaClick}
             disabled={isDrawing}
@@ -541,7 +630,7 @@ export default function GachaContent({
         <BottomNavigation
           currentPage="gacha"
           hideSpacer={true}
-          transparent={true}
+          transparent={false}
         />
       )}
 

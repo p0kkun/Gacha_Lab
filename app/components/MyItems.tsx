@@ -219,21 +219,21 @@ export default function MyItems({ userId }: MyItemsProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute top-10 left-10 text-6xl">🂡</div>
               <div className="absolute top-20 right-10 text-5xl">🂮</div>
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
             
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">マイアイテム</h1>
-              <p className="text-sm text-green-200">獲得したアイテム一覧</p>
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-md">マイアイテム</h1>
+              <p className="text-sm" style={{ color: '#6b5a4a' }}>獲得したアイテム一覧</p>
             </div>
           </div>
 
@@ -246,7 +246,20 @@ export default function MyItems({ userId }: MyItemsProps) {
                     setShowAll(!showAll);
                     setPage(1); // フィルタ変更時は1ページ目に戻す
                   }}
-                  className="rounded-xl bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-95"
+                  className="rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    color: '#5a4a3a',
+                    border: '2px solid #8b6f47'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                    e.currentTarget.style.borderColor = '#9b7f57';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                    e.currentTarget.style.borderColor = '#8b6f47';
+                  }}
                 >
                   {showAll ? "使用可能のみ表示" : "すべて表示"}
                 </button>
@@ -255,15 +268,15 @@ export default function MyItems({ userId }: MyItemsProps) {
 
             {/* アイテム一覧 */}
             {loading ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="text-white">読み込み中...</div>
+              <div className="rounded-xl p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div style={{ color: '#5a4a3a' }}>読み込み中...</div>
               </div>
             ) : items.length === 0 ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="mb-4 text-white">アイテムがありません</div>
+              <div className="rounded-xl p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div className="mb-4" style={{ color: '#5a4a3a' }}>アイテムがありません</div>
                 <Link
                   href="/?action=home"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50"
                 >
                   <img
                     src="/icons/navigation/icon-gacha.svg"
@@ -277,36 +290,36 @@ export default function MyItems({ userId }: MyItemsProps) {
                 </Link>
               </div>
             ) : sortedDisplayItems.length === 0 ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="text-white">表示するアイテムがありません</div>
+              <div className="rounded-xl p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div style={{ color: '#5a4a3a' }}>表示するアイテムがありません</div>
               </div>
             ) : (
               <>
                 <div className="mb-6">
                   {!showAll && availableItems.length > 0 && (
-                    <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+                    <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                       使用可能
                     </h2>
                   )}
                   {showAll && (
                     <>
                       {availableItems.length > 0 && (
-                        <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+                        <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                           使用可能 ({availableItems.length})
                         </h2>
                       )}
                       {notStartedItems.length > 0 && (
-                        <h2 className="mb-3 mt-6 text-lg font-bold text-white drop-shadow-md">
+                        <h2 className="mb-3 mt-6 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                           使用開始前 ({notStartedItems.length})
                         </h2>
                       )}
                       {expiredItems.length > 0 && (
-                        <h2 className="mb-3 mt-6 text-lg font-bold text-white drop-shadow-md">
+                        <h2 className="mb-3 mt-6 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                           使用期限切れ ({expiredItems.length})
                         </h2>
                       )}
                       {usedItems.length > 0 && (
-                        <h2 className="mb-3 mt-6 text-lg font-bold text-white drop-shadow-md">
+                        <h2 className="mb-3 mt-6 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                           使用済み ({usedItems.length})
                         </h2>
                       )}
@@ -444,7 +457,22 @@ export default function MyItems({ userId }: MyItemsProps) {
                     <button
                       onClick={() => setPage((p) => p + 1)}
                       disabled={loading}
-                      className="rounded-xl bg-white/10 backdrop-blur-sm px-6 py-3 font-semibold text-white transition-all hover:bg-white/20 active:scale-95 disabled:opacity-50"
+                      className="rounded-xl px-6 py-3 font-semibold transition-all active:scale-95 disabled:opacity-50"
+                      style={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                        color: '#5a4a3a',
+                        border: '2px solid #8b6f47'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!loading) {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                          e.currentTarget.style.borderColor = '#9b7f57';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                        e.currentTarget.style.borderColor = '#8b6f47';
+                      }}
                     >
                       {loading ? '読み込み中...' : 'もっと見る'}
                     </button>

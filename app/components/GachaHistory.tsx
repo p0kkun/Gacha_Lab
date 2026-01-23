@@ -100,36 +100,36 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute top-10 left-10 text-6xl">🂡</div>
               <div className="absolute top-20 right-10 text-5xl">🂮</div>
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
             
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">ガチャ履歴</h1>
-              <p className="text-sm text-green-200">これまでのガチャ実行履歴</p>
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-md">ガチャ履歴</h1>
+              <p className="text-sm" style={{ color: '#6b5a4a' }}>これまでのガチャ実行履歴</p>
             </div>
           </div>
 
           <div className="px-4 py-4">
             {/* 履歴一覧 */}
             {loading && histories.length === 0 ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="text-white">読み込み中...</div>
+              <div className="rounded-xl p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div style={{ color: '#5a4a3a' }}>読み込み中...</div>
               </div>
             ) : histories.length === 0 ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="mb-4 text-white">ガチャ履歴がありません</div>
+              <div className="rounded-xl p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div className="mb-4" style={{ color: '#5a4a3a' }}>ガチャ履歴がありません</div>
                 <Link
                   href="/?action=home"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50"
                 >
                   <img
                     src="/icons/navigation/icon-gacha.svg"
@@ -148,7 +148,7 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                   {histories.map((history) => (
                     <div
                       key={history.id}
-                      className="group rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-lg transition-all hover:border-yellow-400/60 hover:shadow-xl hover:shadow-yellow-500/20"
+                      className="group rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-lg transition-all hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/20"
                     >
                       <div className="mb-3 flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
@@ -193,7 +193,20 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                     <button
                       onClick={() => setPage((p) => p + 1)}
                       disabled={loading}
-                      className="rounded-xl bg-white/10 backdrop-blur-sm px-6 py-3 font-semibold text-white transition-all hover:bg-white/20 active:scale-95 disabled:opacity-50"
+                      className="rounded-xl px-6 py-3 font-semibold transition-all active:scale-95 disabled:opacity-50"
+                      style={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                        color: '#5a4a3a',
+                        border: '2px solid #8b6f47'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                        e.currentTarget.style.borderColor = '#9b7f57';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                        e.currentTarget.style.borderColor = '#8b6f47';
+                      }}
                     >
                       {loading ? '読み込み中...' : 'もっと見る'}
                     </button>

@@ -328,7 +328,13 @@ export async function POST(request: NextRequest) {
       select: {
         weight: true,
         item: {
-          select: { id: true, name: true, isActive: true },
+          select: { 
+            id: true, 
+            name: true, 
+            isActive: true,
+            useStartAt: true,
+            useEndAt: true,
+          },
         },
       },
     });
@@ -509,7 +515,10 @@ export async function POST(request: NextRequest) {
         rarity: selectedTierCode, // 後方互換: フロントは従来通り rarity 文字列で受ける
         // 後方互換: 旧クライアントが参照していても壊れないよう先頭動画を返す
         videoUrl: videoUrls[0] || "",
+        useStartAt: selectedItem.useStartAt?.toISOString() ?? null,
+        useEndAt: selectedItem.useEndAt?.toISOString() ?? null,
       },
+      gachaTypeName: gachaType.name, // ガチャ名を追加
       videoUrls, // 新しい動画システム（VideoAsset設定が正）
       timestamp: new Date().toISOString(),
       pokerHand: pokerHand,

@@ -79,21 +79,28 @@ function CheckoutSection({
 
   if (loading) {
     return (
-      <div className="mb-6 rounded-lg bg-white p-6 shadow">
-        <div className="text-center">決済を準備中...</div>
+      <div className="mb-6 rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+        <div className="text-center" style={{ color: '#5a4a3a' }}>決済を準備中...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="mb-6 rounded-lg bg-white p-6 shadow">
-        <div className="rounded-lg bg-red-100 p-3 text-sm text-red-700">
+      <div className="mb-6 rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+        <div className="rounded-lg p-3 text-sm shadow-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#7f1d1d' }}>
           {error}
         </div>
         <button
           onClick={onCancel}
-          className="mt-4 w-full rounded-lg bg-gray-300 px-6 py-3 font-bold text-gray-700"
+          className="mt-4 w-full rounded-lg px-6 py-3 font-bold transition-colors"
+          style={{ backgroundColor: 'rgba(139, 111, 71, 0.3)', color: '#5a4a3a' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(139, 111, 71, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(139, 111, 71, 0.3)';
+          }}
         >
           戻る
         </button>
@@ -103,21 +110,21 @@ function CheckoutSection({
 
   if (!clientSecret) {
     return (
-      <div className="mb-6 rounded-lg bg-white p-6 shadow">
-        <div className="text-center">決済を準備中...</div>
+      <div className="mb-6 rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+        <div className="text-center" style={{ color: '#5a4a3a' }}>決済を準備中...</div>
       </div>
     );
   }
 
   return (
-    <div className="mb-6 rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-800">決済</h2>
-      <div className="mb-4 rounded-lg bg-blue-50 p-4">
-        <div className="mb-2 text-sm text-gray-600">購入ポイント</div>
-        <div className="text-2xl font-bold text-blue-600">
+    <div className="mb-6 rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+      <h2 className="mb-4 text-lg font-semibold drop-shadow-md" style={{ color: '#4a3a2a' }}>決済</h2>
+      <div className="mb-4 rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'rgba(139, 111, 71, 0.2)' }}>
+        <div className="mb-2 text-sm" style={{ color: '#6b5a4a' }}>購入ポイント</div>
+        <div className="text-2xl font-bold" style={{ color: '#8b6f47' }}>
           {plan.points.toLocaleString()}ポイント
         </div>
-        <div className="mt-2 text-sm text-gray-600">
+        <div className="mt-2 text-sm" style={{ color: '#6b5a4a' }}>
           金額: ¥{plan.price?.toLocaleString() ?? '0'}
         </div>
       </div>
@@ -280,7 +287,7 @@ function CheckoutForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-100 p-3 text-sm text-red-700">
+        <div className="rounded-lg p-3 text-sm shadow-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#7f1d1d' }}>
           {error}
         </div>
       )}
@@ -301,7 +308,16 @@ function CheckoutForm({
         <button
           type="submit"
           disabled={!stripe || loading}
-          className="flex-1 rounded-lg bg-blue-500 px-6 py-3 font-bold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
+          className="flex-1 rounded-lg px-6 py-3 font-bold text-white transition-all shadow-lg disabled:opacity-50"
+          style={{ background: 'linear-gradient(to right, #d4af37, #b8941f)' }}
+          onMouseEnter={(e) => {
+            if (!loading && stripe) {
+              e.currentTarget.style.background = 'linear-gradient(to right, #e5c158, #c9a42f)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(to right, #d4af37, #b8941f)';
+          }}
         >
           {loading ? "処理中..." : `¥${amount.toLocaleString()} を支払う`}
         </button>
@@ -309,7 +325,14 @@ function CheckoutForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg bg-gray-300 px-6 py-3 font-bold text-gray-700 transition-colors hover:bg-gray-400"
+            className="rounded-lg px-6 py-3 font-bold transition-colors"
+            style={{ backgroundColor: 'rgba(139, 111, 71, 0.3)', color: '#5a4a3a' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(139, 111, 71, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(139, 111, 71, 0.3)';
+            }}
           >
             キャンセル
           </button>
@@ -718,41 +741,41 @@ function PointsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen p-4" style={{ backgroundColor: '#e9dacb' }}>
       <div className="mx-auto max-w-md">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-800">
+        <h1 className="mb-6 text-center text-2xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
           ポイント購入
         </h1>
 
         {/* 現在のポイント残高 */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+        <div className="mb-6 rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
           <div className="text-center">
-            <div className="mb-2 text-sm text-gray-500">現在のポイント</div>
-            <div className="mb-4 text-3xl font-bold text-blue-600 flex items-center justify-center gap-2">
+            <div className="mb-2 text-sm" style={{ color: '#6b5a4a' }}>現在のポイント</div>
+            <div className="mb-4 text-3xl font-bold flex items-center justify-center gap-2 drop-shadow-md" style={{ color: '#8b6f47' }}>
               <PointIcon size={32} className="h-8 w-8" active={true} />
               {points !== null ? points.toLocaleString() : "-"}
             </div>
             
             {/* 有償/無償ポイントの詳細 */}
             {pointBalances && (
-              <div className="mt-4 space-y-2 border-t pt-4">
+              <div className="mt-4 space-y-2 border-t pt-4" style={{ borderColor: '#8b6f47' }}>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">有償ポイント</span>
-                  <span className="font-semibold text-gray-800 flex items-center gap-1">
+                  <span style={{ color: '#6b5a4a' }}>有償ポイント</span>
+                  <span className="font-semibold flex items-center gap-1" style={{ color: '#4a3a2a' }}>
                     <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
                     {pointBalances.paid.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">無償ポイント</span>
-                  <span className="font-semibold text-gray-800 flex items-center gap-1">
+                  <span style={{ color: '#6b5a4a' }}>無償ポイント</span>
+                  <span className="font-semibold flex items-center gap-1" style={{ color: '#4a3a2a' }}>
                     <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
                     {pointBalances.free.toLocaleString()}
                   </span>
                 </div>
                 {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
                 {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs" style={{ color: '#6b5a4a' }}>
                     有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
                     {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
                       <span className="ml-1">
@@ -762,7 +785,7 @@ function PointsPageContent() {
                   </div>
                 )}
                 {pointBalances.lastUpdated && (
-                  <div className="mt-2 text-xs text-gray-400">
+                  <div className="mt-2 text-xs" style={{ color: '#6b5a4a' }}>
                     最終更新: {new Date(pointBalances.lastUpdated).toLocaleString('ja-JP')}
                   </div>
                 )}
@@ -774,19 +797,19 @@ function PointsPageContent() {
         {/* ポイントプラン選択 */}
         {!selectedPlan ? (
           <div className="mb-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-800">
+            <h2 className="mb-4 text-lg font-semibold drop-shadow-md" style={{ color: '#4a3a2a' }}>
               プランを選択
             </h2>
             {plansLoading ? (
-              <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+              <div className="rounded-lg p-6 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)', color: '#5a4a3a' }}>
                 読み込み中...
               </div>
             ) : plansError ? (
-              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+              <div className="rounded-lg p-4 text-sm shadow-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#7f1d1d' }}>
                 {plansError}
               </div>
             ) : plans.length === 0 ? (
-              <div className="rounded-lg bg-yellow-50 p-4 text-sm text-yellow-800">
+              <div className="rounded-lg p-4 text-sm shadow-sm" style={{ backgroundColor: 'rgba(212, 175, 55, 0.2)', color: '#7a5f37' }}>
                 購入可能なプランがありません（管理画面でプランを設定してください）
               </div>
             ) : (
@@ -795,17 +818,29 @@ function PointsPageContent() {
                 <button
                     key={plan.id}
                   onClick={() => setSelectedPlan(plan)}
-                  className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
+                  className="rounded-lg border-2 p-4 text-center transition-all shadow-md"
+                  style={{ 
+                    borderColor: '#8b6f47',
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#9b7f57';
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#8b6f47';
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                  }}
                 >
-                  <div className="mb-2 text-lg font-bold text-gray-800">
+                  <div className="mb-2 text-lg font-bold" style={{ color: '#4a3a2a' }}>
                     {plan.label}
                   </div>
                     {plan.bonusFreePoints > 0 && (
-                      <div className="mb-1 text-xs font-semibold text-green-700">
+                      <div className="mb-1 text-xs font-semibold" style={{ color: '#7a5f37' }}>
                         おまけ: +{plan.bonusFreePoints.toLocaleString()}pt（無償）
                       </div>
                     )}
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm font-semibold" style={{ color: '#8b6f47' }}>
                     ¥{plan.price?.toLocaleString() ?? '0'}
                   </div>
                 </button>
@@ -846,15 +881,15 @@ function PointsPageContent() {
 
         {/* 購入履歴 */}
         <div className="mb-6">
-          <h2 className="mb-4 text-lg font-semibold text-gray-800">
+          <h2 className="mb-4 text-lg font-semibold drop-shadow-md" style={{ color: '#4a3a2a' }}>
             決済履歴
           </h2>
           {historyLoading ? (
-            <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+            <div className="rounded-lg p-6 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)', color: '#5a4a3a' }}>
               読み込み中...
             </div>
           ) : purchaseHistory.length === 0 ? (
-            <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+            <div className="rounded-lg p-6 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)', color: '#5a4a3a' }}>
               決済履歴がありません。
             </div>
           ) : (
@@ -863,33 +898,34 @@ function PointsPageContent() {
                 {purchaseHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg bg-white p-4 shadow"
+                    className="rounded-lg p-4 shadow-md"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
                   >
                     <div className="mb-2 flex justify-between text-sm">
-                      <span className="text-gray-600">有償ポイント</span>
-                      <span className="font-semibold text-gray-800">
+                      <span style={{ color: '#6b5a4a' }}>有償ポイント</span>
+                      <span className="font-semibold" style={{ color: '#4a3a2a' }}>
                         {item.paidPoints.toLocaleString()}
                       </span>
                     </div>
                     <div className="mb-2 flex justify-between text-sm">
-                      <span className="text-gray-600">無償ポイント</span>
-                      <span className="font-semibold text-gray-800">
+                      <span style={{ color: '#6b5a4a' }}>無償ポイント</span>
+                      <span className="font-semibold" style={{ color: '#4a3a2a' }}>
                         {item.freePoints.toLocaleString()}
                       </span>
                     </div>
                     <div className="mb-2 flex justify-between text-sm">
-                      <span className="text-gray-600">金額</span>
-                      <span className="font-semibold text-gray-800">
+                      <span style={{ color: '#6b5a4a' }}>金額</span>
+                      <span className="font-semibold" style={{ color: '#4a3a2a' }}>
                         ¥{item.amount.toLocaleString()}
                       </span>
                     </div>
                     {item.planLabel && (
                       <div className="mb-2 flex justify-between text-sm">
-                        <span className="text-gray-600">プラン</span>
-                        <span className="text-gray-800">{item.planLabel}</span>
+                        <span style={{ color: '#6b5a4a' }}>プラン</span>
+                        <span style={{ color: '#4a3a2a' }}>{item.planLabel}</span>
                       </div>
                     )}
-                    <div className="mt-2 border-t pt-2 text-xs text-gray-500">
+                    <div className="mt-2 border-t pt-2 text-xs" style={{ borderColor: '#8b6f47', color: '#6b5a4a' }}>
                       {new Date(item.createdAt).toLocaleString('ja-JP')}
                     </div>
                   </div>
@@ -908,7 +944,16 @@ function PointsPageContent() {
                       }
                     }}
                     disabled={historyLoading}
-                    className="rounded-lg bg-blue-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
+                    className="rounded-lg px-6 py-3 font-semibold text-white transition-all shadow-lg disabled:opacity-50"
+                    style={{ background: 'linear-gradient(to right, #8b6f47, #7a5f37)' }}
+                    onMouseEnter={(e) => {
+                      if (!historyLoading) {
+                        e.currentTarget.style.background = 'linear-gradient(to right, #9b7f57, #8b6f47)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #8b6f47, #7a5f37)';
+                    }}
                   >
                     {historyLoading ? '読み込み中...' : 'もっと見る'}
                   </button>
