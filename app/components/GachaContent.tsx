@@ -459,7 +459,14 @@ export default function GachaContent({
 
         {/* 結果表示 - シャンパンゴールド風 */}
         {result && !showVideo && (
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border-4 p-8 shadow-2xl ring-4 ring-opacity-50" style={{ borderColor: '#8b6f47', backgroundColor: 'rgba(255, 255, 255, 0.95)', ringColor: '#d4af37' }}>
+          <div 
+            className="mx-auto mt-6 max-w-md rounded-2xl border-4 p-8 shadow-2xl" 
+            style={{ 
+              borderColor: '#8b6f47', 
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(212, 175, 55, 0.5)'
+            }}
+          >
             {videoError && (
               <div className="mb-4 rounded-lg p-4 text-center shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#7f1d1d' }}>
                 <p className="font-semibold">⚠️ エラーが発生しました</p>
