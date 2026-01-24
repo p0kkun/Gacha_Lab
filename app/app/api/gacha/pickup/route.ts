@@ -50,7 +50,10 @@ export async function GET(request: NextRequest) {
     if (!pickupGacha.isActive) {
       await logError(
         new Error(`ピックアップガチャが無効化されています: ${pickupGacha.code}`),
-        { route: '/api/gacha/pickup', gachaId: pickupGacha.id, code: pickupGacha.code },
+        { 
+          route: '/api/gacha/pickup',
+          customData: { gachaId: pickupGacha.id, code: pickupGacha.code }
+        },
         request
       );
       return NextResponse.json({
@@ -63,7 +66,10 @@ export async function GET(request: NextRequest) {
     if (pickupGacha.startAt && now < pickupGacha.startAt) {
       await logError(
         new Error(`ピックアップガチャがまだ開始されていません: ${pickupGacha.code}`),
-        { route: '/api/gacha/pickup', gachaId: pickupGacha.id, code: pickupGacha.code },
+        { 
+          route: '/api/gacha/pickup',
+          customData: { gachaId: pickupGacha.id, code: pickupGacha.code }
+        },
         request
       );
       return NextResponse.json({
@@ -75,7 +81,10 @@ export async function GET(request: NextRequest) {
     if (pickupGacha.endAt && now > pickupGacha.endAt) {
       await logError(
         new Error(`ピックアップガチャが終了しています: ${pickupGacha.code}`),
-        { route: '/api/gacha/pickup', gachaId: pickupGacha.id, code: pickupGacha.code },
+        { 
+          route: '/api/gacha/pickup',
+          customData: { gachaId: pickupGacha.id, code: pickupGacha.code }
+        },
         request
       );
       return NextResponse.json({
