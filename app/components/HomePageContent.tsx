@@ -109,7 +109,7 @@ export default function HomePageContent({
 
               {/* メインアクション - ガチャを引くボタン */}
               <button
-                onClick={onOpenGacha}
+                onClick={() => onOpenGacha()}
                 disabled={gachaTypes.length === 0}
                 className="group relative mx-auto mb-3 w-full max-w-xs overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-8 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
               >
