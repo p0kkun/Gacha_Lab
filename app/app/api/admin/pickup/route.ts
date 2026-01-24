@@ -4,6 +4,7 @@ import { logError } from '@/lib/error-logger';
 import { recordAdminAction } from '@/lib/admin-action-history';
 import { AdminActionType } from '@/lib/admin-action-types';
 import { verifyAdminAuth } from '@/lib/admin-auth';
+import type { Prisma } from '@prisma/client';
 
 /**
  * ピックアップガチャ設定を取得
@@ -86,8 +87,35 @@ export async function PUT(request: NextRequest) {
     }
 
     // 既存の設定を取得または作成
-    let appSettings = await prisma.appSettings.findFirst({
+    type AppSettingsWithPickupGacha = Prisma.AppSettingsGetPayload<{
+      include: {
+        pickupGacha: {
+          select: {
+            id: true;
+            code: true;
+            name: true;
+            isActive: true;
+            startAt: true;
+            endAt: true;
+          };
+        };
+      };
+    }>;
+
+    let appSettings: AppSettingsWithPickupGacha | null = await prisma.appSettings.findFirst({
       orderBy: { updatedAt: 'desc' },
+      include: {
+        pickupGacha: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            isActive: true,
+            startAt: true,
+            endAt: true,
+          },
+        },
+      },
     });
 
     if (appSettings) {
