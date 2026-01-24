@@ -72,6 +72,7 @@ model GachaType {
   resultMessageTemplate     ResultMessageTemplate? @relation(fields: [resultMessageTemplateId], references: [id])
   referrerFreeGachaSettings FreeGachaSettings[]    @relation("ReferrerFreeGacha")
   refereeFreeGachaSettings  FreeGachaSettings[]    @relation("RefereeFreeGacha")
+  appSettings               AppSettings[]
 
   @@index([isActive])
   @@index([isActive, startAt, endAt])
@@ -514,4 +515,15 @@ model MessageQueue {
   @@index([userId, createdAt])
   @@index([isSent, type])
   @@map("message_queues")
+}
+
+model AppSettings {
+  id             Int       @id @default(autoincrement())
+  pickupGachaId  Int?      // 現在のピックアップガチャID（GachaType.id）
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  pickupGacha GachaType? @relation(fields: [pickupGachaId], references: [id])
+
+  @@map("app_settings")
 }

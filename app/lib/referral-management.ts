@@ -53,17 +53,12 @@ export async function generateReferralLink(userId: string): Promise<{
 
   const referralLink = `${liffUrl}?ref=${referralLinkId}`;
 
-  // 有効期限を1週間後に設定
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
-
   const referral = await prisma.referral.create({
     data: {
       userId,
       referralLinkId,
       referralLink,
       status: ReferralStatus.PENDING,
-      expiresAt,
     },
   });
 
@@ -116,14 +111,6 @@ export async function verifyReferralLink(
     return {
       isValid: false,
       reason: "紹介リンクが見つかりません",
-    };
-  }
-
-  // 有効期限チェック（1週間）
-  if (referral.expiresAt && new Date() > referral.expiresAt) {
-    return {
-      isValid: false,
-      reason: "この紹介リンクの有効期限が切れています",
     };
   }
 

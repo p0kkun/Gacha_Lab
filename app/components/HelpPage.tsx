@@ -5,96 +5,68 @@ import BottomNavigation from './BottomNavigation';
 
 export default function HelpPage() {
   return (
-    <div className="min-h-screen pb-20 p-4" style={{ backgroundColor: '#e9dacb' }}>
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="mx-auto max-w-md">
         {/* ヘッダー */}
-        <div className="mb-6 rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-          <h1 className="text-2xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>ヘルプ・お知らせ</h1>
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <h1 className="text-2xl font-bold text-gray-800">ヘルプ・お知らせ</h1>
         </div>
 
         {/* メニュー */}
         <div className="space-y-4">
-          <div className="rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-            <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>サービスについて</h2>
-            <p className="mb-4 text-sm" style={{ color: '#6b5a4a' }}>
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-lg font-semibold text-gray-800">サービスについて</h2>
+            <p className="mb-4 text-sm text-gray-600">
               Gacha Labは、ホールデムポーカーの演出を楽しめるガチャサービスです。
               役の強さに応じてレアリティが決定され、エピック、レア、コモンの3段階でアイテムを獲得できます。
             </p>
             <Link
               href="/about"
-              className="underline transition-colors"
-              style={{ color: '#8b6f47' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#9b7f57';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#8b6f47';
-              }}
+              className="text-blue-600 hover:underline"
               target="_blank"
             >
               詳細を見る →
             </Link>
           </div>
 
-          <div className="rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-            <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>利用規約</h2>
-            <p className="mb-4 text-sm" style={{ color: '#6b5a4a' }}>
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-lg font-semibold text-gray-800">利用規約</h2>
+            <p className="mb-4 text-sm text-gray-600">
               サービスの利用規約をご確認ください。
             </p>
             <Link
               href="/terms"
-              className="underline transition-colors"
-              style={{ color: '#8b6f47' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#9b7f57';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#8b6f47';
-              }}
+              className="text-blue-600 hover:underline"
               target="_blank"
             >
               利用規約を見る →
             </Link>
           </div>
 
-          <div className="rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-            <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>プライバシーポリシー</h2>
-            <p className="mb-4 text-sm" style={{ color: '#6b5a4a' }}>
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-lg font-semibold text-gray-800">プライバシーポリシー</h2>
+            <p className="mb-4 text-sm text-gray-600">
               個人情報の取り扱いについてご確認ください。
             </p>
             <Link
               href="/privacy"
-              className="underline transition-colors"
-              style={{ color: '#8b6f47' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#9b7f57';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#8b6f47';
-              }}
+              className="text-blue-600 hover:underline"
               target="_blank"
             >
               プライバシーポリシーを見る →
             </Link>
           </div>
 
-          <div className="rounded-lg p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-            <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-lg font-semibold text-gray-800">
               特定商取引法に基づく表記
             </h2>
-            <p className="mb-4 text-sm" style={{ color: '#6b5a4a' }}>
+            <p className="mb-4 text-sm text-gray-600">
               特定商取引法に基づく表記をご確認ください。
             </p>
             <Link
               href="/commercial-transaction"
-              className="underline transition-colors"
-              style={{ color: '#8b6f47' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#9b7f57';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#8b6f47';
-              }}
+              className="text-blue-600 hover:underline"
               target="_blank"
             >
               表記を見る →
@@ -103,7 +75,7 @@ export default function HelpPage() {
         </div>
 
       </div>
-      <BottomNavigation currentPage="help" />
+      <BottomNavigation />
     </div>
   );
 }

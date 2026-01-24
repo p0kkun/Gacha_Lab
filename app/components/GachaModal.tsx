@@ -19,10 +19,12 @@ export default function GachaModal({
   isOpen,
   onClose,
   userId,
+  defaultGachaCode,
 }: {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
+  defaultGachaCode?: string;
 }) {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [selectedGacha, setSelectedGacha] = useState<GachaType | null>(null);
@@ -48,7 +50,15 @@ export default function GachaModal({
             const typesData = await typesRes.json();
             setGachaTypes(typesData.gachaTypes || []);
             if (typesData.gachaTypes && typesData.gachaTypes.length > 0) {
-              setSelectedGacha(typesData.gachaTypes[0]);
+              // defaultGachaCodeが指定されている場合は、そのガチャを選択
+              if (defaultGachaCode) {
+                const defaultGacha = typesData.gachaTypes.find(
+                  (g: GachaType) => g.id === defaultGachaCode || g.code === defaultGachaCode
+                );
+                setSelectedGacha(defaultGacha || typesData.gachaTypes[0]);
+              } else {
+                setSelectedGacha(typesData.gachaTypes[0]);
+              }
             }
           }
 
@@ -73,7 +83,7 @@ export default function GachaModal({
       };
       fetchData();
     }
-  }, [isOpen, userId]);
+  }, [isOpen, userId, defaultGachaCode]);
 
   if (!isOpen) return null;
 
@@ -109,29 +119,17 @@ export default function GachaModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex backdrop-blur-sm" style={{ backgroundColor: '#e9dacb' }}>
+    <div className="fixed inset-0 z-50 flex bg-white bg-opacity-70 backdrop-blur-sm">
       {/* 全画面オーバーレイ */}
       <div className="flex h-full w-full flex-col">
         {/* 上部: ポイント表示とメニューボタン */}
         {pointBalances && (
-          <div className="border-b px-6 py-3 shadow-sm" style={{ borderColor: '#8b6f47', backgroundColor: '#e9dacb' }}>
+          <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-3 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               {/* ポイント表示 - クリック可能（デザイン改善） */}
               <Link
                 href="/points"
-                className="group flex flex-1 items-center gap-3 rounded-xl border-2 px-4 py-2.5 transition-all hover:shadow-md active:scale-95"
-                style={{ 
-                  borderColor: '#8b6f47',
-                  background: 'linear-gradient(to right, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.3))'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#9b7f57';
-                  e.currentTarget.style.background = 'linear-gradient(to right, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.4))';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#8b6f47';
-                  e.currentTarget.style.background = 'linear-gradient(to right, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.3))';
-                }}
+                className="group flex flex-1 items-center gap-3 rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-yellow-50 to-yellow-100/50 px-4 py-2.5 transition-all hover:border-yellow-400/60 hover:from-yellow-100 hover:to-yellow-200/50 hover:shadow-md active:scale-95"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div className="flex-shrink-0">
@@ -144,29 +142,29 @@ export default function GachaModal({
                         className="h-3.5 w-3.5"
                         active={true}
                       />
-                      <span className="text-lg font-bold truncate" style={{ color: '#7a5f37' }}>
+                      <span className="text-lg font-bold text-yellow-800 truncate">
                         {pointBalances.total.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: '#6b5a4a' }}>
+                      <span className="text-[10px] font-medium text-yellow-600 flex items-center gap-0.5">
                         <PointIcon size={10} className="h-2.5 w-2.5" />
                         有償: {pointBalances.paid.toLocaleString()}
                       </span>
-                      <span className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: '#6b5a4a' }}>
+                      <span className="text-[10px] font-medium text-green-600 flex items-center gap-0.5">
                         <PointIcon size={10} className="h-2.5 w-2.5" />
                         無償: {pointBalances.free.toLocaleString()}
                       </span>
                     </div>
                     {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
                     {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
-                      <div className="mt-1 text-[9px]" style={{ color: '#6b5a4a' }}>
+                      <div className="mt-1 text-[9px] text-yellow-600/80">
                         有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex-shrink-0 opacity-70 transition-opacity group-hover:opacity-100" style={{ color: '#8b6f47' }}>
+                <div className="flex-shrink-0 text-yellow-600 opacity-60 transition-opacity group-hover:opacity-100">
                   <svg
                     className="h-4 w-4"
                     fill="none"
@@ -185,14 +183,7 @@ export default function GachaModal({
               {/* ガチャ選択ボタン */}
               <button
                 onClick={() => setIsMenuOpen(true)}
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
-                style={{ background: 'linear-gradient(to right, #8b6f47, #7a5f37)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(to right, #9b7f57, #8b6f47)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(to right, #8b6f47, #7a5f37)';
-                }}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-lg active:scale-95"
               >
                 <svg
                   className="h-5 w-5"
@@ -246,19 +237,17 @@ export default function GachaModal({
       <>
         {/* 半透明背景（フェードイン） */}
         <div
-          className={`fixed inset-0 z-[60] backdrop-blur-sm transition-opacity duration-300 ease-out ${
+          className={`fixed inset-0 z-[60] bg-white backdrop-blur-sm transition-opacity duration-300 ease-out ${
             isMenuOpen ? "opacity-70" : "pointer-events-none opacity-0"
           }`}
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
           onClick={() => setIsMenuOpen(false)}
         />
 
         {/* メニューパネル（スライドイン） */}
         <div
-          className={`fixed inset-y-0 left-0 z-[70] w-80 max-w-[85vw] shadow-2xl transform transition-transform duration-300 ease-out ${
+          className={`fixed inset-y-0 left-0 z-[70] w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-out ${
             isMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
-          style={{ backgroundColor: '#e9dacb' }}
         >
           <GachaMenu
             gachaTypes={gachaTypes}

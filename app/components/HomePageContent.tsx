@@ -5,8 +5,6 @@ import Link from "next/link";
 import type { LiffProfile } from "@/lib/liff";
 import BottomNavigation from "./BottomNavigation";
 import PointCard from "./PointCard";
-import PointIcon from "./PointIcon";
-import { renderMarkdownLinks } from "@/lib/markdown-utils";
 
 type GachaType = {
   id: string;
@@ -34,7 +32,7 @@ type PointBalances = {
 type HomePageContentProps = {
   profile: LiffProfile;
   pointBalances: PointBalances | null;
-  onOpenGacha: () => void;
+  onOpenGacha: (gachaCode?: string) => void;
 };
 
 export default function HomePageContent({
@@ -248,7 +246,7 @@ export default function HomePageContent({
                   {gachaTypes.map((gacha) => (
                     <button
                       key={gacha.id}
-                      onClick={onOpenGacha}
+                      onClick={() => onOpenGacha(gacha.code)}
                       className="group w-full rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-lg transition-all hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/20 active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-4">
@@ -285,35 +283,21 @@ export default function HomePageContent({
                             {gacha.name}
                           </h3>
                           {gacha.description && (
-                            <div className="mb-2 text-xs line-clamp-2 whitespace-pre-line" style={{ color: '#6b5a4a' }}>
-                              {renderMarkdownLinks(gacha.description)}
-                            </div>
+                            <p className="mb-2 text-xs text-gray-600 line-clamp-2">
+                              {gacha.description}
+                            </p>
                           )}
                           <div className="flex items-center gap-2">
-                            {gacha.pointCost > 0 ? (
-                              <span 
-                                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
-                                style={{
-                                  background: 'linear-gradient(to right, #8b6f47, #7a5f37)'
-                                }}
-                              >
-                                <PointIcon
-                                  size={12}
-                                  className="h-3 w-3"
-                                  active={true}
-                                />
-                                {gacha.pointCost.toLocaleString()}
-                              </span>
-                            ) : (
-                              <span 
-                                className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
-                                style={{
-                                  background: 'linear-gradient(to right, #8b6f47, #7a5f37)'
-                                }}
-                              >
-                                無料
-                              </span>
-                            )}
+                            <span 
+                              className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
+                              style={{
+                                background: 'linear-gradient(to right, #8b6f47, #7a5f37)'
+                              }}
+                            >
+                              {gacha.pointCost > 0
+                                ? `$${gacha.pointCost.toLocaleString()}`
+                                : "無料"}
+                            </span>
                           </div>
                         </div>
                         <div className="transition-transform group-hover:translate-x-1" style={{ color: '#8b6f47' }}>
@@ -409,7 +393,7 @@ export default function HomePageContent({
                   <div className="flex items-center gap-3">
                     <img
                       src="/icons/navigation/icon-referral.svg"
-                      alt="友だち紹介"
+                      alt="友達紹介"
                       className="h-5 w-5"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
@@ -421,7 +405,7 @@ export default function HomePageContent({
                       }}
                     />
                     <div className="text-xl hidden">👥</div>
-                    <span className="text-sm font-medium">友だち紹介</span>
+                    <span className="text-sm font-medium">友達紹介</span>
                   </div>
                   <svg
                     className="h-5 w-5"

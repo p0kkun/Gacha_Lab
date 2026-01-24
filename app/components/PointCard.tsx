@@ -31,10 +31,9 @@ export default function PointCard({
   if (!pointBalances) {
     return (
       <div
-        className={`mx-auto max-w-xs rounded-xl border-2 p-4 shadow-lg backdrop-blur-sm ${className}`}
-        style={{ borderColor: '#8b6f47', background: 'linear-gradient(to right, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.3))' }}
+        className={`mx-auto max-w-xs rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 p-4 shadow-lg backdrop-blur-sm ${className}`}
       >
-        <div className="text-center" style={{ color: '#6b5a4a' }}>読み込み中...</div>
+        <div className="text-center text-yellow-200">読み込み中...</div>
       </div>
     );
   }
@@ -42,29 +41,17 @@ export default function PointCard({
   return (
     <Link
       href="/points"
-      className={`group mx-auto block max-w-xs rounded-xl border-2 p-4 shadow-lg backdrop-blur-sm transition-all hover:shadow-xl active:scale-95 ${className}`}
-      style={{ 
-        borderColor: '#8b6f47',
-        background: 'linear-gradient(to right, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.3))'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#9b7f57';
-        e.currentTarget.style.background = 'linear-gradient(to right, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.4))';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#8b6f47';
-        e.currentTarget.style.background = 'linear-gradient(to right, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.3))';
-      }}
+      className={`group mx-auto block max-w-xs rounded-xl border-2 border-yellow-400 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 p-4 shadow-lg backdrop-blur-sm transition-all hover:border-yellow-400/80 hover:from-yellow-500/30 hover:to-yellow-600/30 hover:shadow-xl active:scale-95 ${className}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <div className="text-xs" style={{ color: '#6b5a4a' }}>所持ポイント</div>
-          <div className="text-4xl font-bold drop-shadow-md flex items-center gap-2" style={{ color: '#7a5f37' }}>
+          <div className="text-xs text-yellow-200">所持ポイント</div>
+          <div className="text-4xl font-bold text-yellow-300 drop-shadow-md flex items-center gap-2">
             <PointIcon size={32} className="h-8 w-8" active={true} />
             {pointBalances.total.toLocaleString()}
           </div>
           {variant === "mypage" && (
-            <div className="mt-2 flex justify-center gap-4 text-xs" style={{ color: '#6b5a4a' }}>
+            <div className="mt-2 flex justify-center gap-4 text-xs text-yellow-200/80">
               <span className="flex items-center gap-0.5">
                 有償:{" "}
                 <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
@@ -79,7 +66,7 @@ export default function PointCard({
           )}
           {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
           {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
-            <div className="mt-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
+            <div className="mt-2 text-center text-xs text-yellow-200/70">
               有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
               {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
                 <span className="ml-1">
@@ -89,7 +76,7 @@ export default function PointCard({
             </div>
           )}
         </div>
-        <div className="opacity-70 transition-opacity group-hover:opacity-100" style={{ color: '#8b6f47' }}>
+        <div className="text-yellow-300 opacity-70 transition-opacity group-hover:opacity-100">
           <img
             src="/icons/navigation/icon-point.svg"
             alt="ポイント購入"
@@ -118,7 +105,7 @@ export default function PointCard({
           </svg>
         </div>
       </div>
-      <div className="mt-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
+      <div className="mt-2 text-center text-xs text-yellow-200/80">
         タップしてポイントを購入
       </div>
     </Link>

@@ -58,7 +58,7 @@ export default function TabbedPage({
       <div className="relative">
         {/* タブボタン */}
         <nav
-          className="flex flex-wrap gap-0 border-b border-gray-300"
+          className="flex flex-nowrap gap-0 border-b border-gray-300 overflow-x-auto"
           aria-label="Navigation"
         >
           {tabs.map((tab) => {

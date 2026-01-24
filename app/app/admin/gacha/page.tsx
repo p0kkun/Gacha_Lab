@@ -33,6 +33,10 @@ const ItemsContent = dynamic(() => import("@/app/admin/items/page"), {
 const SimulatorContent = dynamic(() => import("@/app/admin/simulator/page"), {
   ssr: false,
 });
+const PickupSettingsContent = dynamic(
+  () => import("@/app/admin/system/pickup-settings"),
+  { ssr: false }
+);
 
 function GachaContent() {
   const searchParams = useSearchParams();
@@ -48,6 +52,12 @@ function GachaContent() {
           label: "ガチャ設定",
           icon: "🎰",
           content: <GachaTypesContent />,
+        },
+        {
+          id: "pickup",
+          label: "ピックアップ設定",
+          icon: "⭐",
+          content: <PickupSettingsContent />,
         },
         {
           id: "free-gacha-settings",

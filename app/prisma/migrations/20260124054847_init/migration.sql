@@ -399,6 +399,16 @@ CREATE TABLE "message_queues" (
     CONSTRAINT "message_queues_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "app_settings" (
+    "id" SERIAL NOT NULL,
+    "pickupGachaId" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "app_settings_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_userId_key" ON "users"("userId");
 
@@ -577,9 +587,6 @@ CREATE INDEX "point_purchase_plans_displayOrder_idx" ON "point_purchase_plans"("
 CREATE UNIQUE INDEX "tags_name_key" ON "tags"("name");
 
 -- CreateIndex
-CREATE INDEX "tags_name_idx" ON "tags"("name");
-
--- CreateIndex
 CREATE INDEX "user_tags_tagId_userId_idx" ON "user_tags"("tagId", "userId");
 
 -- CreateIndex
@@ -647,3 +654,6 @@ ALTER TABLE "free_gacha_settings" ADD CONSTRAINT "free_gacha_settings_referrerGa
 
 -- AddForeignKey
 ALTER TABLE "free_gacha_settings" ADD CONSTRAINT "free_gacha_settings_refereeGachaTypeId_fkey" FOREIGN KEY ("refereeGachaTypeId") REFERENCES "gacha_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "app_settings" ADD CONSTRAINT "app_settings_pickupGachaId_fkey" FOREIGN KEY ("pickupGachaId") REFERENCES "gacha_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;

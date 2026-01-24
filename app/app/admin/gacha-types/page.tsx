@@ -166,10 +166,6 @@ export default function GachaTypesPage() {
   } | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [descriptionTextareaRef, setDescriptionTextareaRef] =
-    useState<HTMLTextAreaElement | null>(null);
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [linkData, setLinkData] = useState({ text: "", url: "" });
 
   // デフォルトメッセージテンプレート（未設定時の表示用）
   const DEFAULT_MESSAGE_TEMPLATE = `🎰 ガチャ結果
@@ -190,43 +186,6 @@ export default function GachaTypesPage() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
       d.getDate()
     )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-
-  // リンク挿入処理
-  const handleInsertLink = () => {
-    if (!descriptionTextareaRef) return;
-
-    const textarea = descriptionTextareaRef;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentText = formData.description || "";
-    const selectedText = currentText.substring(start, end);
-
-    // 選択テキストがある場合はそれをリンクテキストとして使用
-    const linkText = linkData.text || selectedText || "リンク";
-    const linkUrl = linkData.url || "";
-
-    if (!linkUrl) {
-      alert("URLを入力してください");
-      return;
-    }
-
-    const markdownLink = `[${linkText}](${linkUrl})`;
-    const newText =
-      currentText.substring(0, start) +
-      markdownLink +
-      currentText.substring(end);
-
-    setFormData({ ...formData, description: newText });
-    setShowLinkModal(false);
-    setLinkData({ text: "", url: "" });
-
-    // テキストエリアのフォーカスを復帰し、カーソル位置を調整
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + markdownLink.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
   };
 
   // 動的等級管理用のヘルパー関数
@@ -1541,32 +1500,17 @@ export default function GachaTypesPage() {
                       <label className="block text-sm font-medium text-gray-700">
                         説明
                       </label>
-                      <div className="mt-1 flex gap-2">
-                        <textarea
-                          ref={(el) => setDescriptionTextareaRef(el)}
-                          value={displayData.description || ""}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              description: e.target.value,
-                            })
-                          }
-                          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                          rows={2}
-                          placeholder="ガチャの説明を入力してください。リンクは[リンク挿入]ボタンから追加できます。"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowLinkModal(true)}
-                          className="h-fit rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                          title="リンクを挿入"
-                        >
-                          リンク挿入
-                        </button>
-                      </div>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Markdown形式でリンクを記述できます: [リンクテキスト](URL)
-                      </p>
+                      <textarea
+                        value={displayData.description || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
+                        }
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                        rows={2}
+                      />
                     </div>
 
                     {/* アイコン画像アップロード */}
@@ -2967,75 +2911,6 @@ export default function GachaTypesPage() {
                 </video>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* リンク挿入モーダル */}
-      {showLinkModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
-          onClick={() => setShowLinkModal(false)}
-        >
-          <div
-            className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="mb-4 text-lg font-semibold text-gray-800">
-              リンクを挿入
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  リンクテキスト
-                </label>
-                <input
-                  type="text"
-                  value={linkData.text}
-                  onChange={(e) =>
-                    setLinkData({ ...linkData, text: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="例: 詳細はこちら"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  テキストエリアで選択したテキストがある場合は、それがリンクテキストとして使用されます
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  URL *
-                </label>
-                <input
-                  type="url"
-                  value={linkData.url}
-                  onChange={(e) =>
-                    setLinkData({ ...linkData, url: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="https://example.com"
-                  required
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowLinkModal(false);
-                  setLinkData({ text: "", url: "" });
-                }}
-                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleInsertLink}
-                className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-              >
-                挿入
-              </button>
-            </div>
           </div>
         </div>
       )}

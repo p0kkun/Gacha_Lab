@@ -2,7 +2,6 @@
 
 import { GachaType } from "./GachaModal";
 import PointIcon from "./PointIcon";
-import { renderMarkdownLinks } from "@/lib/markdown-utils";
 
 export default function GachaMenu({
   gachaTypes,
@@ -16,21 +15,14 @@ export default function GachaMenu({
   onClose?: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden" style={{ backgroundColor: '#e9dacb' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-white">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: '#8b6f47', backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-        <h2 className="text-xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>ガチャ選択</h2>
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+        <h2 className="text-xl font-bold text-gray-800">ガチャ選択</h2>
         {onClose && (
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-95"
-            style={{ backgroundColor: 'rgba(139, 111, 71, 0.3)', color: '#5a4a3a' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(139, 111, 71, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(139, 111, 71, 0.3)';
-            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-all hover:bg-gray-200 hover:text-gray-800 active:scale-95"
             aria-label="閉じる"
           >
             <svg
@@ -59,24 +51,9 @@ export default function GachaMenu({
                 onClick={() => onSelect(gacha)}
                 className={`group w-full rounded-xl p-4 text-left transition-all duration-200 ${
                   selectedGacha.id === gacha.id
-                    ? "shadow-lg scale-[1.02]"
-                    : "hover:shadow-md active:scale-[0.98]"
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
+                    : "bg-gray-50 text-gray-800 hover:bg-gray-100 hover:shadow-md active:scale-[0.98]"
                 }`}
-                style={
-                  selectedGacha.id === gacha.id
-                    ? { background: 'linear-gradient(to right, #d4af37, #b8941f)', color: '#ffffff' }
-                    : { backgroundColor: 'rgba(255, 255, 255, 0.5)', color: '#4a3a2a' }
-                }
-                onMouseEnter={(e) => {
-                  if (selectedGacha.id !== gacha.id) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedGacha.id !== gacha.id) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-                  }
-                }}
               >
                 <div className="flex items-center gap-3">
                   <img
@@ -86,8 +63,7 @@ export default function GachaMenu({
                         : "/images/gacha/default-icon.png"
                     }
                     alt={gacha.name}
-                    className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border shadow-sm"
-                    style={{ borderColor: '#8b6f47' }}
+                    className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border border-gray-200 shadow-sm"
                     onError={(e) => {
                       // 画像読み込みエラー時はデフォルト画像にフォールバック
                       const target = e.target as HTMLImageElement;
@@ -111,9 +87,8 @@ export default function GachaMenu({
                       className={`mb-1 font-semibold leading-tight ${
                         selectedGacha.id === gacha.id
                           ? "text-white"
-                          : ""
+                          : "text-gray-900"
                       }`}
-                      style={selectedGacha.id !== gacha.id ? { color: '#4a3a2a' } : {}}
                     >
                       {gacha.name}
                     </div>
@@ -121,18 +96,13 @@ export default function GachaMenu({
                 </div>
                 {gacha.description && (
                   <div
-                    className={`text-xs leading-relaxed break-words whitespace-pre-line ${
+                    className={`text-xs leading-relaxed break-words ${
                       selectedGacha.id === gacha.id
-                        ? "text-white/90"
-                        : ""
+                        ? "text-blue-100"
+                        : "text-gray-600"
                     }`}
-                    style={selectedGacha.id !== gacha.id ? { color: '#6b5a4a' } : {}}
                   >
-                    {renderMarkdownLinks(
-                      gacha.description,
-                      undefined,
-                      selectedGacha.id === gacha.id ? "text-white/90 underline" : undefined
-                    )}
+                    {gacha.description}
                   </div>
                 )}
                 {gacha.pointCost !== undefined && gacha.pointCost > 0 && (
@@ -140,9 +110,8 @@ export default function GachaMenu({
                     className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       selectedGacha.id === gacha.id
                         ? "bg-white/20 text-white"
-                        : ""
+                        : "bg-blue-100 text-blue-700"
                     }`}
-                    style={selectedGacha.id !== gacha.id ? { backgroundColor: 'rgba(139, 111, 71, 0.2)', color: '#7a5f37' } : {}}
                   >
                     <PointIcon
                       size={12}

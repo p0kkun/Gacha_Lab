@@ -22,12 +22,6 @@ type Assignment = {
   };
 };
 
-type TierWeight = {
-  tierCode: string;
-  weight: number;
-  tier: { code: string; label: string };
-};
-
 const RARITIES: Array<{ value: string; label: string }> = [
   { value: "FIRST_PRIZE", label: "1等" },
   { value: "SECOND_PRIZE", label: "2等" },
@@ -43,7 +37,6 @@ export default function PrizeAssignmentsPage() {
   const [items, setItems] = useState<PrizeItemLite[]>([]);
   const [selectedGachaTypeId, setSelectedGachaTypeId] = useState<string>("");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [tierWeights, setTierWeights] = useState<TierWeight[]>([]);
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +120,6 @@ export default function PrizeAssignmentsPage() {
       if (!res.ok)
         throw new Error(data.error || "景品割当一覧の取得に失敗しました");
       setAssignments(Array.isArray(data.assignments) ? data.assignments : []);
-      setTierWeights(Array.isArray(data.tierWeights) ? data.tierWeights : []);
     } finally {
       setLoading(false);
     }
@@ -154,44 +146,6 @@ export default function PrizeAssignmentsPage() {
 
   const tierLabel = (tierCode: string) =>
     RARITIES.find((r) => r.value === tierCode)?.label || tierCode;
-
-  // 確率を計算する関数
-  const calculateProbability = (assignment: Assignment): number => {
-    if (!assignment.isActive) return 0;
-
-    // 等級の重みを取得
-    const tierWeight = tierWeights.find((tw) => tw.tierCode === assignment.tierCode);
-    if (!tierWeight || tierWeight.weight <= 0) return 0;
-
-    // 全等級の重みの合計
-    const totalTierWeight = tierWeights.reduce((sum, tw) => sum + (tw.weight || 0), 0);
-    if (totalTierWeight <= 0) return 0;
-
-    // 等級の確率
-    const tierProbability = (tierWeight.weight / totalTierWeight) * 100;
-
-    // その等級内の全アイテムの重みの合計（有効なもののみ）
-    const tierAssignments = assignments.filter(
-      (a) => a.tierCode === assignment.tierCode && a.isActive
-    );
-    const tierTotalWeight = tierAssignments.reduce(
-      (sum, a) => sum + (Number.isFinite(a.weight) ? a.weight : 0),
-      0
-    );
-    if (tierTotalWeight <= 0) return 0;
-
-    // アイテムの重み
-    const itemWeight = Number.isFinite(assignment.weight) ? assignment.weight : 0;
-    if (itemWeight <= 0) return 0;
-
-    // 等級内でのアイテムの確率
-    const itemProbabilityInTier = (itemWeight / tierTotalWeight) * 100;
-
-    // 全体の確率 = 等級の確率 × 等級内でのアイテムの確率 / 100
-    const itemProbability = (tierProbability * itemProbabilityInTier) / 100;
-
-    return itemProbability;
-  };
 
   const openConfirm = (args: Omit<NonNullable<typeof confirm>, "isOpen">) =>
     setConfirm({ isOpen: true, ...args });
@@ -501,9 +455,6 @@ export default function PrizeAssignmentsPage() {
                     重み
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                    確率
-                  </th>
-                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     状態
                   </th>
                   <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
@@ -584,20 +535,6 @@ export default function PrizeAssignmentsPage() {
                         }
                         className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
                       />
-                    </td>
-                    <td className="px-3 py-2 text-sm text-gray-900">
-                      <div className="font-medium text-blue-600">
-                        {calculateProbability(a).toFixed(3)}%
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {(() => {
-                          const tierWeight = tierWeights.find((tw) => tw.tierCode === a.tierCode);
-                          if (!tierWeight) return "等級重み未設定";
-                          const totalTierWeight = tierWeights.reduce((sum, tw) => sum + (tw.weight || 0), 0);
-                          const tierProb = totalTierWeight > 0 ? ((tierWeight.weight / totalTierWeight) * 100).toFixed(2) : "0.00";
-                          return `等級: ${tierProb}%`;
-                        })()}
-                      </div>
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-900">
                       <label className="inline-flex items-center gap-2">

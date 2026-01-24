@@ -14,11 +14,11 @@ export default function AdminPage() {
   useEffect(() => {
     // setStateを非同期的に実行することで、カスケーディングレンダーを防ぐ
     const initialize = () => {
-    setMounted(true);
-    const authStatus = sessionStorage.getItem("admin_authenticated");
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-    }
+      setMounted(true);
+      const authStatus = sessionStorage.getItem("admin_authenticated");
+      if (authStatus === "true") {
+        setIsAuthenticated(true);
+      }
     };
     
     // 次のイベントループで実行

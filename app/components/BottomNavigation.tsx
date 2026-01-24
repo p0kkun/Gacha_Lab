@@ -49,7 +49,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: 'referral',
-    label: '友だち紹介',
+    label: '友達紹介',
     href: '/?action=referral',
     iconName: 'referral',
     activePattern: ['referral'],
@@ -102,43 +102,12 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
                 className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 transition-colors ${
                   transparent
                     ? active
-                      ? ''
-                      : ''
+                      ? 'bg-green-800 bg-opacity-50 text-yellow-300'
+                      : 'text-green-200 hover:bg-green-800 hover:bg-opacity-30 active:bg-green-800 active:bg-opacity-40'
                     : active
-                    ? ''
-                    : ''
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
                 }`}
-                style={
-                  transparent
-                    ? active
-                      ? {
-                          backgroundColor: 'rgba(212, 175, 55, 0.3)',
-                          color: '#4a3a2a'
-                        }
-                      : {
-                          color: '#6b5a4a'
-                        }
-                    : active
-                    ? {
-                        backgroundColor: 'rgba(212, 175, 55, 0.2)',
-                        color: '#4a3a2a'
-                      }
-                    : {
-                        color: '#6b5a4a'
-                      }
-                }
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.backgroundColor = transparent
-                      ? 'rgba(212, 175, 55, 0.2)'
-                      : 'rgba(212, 175, 55, 0.15)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
                 aria-label={item.label}
                 aria-current={active ? 'page' : undefined}
               >
@@ -149,9 +118,13 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
                   aria-hidden="true"
                 />
                 <span 
-                  className="whitespace-nowrap text-[10px] font-medium leading-tight"
-                  style={{
-                    color: active ? '#4a3a2a' : '#6b5a4a'
+                  className={`whitespace-nowrap text-[10px] font-medium leading-tight ${
+                    transparent
+                      ? active ? 'text-yellow-300' : 'text-green-200'
+                      : ''
+                  }`}
+                  style={transparent ? {} : {
+                    color: active ? '#5a4a3a' : '#6b5a4a'
                   }}
                 >
                   {item.label}
