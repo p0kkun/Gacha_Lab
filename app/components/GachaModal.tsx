@@ -9,6 +9,7 @@ import { formatExpiryText } from "@/lib/point-utils";
 
 export type GachaType = {
   id: string;
+  code: string;
   name: string;
   description: string;
   iconImageUrl?: string | null;
