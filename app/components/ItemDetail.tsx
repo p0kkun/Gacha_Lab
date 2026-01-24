@@ -342,13 +342,13 @@ export default function ItemDetail({
                         <div>
                           <div className="mb-1 text-xs font-semibold" style={{ color: '#6b5a4a' }}>提示方法</div>
                           <div className="text-sm" style={{ color: '#5a4a3a' }}>
-                            {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
+                            {userItem.item.usageType === 'IMAGE' ? '画像を提示' : 'この画面を提示'}
                           </div>
                         </div>
 
-                        {/* 識別子（クーポンID） */}
+                        {/* 識別子（アイテムID） */}
                         <div>
-                          <div className="mb-1 text-xs font-semibold" style={{ color: '#6b5a4a' }}>クーポンID</div>
+                          <div className="mb-1 text-xs font-semibold" style={{ color: '#6b5a4a' }}>アイテムID</div>
                           <div className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold shadow-sm" style={{ backgroundColor: 'rgba(212, 175, 55, 0.2)', color: '#7a5f37' }}>
                             {String(userItem.id).padStart(8, '0')}
                           </div>
