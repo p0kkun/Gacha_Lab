@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   initLiff,
   getProfile,
@@ -9,21 +9,27 @@ import {
   login,
   type LiffProfile,
 } from "@/lib/liff";
-import GachaModal from "@/components/GachaModal";
 import MyPage from "@/components/MyPage";
 import GachaHistory from "@/components/GachaHistory";
 import MyItems from "@/components/MyItems";
 import HelpPage from "@/components/HelpPage";
 import Referral from "@/components/Referral";
 import HomePageContent from "@/components/HomePageContent";
+import GachaScreen from "@/components/GachaScreen";
 
-type ActivePage = "home" | "mypage" | "history" | "items" | "help" | "referral";
+type ActivePage =
+  | "home"
+  | "gacha"
+  | "mypage"
+  | "history"
+  | "items"
+  | "help"
+  | "referral";
 
 function HomeContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isGachaModalOpen, setIsGachaModalOpen] = useState(false);
   const [defaultGachaCode, setDefaultGachaCode] = useState<string | undefined>(undefined);
   const [points, setPoints] = useState<number | null>(null);
   const [pointBalances, setPointBalances] = useState<{
@@ -36,30 +42,33 @@ function HomeContent() {
   } | null>(null);
   const [activePage, setActivePage] = useState<ActivePage>("home");
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // URLパラメータからactionを取得してページを切り替え
   useEffect(() => {
     const action = searchParams.get("action");
+    const gachaCode =
+      searchParams.get("gacha") || searchParams.get("code") || undefined;
 
-    if (action === "gacha" && profile) {
-      setIsGachaModalOpen(true);
-      setActivePage("home");
+    if (action === "gacha") {
+      setDefaultGachaCode(gachaCode);
+      setActivePage("gacha");
+      return;
+    }
+
+    setDefaultGachaCode(undefined);
+    if (action === "mypage") {
+      setActivePage("mypage");
+    } else if (action === "history") {
+      setActivePage("history");
+    } else if (action === "items") {
+      setActivePage("items");
+    } else if (action === "help") {
+      setActivePage("help");
+    } else if (action === "referral") {
+      setActivePage("referral");
     } else {
-      // ガチャ以外のアクションが選択された場合はモーダルを閉じる
-      setIsGachaModalOpen(false);
-      if (action === "mypage") {
-        setActivePage("mypage");
-      } else if (action === "history") {
-        setActivePage("history");
-      } else if (action === "items") {
-        setActivePage("items");
-      } else if (action === "help") {
-        setActivePage("help");
-      } else if (action === "referral") {
-        setActivePage("referral");
-      } else {
-        setActivePage("home");
-      }
+      setActivePage("home");
     }
   }, [searchParams, profile]);
 
@@ -188,6 +197,13 @@ function HomeContent() {
     }
 
     switch (activePage) {
+      case "gacha":
+        return (
+          <GachaScreen
+            userId={profile.userId}
+            defaultGachaCode={defaultGachaCode}
+          />
+        );
       case "mypage":
         return <MyPage profile={profile} />;
       case "history":
@@ -206,56 +222,22 @@ function HomeContent() {
             pointBalances={pointBalances}
             onOpenGacha={(gachaCode) => {
               setDefaultGachaCode(gachaCode);
-              setIsGachaModalOpen(true);
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("action", "gacha");
+              if (gachaCode) {
+                params.set("gacha", gachaCode);
+              } else {
+                params.delete("gacha");
+                params.delete("code");
+              }
+              router.push(`/?${params.toString()}`);
             }}
           />
         );
     }
   };
 
-  return (
-    <>
-      {renderContent()}
-
-      {/* 全画面ガチャモーダル */}
-      {profile && (
-        <GachaModal
-          isOpen={isGachaModalOpen}
-          onClose={() => {
-            setIsGachaModalOpen(false);
-            setDefaultGachaCode(undefined);
-            // URLパラメータをクリア
-            if (typeof window !== "undefined") {
-              const url = new URL(window.location.href);
-              url.searchParams.delete("action");
-              window.history.replaceState({}, "", url.toString());
-            }
-            // ポイント残高を再取得
-            if (profile) {
-              fetch(`/api/points/balance?userId=${profile.userId}`)
-                .then((res) => res.json())
-                .then((data) => {
-                  setPoints(data.points);
-                  setPointBalances({
-                    paid: data.paid || 0,
-                    free: data.free || 0,
-                    total: data.total || 0,
-                    paidExpiresAt: data.paidExpiresAt,
-                    freeExpiresAt: data.freeExpiresAt,
-                    lastUpdated: data.lastUpdated,
-                  });
-                })
-                .catch((error) =>
-                  console.error("ポイント残高取得エラー:", error)
-                );
-            }
-          }}
-          userId={profile.userId}
-          defaultGachaCode={defaultGachaCode}
-        />
-      )}
-    </>
-  );
+  return <>{renderContent()}</>;
 }
 
 export default function Home() {

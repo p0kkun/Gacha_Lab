@@ -304,7 +304,10 @@ export default function GachaContent({
     >
       {/* ヘッダー - ポーカーテーブル風 */}
       {!showVideo && (
-        <div className="border-b border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 shadow-lg">
+        <div
+          className="border-b px-6 py-4 shadow-lg"
+          style={{ backgroundColor: "#e9dacb", borderColor: "#b89f7a" }}
+        >
           <div className="flex items-center gap-3">
             {selectedGacha.iconImageUrl ? (
               <img
@@ -330,17 +333,26 @@ export default function GachaContent({
               🂡
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-bold text-yellow-300 drop-shadow-lg break-words">
+              <h1
+                className="text-2xl font-bold drop-shadow-lg break-words"
+                style={{ color: "#4a3a2a" }}
+              >
                 {selectedGacha.name}
               </h1>
               {(selectedGacha.pointCost ?? 0) > 0 ? (
-                <p className="mt-1 text-sm font-semibold text-yellow-300 flex items-center gap-1">
+                <p
+                  className="mt-1 text-sm font-semibold flex items-center gap-1"
+                  style={{ color: "#8b6f47" }}
+                >
                   必要:{" "}
                   <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
                   {(selectedGacha.pointCost ?? 0).toLocaleString()}
                 </p>
               ) : (
-                <p className="mt-1 text-sm font-semibold text-green-200">
+                <p
+                  className="mt-1 text-sm font-semibold"
+                  style={{ color: "#6b5a4a" }}
+                >
                   無料
                 </p>
               )}
@@ -348,7 +360,12 @@ export default function GachaContent({
             {/* 景品一覧・確率表示ボタン */}
             <button
               onClick={() => setShowPrizeList(true)}
-              className="flex-shrink-0 rounded-lg border-2 border-yellow-400/50 bg-yellow-500/20 px-4 py-2 text-sm font-semibold text-yellow-200 transition-all hover:bg-yellow-500/30 hover:border-yellow-400 active:scale-95"
+              className="flex-shrink-0 rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all active:scale-95"
+              style={{
+                borderColor: "#b89f7a",
+                backgroundColor: "rgba(255, 255, 255, 0.4)",
+                color: "#5a4a3a",
+              }}
               title="景品一覧・確率を表示"
             >
               <div className="flex items-center gap-2">
@@ -374,9 +391,8 @@ export default function GachaContent({
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
       <div
-        className={`flex-1 overflow-y-auto bg-gradient-to-br from-green-900 via-green-800 to-green-900 ${
-          showVideo ? "" : ""
-        }`}
+        className={`flex-1 overflow-hidden ${showVideo ? "" : ""}`}
+        style={{ backgroundColor: "#e9dacb" }}
       >
         {!result && (
           <div className="flex min-h-full flex-col">
@@ -421,7 +437,10 @@ export default function GachaContent({
             <div className="flex flex-1 flex-col items-center justify-center px-4 py-4 sm:py-6">
               {selectedGacha.description && (
                 <div className="mb-4 w-full max-w-2xl">
-                  <p className="text-center text-base leading-relaxed text-green-200 break-words sm:text-lg">
+                  <p
+                    className="text-center text-base leading-relaxed break-words sm:text-lg"
+                    style={{ color: "#5a4a3a" }}
+                  >
                     {selectedGacha.description}
                   </p>
                 </div>
@@ -486,7 +505,10 @@ export default function GachaContent({
 
       {/* フッター（ガチャを引くボタン） - ポーカー風 */}
       {!showVideo && (
-        <div className="border-t border-green-600 bg-gradient-to-r from-green-900 via-green-800 to-green-900 px-6 py-4 pb-24 shadow-lg">
+        <div
+          className="border-t px-6 py-4 pb-24 shadow-lg"
+          style={{ backgroundColor: "#e9dacb", borderColor: "#b89f7a" }}
+        >
           <button
             onClick={handleDrawGachaClick}
             disabled={isDrawing}
@@ -541,7 +563,7 @@ export default function GachaContent({
         <BottomNavigation
           currentPage="gacha"
           hideSpacer={true}
-          transparent={true}
+          transparent={false}
         />
       )}
 

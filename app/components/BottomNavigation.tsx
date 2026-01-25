@@ -86,7 +86,7 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
       {/* スペーサー（ナビゲーションの高さ分） */}
       {!hideSpacer && <div className="h-20" />}
       <nav 
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t ${transparent ? 'border-transparent bg-transparent shadow-none' : 'shadow-lg'}`}
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t pb-[env(safe-area-inset-bottom)] ${transparent ? 'border-transparent bg-gradient-to-r from-green-900 via-green-800 to-green-900 shadow-none' : 'shadow-lg'}`}
         style={transparent ? {} : {
           backgroundColor: '#d4c4b0',
           borderColor: '#b8a896'
@@ -104,10 +104,24 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
                     ? active
                       ? 'bg-green-800 bg-opacity-50 text-yellow-300'
                       : 'text-green-200 hover:bg-green-800 hover:bg-opacity-30 active:bg-green-800 active:bg-opacity-40'
-                    : active
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
+                    : ''
                 }`}
+                style={transparent ? {} : (active ? {
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                } : {
+                  color: '#6b5a4a'
+                })}
+                onMouseEnter={(e) => {
+                  if (!transparent && !active) {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!transparent && !active) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
                 aria-label={item.label}
                 aria-current={active ? 'page' : undefined}
               >

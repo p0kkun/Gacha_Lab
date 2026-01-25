@@ -718,17 +718,17 @@ function PointsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen p-4" style={{ backgroundColor: '#e9dacb' }}>
       <div className="mx-auto max-w-md">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-800">
+        <h1 className="mb-6 text-center text-2xl font-bold" style={{ color: '#4a3a2a' }}>
           ポイント購入
         </h1>
 
         {/* 現在のポイント残高 */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+        <div className="mb-6 rounded-lg p-6 shadow" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
           <div className="text-center">
-            <div className="mb-2 text-sm text-gray-500">現在のポイント</div>
-            <div className="mb-4 text-3xl font-bold text-blue-600 flex items-center justify-center gap-2">
+            <div className="mb-2 text-sm" style={{ color: '#6b5a4a' }}>現在のポイント</div>
+            <div className="mb-4 text-3xl font-bold flex items-center justify-center gap-2" style={{ color: '#8b6f47' }}>
               <PointIcon size={32} className="h-8 w-8" active={true} />
               {points !== null ? points.toLocaleString() : "-"}
             </div>
@@ -744,8 +744,8 @@ function PointsPageContent() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">無償ポイント</span>
-                  <span className="font-semibold text-gray-800 flex items-center gap-1">
+                  <span style={{ color: '#6b5a4a' }}>無償ポイント</span>
+                  <span className="font-semibold flex items-center gap-1" style={{ color: '#5a4a3a' }}>
                     <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
                     {pointBalances.free.toLocaleString()}
                   </span>
@@ -762,7 +762,7 @@ function PointsPageContent() {
                   </div>
                 )}
                 {pointBalances.lastUpdated && (
-                  <div className="mt-2 text-xs text-gray-400">
+                  <div className="mt-2 text-xs" style={{ color: '#8b7a6a' }}>
                     最終更新: {new Date(pointBalances.lastUpdated).toLocaleString('ja-JP')}
                   </div>
                 )}
@@ -774,11 +774,11 @@ function PointsPageContent() {
         {/* ポイントプラン選択 */}
         {!selectedPlan ? (
           <div className="mb-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-800">
+            <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>
               プランを選択
             </h2>
             {plansLoading ? (
-              <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+              <div className="rounded-lg p-6 text-center shadow" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)', color: '#6b5a4a' }}>
                 読み込み中...
               </div>
             ) : plansError ? (
@@ -801,11 +801,11 @@ function PointsPageContent() {
                     {plan.label}
                   </div>
                     {plan.bonusFreePoints > 0 && (
-                      <div className="mb-1 text-xs font-semibold text-green-700">
+                      <div className="mb-1 text-xs font-semibold" style={{ color: '#8b6f47' }}>
                         おまけ: +{plan.bonusFreePoints.toLocaleString()}pt（無償）
                       </div>
                     )}
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm" style={{ color: '#6b5a4a' }}>
                     ¥{plan.price?.toLocaleString() ?? '0'}
                   </div>
                 </button>
@@ -854,7 +854,7 @@ function PointsPageContent() {
               読み込み中...
             </div>
           ) : purchaseHistory.length === 0 ? (
-            <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
+            <div className="rounded-lg p-6 text-center shadow" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)', color: '#6b5a4a' }}>
               決済履歴がありません。
             </div>
           ) : (
@@ -863,11 +863,12 @@ function PointsPageContent() {
                 {purchaseHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg bg-white p-4 shadow"
+                    className="rounded-lg p-4 shadow"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}
                   >
                     <div className="mb-2 flex justify-between text-sm">
-                      <span className="text-gray-600">有償ポイント</span>
-                      <span className="font-semibold text-gray-800">
+                      <span style={{ color: '#6b5a4a' }}>有償ポイント</span>
+                      <span className="font-semibold" style={{ color: '#5a4a3a' }}>
                         {item.paidPoints.toLocaleString()}
                       </span>
                     </div>
@@ -908,7 +909,21 @@ function PointsPageContent() {
                       }
                     }}
                     disabled={historyLoading}
-                    className="rounded-lg bg-blue-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
+                    className="rounded-lg px-6 py-3 font-semibold text-white transition-colors"
+                    style={{
+                      background: historyLoading ? 'linear-gradient(to right, #8b7a6a, #7a6a5a)' : 'linear-gradient(to right, #b89f7a, #a68f6a)',
+                      opacity: historyLoading ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!historyLoading) {
+                        e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!historyLoading) {
+                        e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
+                      }
+                    }}
                   >
                     {historyLoading ? '読み込み中...' : 'もっと見る'}
                   </button>

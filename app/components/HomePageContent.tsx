@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LiffProfile } from "@/lib/liff";
 import BottomNavigation from "./BottomNavigation";
 import PointCard from "./PointCard";
+import PointIcon from "./PointIcon";
 
 type GachaType = {
   id: string;
@@ -111,7 +112,24 @@ export default function HomePageContent({
               <button
                 onClick={() => onOpenGacha()}
                 disabled={gachaTypes.length === 0}
-                className="group relative mx-auto mb-3 w-full max-w-xs overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-8 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
+                className="group relative mx-auto mb-3 w-full max-w-xs overflow-hidden rounded-xl px-8 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 disabled:opacity-50"
+                style={{
+                  background: gachaTypes.length === 0 
+                    ? 'linear-gradient(to right, #8b7355, #7a6345, #8b7355)'
+                    : 'linear-gradient(to right, #b89f7a, #a68f6a, #b89f7a)'
+                }}
+                onMouseEnter={(e) => {
+                  if (gachaTypes.length > 0) {
+                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a, #c8af8a)';
+                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(184, 159, 122, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (gachaTypes.length > 0) {
+                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a, #b89f7a)';
+                    e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.3)';
+                  }
+                }}
               >
                 {/* 光るエフェクト */}
                 <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
@@ -174,7 +192,17 @@ export default function HomePageContent({
             <div className="mb-6 grid grid-cols-3 gap-3">
               <Link
                 href="/?action=history"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-history.svg"
@@ -212,7 +240,17 @@ export default function HomePageContent({
               </Link>
               <Link
                 href="/?action=mypage"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-mypage.svg"
@@ -247,7 +285,19 @@ export default function HomePageContent({
                     <button
                       key={gacha.id}
                       onClick={() => onOpenGacha(gacha.code)}
-                      className="group w-full rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-lg transition-all hover:border-yellow-400 hover:shadow-xl hover:shadow-yellow-500/20 active:scale-[0.98]"
+                      className="group w-full rounded-xl border-2 p-4 shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
+                      style={{ 
+                        borderColor: '#b89f7a',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#c8af8a';
+                        e.currentTarget.style.boxShadow = '0 10px 25px rgba(184, 159, 122, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#b89f7a';
+                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                      }}
                     >
                       <div className="flex items-center gap-4">
                         <img
@@ -288,15 +338,20 @@ export default function HomePageContent({
                             </p>
                           )}
                           <div className="flex items-center gap-2">
-                            <span 
-                              className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
                               style={{
-                                background: 'linear-gradient(to right, #8b6f47, #7a5f37)'
+                                background: "linear-gradient(to right, #8b6f47, #7a5f37)",
                               }}
                             >
-                              {gacha.pointCost > 0
-                                ? `$${gacha.pointCost.toLocaleString()}`
-                                : "無料"}
+                              {gacha.pointCost > 0 ? (
+                                <>
+                                  <PointIcon size={12} className="h-3 w-3" active={true} />
+                                  {gacha.pointCost.toLocaleString()}
+                                </>
+                              ) : (
+                                "無料"
+                              )}
                             </span>
                           </div>
                         </div>

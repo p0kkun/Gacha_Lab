@@ -172,38 +172,39 @@ export default function MyPage({ profile }: MyPageProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション - プロフィール */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute top-10 left-10 text-6xl">🂡</div>
               <div className="absolute top-20 right-10 text-5xl">🂮</div>
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
 
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-6 text-3xl font-bold drop-shadow-lg">
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-6 text-3xl font-bold drop-shadow-md">
                 マイページ
               </h1>
 
               {/* プロフィールカード */}
-              <div className="mx-auto mb-6 max-w-xs rounded-xl border-2 border-yellow-400/50 bg-gradient-to-br from-white/95 to-white/90 p-6 shadow-2xl backdrop-blur-sm">
+              <div className="mx-auto mb-6 max-w-xs rounded-xl border-2 p-6 shadow-2xl backdrop-blur-sm" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
                 <div className="flex flex-col items-center gap-4">
                   {profile.pictureUrl && (
                     <img
                       src={profile.pictureUrl}
                       alt={profile.displayName || "ユーザー"}
-                      className="h-20 w-20 rounded-full border-4 border-yellow-400 shadow-lg"
+                      className="h-20 w-20 rounded-full border-4 shadow-lg"
+                      style={{ borderColor: '#b89f7a' }}
                     />
                   )}
                   <div className="text-center">
-                    <div className="mb-1 text-xl font-bold text-gray-800">
+                    <div className="mb-1 text-xl font-bold" style={{ color: '#4a3a2a' }}>
                       {profile.displayName || "ユーザー"}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs" style={{ color: '#6b5a4a' }}>
                       ID: {profile.userId.substring(0, 8)}...
                     </div>
                   </div>
@@ -220,16 +221,17 @@ export default function MyPage({ profile }: MyPageProps) {
           <div className="px-4 py-4">
             {/* 未送信メッセージ通知 */}
             {hasPendingMessages && (
-              <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <div className="mb-4 rounded-lg border p-4" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-yellow-800">
+                    <p className="text-sm font-medium" style={{ color: '#4a3a2a' }}>
                       未確認のガチャ結果があります（{pendingMessageCount}件）
                     </p>
                   </div>
                   <Link
                     href={`/items?userId=${profile.userId}`}
-                    className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700"
+                    className="rounded-md px-4 py-2 text-sm font-medium text-white transition-all hover:opacity-90"
+                    style={{ backgroundColor: '#8b6f47' }}
                   >
                     確認する
                   </Link>
@@ -241,7 +243,17 @@ export default function MyPage({ profile }: MyPageProps) {
             <div className="mb-6 grid grid-cols-3 gap-3">
               <Link
                 href="/?action=history"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-history.svg"
@@ -255,7 +267,17 @@ export default function MyPage({ profile }: MyPageProps) {
               </Link>
               <Link
                 href="/?action=items"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-items.svg"
@@ -269,7 +291,17 @@ export default function MyPage({ profile }: MyPageProps) {
               </Link>
               <Link
                 href="/?action=referral"
-                className="flex flex-col items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm p-4 text-white transition-all hover:bg-white/20 active:scale-95"
+                className="flex flex-col items-center justify-center rounded-xl p-4 transition-all active:scale-95"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#5a4a3a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                }}
               >
                 <img
                   src="/icons/navigation/icon-referral.svg"
@@ -284,25 +316,25 @@ export default function MyPage({ profile }: MyPageProps) {
             </div>
 
             {/* 統計情報 */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
-              <h2 className="mb-4 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl backdrop-blur-sm p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h2 className="mb-4 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 統計情報
               </h2>
               {loading ? (
-                <div className="text-center text-white/70">読み込み中...</div>
+                <div className="text-center" style={{ color: '#6b5a4a' }}>読み込み中...</div>
               ) : stats ? (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-white/10 p-4 backdrop-blur-sm">
-                    <div className="mb-1 text-xs text-white/70">
+                  <div className="rounded-lg p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}>
+                    <div className="mb-1 text-xs" style={{ color: '#6b5a4a' }}>
                       ガチャ実行回数
                     </div>
-                    <div className="text-3xl font-bold text-yellow-300 drop-shadow-md">
+                    <div className="text-3xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                       {stats.totalGachaCount.toLocaleString()} 回
                     </div>
                   </div>
                   {Object.keys(stats.rarityStats).length > 0 && (
                     <div>
-                      <div className="mb-3 text-sm font-semibold text-white">
+                      <div className="mb-3 text-sm font-semibold" style={{ color: '#4a3a2a' }}>
                         レアリティ別獲得数
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -311,14 +343,13 @@ export default function MyPage({ profile }: MyPageProps) {
                           .map(([rarity, count]) => (
                             <div
                               key={rarity}
-                              className={`rounded-lg bg-gradient-to-br ${getRarityColor(
-                                rarity
-                              )} p-3 shadow-md`}
+                              className="rounded-lg p-3 shadow-md"
+                              style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}
                             >
-                              <div className="mb-1 text-xs font-medium text-white/90">
+                              <div className="mb-1 text-xs font-medium" style={{ color: '#6b5a4a' }}>
                                 {getRarityLabel(rarity)}
                               </div>
-                              <div className="text-xl font-bold text-white">
+                              <div className="text-xl font-bold" style={{ color: '#4a3a2a' }}>
                                 {count.toLocaleString()}
                               </div>
                             </div>
@@ -383,19 +414,18 @@ export default function MyPage({ profile }: MyPageProps) {
                           🎁
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="mb-1 font-semibold text-gray-800 truncate">
+                          <div className="mb-1 font-semibold truncate" style={{ color: '#4a3a2a' }}>
                             {item.item.name}
                           </div>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`rounded-full bg-gradient-to-r ${getRarityColor(
-                                item.item.rarity
-                              )} px-2 py-0.5 text-xs font-semibold text-white shadow-sm`}
+                              className="rounded-full px-2 py-0.5 text-xs font-semibold text-white shadow-sm"
+                              style={{ backgroundColor: '#8b6f47' }}
                             >
                               {getRarityLabel(item.item.rarity)}
                             </span>
                             {item.usedAt && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs" style={{ color: '#6b5a4a' }}>
                                 使用済み
                               </span>
                             )}
@@ -406,21 +436,28 @@ export default function MyPage({ profile }: MyPageProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-white/70">
+                <div className="text-center" style={{ color: '#6b5a4a' }}>
                   まだ獲得したアイテムがありません
                 </div>
               )}
             </div>
 
             {/* お知らせ・ヘルプ */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-4 shadow-md">
-              <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl backdrop-blur-sm p-4 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 お知らせ・ヘルプ
               </h2>
               <div className="space-y-2">
                 <Link
                   href="/?action=help"
-                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#5a4a3a' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -442,10 +479,11 @@ export default function MyPage({ profile }: MyPageProps) {
                     </span>
                   </div>
                   <svg
-                    className="h-5 w-5 text-white/70"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: '#8b6f47' }}
                   >
                     <path
                       strokeLinecap="round"
@@ -457,7 +495,14 @@ export default function MyPage({ profile }: MyPageProps) {
                 </Link>
                 <Link
                   href="/?action=home"
-                  className="flex items-center justify-between rounded-lg bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                  className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#5a4a3a' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -471,10 +516,11 @@ export default function MyPage({ profile }: MyPageProps) {
                     <span className="text-sm font-medium">ホームに戻る</span>
                   </div>
                   <svg
-                    className="h-5 w-5 text-white/70"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: '#8b6f47' }}
                   >
                     <path
                       strokeLinecap="round"

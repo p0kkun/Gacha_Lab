@@ -72,13 +72,20 @@ export default function PrizeListModal({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl shadow-2xl" style={{ backgroundColor: '#e9dacb' }}>
         {/* ヘッダー */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-green-900 to-green-800 px-6 py-4">
-          <h2 className="text-xl font-bold text-yellow-300">景品一覧</h2>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b px-6 py-4" style={{ backgroundColor: '#d4c4b0', borderColor: '#b8a896' }}>
+          <h2 className="text-xl font-bold" style={{ color: '#4a3a2a' }}>景品一覧</h2>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#5a4a3a' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+            }}
             aria-label="閉じる"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,28 +103,28 @@ export default function PrizeListModal({
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 120px)' }}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-gray-500">読み込み中...</div>
+              <div style={{ color: '#6b5a4a' }}>読み込み中...</div>
             </div>
           ) : error ? (
-            <div className="p-6 text-center text-red-600">{error}</div>
+            <div className="p-6 text-center" style={{ color: '#ef4444' }}>{error}</div>
           ) : data ? (
             <div className="p-6">
               <div className="mb-4 text-center">
-                <h3 className="text-lg font-semibold text-gray-800">{data.gachaTypeName}</h3>
-                <p className="mt-1 text-sm text-gray-600">各景品の獲得確率</p>
+                <h3 className="text-lg font-semibold" style={{ color: '#4a3a2a' }}>{data.gachaTypeName}</h3>
+                <p className="mt-1 text-sm" style={{ color: '#6b5a4a' }}>各景品の獲得確率</p>
               </div>
 
               {/* 等級別に表示 */}
               <div className="space-y-6">
                 {data.tiers.map((tier) => (
-                  <div key={tier.tierCode} className="rounded-lg border-2 border-gray-200 bg-gray-50">
+                  <div key={tier.tierCode} className="rounded-lg border-2" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
                     {/* 等級ヘッダー */}
-                    <div className="border-b border-gray-300 bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-3">
+                    <div className="border-b px-4 py-3" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(184, 159, 122, 0.2)' }}>
                       <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-bold text-gray-800">{tier.tierLabel}</h4>
+                        <h4 className="text-lg font-bold" style={{ color: '#4a3a2a' }}>{tier.tierLabel}</h4>
                         <div className="text-right">
-                          <div className="text-sm text-gray-600">等級確率</div>
-                          <div className="text-lg font-bold text-blue-600">
+                          <div className="text-sm" style={{ color: '#6b5a4a' }}>等級確率</div>
+                          <div className="text-lg font-bold" style={{ color: '#8b6f47' }}>
                             {tier.tierProbability.toFixed(2)}%
                           </div>
                         </div>
@@ -126,11 +133,11 @@ export default function PrizeListModal({
 
                     {/* 景品一覧 */}
                     {tier.prizes.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500">
+                      <div className="p-4 text-center" style={{ color: '#6b5a4a' }}>
                         この等級には景品が設定されていません
                       </div>
                     ) : (
-                      <div className="divide-y divide-gray-200">
+                      <div className="divide-y" style={{ borderColor: '#b89f7a' }}>
                         {tier.prizes.map((prize, index) => (
                           <div key={`${tier.tierCode}-${prize.itemId}-${index}`} className="p-4">
                             <div className="flex items-start gap-4">
@@ -174,28 +181,31 @@ export default function PrizeListModal({
               </div>
 
               {/* 法的リンク */}
-              <div className="mt-8 border-t border-gray-200 pt-6">
-                <div className="space-y-2 text-center text-xs text-gray-600">
+              <div className="mt-8 border-t pt-6" style={{ borderColor: '#b89f7a' }}>
+                <div className="space-y-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
                   <p>※ 表示されている確率は理論値です。実際の抽選結果は異なる場合があります。</p>
                   <div className="flex flex-wrap justify-center gap-4">
                     <Link
                       href="/terms"
                       target="_blank"
-                      className="text-blue-600 hover:underline"
+                      className="hover:underline"
+                      style={{ color: '#8b6f47' }}
                     >
                       利用規約
                     </Link>
                     <Link
                       href="/privacy"
                       target="_blank"
-                      className="text-blue-600 hover:underline"
+                      className="hover:underline"
+                      style={{ color: '#8b6f47' }}
                     >
                       プライバシーポリシー
                     </Link>
                     <Link
                       href="/commercial-transaction"
                       target="_blank"
-                      className="text-blue-600 hover:underline"
+                      className="hover:underline"
+                      style={{ color: '#8b6f47' }}
                     >
                       特定商取引法に基づく表記
                     </Link>

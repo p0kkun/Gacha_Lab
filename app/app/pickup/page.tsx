@@ -9,7 +9,7 @@ import {
   login,
   type LiffProfile,
 } from "@/lib/liff";
-import GachaModal from "@/components/GachaModal";
+import GachaScreen from "@/components/GachaScreen";
 
 function PickupContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
@@ -20,7 +20,6 @@ function PickupContent() {
     code: string;
     name: string;
   } | null>(null);
-  const [isGachaModalOpen, setIsGachaModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -80,8 +79,6 @@ function PickupContent() {
           }
 
           setPickupGacha(data);
-          // ピックアップガチャが取得できた場合、ガチャモーダルを開く
-          setIsGachaModalOpen(true);
         } catch (error) {
           console.error("ピックアップガチャ取得エラー:", error);
           // エラー時も一覧へ誘導
@@ -125,17 +122,10 @@ function PickupContent() {
   }
 
   // ピックアップガチャが取得できた場合、ガチャモーダルを表示
-  // モーダルが閉じられたらホームへ戻る
   return (
     <>
       {profile && pickupGacha && (
-        <GachaModal
-          isOpen={isGachaModalOpen}
-          onClose={() => {
-            setIsGachaModalOpen(false);
-            // ホーム画面へ戻る
-            router.push("/");
-          }}
+        <GachaScreen
           userId={profile.userId}
           defaultGachaCode={pickupGacha.code}
         />

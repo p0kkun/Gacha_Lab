@@ -40,6 +40,31 @@ export default function GachaModal({
     lastUpdated: string | null;
   } | null>(null);
 
+  // モーダル表示時に背景のスクロールを防ぐ
+  useEffect(() => {
+    if (isOpen) {
+      // モーダルが開いたときに背景のスクロールを無効化
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = '0';
+    } else {
+      // モーダルが閉じたときに背景のスクロールを有効化
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    }
+
+    // クリーンアップ
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    };
+  }, [isOpen]);
+
   // ガチャタイプ一覧とポイント残高を取得
   useEffect(() => {
     if (isOpen) {
@@ -90,8 +115,8 @@ export default function GachaModal({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70 backdrop-blur-sm">
-        <div className="text-center text-gray-900">
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style={{ backgroundColor: 'rgba(233, 218, 203, 0.95)' }}>
+        <div className="text-center" style={{ color: '#4a3a2a' }}>
           <div className="mb-4 text-lg">読み込み中...</div>
         </div>
       </div>
@@ -100,12 +125,13 @@ export default function GachaModal({
 
   if (!selectedGacha || gachaTypes.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70 backdrop-blur-sm">
-        <div className="text-center text-gray-900">
+      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm" style={{ backgroundColor: 'rgba(233, 218, 203, 0.95)' }}>
+        <div className="text-center" style={{ color: '#4a3a2a' }}>
           <div className="mb-4 text-lg">利用可能なガチャがありません</div>
           <button
             onClick={onClose}
-            className="rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
+            className="rounded-lg px-4 py-2 text-white transition-all hover:opacity-90"
+            style={{ backgroundColor: '#8b6f47' }}
           >
             閉じる
           </button>
@@ -120,17 +146,29 @@ export default function GachaModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-white bg-opacity-70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex backdrop-blur-sm overflow-hidden" style={{ backgroundColor: 'rgba(233, 218, 203, 0.95)', touchAction: 'none' }}>
       {/* 全画面オーバーレイ */}
-      <div className="flex h-full w-full flex-col">
+      <div className="flex h-full w-full flex-col overflow-hidden">
         {/* 上部: ポイント表示とメニューボタン */}
         {pointBalances && (
-          <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-3 shadow-sm">
+          <div className="border-b px-6 py-3 shadow-sm" style={{ backgroundColor: '#e9dacb', borderColor: '#b89f7a' }}>
             <div className="flex items-center justify-between gap-4">
               {/* ポイント表示 - クリック可能（デザイン改善） */}
               <Link
                 href="/points"
-                className="group flex flex-1 items-center gap-3 rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-yellow-50 to-yellow-100/50 px-4 py-2.5 transition-all hover:border-yellow-400/60 hover:from-yellow-100 hover:to-yellow-200/50 hover:shadow-md active:scale-95"
+                className="group flex flex-1 items-center gap-3 rounded-xl border-2 px-4 py-2.5 transition-all hover:shadow-md active:scale-95"
+                style={{ 
+                  borderColor: '#b89f7a',
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                  e.currentTarget.style.borderColor = '#c8af8a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                  e.currentTarget.style.borderColor = '#b89f7a';
+                }}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div className="flex-shrink-0">
@@ -184,7 +222,16 @@ export default function GachaModal({
               {/* ガチャ選択ボタン */}
               <button
                 onClick={() => setIsMenuOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-lg active:scale-95"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
+                style={{
+                  background: 'linear-gradient(to right, #b89f7a, #a68f6a)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
+                }}
               >
                 <svg
                   className="h-5 w-5"

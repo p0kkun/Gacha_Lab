@@ -15,14 +15,21 @@ export default function GachaMenu({
   onClose?: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white">
+    <div className="flex h-full flex-col overflow-hidden" style={{ backgroundColor: '#e9dacb' }}>
       {/* ヘッダー */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
-        <h2 className="text-xl font-bold text-gray-800">ガチャ選択</h2>
+      <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: '#b89f7a', backgroundColor: '#d4c4b0' }}>
+        <h2 className="text-xl font-bold" style={{ color: '#4a3a2a' }}>ガチャ選択</h2>
         {onClose && (
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-all hover:bg-gray-200 hover:text-gray-800 active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-95"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#5a4a3a' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+            }}
             aria-label="閉じる"
           >
             <svg
@@ -96,22 +103,22 @@ export default function GachaMenu({
                 </div>
                 {gacha.description && (
                   <div
-                    className={`text-xs leading-relaxed break-words ${
-                      selectedGacha.id === gacha.id
-                        ? "text-blue-100"
-                        : "text-gray-600"
-                    }`}
+                    className="text-xs leading-relaxed break-words"
+                    style={{
+                      color: selectedGacha.id === gacha.id ? 'rgba(255, 255, 255, 0.9)' : '#6b5a4a'
+                    }}
                   >
                     {gacha.description}
                   </div>
                 )}
                 {gacha.pointCost !== undefined && gacha.pointCost > 0 && (
                   <div
-                    className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    style={
                       selectedGacha.id === gacha.id
-                        ? "bg-white/20 text-white"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
+                        ? { backgroundColor: 'rgba(255, 255, 255, 0.2)', color: '#fff' }
+                        : { backgroundColor: 'rgba(184, 159, 122, 0.2)', color: '#5a4a3a' }
+                    }
                   >
                     <PointIcon
                       size={12}

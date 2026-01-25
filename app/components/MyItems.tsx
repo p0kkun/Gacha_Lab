@@ -219,7 +219,7 @@ export default function MyItems({ userId }: MyItemsProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
@@ -231,9 +231,9 @@ export default function MyItems({ userId }: MyItemsProps) {
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
             
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">マイアイテム</h1>
-              <p className="text-sm text-green-200">獲得したアイテム一覧</p>
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-md">マイアイテム</h1>
+              <p className="text-sm" style={{ color: '#6b5a4a' }}>獲得したアイテム一覧</p>
             </div>
           </div>
 
@@ -255,15 +255,22 @@ export default function MyItems({ userId }: MyItemsProps) {
 
             {/* アイテム一覧 */}
             {loading ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="text-white">読み込み中...</div>
+              <div className="rounded-xl backdrop-blur-sm p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div style={{ color: '#5a4a3a' }}>読み込み中...</div>
               </div>
             ) : items.length === 0 ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="mb-4 text-white">アイテムがありません</div>
+              <div className="rounded-xl backdrop-blur-sm p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div className="mb-4" style={{ color: '#4a3a2a' }}>アイテムがありません</div>
                 <Link
                   href="/?action=home"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl"
+                  style={{ background: 'linear-gradient(to right, #b89f7a, #a68f6a)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
+                  }}
                 >
                   <img
                     src="/icons/navigation/icon-gacha.svg"
@@ -277,8 +284,8 @@ export default function MyItems({ userId }: MyItemsProps) {
                 </Link>
               </div>
             ) : sortedDisplayItems.length === 0 ? (
-              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-8 text-center shadow-md">
-                <div className="text-white">表示するアイテムがありません</div>
+              <div className="rounded-xl backdrop-blur-sm p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+                <div style={{ color: '#5a4a3a' }}>表示するアイテムがありません</div>
               </div>
             ) : (
               <>
@@ -444,7 +451,16 @@ export default function MyItems({ userId }: MyItemsProps) {
                     <button
                       onClick={() => setPage((p) => p + 1)}
                       disabled={loading}
-                      className="rounded-xl bg-white/10 backdrop-blur-sm px-6 py-3 font-semibold text-white transition-all hover:bg-white/20 active:scale-95 disabled:opacity-50"
+                      className="rounded-xl backdrop-blur-sm px-6 py-3 font-semibold transition-all active:scale-95 disabled:opacity-50"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#5a4a3a' }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled) {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+                      }}
                     >
                       {loading ? '読み込み中...' : 'もっと見る'}
                     </button>

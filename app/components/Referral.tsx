@@ -114,38 +114,38 @@ export default function Referral({ userId }: { userId: string }) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 opacity-5">
               <div className="absolute top-10 left-10 text-6xl">🂡</div>
               <div className="absolute top-20 right-10 text-5xl">🂮</div>
               <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
               <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
             </div>
             
-            <div className="relative z-10 text-center text-white">
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">友だち紹介</h1>
-              <p className="text-sm text-green-200">友だちを招待して報酬を獲得しよう！</p>
+            <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
+              <h1 className="mb-2 text-3xl font-bold drop-shadow-md">友だち紹介</h1>
+              <p className="text-sm" style={{ color: '#6b5a4a' }}>友だちを招待して報酬を獲得しよう！</p>
             </div>
           </div>
 
           <div className="px-4 py-4">
             {error && (
-              <div className="mb-6 rounded-xl bg-red-500/20 backdrop-blur-sm border border-red-400/50 p-4 text-sm text-white shadow-md">
+              <div className="mb-6 rounded-xl backdrop-blur-sm border p-4 text-sm shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: 'rgba(239, 68, 68, 0.5)', color: '#4a3a2a' }}>
                 {error}
               </div>
             )}
 
             {/* 紹介リンク生成 */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
-              <h3 className="mb-4 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl backdrop-blur-sm p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h3 className="mb-4 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 紹介リンクを生成
               </h3>
 
-              <div className="mb-4 rounded-lg bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 p-4 text-sm text-white">
+              <div className="mb-4 rounded-lg backdrop-blur-sm border p-4 text-sm" style={{ backgroundColor: 'rgba(184, 159, 122, 0.2)', borderColor: 'rgba(184, 159, 122, 0.3)', color: '#5a4a3a' }}>
                 <p className="mb-2 font-semibold">📌 使い方</p>
                 <ol className="list-decimal list-inside space-y-1 text-xs">
                   <li>紹介リンクを生成してQRコードまたはリンクを共有</li>
@@ -158,7 +158,20 @@ export default function Referral({ userId }: { userId: string }) {
                 <button
                   onClick={handleGenerateLink}
                   disabled={loading}
-                  className="w-full rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-4 text-sm font-bold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-xl px-6 py-4 text-sm font-bold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: loading ? 'linear-gradient(to right, #8b7355, #7a6345)' : 'linear-gradient(to right, #b89f7a, #a68f6a)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
+                    }
+                  }}
                 >
                   {loading ? "生成中..." : "紹介リンクを生成"}
                 </button>
@@ -221,14 +234,14 @@ export default function Referral({ userId }: { userId: string }) {
             </div>
 
             {/* 紹介実績 */}
-            <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
-              <h3 className="mb-4 text-lg font-bold text-white drop-shadow-md">
+            <div className="mb-6 rounded-xl backdrop-blur-sm p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+              <h3 className="mb-4 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 紹介実績
               </h3>
 
-              <div className="mb-6 rounded-lg bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-400/50 p-4 backdrop-blur-sm">
-                <div className="mb-1 text-sm text-yellow-200">紹介人数</div>
-                <div className="text-4xl font-bold text-yellow-300 drop-shadow-md">
+              <div className="mb-6 rounded-lg border-2 p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(184, 159, 122, 0.2)', borderColor: '#b89f7a' }}>
+                <div className="mb-1 text-sm" style={{ color: '#6b5a4a' }}>紹介人数</div>
+                <div className="text-4xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                   {referralCount}人
                 </div>
               </div>
@@ -236,7 +249,7 @@ export default function Referral({ userId }: { userId: string }) {
               {/* 紹介履歴 */}
               {referralHistory.length > 0 ? (
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-white">紹介履歴</h4>
+                  <h4 className="text-sm font-semibold" style={{ color: '#4a3a2a' }}>紹介履歴</h4>
                   <div className="max-h-64 space-y-2 overflow-y-auto">
                     {referralHistory.map((history) => (
                       <div
@@ -249,14 +262,15 @@ export default function Referral({ userId }: { userId: string }) {
                               <img
                                 src={history.referee.pictureUrl}
                                 alt={history.referee.displayName || ""}
-                                className="h-12 w-12 flex-shrink-0 rounded-full border-2 border-yellow-400/50 shadow-sm"
+                                className="h-12 w-12 flex-shrink-0 rounded-full border-2 shadow-sm"
+                                style={{ borderColor: '#b89f7a' }}
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <div className="mb-1 font-semibold text-gray-800 truncate">
+                              <div className="mb-1 font-semibold truncate" style={{ color: '#4a3a2a' }}>
                                 {history.referee?.displayName || "（表示名なし）"}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs" style={{ color: '#6b5a4a' }}>
                                 {history.completedAt ? (
                                   <>
                                     成立日: {new Date(history.completedAt).toLocaleDateString("ja-JP")}
@@ -286,7 +300,7 @@ export default function Referral({ userId }: { userId: string }) {
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-white/70">
+                <div className="text-center" style={{ color: '#6b5a4a' }}>
                   まだ紹介履歴がありません
                 </div>
               )}

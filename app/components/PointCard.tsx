@@ -105,7 +105,7 @@ export default function PointCard({
           </svg>
         </div>
       </div>
-      <div className="mt-2 text-center text-xs text-yellow-200/80">
+      <div className="mt-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
         タップしてポイントを購入
       </div>
     </Link>
