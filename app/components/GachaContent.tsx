@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { GachaType } from "./GachaModal";
 import MultiVideoPlayer from "./MultiVideoPlayer";
@@ -72,7 +72,7 @@ export default function GachaContent({
     if (!text) return null;
 
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts: Array<string | JSX.Element> = [];
+    const parts: ReactNode[] = [];
     let lastIndex = 0;
     let match;
 
