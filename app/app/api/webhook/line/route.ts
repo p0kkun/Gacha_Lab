@@ -472,19 +472,30 @@ async function handleWebhookEvent(
       // ユーザープロフィールを取得
       const profile = await client.getProfile(userId);
       
-      // ユーザーをDBに登録または更新
-      await prisma.user.upsert({
-        where: { userId },
-        update: {
-          displayName: profile.displayName || null,
-          pictureUrl: profile.pictureUrl || null,
-          updatedAt: new Date(),
-        },
-        create: {
-          userId,
-          displayName: profile.displayName || null,
-          pictureUrl: profile.pictureUrl || null,
-        },
+      // ユーザーをDBに登録または更新（ポイント残高も初期化）
+      await prisma.$transaction(async (tx) => {
+        await tx.user.upsert({
+          where: { userId },
+          update: {
+            displayName: profile.displayName || null,
+            pictureUrl: profile.pictureUrl || null,
+            updatedAt: new Date(),
+          },
+          create: {
+            userId,
+            displayName: profile.displayName || null,
+            pictureUrl: profile.pictureUrl || null,
+          },
+        });
+        await tx.userPointBalance.upsert({
+          where: { userId },
+          update: {},
+          create: {
+            userId,
+            paidAmount: 0,
+            freeAmount: 0,
+          },
+        });
       });
 
       console.log(`ユーザー登録/更新完了: ${userId}`);
@@ -533,14 +544,14 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     });
 
     let referralLinkId: string | null = null;
-    let referral: { id: number; userId: string; referralLinkId: string } | null = null;
+    let referral: { id: number; userId: string; referralLinkId: string; expiresAt: Date | null } | null = null;
 
     // 方法1: User.lastAccessedReferralLinkIdから取得（友だち追加前にLIFFアプリにアクセスした場合）
     if (user?.lastAccessedReferralLinkId) {
-      // アクセスから24時間以内かチェック
+      // アクセスから7日以内かチェック
       if (user.lastAccessedReferralAt) {
-        const hoursSinceAccess = (Date.now() - user.lastAccessedReferralAt.getTime()) / (1000 * 60 * 60);
-        if (hoursSinceAccess <= 24) {
+        const daysSinceAccess = (Date.now() - user.lastAccessedReferralAt.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceAccess <= 7) {
           referralLinkId = user.lastAccessedReferralLinkId;
         }
       } else {
@@ -554,7 +565,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
         where: {
           status: ReferralStatus.PENDING,
           referredAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24時間以内
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7日以内
           },
         },
         orderBy: { referredAt: 'desc' },
@@ -569,7 +580,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
         // Referralテーブルから紹介情報を取得
         const referralData = await prisma.referral.findUnique({
           where: { id: recentHistory.referralId },
-          select: { id: true, userId: true, referralLinkId: true },
+          select: { id: true, userId: true, referralLinkId: true, expiresAt: true },
         });
         if (referralData) {
           referral = referralData;
@@ -587,12 +598,16 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     if (!referral) {
       referral = await prisma.referral.findUnique({
         where: { referralLinkId },
-        select: { id: true, userId: true, referralLinkId: true },
+        select: { id: true, userId: true, referralLinkId: true, expiresAt: true },
       });
     }
 
     if (!referral) {
       console.log('紹介リンクが見つかりません:', referralLinkId);
+      return;
+    }
+    if (referral.expiresAt && referral.expiresAt.getTime() < Date.now()) {
+      console.log('紹介リンクの有効期限切れ:', referralLinkId);
       return;
     }
 
@@ -674,7 +689,11 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     try {
       await client.pushMessage(referral.userId, {
         type: 'text',
-        text: `🎉 友だち紹介が成立しました！\n\n紹介特典として100ポイントを付与しました。\n\n引き続きガチャをお楽しみください！`,
+        text: '🎉 友だち紹介が成立しました！\n\n紹介特典を付与しました。\n\n引き続きガチャをお楽しみください！',
+      });
+      await client.pushMessage(refereeId, {
+        type: 'text',
+        text: '🎉 友だち紹介が成立しました！\n\n紹介特典を付与しました。\n\n引き続きガチャをお楽しみください！',
       });
     } catch (error) {
       console.error('紹介成立通知送信エラー:', error);
@@ -757,4 +776,3 @@ export async function GET() {
     timestamp: new Date().toISOString(),
   });
 }
-

@@ -182,21 +182,133 @@ export default function MyItems({ userId }: MyItemsProps) {
     (item) => getItemStatus(item) === "notStarted"
   );
 
-  // 表示するアイテムを決定（デフォルトは使用可能のみ）
-  const displayItems = showAll ? items : availableItems;
+  const renderItemCard = (userItem: UserItem) => {
+    const status = getItemStatus(userItem);
+    const isDisabled = status !== "available";
 
-  // 表示用にソート（使用可能 > 使用開始前 > 期限切れ > 使用済み の順）
-  const sortedDisplayItems = [...displayItems].sort((a, b) => {
-    const statusOrder: Record<string, number> = {
-      available: 0,
-      notStarted: 1,
-      expired: 2,
-      used: 3,
-    };
-    const statusA = getItemStatus(a);
-    const statusB = getItemStatus(b);
-    return statusOrder[statusA] - statusOrder[statusB];
-  });
+    return (
+      <div
+        key={userItem.id}
+        className={`group cursor-pointer rounded-xl border-2 ${
+          isDisabled
+            ? "border-gray-400/30 bg-white/60 opacity-70"
+            : "border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90"
+        } p-4 shadow-lg transition-all hover:border-yellow-400/60 hover:shadow-xl hover:shadow-yellow-500/20 active:scale-[0.98]`}
+        onClick={() => setSelectedItem(userItem)}
+      >
+        <div className="flex items-center gap-3">
+          {userItem.item.imageUrl ? (
+            <img
+              src={userItem.item.imageUrl}
+              alt={userItem.item.name}
+              className="h-16 w-16 flex-shrink-0 rounded-lg object-cover border-2 border-gray-200 shadow-sm"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = "none";
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) {
+                  fallback.style.display = "flex";
+                }
+              }}
+            />
+          ) : null}
+          <div
+            className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getRarityColor(userItem.item.rarity)} text-2xl shadow-sm ${userItem.item.imageUrl ? "hidden" : ""}`}
+            style={{ color: "#4a3a2a" }}
+          >
+            🎁
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="mb-2 flex items-center gap-2 flex-wrap">
+              <span
+                className="rounded-full px-3 py-1 text-xs font-semibold shadow-sm"
+                style={{
+                  background: "linear-gradient(to right, #f5d48a, #e7c675)",
+                  color: "#4a3a2a",
+                  border: "1px solid #b89f7a",
+                }}
+              >
+                {getRarityLabel(userItem.item.rarity)}
+              </span>
+              {status === "notStarted" && (
+                <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
+                  使用開始前
+                </span>
+              )}
+              {status === "expired" && (
+                <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                  期限切れ
+                </span>
+              )}
+              {status === "used" && (
+                <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700">
+                  使用済み
+                </span>
+              )}
+            </div>
+            <div
+              className={`mb-1 font-bold truncate ${
+                isDisabled ? "text-gray-600" : "text-gray-800"
+              }`}
+            >
+              {userItem.item.name}
+            </div>
+            <div className="text-xs text-gray-500">
+              {status === "used"
+                ? `使用日: ${new Date(userItem.usedAt!).toLocaleDateString(
+                    "ja-JP"
+                  )}`
+                : status === "expired" && userItem.item.useEndAt
+                ? `期限: ${new Date(
+                    userItem.item.useEndAt
+                  ).toLocaleDateString("ja-JP")}`
+                : status === "notStarted" && userItem.item.useStartAt
+                ? `開始: ${new Date(
+                    userItem.item.useStartAt
+                  ).toLocaleDateString("ja-JP")}`
+                : `獲得日: ${new Date(userItem.createdAt).toLocaleDateString(
+                    "ja-JP"
+                  )}`}
+            </div>
+            {/* 使用期限の表示（使用可能な場合のみ） */}
+            {status === "available" && (
+              <div className="mt-1 text-xs text-gray-500">
+                {userItem.item.useEndAt ? (
+                  <>
+                    使用期限:{" "}
+                    {new Date(userItem.item.useEndAt).toLocaleString("ja-JP", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </>
+                ) : (
+                  <span className="text-gray-400">期限なし</span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="text-yellow-600 transition-transform group-hover:translate-x-1">
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // アイテム詳細画面を表示中の場合
   if (selectedItem) {
@@ -246,7 +358,8 @@ export default function MyItems({ userId }: MyItemsProps) {
                     setShowAll(!showAll);
                     setPage(1); // フィルタ変更時は1ページ目に戻す
                   }}
-                  className="rounded-xl bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-95"
+                  className="rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.5)", color: "#5a4a3a" }}
                 >
                   {showAll ? "使用可能のみ表示" : "すべて表示"}
                 </button>
@@ -263,14 +376,8 @@ export default function MyItems({ userId }: MyItemsProps) {
                 <div className="mb-4" style={{ color: '#4a3a2a' }}>アイテムがありません</div>
                 <Link
                   href="/?action=home"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl"
-                  style={{ background: 'linear-gradient(to right, #b89f7a, #a68f6a)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
-                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold shadow-lg transition-all hover:shadow-xl"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                 >
                   <img
                     src="/icons/navigation/icon-gacha.svg"
@@ -283,166 +390,67 @@ export default function MyItems({ userId }: MyItemsProps) {
                   <span>ガチャを引く</span>
                 </Link>
               </div>
-            ) : sortedDisplayItems.length === 0 ? (
+            ) : availableItems.length === 0 && !showAll ? (
               <div className="rounded-xl backdrop-blur-sm p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
                 <div style={{ color: '#5a4a3a' }}>表示するアイテムがありません</div>
               </div>
             ) : (
               <>
                 <div className="mb-6">
-                  {!showAll && availableItems.length > 0 && (
-                    <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
-                      使用可能
-                    </h2>
+                  {!showAll && (
+                    <>
+                      <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: "#4a3a2a" }}>
+                        使用可能
+                      </h2>
+                      <div className="space-y-3">
+                        {availableItems.map(renderItemCard)}
+                      </div>
+                    </>
                   )}
                   {showAll && (
                     <>
                       {availableItems.length > 0 && (
-                        <h2 className="mb-3 text-lg font-bold text-white drop-shadow-md">
-                          使用可能 ({availableItems.length})
-                        </h2>
+                        <>
+                          <h2 className="mb-3 text-lg font-bold drop-shadow-md" style={{ color: "#4a3a2a" }}>
+                            使用可能 ({availableItems.length})
+                          </h2>
+                          <div className="space-y-3">
+                            {availableItems.map(renderItemCard)}
+                          </div>
+                        </>
                       )}
                       {notStartedItems.length > 0 && (
-                        <h2 className="mb-3 mt-6 text-lg font-bold text-white drop-shadow-md">
-                          使用開始前 ({notStartedItems.length})
-                        </h2>
+                        <>
+                          <h2 className="mb-3 mt-6 text-lg font-bold drop-shadow-md" style={{ color: "#4a3a2a" }}>
+                            使用開始前 ({notStartedItems.length})
+                          </h2>
+                          <div className="space-y-3">
+                            {notStartedItems.map(renderItemCard)}
+                          </div>
+                        </>
                       )}
                       {expiredItems.length > 0 && (
-                        <h2 className="mb-3 mt-6 text-lg font-bold text-white drop-shadow-md">
-                          使用期限切れ ({expiredItems.length})
-                        </h2>
+                        <>
+                          <h2 className="mb-3 mt-6 text-lg font-bold drop-shadow-md" style={{ color: "#4a3a2a" }}>
+                            使用期限切れ ({expiredItems.length})
+                          </h2>
+                          <div className="space-y-3">
+                            {expiredItems.map(renderItemCard)}
+                          </div>
+                        </>
                       )}
                       {usedItems.length > 0 && (
-                        <h2 className="mb-3 mt-6 text-lg font-bold text-white drop-shadow-md">
-                          使用済み ({usedItems.length})
-                        </h2>
+                        <>
+                          <h2 className="mb-3 mt-6 text-lg font-bold drop-shadow-md" style={{ color: "#4a3a2a" }}>
+                            使用済み ({usedItems.length})
+                          </h2>
+                          <div className="space-y-3">
+                            {usedItems.map(renderItemCard)}
+                          </div>
+                        </>
                       )}
                     </>
                   )}
-                  <div className="space-y-3">
-                    {sortedDisplayItems.map((userItem) => {
-                      const status = getItemStatus(userItem);
-                      const isDisabled = status !== "available";
-
-                      return (
-                        <div
-                          key={userItem.id}
-                          className={`group cursor-pointer rounded-xl border-2 ${
-                            isDisabled
-                              ? "border-gray-400/30 bg-white/60 opacity-70"
-                              : "border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90"
-                          } p-4 shadow-lg transition-all hover:border-yellow-400/60 hover:shadow-xl hover:shadow-yellow-500/20 active:scale-[0.98]`}
-                          onClick={() => setSelectedItem(userItem)}
-                        >
-                          <div className="flex items-center gap-3">
-                            {userItem.item.imageUrl ? (
-                              <img
-                                src={userItem.item.imageUrl}
-                                alt={userItem.item.name}
-                                className="h-16 w-16 flex-shrink-0 rounded-lg object-cover border-2 border-gray-200 shadow-sm"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  const fallback = target.nextElementSibling as HTMLElement;
-                                  if (fallback) {
-                                    fallback.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className={`flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getRarityColor(userItem.item.rarity)} text-2xl text-white shadow-sm ${userItem.item.imageUrl ? 'hidden' : ''}`}
-                            >
-                              🎁
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="mb-2 flex items-center gap-2 flex-wrap">
-                                <span
-                                  className={`rounded-full bg-gradient-to-r ${getRarityColor(userItem.item.rarity)} px-3 py-1 text-xs font-semibold text-white shadow-sm`}
-                                >
-                                  {getRarityLabel(userItem.item.rarity)}
-                                </span>
-                                {status === "notStarted" && (
-                                  <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
-                                    使用開始前
-                                  </span>
-                                )}
-                                {status === "expired" && (
-                                  <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                                    期限切れ
-                                  </span>
-                                )}
-                                {status === "used" && (
-                                  <span className="rounded-full bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700">
-                                    使用済み
-                                  </span>
-                                )}
-                              </div>
-                              <div className={`mb-1 font-bold truncate ${
-                                isDisabled ? "text-gray-600" : "text-gray-800"
-                              }`}>
-                                {userItem.item.name}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {status === "used"
-                                  ? `使用日: ${new Date(
-                                      userItem.usedAt!
-                                    ).toLocaleDateString("ja-JP")}`
-                                  : status === "expired" && userItem.item.useEndAt
-                                  ? `期限: ${new Date(
-                                      userItem.item.useEndAt
-                                    ).toLocaleDateString("ja-JP")}`
-                                  : status === "notStarted" && userItem.item.useStartAt
-                                  ? `開始: ${new Date(
-                                      userItem.item.useStartAt
-                                    ).toLocaleDateString("ja-JP")}`
-                                  : `獲得日: ${new Date(
-                                      userItem.createdAt
-                                    ).toLocaleDateString("ja-JP")}`}
-                              </div>
-                              {/* 使用期限の表示（使用可能な場合のみ） */}
-                              {status === "available" && (
-                                <div className="mt-1 text-xs text-gray-500">
-                                  {userItem.item.useEndAt ? (
-                                    <>
-                                      使用期限:{" "}
-                                      {new Date(userItem.item.useEndAt).toLocaleString(
-                                        "ja-JP",
-                                        {
-                                          year: "numeric",
-                                          month: "short",
-                                          day: "numeric",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        }
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-gray-400">期限なし</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-yellow-600 transition-transform group-hover:translate-x-1">
-                              <svg
-                                className="h-6 w-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 5l7 7-7 7"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {/* もっと見る */}

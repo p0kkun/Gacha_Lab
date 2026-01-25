@@ -41,6 +41,7 @@ function HomeContent() {
     lastUpdated: string | null;
   } | null>(null);
   const [activePage, setActivePage] = useState<ActivePage>("home");
+  const [referralNotice, setReferralNotice] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -127,17 +128,23 @@ function HomeContent() {
               }),
             });
 
-            if (verifyRes.ok) {
-              const verifyData = await verifyRes.json();
-              if (verifyData.isValid) {
-                console.log("紹介リンクが適用されました:", referralLinkId);
-                // 注意: 友だち追加時の判定は、User.lastAccessedReferralLinkIdを参照するため、
-                // セッションストレージへの保存は不要（既にDBに記録されている）
-              }
+            const verifyData = verifyRes.ok ? await verifyRes.json() : null;
+            if (verifyData?.isValid) {
+              setReferralNotice(null);
+              console.log("紹介リンクが適用されました:", referralLinkId);
+              // 注意: 友だち追加時の判定は、User.lastAccessedReferralLinkIdを参照するため、
+              // セッションストレージへの保存は不要（既にDBに記録されている）
+            } else {
+              setReferralNotice(
+                verifyData?.reason || "紹介リンクの検証に失敗しました"
+              );
             }
           } catch (error) {
             console.error("紹介リンク検証エラー:", error);
+            setReferralNotice("紹介リンクの検証に失敗しました");
           }
+        } else {
+          setReferralNotice(null);
         }
 
         // ポイント残高を取得
@@ -220,6 +227,7 @@ function HomeContent() {
           <HomePageContent
             profile={profile}
             pointBalances={pointBalances}
+            referralNotice={referralNotice}
             onOpenGacha={(gachaCode) => {
               setDefaultGachaCode(gachaCode);
               const params = new URLSearchParams(searchParams.toString());

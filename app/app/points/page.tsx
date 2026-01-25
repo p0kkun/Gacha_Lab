@@ -24,6 +24,19 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
 );
 
+const formatHistoryDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  const pad = (num: number) => num.toString().padStart(2, "0");
+  return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(
+    date.getDate()
+  )}日 ${pad(date.getHours())}時${pad(date.getMinutes())}分${pad(
+    date.getSeconds()
+  )}秒`;
+};
+
 // CheckoutSection: clientSecretを管理してElementsに渡す
 function CheckoutSection({
   plan,
@@ -891,7 +904,7 @@ function PointsPageContent() {
                       </div>
                     )}
                     <div className="mt-2 border-t pt-2 text-xs text-gray-500">
-                      {new Date(item.createdAt).toLocaleString('ja-JP')}
+                      {formatHistoryDateTime(item.createdAt)}
                     </div>
                   </div>
                 ))}

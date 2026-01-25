@@ -98,6 +98,19 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
     return colors[rarity] || 'from-gray-400 to-gray-500';
   };
 
+  const formatHistoryDateTime = (value: string): string => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(
+      date.getDate()
+    )}日 ${pad(date.getHours())}時${pad(date.getMinutes())}分${pad(
+      date.getSeconds()
+    )}秒`;
+  };
+
   return (
     <>
       <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
@@ -129,14 +142,8 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                 <div className="mb-4" style={{ color: '#4a3a2a' }}>ガチャ履歴がありません</div>
                 <Link
                   href="/?action=home"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl"
-                  style={{ background: 'linear-gradient(to right, #b89f7a, #a68f6a)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
-                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold shadow-lg transition-all hover:shadow-xl"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                 >
                   <img
                     src="/icons/navigation/icon-gacha.svg"
@@ -161,7 +168,12 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                         <div className="flex-1 min-w-0">
                           <div className="mb-2 flex items-center gap-2">
                             <span
-                              className={`rounded-full bg-gradient-to-r ${getRarityColor(history.item.rarity)} px-3 py-1 text-xs font-semibold text-white shadow-sm`}
+                              className="rounded-full px-3 py-1 text-xs font-semibold shadow-sm"
+                              style={{
+                                background: "linear-gradient(to right, #f5d48a, #e7c675)",
+                                color: "#4a3a2a",
+                                border: "1px solid #b89f7a",
+                              }}
                             >
                               {getRarityLabel(history.item.rarity)}
                             </span>
@@ -174,13 +186,7 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <span>
-                              {new Date(history.createdAt).toLocaleString('ja-JP', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {formatHistoryDateTime(history.createdAt)}
                             </span>
                             {history.pointsUsed > 0 && (
                               <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-800">

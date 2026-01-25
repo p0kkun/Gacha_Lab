@@ -24,6 +24,7 @@ type ReferralHistory = {
 export default function Referral({ userId }: { userId: string }) {
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState<number>(0);
   const [referralHistory, setReferralHistory] = useState<ReferralHistory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,8 +48,10 @@ export default function Referral({ userId }: { userId: string }) {
     }
   };
 
-  const handleGenerateLink = async () => {
-    setLoading(true);
+  const requestReferralLink = async (showLoading: boolean) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -66,6 +69,7 @@ export default function Referral({ userId }: { userId: string }) {
 
       const data = await res.json();
       setReferralLink(data.referralLink);
+      setExpiresAt(data.expiresAt || null);
 
       // QRコードを生成
       const qrCode = await QRCode.toDataURL(data.referralLink, {
@@ -77,8 +81,32 @@ export default function Referral({ userId }: { userId: string }) {
       console.error("紹介リンク生成エラー:", err);
       setError(err.message || "紹介リンクの生成に失敗しました");
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleGenerateLink = async () => {
+    await requestReferralLink(true);
+  };
+
+  const handleReloadLink = async () => {
+    await requestReferralLink(true);
+  };
+
+  const formatExpiryDateTime = (value: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
   };
 
   const handleCopyLink = async () => {
@@ -111,6 +139,9 @@ export default function Referral({ userId }: { userId: string }) {
       handleCopyLink();
     }
   };
+
+  const isExpired =
+    expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
 
   return (
     <>
@@ -158,23 +189,55 @@ export default function Referral({ userId }: { userId: string }) {
                 <button
                   onClick={handleGenerateLink}
                   disabled={loading}
-                  className="w-full rounded-xl px-6 py-4 text-sm font-bold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-xl px-6 py-4 text-sm font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    background: loading ? 'linear-gradient(to right, #8b7355, #7a6345)' : 'linear-gradient(to right, #b89f7a, #a68f6a)'
+                    backgroundColor: "rgba(255, 255, 255, 0.7)",
+                    color: "#4a3a2a",
+                    border: "1px solid #b89f7a",
                   }}
                   onMouseEnter={(e) => {
                     if (!loading) {
-                      e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.85)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!loading) {
-                      e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.7)";
                     }
                   }}
                 >
                   {loading ? "生成中..." : "紹介リンクを生成"}
                 </button>
+              ) : isExpired ? (
+                <div className="space-y-4">
+                  <div
+                    className="rounded-lg border px-4 py-3 text-sm text-center"
+                    style={{
+                      backgroundColor: "rgba(239, 68, 68, 0.12)",
+                      borderColor: "rgba(239, 68, 68, 0.35)",
+                      color: "#7f1d1d",
+                    }}
+                  >
+                    有効期限が切れています。再生成してください。
+                  </div>
+                  {expiresAt && (
+                    <div className="text-center text-xs" style={{ color: "#6b5a4a" }}>
+                      期限: {formatExpiryDateTime(expiresAt)}
+                    </div>
+                  )}
+                  <button
+                    onClick={handleGenerateLink}
+                    disabled={loading}
+                    className="w-full rounded-xl px-6 py-4 text-sm font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      color: "#4a3a2a",
+                      border: "1px solid #b89f7a",
+                    }}
+                  >
+                    {loading ? "再生成中..." : "再生成する"}
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {/* QRコード表示 */}
@@ -189,12 +252,22 @@ export default function Referral({ userId }: { userId: string }) {
                       </div>
                     </div>
                   )}
+                  {expiresAt && (
+                    <div className="text-center text-xs" style={{ color: "#6b5a4a" }}>
+                      有効期限: {formatExpiryDateTime(expiresAt)}
+                    </div>
+                  )}
 
                   {/* 紹介リンク表示 */}
                   <div>
-                    <label className="mb-2 block text-sm font-semibold text-white">
+                    <label className="mb-2 block text-sm font-semibold" style={{ color: "#4a3a2a" }}>
                       紹介リンク
                     </label>
+                    {expiresAt && (
+                      <div className="mb-2 text-xs" style={{ color: "#6b5a4a" }}>
+                        有効期限: {formatExpiryDateTime(expiresAt)}
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -204,7 +277,8 @@ export default function Referral({ userId }: { userId: string }) {
                       />
                       <button
                         onClick={handleCopyLink}
-                        className="rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-95"
+                        className="rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-95"
+                        style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                       >
                         コピー
                       </button>
@@ -215,7 +289,8 @@ export default function Referral({ userId }: { userId: string }) {
                   <div className="flex gap-2">
                     <button
                       onClick={handleShare}
-                      className="flex-1 rounded-xl bg-gradient-to-r from-green-500 to-green-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:from-green-600 hover:to-green-700 hover:shadow-xl active:scale-95"
+                      className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
+                      style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                     >
                       シェア
                     </button>
@@ -223,10 +298,21 @@ export default function Referral({ userId }: { userId: string }) {
                       onClick={() => {
                         setReferralLink(null);
                         setQrCodeUrl(null);
+                        setExpiresAt(null);
                       }}
-                      className="rounded-xl bg-white/10 backdrop-blur-sm px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-95"
+                      disabled={true}
+                      className="rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-95"
+                      style={{ backgroundColor: "rgba(255, 255, 255, 0.4)", color: "#8b7a6a", border: "1px solid #c8b8a6" }}
                     >
                       再生成
+                    </button>
+                    <button
+                      onClick={handleReloadLink}
+                      disabled={loading}
+                      className="rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-95 disabled:opacity-50"
+                      style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
+                    >
+                      リロード
                     </button>
                   </div>
                 </div>

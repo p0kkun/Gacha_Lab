@@ -8,17 +8,17 @@ export async function POST(
   { params }: { params: Promise<{ userId: string; historyId: string }> }
 ) {
   let userId: string | undefined;
-  let historyId: string | undefined;
+  let userItemId: string | undefined;
   try {
     const resolvedParams = await params;
     userId = resolvedParams.userId;
-    historyId = resolvedParams.historyId;
-    const historyIdNum = parseInt(historyId, 10);
+    userItemId = resolvedParams.historyId;
+    const userItemIdNum = parseInt(userItemId, 10);
 
-    // ガチャ履歴を取得して、ユーザーIDが一致するか確認
-    const history = await prisma.gachaHistory.findFirst({
+    // ユーザーのアイテムを取得して、ユーザーIDが一致するか確認
+    const userItem = await prisma.userItem.findFirst({
       where: {
-        id: historyIdNum,
+        id: userItemIdNum,
         userId: userId,
       },
       include: {
@@ -31,13 +31,13 @@ export async function POST(
       },
     });
 
-    if (!history) {
+    if (!userItem) {
       await logError(
         new Error('アイテムが見つかりません'),
         {
           userId,
           route: '/api/users/[userId]/items/[historyId]/use',
-          customData: { historyId: historyIdNum },
+          customData: { userItemId: userItemIdNum },
         },
         request
       );
@@ -47,36 +47,27 @@ export async function POST(
       );
     }
 
-    // 既に使用済みの場合はエラー（ItemUsageLogで判定）
-    if (history.itemId) {
-      const existingUsage = await prisma.itemUsageLog.findFirst({
-        where: {
-          userId: userId,
-          itemId: history.itemId,
+    // 既に使用済みの場合はエラー（UserItem.statusで判定）
+    if (userItem.status === 'USED') {
+      await logError(
+        new Error('このアイテムは既に使用済みです'),
+        {
+          userId,
+          route: '/api/users/[userId]/items/[historyId]/use',
+          customData: { userItemId: userItemIdNum },
         },
-        select: { id: true, usedAt: true },
-      });
-      if (existingUsage) {
-        await logError(
-          new Error('このアイテムは既に使用済みです'),
-          {
-            userId,
-            route: '/api/users/[userId]/items/[historyId]/use',
-            customData: { historyId: historyIdNum, itemId: history.itemId },
-          },
-          request
-        );
-        return NextResponse.json(
-          { error: 'このアイテムは既に使用済みです' },
-          { status: 400 }
-        );
-      }
+        request
+      );
+      return NextResponse.json(
+        { error: 'このアイテムは既に使用済みです' },
+        { status: 400 }
+      );
     }
 
     // 使用可能期間のチェック（任意設定）
     const now = new Date();
-    const useStartAt = history.item?.useStartAt ?? null;
-    const useEndAt = history.item?.useEndAt ?? null;
+    const useStartAt = userItem.item?.useStartAt ?? null;
+    const useEndAt = userItem.item?.useEndAt ?? null;
     if (useStartAt && now < useStartAt) {
       await logError(
         new Error('このアイテムはまだ使用できません（使用開始前）'),
@@ -84,7 +75,7 @@ export async function POST(
           userId,
           route: '/api/users/[userId]/items/[historyId]/use',
           customData: {
-            historyId: historyIdNum,
+            userItemId: userItemIdNum,
             useStartAt,
             now: now.toISOString(),
           },
@@ -103,7 +94,7 @@ export async function POST(
           userId,
           route: '/api/users/[userId]/items/[historyId]/use',
           customData: {
-            historyId: historyIdNum,
+            userItemId: userItemIdNum,
             useEndAt,
             now: now.toISOString(),
           },
@@ -116,13 +107,13 @@ export async function POST(
       );
     }
 
-    if (!history.itemId) {
+    if (!userItem.itemId) {
       await logError(
         new Error('アイテムIDが見つかりません'),
         {
           userId,
           route: '/api/users/[userId]/items/[historyId]/use',
-          customData: { historyId: historyIdNum },
+          customData: { userItemId: userItemIdNum },
         },
         request
       );
@@ -132,19 +123,31 @@ export async function POST(
       );
     }
 
+    // UserItemを使用済みに更新
+    await prisma.userItem.update({
+      where: {
+        id: userItemIdNum,
+        userId: userId,
+      },
+      data: {
+        status: 'USED',
+      },
+    });
+
     // 使用ログを作成（ItemUsageLog）
     await prisma.itemUsageLog.create({
       data: {
         userId: userId,
-        itemId: history.itemId,
+        itemId: userItem.itemId,
+        userItemId: userItemIdNum,
         usedAt: new Date(),
       },
     });
 
-    // ガチャ履歴からアイテム情報を再取得
-    const historyWithItem = await prisma.gachaHistory.findFirst({
+    // UserItemからアイテム情報を再取得
+    const userItemWithItem = await prisma.userItem.findFirst({
       where: {
-        id: historyIdNum,
+        id: userItemIdNum,
         userId: userId,
       },
       include: {
@@ -161,13 +164,13 @@ export async function POST(
       },
     });
 
-    if (!historyWithItem || !historyWithItem.item) {
+    if (!userItemWithItem || !userItemWithItem.item) {
       await logError(
         new Error('アイテム情報の取得に失敗しました'),
         {
           userId,
           route: '/api/users/[userId]/items/[historyId]/use',
-          customData: { historyId: historyIdNum },
+          customData: { userItemId: userItemIdNum },
         },
         request
       );
@@ -180,9 +183,9 @@ export async function POST(
     return NextResponse.json({
       success: true,
       item: {
-        id: historyWithItem.id,
-        item: historyWithItem.item,
-        createdAt: historyWithItem.createdAt,
+        id: userItemWithItem.id,
+        item: userItemWithItem.item,
+        createdAt: userItemWithItem.createdAt,
         usedAt: new Date().toISOString(),
       },
     });
@@ -198,4 +201,3 @@ export async function POST(
     );
   }
 }
-

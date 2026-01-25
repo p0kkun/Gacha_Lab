@@ -100,6 +100,7 @@ CREATE TABLE "item_usage_logs" (
     "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "itemId" INTEGER NOT NULL,
+    "userItemId" INTEGER,
     "usedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -111,6 +112,7 @@ CREATE TABLE "user_items" (
     "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "itemId" INTEGER NOT NULL,
+    "gachaHistoryId" INTEGER,
     "status" "UserItemStatus" NOT NULL DEFAULT 'UNUSED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -222,6 +224,7 @@ CREATE TABLE "point_purchase_logs" (
     "amountYen" INTEGER NOT NULL,
     "planId" TEXT,
     "status" "PaymentStatus" NOT NULL DEFAULT 'SUCCEEDED',
+    "paymentSucceededAt" TIMESTAMP(3),
     "errorMessage" TEXT,
     "raw" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -449,19 +452,31 @@ CREATE INDEX "gacha_histories_createdAt_idx" ON "gacha_histories"("createdAt");
 CREATE INDEX "gacha_histories_tierCode_idx" ON "gacha_histories"("tierCode");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "item_usage_logs_userItemId_key" ON "item_usage_logs"("userItemId");
+
+-- CreateIndex
 CREATE INDEX "item_usage_logs_userId_usedAt_idx" ON "item_usage_logs"("userId", "usedAt");
 
 -- CreateIndex
 CREATE INDEX "item_usage_logs_itemId_idx" ON "item_usage_logs"("itemId");
 
 -- CreateIndex
+CREATE INDEX "item_usage_logs_userItemId_idx" ON "item_usage_logs"("userItemId");
+
+-- CreateIndex
 CREATE INDEX "item_usage_logs_usedAt_idx" ON "item_usage_logs"("usedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_items_gachaHistoryId_key" ON "user_items"("gachaHistoryId");
 
 -- CreateIndex
 CREATE INDEX "user_items_userId_status_idx" ON "user_items"("userId", "status");
 
 -- CreateIndex
 CREATE INDEX "user_items_userId_itemId_idx" ON "user_items"("userId", "itemId");
+
+-- CreateIndex
+CREATE INDEX "user_items_gachaHistoryId_idx" ON "user_items"("gachaHistoryId");
 
 -- CreateIndex
 CREATE INDEX "user_items_itemId_idx" ON "user_items"("itemId");
@@ -626,7 +641,13 @@ ALTER TABLE "gacha_histories" ADD CONSTRAINT "gacha_histories_tierCode_fkey" FOR
 ALTER TABLE "item_usage_logs" ADD CONSTRAINT "item_usage_logs_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "item_usage_logs" ADD CONSTRAINT "item_usage_logs_userItemId_fkey" FOREIGN KEY ("userItemId") REFERENCES "user_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "user_items" ADD CONSTRAINT "user_items_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_items" ADD CONSTRAINT "user_items_gachaHistoryId_fkey" FOREIGN KEY ("gachaHistoryId") REFERENCES "gacha_histories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_gachaTypeId_fkey" FOREIGN KEY ("gachaTypeId") REFERENCES "gacha_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

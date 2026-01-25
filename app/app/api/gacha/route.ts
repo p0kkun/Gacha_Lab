@@ -372,6 +372,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: userId,
           itemId: selectedItem.id,
+          gachaHistoryId: gachaHistory.id,
           status: "UNUSED",
         },
       });

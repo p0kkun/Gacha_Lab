@@ -10,6 +10,7 @@ import { CacheKeys } from "./cache-keys";
 export async function generateReferralLink(userId: string): Promise<{
   referralLinkId: string;
   referralLink: string;
+  expiresAt: Date;
   qrCodeUrl?: string;
 }> {
   // 既存の紹介リンクを検索（最新のものを取得）
@@ -19,6 +20,11 @@ export async function generateReferralLink(userId: string): Promise<{
   });
 
   if (existingReferral) {
+    const currentExpiresAt =
+      existingReferral.expiresAt ??
+      new Date(existingReferral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const isExpired = currentExpiresAt.getTime() < Date.now();
+
     // 既存のリンクを再利用
     // ステータスがCOMPLETED/INVALIDの場合は、新しい被紹介者を受け付けるためPENDINGに戻す
     let newStatus = existingReferral.status;
@@ -27,21 +33,48 @@ export async function generateReferralLink(userId: string): Promise<{
       existingReferral.status === ReferralStatus.INVALID
     ) {
       newStatus = ReferralStatus.PENDING;
+    }
 
-      // ステータス変更が必要な場合は更新
+    if (isExpired) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
       await prisma.referral.update({
         where: { id: existingReferral.id },
         data: {
           status: newStatus,
+          expiresAt,
         },
+      });
+      return {
+        referralLinkId: existingReferral.referralLinkId,
+        referralLink: existingReferral.referralLink,
+        expiresAt,
+      };
+    }
+
+    const updateData: { status?: ReferralStatus; expiresAt?: Date } = {};
+    if (existingReferral.status !== newStatus) {
+      updateData.status = newStatus;
+    }
+    if (!existingReferral.expiresAt) {
+      updateData.expiresAt = currentExpiresAt;
+    }
+    if (Object.keys(updateData).length > 0) {
+      await prisma.referral.update({
+        where: { id: existingReferral.id },
+        data: updateData,
       });
     }
 
     return {
       referralLinkId: existingReferral.referralLinkId,
       referralLink: existingReferral.referralLink,
+      expiresAt: currentExpiresAt,
     };
   }
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
 
   // 新しい紹介リンクを生成（初回のみ）
   const referralLinkId = crypto.randomUUID();
@@ -59,12 +92,14 @@ export async function generateReferralLink(userId: string): Promise<{
       referralLinkId,
       referralLink,
       status: ReferralStatus.PENDING,
+      expiresAt,
     },
   });
 
   return {
     referralLinkId: referral.referralLinkId,
     referralLink: referral.referralLink,
+    expiresAt,
   };
 }
 
@@ -111,6 +146,16 @@ export async function verifyReferralLink(
     return {
       isValid: false,
       reason: "紹介リンクが見つかりません",
+    };
+  }
+
+  const expiresAt =
+    referral.expiresAt ??
+    new Date(referral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  if (Date.now() > expiresAt.getTime()) {
+    return {
+      isValid: false,
+      reason: "この紹介リンクは有効期限切れです",
     };
   }
 

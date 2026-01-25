@@ -16,9 +16,9 @@ export async function GET(
 
     const skip = (page - 1) * limit;
 
-    // ユーザーが獲得したアイテム（ガチャ履歴から取得）
-    const [histories, total] = await Promise.all([
-      prisma.gachaHistory.findMany({
+    // ユーザーが獲得したアイテム（UserItemから取得）
+    const [userItems, total] = await Promise.all([
+      prisma.userItem.findMany({
         where: { userId },
         skip,
         take: limit,
@@ -26,7 +26,8 @@ export async function GET(
         select: {
           id: true,
           createdAt: true,
-          tierCode: true,
+          updatedAt: true,
+          status: true,
           itemId: true,
           item: {
             select: {
@@ -39,40 +40,50 @@ export async function GET(
               useEndAt: true,
             },
           },
+          gachaHistory: {
+            select: {
+              tierCode: true,
+            },
+          },
         },
       }),
-      prisma.gachaHistory.count({
+      prisma.userItem.count({
         where: { userId },
       }),
     ]);
 
     // ItemUsageLogから使用日時を取得
-    const itemIds = histories.filter((h) => h.itemId).map((h) => h.itemId!);
+    const userItemIds = userItems.map((ui) => ui.id);
     const usageLogs = await prisma.itemUsageLog.findMany({
       where: {
         userId,
-        itemId: { in: itemIds },
+        userItemId: { in: userItemIds },
       },
       select: {
-        itemId: true,
+        userItemId: true,
         usedAt: true,
       },
     });
 
-    // itemIdをキーにしたマップを作成
+    // userItemIdをキーにしたマップを作成
     const usageLogMap = new Map(
-      usageLogs.map((log) => [log.itemId, log.usedAt])
+      usageLogs.map((log) => [log.userItemId, log.usedAt])
     );
 
-    const items = histories.map((history) => ({
-      id: history.id,
-      item: {
-        ...history.item,
-        rarity: history.tierCode ?? 'UNKNOWN',
-      },
-      createdAt: history.createdAt,
-      usedAt: history.itemId ? usageLogMap.get(history.itemId)?.toISOString() ?? null : null,
-    }));
+    const items = userItems.map((userItem) => {
+      const usedAt =
+        usageLogMap.get(userItem.id)?.toISOString() ??
+        (userItem.status === 'USED' ? userItem.updatedAt.toISOString() : null);
+      return {
+        id: userItem.id,
+        item: {
+          ...userItem.item,
+          rarity: userItem.gachaHistory?.tierCode ?? 'UNKNOWN',
+        },
+        createdAt: userItem.createdAt,
+        usedAt,
+      };
+    });
 
     return NextResponse.json({
       items,
@@ -95,5 +106,4 @@ export async function GET(
     );
   }
 }
-
 

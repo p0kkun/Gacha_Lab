@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       success: true,
       referralLinkId: result.referralLinkId,
       referralLink: result.referralLink,
+      expiresAt: result.expiresAt,
     });
   } catch (error) {
     await logError(error, { route: "/api/referral/generate" }, request);

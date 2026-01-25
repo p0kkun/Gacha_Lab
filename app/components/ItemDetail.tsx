@@ -70,11 +70,14 @@ export default function ItemDetail({
   };
 
   // MarkdownリンクをHTMLに変換
-  const renderDescription = (text: string | null): React.ReactElement => {
+  const renderDescription = (
+    text: string | null,
+    className: string = "text-[#5a4a3a]"
+  ): React.ReactElement => {
     if (!text) {
       // 説明文がない場合はアイテム名から生成（後方互換性）
       const fallback = getItemDescription(userItem.item.name, userItem.item.rarity);
-      return <p className="text-white/90">{fallback}</p>;
+      return <p className={className}>{fallback}</p>;
     }
 
     // Markdownリンク [テキスト](URL) を検出して変換
@@ -108,7 +111,7 @@ export default function ItemDetail({
       parts.push(text.substring(lastIndex));
     }
 
-    return <p className="text-white/90">{parts.length > 0 ? parts : text}</p>;
+    return <p className={className}>{parts.length > 0 ? parts : text}</p>;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -236,7 +239,7 @@ export default function ItemDetail({
               </div>
               <div className="text-sm" style={{ color: '#5a4a3a' }}>
                 {userItem.item.description ? (
-                  <div>{renderDescription(userItem.item.description)}</div>
+                  <div>{renderDescription(userItem.item.description, "text-[#5a4a3a]")}</div>
                 ) : (
                   <div style={{ color: '#5a4a3a' }}>{getItemDescription(userItem.item.name, userItem.item.rarity)}</div>
                 )}
@@ -270,7 +273,7 @@ export default function ItemDetail({
                         </div>
                       </div>
                     </div>
-                    <div className="text-center text-sm text-white/90">
+                    <div className="text-center text-sm" style={{ color: "#5a4a3a" }}>
                       使用期限: {expirationDate.toLocaleString('ja-JP', {
                         year: 'numeric',
                         month: 'long',
@@ -282,70 +285,77 @@ export default function ItemDetail({
                   </>
                 ) : (
                   <>
-                    {/* 画像がない場合: 必須情報を優先表示 */}
-                    <div className="mb-6 space-y-4">
-                      {/* プレースホルダー（NOIMAGE表示） */}
-                      <div className="flex justify-center">
-                        <div className="relative h-64 w-64 rounded-xl bg-gray-200 border-2 border-gray-300 shadow-lg flex items-center justify-center">
-                          <div className="text-2xl font-bold text-gray-500">NOIMAGE</div>
+                    {/* 画像がない場合: 必須情報のみ表示 */}
+                    <div className="space-y-3 rounded-xl p-4" style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}>
+                      {/* クーポン名 */}
+                      <div>
+                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                          クーポン名
+                        </div>
+                        <div className="text-lg font-bold" style={{ color: "#4a3a2a" }}>
+                          {userItem.item.name}
                         </div>
                       </div>
 
-                      {/* 必須情報セクション */}
-                      <div className="space-y-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 p-4">
-                        {/* クーポン名 */}
+                      {/* 割引内容（説明文から抽出） */}
+                      {userItem.item.description && (
                         <div>
-                          <div className="mb-1 text-xs font-semibold text-white/70">クーポン名</div>
-                          <div className="text-lg font-bold text-white">{userItem.item.name}</div>
-                        </div>
-
-                        {/* 割引内容（説明文から抽出） */}
-                        {userItem.item.description && (
-                          <div>
-                            <div className="mb-1 text-xs font-semibold text-white/70">割引内容</div>
-                            <div className="text-sm text-white/90">{userItem.item.description}</div>
+                          <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                            割引内容
                           </div>
-                        )}
-
-                        {/* 有効期限 */}
-                        <div>
-                          <div className="mb-1 text-xs font-semibold text-white/70">有効期限</div>
-                          <div className="text-sm text-white/90">
-                            {userItem.item.useStartAt ? (
-                              <>
-                                {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })} 〜
-                              </>
-                            ) : null}
-                            {expirationDate.toLocaleString('ja-JP', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                          <div className="text-sm" style={{ color: "#5a4a3a" }}>
+                            {userItem.item.description}
                           </div>
                         </div>
+                      )}
 
-                        {/* 提示方法 */}
-                        <div>
-                          <div className="mb-1 text-xs font-semibold" style={{ color: '#6b5a4a' }}>提示方法</div>
-                          <div className="text-sm" style={{ color: '#5a4a3a' }}>
-                            {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
-                          </div>
+                      {/* 有効期限 */}
+                      <div>
+                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                          有効期限
                         </div>
+                        <div className="text-sm" style={{ color: "#5a4a3a" }}>
+                          {userItem.item.useStartAt ? (
+                            <>
+                              {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })} 〜
+                            </>
+                          ) : null}
+                          {expirationDate.toLocaleString('ja-JP', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
 
-                        {/* 識別子（クーポンID） */}
-                        <div>
-                          <div className="mb-1 text-xs font-semibold" style={{ color: '#6b5a4a' }}>クーポンID</div>
-                          <div className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold" style={{ backgroundColor: 'rgba(184, 159, 122, 0.3)', color: '#4a3a2a' }}>
-                            {String(userItem.id).padStart(8, '0')}
-                          </div>
+                      {/* 提示方法 */}
+                      <div>
+                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                          提示方法
+                        </div>
+                        <div className="text-sm" style={{ color: "#5a4a3a" }}>
+                          {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
+                        </div>
+                      </div>
+
+                      {/* 識別子（クーポンID） */}
+                      <div>
+                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                          クーポンID
+                        </div>
+                        <div
+                          className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold"
+                          style={{ backgroundColor: "rgba(184, 159, 122, 0.3)", color: "#4a3a2a" }}
+                        >
+                          {String(userItem.id).padStart(8, '0')}
                         </div>
                       </div>
                     </div>
@@ -392,13 +402,14 @@ export default function ItemDetail({
 
   // アイテム詳細画面
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 pb-20">
+    <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
       <div className="mx-auto max-w-md">
         {/* 戻るボタン */}
         <div className="px-4 pt-4">
           <button
             onClick={onBack}
-            className="text-white/80 hover:text-white transition-colors"
+            className="transition-colors hover:opacity-80"
+            style={{ color: "#6b5a4a" }}
           >
             ← 戻る
           </button>
@@ -414,36 +425,42 @@ export default function ItemDetail({
             <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
           </div>
           
-          <div className="relative z-10 text-center text-white">
+          <div className="relative z-10 text-center" style={{ color: "#4a3a2a" }}>
             <h1 className="mb-2 text-3xl font-bold drop-shadow-lg">アイテム詳細</h1>
-            <p className="text-sm text-green-200">獲得したアイテムの詳細</p>
+            <p className="text-sm" style={{ color: "#6b5a4a" }}>獲得したアイテムの詳細</p>
           </div>
         </div>
 
         <div className="px-4 py-4">
           {/* アイテム情報 */}
-          <div className="mb-6 rounded-xl bg-white/10 backdrop-blur-sm p-6 shadow-md">
+          <div className="mb-6 rounded-xl backdrop-blur-sm p-6 shadow-md" style={{ backgroundColor: "rgba(255, 255, 255, 0.6)" }}>
           <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
-            <span className="inline-flex rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 px-3 py-1 text-sm font-semibold text-white shadow-sm">
+            <span
+              className="inline-flex rounded-full px-3 py-1 text-sm font-semibold shadow-sm"
+              style={{
+                background: "linear-gradient(to right, #f5d48a, #e7c675)",
+                color: "#4a3a2a",
+              }}
+            >
               {getRarityLabel(userItem.item.rarity)}
             </span>
-            <span className="text-sm text-white/80">
+            <span className="text-sm" style={{ color: "#6b5a4a" }}>
               獲得日: {new Date(userItem.createdAt).toLocaleDateString('ja-JP')}
             </span>
           </div>
 
           <div className="mb-4">
-            <h2 className="mb-2 text-xl font-bold text-white">
+            <h2 className="mb-2 text-xl font-bold" style={{ color: "#4a3a2a" }}>
               {userItem.item.name}
             </h2>
-            <div className="text-white/90">{renderDescription(userItem.item.description)}</div>
+            <div>{renderDescription(userItem.item.description, "text-[#5a4a3a]")}</div>
           </div>
 
           {/* 使用開始前・使用期限切れの警告 */}
           {itemStatus === 'notStarted' && userItem.item.useStartAt && (
-            <div className="mb-4 rounded-xl bg-yellow-500/20 backdrop-blur-sm border border-yellow-400/30 p-4">
-              <div className="text-sm font-semibold text-yellow-200">使用開始前</div>
-              <div className="mt-1 text-xs text-yellow-100">
+            <div className="mb-4 rounded-xl backdrop-blur-sm border p-4" style={{ backgroundColor: "rgba(234, 179, 8, 0.15)", borderColor: "rgba(234, 179, 8, 0.3)" }}>
+              <div className="text-sm font-semibold" style={{ color: "#6b5a4a" }}>使用開始前</div>
+              <div className="mt-1 text-xs" style={{ color: "#5a4a3a" }}>
                 使用開始日時: {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
                   year: 'numeric',
                   month: 'long',
@@ -472,8 +489,8 @@ export default function ItemDetail({
 
           {/* 使用期限の表示（使用可能な場合のみ） */}
           {itemStatus === 'available' && (
-            <div className="mb-4 rounded-xl bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 p-4">
-              <div className="text-xs text-blue-100">
+            <div className="mb-4 rounded-xl backdrop-blur-sm border p-4" style={{ backgroundColor: "rgba(59, 130, 246, 0.12)", borderColor: "rgba(59, 130, 246, 0.25)" }}>
+              <div className="text-xs" style={{ color: "#5a4a3a" }}>
                 {userItem.item.useEndAt ? (
                   <>
                     使用期限: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
@@ -524,10 +541,14 @@ export default function ItemDetail({
               <button
                 onClick={handleUseClick}
                 disabled={isUsing}
-                className="w-full rounded-xl px-4 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl active:scale-95"
+                className="w-full rounded-xl px-4 py-3 font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
                 style={{
-                  background: isUsing ? 'rgba(139, 111, 71, 0.5)' : 'linear-gradient(to right, #b89f7a, #a68f6a)',
-                  opacity: isUsing ? 0.5 : 1
+                  background: isUsing
+                    ? "rgba(255, 255, 255, 0.6)"
+                    : "linear-gradient(to right, #e7c675, #f5d48a)",
+                  color: "#4a3a2a",
+                  opacity: isUsing ? 0.7 : 1,
+                  border: "1px solid #b89f7a",
                 }}
                 onMouseEnter={(e) => {
                   if (!isUsing) {
@@ -569,4 +590,3 @@ export default function ItemDetail({
     </div>
   );
 }
-

@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
       userId: string;
       planId: string | null;
       amountYen: number;
+      paymentSucceededAt: Date | null;
       createdAt: Date;
     };
 
@@ -219,7 +220,7 @@ export async function GET(request: NextRequest) {
           amount: log.amountYen,
           planId: log.planId,
           planLabel: plan?.label || null,
-          createdAt: log.createdAt,
+          createdAt: log.paymentSucceededAt ?? log.createdAt,
         };
       })
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { GachaType } from "./GachaModal";
 import MultiVideoPlayer from "./MultiVideoPlayer";
 import BottomNavigation from "./BottomNavigation";
@@ -459,24 +460,30 @@ export default function GachaContent({
 
         {/* 結果表示 - ポーカー風 */}
         {result && !showVideo && (
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border-4 border-yellow-400 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 shadow-2xl ring-4 ring-yellow-500 ring-opacity-50">
+          <div
+            className="mx-auto mt-6 max-w-md rounded-2xl border-2 p-8 shadow-2xl"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.6)",
+              borderColor: "#b89f7a",
+            }}
+          >
             {videoError && (
-              <div className="mb-4 rounded-lg bg-red-900 bg-opacity-50 p-4 text-center text-red-200">
+              <div className="mb-4 rounded-lg p-4 text-center text-red-700" style={{ backgroundColor: "rgba(239, 68, 68, 0.15)" }}>
                 <p className="font-semibold">⚠️ エラーが発生しました</p>
                 <p className="mt-1 text-sm">動画の再生に失敗しました</p>
               </div>
             )}
-            <h3 className="mb-6 text-center text-2xl font-bold text-yellow-300 drop-shadow-lg">
+            <h3 className="mb-6 text-center text-2xl font-bold drop-shadow-lg" style={{ color: "#4a3a2a" }}>
               🎉 獲得！
             </h3>
             <div className="text-center">
               <div
                 className={`mb-4 text-2xl font-bold drop-shadow-lg break-words px-2 ${
                   result.item.rarity === "epic"
-                    ? "text-purple-400"
+                    ? "text-purple-600"
                     : result.item.rarity === "rare"
-                    ? "text-blue-400"
-                    : "text-yellow-300"
+                    ? "text-blue-600"
+                    : "text-yellow-700"
                 }`}
               >
                 {result.item.name}
@@ -487,18 +494,44 @@ export default function GachaContent({
                     ? "bg-purple-600 text-white"
                     : result.item.rarity === "rare"
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-yellow-200"
+                    : "bg-yellow-700 text-white"
                 }`}
               >
                 レアリティ: {getRarityLabel(result.item.rarity)}
               </div>
             </div>
-            <button
-              onClick={handleCloseResult}
-              className="mt-6 w-full rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-3 font-bold text-white shadow-lg transition-all hover:from-yellow-600 hover:to-yellow-700 hover:shadow-xl"
-            >
-              ✓ 閉じる
-            </button>
+            <div className="mt-6 grid gap-3">
+              <button
+                onClick={handleDrawGachaClick}
+                className="w-full rounded-lg px-6 py-3 font-bold text-white shadow-lg transition-all hover:shadow-xl"
+                style={{
+                  background: "linear-gradient(to right, #b89f7a, #a68f6a)",
+                }}
+              >
+                もう一度引く
+              </button>
+              <Link
+                href="/?action=items"
+                className="w-full rounded-lg border px-6 py-3 text-center font-semibold transition-all hover:shadow-md"
+                style={{
+                  borderColor: "#b89f7a",
+                  backgroundColor: "rgba(255, 255, 255, 0.5)",
+                  color: "#5a4a3a",
+                }}
+              >
+                アイテム画面へ
+              </Link>
+              <button
+                onClick={handleCloseResult}
+                className="w-full rounded-lg px-6 py-3 font-semibold transition-all hover:shadow-md"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.4)",
+                  color: "#6b5a4a",
+                }}
+              >
+                閉じる
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -534,7 +567,7 @@ export default function GachaContent({
                     }}
                   />
                   <span className="whitespace-nowrap flex items-center gap-1">
-                    カードを引く
+                    ガチャを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
                       <span className="hidden sm:inline flex items-center gap-0.5">
                         {" "}

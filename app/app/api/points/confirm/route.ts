@@ -22,6 +22,29 @@ function getStripeInstance(): Stripe {
   });
 }
 
+const resolveStripeSucceededAt = async (
+  stripe: Stripe,
+  paymentIntent: Stripe.PaymentIntent
+): Promise<Date> => {
+  let createdMs = paymentIntent.created * 1000;
+  const latestCharge = paymentIntent.latest_charge;
+  if (latestCharge) {
+    const chargeId =
+      typeof latestCharge === "string" ? latestCharge : latestCharge.id;
+    if (chargeId) {
+      try {
+        const charge = await stripe.charges.retrieve(chargeId);
+        if (charge?.created) {
+          createdMs = charge.created * 1000;
+        }
+      } catch (error) {
+        console.error("ポイント付与確認: チャージ取得エラー:", error);
+      }
+    }
+  }
+  return new Date(createdMs);
+};
+
 /**
  * 決済成功時のポイント付与（Webhookのフォールバック）
  * POST /api/points/confirm
@@ -44,7 +67,9 @@ export async function POST(request: NextRequest) {
     const stripe = getStripeInstance();
 
     // PaymentIntentの状態を確認
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ["latest_charge"],
+    });
 
     console.log("ポイント付与確認:", {
       paymentIntentId: paymentIntent.id,
@@ -121,8 +146,13 @@ export async function POST(request: NextRequest) {
       pointPurchaseLog: {
         findFirst: (args: {
           where: { providerPaymentIntentId: string };
-        }) => Promise<{ id: number } | null>;
+          select: { id: true; paymentSucceededAt: true };
+        }) => Promise<{ id: number; paymentSucceededAt: Date | null } | null>;
         create: (args: { data: any }) => Promise<{ id: number }>;
+        update: (args: {
+          where: { id: number };
+          data: { paymentSucceededAt: Date };
+        }) => Promise<{ id: number }>;
       };
       pointHistory: {
         findFirst: (args: {
@@ -132,8 +162,13 @@ export async function POST(request: NextRequest) {
       };
     };
 
+    const paymentSucceededAt = await resolveStripeSucceededAt(
+      stripe,
+      paymentIntent
+    );
     const existingLog = await prismaAny.pointPurchaseLog.findFirst({
       where: { providerPaymentIntentId: paymentIntentId },
+      select: { id: true, paymentSucceededAt: true },
     });
     const purchaseLogId =
       existingLog?.id ??
@@ -146,6 +181,7 @@ export async function POST(request: NextRequest) {
             amountYen: paymentIntent.amount,
             planId: paymentIntent.metadata.planId || null,
             status: "SUCCEEDED",
+            paymentSucceededAt,
             raw: {
               amount: paymentIntent.amount,
               currency: paymentIntent.currency,
@@ -154,6 +190,12 @@ export async function POST(request: NextRequest) {
           },
         })
       ).id;
+    if (existingLog?.id && !existingLog.paymentSucceededAt) {
+      await prismaAny.pointPurchaseLog.update({
+        where: { id: existingLog.id },
+        data: { paymentSucceededAt },
+      });
+    }
 
     // 有償 + おまけ無償ポイントを付与（重複付与チェックは grantPurchasePoints 内で実施）
     const { grantPurchasePoints } = await import("@/lib/point-service");

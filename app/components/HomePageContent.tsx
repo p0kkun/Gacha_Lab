@@ -33,12 +33,14 @@ type PointBalances = {
 type HomePageContentProps = {
   profile: LiffProfile;
   pointBalances: PointBalances | null;
+  referralNotice?: string | null;
   onOpenGacha: (gachaCode?: string) => void;
 };
 
 export default function HomePageContent({
   profile,
   pointBalances,
+  referralNotice,
   onOpenGacha,
 }: HomePageContentProps) {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
@@ -102,6 +104,19 @@ export default function HomePageContent({
               <p className="mb-6 text-sm" style={{ color: '#6b5a4a' }}>
                 ポーカー風ガチャでアイテムを獲得しよう！
               </p>
+
+              {referralNotice && (
+                <div
+                  className="mb-4 rounded-xl border px-4 py-3 text-sm"
+                  style={{
+                    backgroundColor: "rgba(239, 68, 68, 0.12)",
+                    borderColor: "rgba(239, 68, 68, 0.35)",
+                    color: "#7f1d1d",
+                  }}
+                >
+                  {referralNotice}
+                </div>
+              )}
               
               {/* ポイント表示 - 共通コンポーネント */}
               <div className="mb-6">

@@ -90,6 +90,7 @@ model GachaHistory {
   gachaType   GachaType? @relation(fields: [gachaTypeId], references: [id])
   item        GachaItem? @relation(fields: [itemId], references: [id])
   tier        PrizeTier? @relation(fields: [tierCode], references: [code])
+  userItems   UserItem[]
 
   @@index([userId, createdAt])
   @@index([gachaTypeId, createdAt])
@@ -103,13 +104,16 @@ model ItemUsageLog {
   id        Int      @id @default(autoincrement())
   userId    String
   itemId    Int
+  userItemId Int?    @unique
   usedAt    DateTime @default(now())
   createdAt DateTime @default(now())
 
   item GachaItem? @relation(fields: [itemId], references: [id])
+  userItem UserItem? @relation(fields: [userItemId], references: [id])
 
   @@index([userId, usedAt])
   @@index([itemId])
+  @@index([userItemId])
   @@index([usedAt])
   @@map("item_usage_logs")
 }
@@ -118,14 +122,18 @@ model UserItem {
   id        Int            @id @default(autoincrement())
   userId    String
   itemId    Int
+  gachaHistoryId Int?      @unique
   status    UserItemStatus @default(UNUSED)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
   item GachaItem? @relation(fields: [itemId], references: [id])
+  gachaHistory GachaHistory? @relation(fields: [gachaHistoryId], references: [id])
+  usageLog ItemUsageLog?
 
   @@index([userId, status])
   @@index([userId, itemId])
+  @@index([gachaHistoryId])
   @@index([itemId])
   @@map("user_items")
 }
@@ -249,6 +257,7 @@ model PointPurchaseLog {
   amountYen               Int
   planId                  String?
   status                  PaymentStatus   @default(SUCCEEDED)
+  paymentSucceededAt      DateTime?
   errorMessage            String?
   raw                     Json?
   createdAt               DateTime        @default(now())
