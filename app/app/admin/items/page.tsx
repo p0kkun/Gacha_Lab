@@ -390,8 +390,7 @@ export default function ItemsPage() {
               </p>
             </div>
             <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
-              等級（1等/2等…）は <code>/admin/prize-assignments</code>{" "}
-              の「景品割当（ガチャ別）」で設定します。
+              等級（1等/2等…）は「景品割当（ガチャ別）」タブで設定します。
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -546,7 +545,7 @@ export default function ItemsPage() {
                     名前
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    等級/ガチャ別の割当
+                    景品割当（ガチャ別）
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     状態
@@ -570,7 +569,7 @@ export default function ItemsPage() {
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                       <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
-                        /admin/prize-assignments で設定
+                        景品割当（ガチャ別）で設定
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
@@ -624,7 +623,7 @@ export default function ItemsPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <span className="inline-flex rounded-full bg-gray-200 px-2 py-1 text-xs font-semibold text-gray-900">
-                      /admin/prize-assignments で設定
+                      景品割当（ガチャ別）で設定
                     </span>
                     <span
                       className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${

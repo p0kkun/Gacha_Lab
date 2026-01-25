@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { getAdminAuthToken } from "@/lib/admin-auth";
 
-type GachaTypeLite = { id: string; name: string };
+type TierWeightLite = { tierCode: string; weight: number; isActive: boolean };
+type GachaTypeLite = {
+  id: string;
+  name: string;
+  tierWeights?: TierWeightLite[];
+};
 type PrizeItemLite = { id: number; name: string; isActive: boolean };
 
 type Assignment = {
@@ -74,6 +79,13 @@ export default function PrizeAssignmentsPage() {
       // NOTE: 外部参照は code を使う（API/URLの互換のためキー名は id のまま）
       id: gt.code,
       name: gt.name,
+      tierWeights: Array.isArray(gt.tierWeights)
+        ? gt.tierWeights.map((tw: any) => ({
+            tierCode: tw.tierCode,
+            weight: Number(tw.weight) || 0,
+            isActive: !!tw.isActive,
+          }))
+        : [],
     }));
     setGachaTypes(list);
     if (!selectedGachaTypeId && list.length > 0) {
@@ -146,6 +158,65 @@ export default function PrizeAssignmentsPage() {
 
   const tierLabel = (tierCode: string) =>
     RARITIES.find((r) => r.value === tierCode)?.label || tierCode;
+
+  const selectedGachaType = useMemo(
+    () => gachaTypes.find((gt) => gt.id === selectedGachaTypeId),
+    [gachaTypes, selectedGachaTypeId]
+  );
+
+  const tierWeightMap = useMemo(() => {
+    const map: Record<string, { weight: number; isActive: boolean }> = {};
+    (selectedGachaType?.tierWeights || []).forEach((tw) => {
+      map[tw.tierCode] = { weight: tw.weight, isActive: tw.isActive };
+    });
+    return map;
+  }, [selectedGachaType]);
+
+  const totalTierWeight = useMemo(
+    () =>
+      Object.values(tierWeightMap).reduce(
+        (sum, tw) => sum + (tw.isActive ? tw.weight : 0),
+        0
+      ),
+    [tierWeightMap]
+  );
+
+  const tierTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    assignments.forEach((assignment) => {
+      if (!assignment.isActive) return;
+      totals[assignment.tierCode] =
+        (totals[assignment.tierCode] || 0) + assignment.weight;
+    });
+    return totals;
+  }, [assignments]);
+
+  const formatPercent = (value: number | null) => {
+    if (value === null || !Number.isFinite(value)) return "-";
+    return `${(value * 100).toFixed(4)}%`;
+  };
+
+  const getTierProbability = (tierCode: string) => {
+    const tier = tierWeightMap[tierCode];
+    if (!tier) return null;
+    if (!tier.isActive) return 0;
+    if (totalTierWeight <= 0) return null;
+    return tier.weight / totalTierWeight;
+  };
+
+  const getItemShare = (assignment: Assignment) => {
+    if (!assignment.isActive) return 0;
+    const total = tierTotals[assignment.tierCode] || 0;
+    if (total <= 0) return null;
+    return assignment.weight / total;
+  };
+
+  const getOverallProbability = (assignment: Assignment) => {
+    const tierProbability = getTierProbability(assignment.tierCode);
+    const itemShare = getItemShare(assignment);
+    if (tierProbability === null || itemShare === null) return null;
+    return tierProbability * itemShare;
+  };
 
   const openConfirm = (args: Omit<NonNullable<typeof confirm>, "isOpen">) =>
     setConfirm({ isOpen: true, ...args });
@@ -433,6 +504,9 @@ export default function PrizeAssignmentsPage() {
             再読み込み
           </button>
         </div>
+        <p className="mb-4 text-xs text-gray-500">
+          確率は「有効な等級重み」と「有効な割当」を基準に計算しています。
+        </p>
 
         {loading ? (
           <div className="text-gray-600">読み込み中...</div>
@@ -453,6 +527,15 @@ export default function PrizeAssignmentsPage() {
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     重み
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    等級内確率
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    等級確率
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    ガチャ全体確率
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     状態
@@ -535,6 +618,15 @@ export default function PrizeAssignmentsPage() {
                         }
                         className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
                       />
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      {formatPercent(getItemShare(a))}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      {formatPercent(getTierProbability(a.tierCode))}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      {formatPercent(getOverallProbability(a))}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-900">
                       <label className="inline-flex items-center gap-2">

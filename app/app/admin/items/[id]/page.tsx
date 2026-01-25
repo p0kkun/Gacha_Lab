@@ -349,8 +349,7 @@ export default function ItemEditPage() {
             </div>
 
             <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
-              等級（1等/2等…）は <code>/admin/prize-assignments</code>{" "}
-              の「景品割当（ガチャ別）」で設定します。
+              等級（1等/2等…）は「景品割当（ガチャ別）」タブで設定します。
             </div>
 
             <div>
