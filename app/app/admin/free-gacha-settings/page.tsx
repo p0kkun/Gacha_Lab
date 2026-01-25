@@ -105,55 +105,18 @@ export default function FreeGachaSettingsPage() {
 
     const changes: Array<{ label: string; from: string; to: string }> = [];
 
-    // 変更内容を記録
-    if (settings.isActive !== formData.isActive) {
+    if (settings.referrerPoints !== formData.referrerPoints) {
       changes.push({
-        label: "無料ガチャ機能",
-        from: settings.isActive ? "有効" : "無効",
-        to: formData.isActive ? "有効" : "無効",
+        label: "紹介者へのポイント報酬",
+        from: settings.referrerPoints.toLocaleString(),
+        to: formData.referrerPoints.toLocaleString(),
       });
     }
-    if (settings.grantOnReferralComplete !== formData.grantOnReferralComplete) {
+    if (settings.refereePoints !== formData.refereePoints) {
       changes.push({
-        label: "紹介成立時のガチャ付与",
-        from: settings.grantOnReferralComplete ? "有効" : "無効",
-        to: formData.grantOnReferralComplete ? "有効" : "無効",
-      });
-    }
-
-    const referrerGachaType = gachaTypes.find(
-      (gt) => gt.code === formData.referrerGachaTypeCode
-    );
-    const oldReferrerGachaType = gachaTypes.find(
-      (gt) => gt.id === settings.referrerGachaTypeId
-    );
-    if (oldReferrerGachaType?.code !== formData.referrerGachaTypeCode) {
-      changes.push({
-        label: "紹介者用ガチャタイプ",
-        from: oldReferrerGachaType?.name || "未設定",
-        to: referrerGachaType?.name || "未設定",
-      });
-    }
-
-    const refereeGachaType = gachaTypes.find(
-      (gt) => gt.code === formData.refereeGachaTypeCode
-    );
-    const oldRefereeGachaType = gachaTypes.find(
-      (gt) => gt.id === settings.refereeGachaTypeId
-    );
-    if (oldRefereeGachaType?.code !== formData.refereeGachaTypeCode) {
-      changes.push({
-        label: "被紹介者用ガチャタイプ",
-        from: oldRefereeGachaType?.name || "未設定",
-        to: refereeGachaType?.name || "未設定",
-      });
-    }
-
-    if (settings.expirationDays !== formData.expirationDays) {
-      changes.push({
-        label: "有効期限（日数）",
-        from: settings.expirationDays?.toString() || "無期限",
-        to: formData.expirationDays?.toString() || "無期限",
+        label: "被紹介者へのポイント報酬",
+        from: settings.refereePoints.toLocaleString(),
+        to: formData.refereePoints.toLocaleString(),
       });
     }
 
@@ -246,31 +209,19 @@ export default function FreeGachaSettingsPage() {
               <span className="font-semibold">1.</span>
               <div>
                 <strong>紹介成立時（被紹介者が友だち追加/初回登録時）</strong>
-                に、以下の報酬が自動付与されます：
+                に、以下のポイントが自動付与されます：
                 <ul className="mt-1 ml-4 list-disc space-y-1">
                   <li>
                     <strong>紹介者</strong>：
-                    {formData.referrerGachaTypeCode
-                      ? `「${
-                          gachaTypes.find(
-                            (gt) => gt.code === formData.referrerGachaTypeCode
-                          )?.name || formData.referrerGachaTypeCode
-                        }」の無料ガチャ1回`
-                      : "無料ガチャなし"}
-                    {formData.referrerPoints > 0 &&
-                      ` + ${formData.referrerPoints}ポイント`}
+                    {formData.referrerPoints > 0
+                      ? `${formData.referrerPoints}ポイント`
+                      : "付与なし"}
                   </li>
                   <li>
                     <strong>被紹介者</strong>：
-                    {formData.refereeGachaTypeCode
-                      ? `「${
-                          gachaTypes.find(
-                            (gt) => gt.code === formData.refereeGachaTypeCode
-                          )?.name || formData.refereeGachaTypeCode
-                        }」の無料ガチャ1回`
-                      : "無料ガチャなし"}
-                    {formData.refereePoints > 0 &&
-                      ` + ${formData.refereePoints}ポイント`}
+                    {formData.refereePoints > 0
+                      ? `${formData.refereePoints}ポイント`
+                      : "付与なし"}
                   </li>
                 </ul>
               </div>
@@ -278,24 +229,11 @@ export default function FreeGachaSettingsPage() {
             <div className="flex items-start gap-2">
               <span className="font-semibold">2.</span>
               <div>
-                <strong>無料ガチャの有効期限</strong>：
-                {formData.expirationDays && formData.expirationDays > 0
-                  ? `付与日から${formData.expirationDays}日間有効（期限切れ後は使用不可）`
-                  : "無期限（期限なし）"}
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="font-semibold">3.</span>
-              <div>
                 <strong>注意事項</strong>：
                 <ul className="mt-1 ml-4 list-disc space-y-1 text-orange-700">
                   <li>
-                    無料ガチャ機能は現在実装中です（FreeGachaHistoryモデルが必要）
+                    無料ガチャ機能は未実装のため、この画面ではポイント特典のみ設定します
                   </li>
-                  <li>
-                    現在は設定のみ保存され、実際の付与処理はコメントアウトされています
-                  </li>
-                  <li>ポイント報酬は正常に動作しています</li>
                 </ul>
               </div>
             </div>
@@ -305,130 +243,6 @@ export default function FreeGachaSettingsPage() {
 
       <Card className="mb-6">
         <div className="space-y-6">
-          <div>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) =>
-                  setFormData({ ...formData, isActive: e.target.checked })
-                }
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                無料ガチャ機能を有効にする
-              </span>
-            </label>
-            <p className="mt-1 text-xs text-gray-500">
-              無効にすると、紹介システムで無料ガチャは付与されません
-            </p>
-          </div>
-
-          {formData.isActive && (
-            <>
-              <div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.grantOnReferralComplete}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        grantOnReferralComplete: e.target.checked,
-                      })
-                    }
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    紹介成立時に無料ガチャを付与する
-                  </span>
-                </label>
-                <p className="mt-1 text-xs text-gray-500">
-                  被紹介者が友だち追加（初回登録）した時点で無料ガチャを付与します
-                </p>
-              </div>
-
-              {formData.grantOnReferralComplete && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      紹介者に付与するガチャタイプ
-                    </label>
-                    <Select
-                      value={formData.referrerGachaTypeCode || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          referrerGachaTypeCode: e.target.value || null,
-                        })
-                      }
-                      options={[
-                        { value: "", label: "未設定（付与しない）" },
-                        ...gachaTypes.map((gt) => ({
-                          value: gt.code,
-                          label: gt.name,
-                        })),
-                      ]}
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      紹介者が獲得できる無料ガチャの種類
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      被紹介者に付与するガチャタイプ
-                    </label>
-                    <Select
-                      value={formData.refereeGachaTypeCode || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          refereeGachaTypeCode: e.target.value || null,
-                        })
-                      }
-                      options={[
-                        { value: "", label: "未設定（付与しない）" },
-                        ...gachaTypes.map((gt) => ({
-                          value: gt.code,
-                          label: gt.name,
-                        })),
-                      ]}
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      被紹介者が獲得できる無料ガチャの種類
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      無料ガチャの有効期限（日数）
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={formData.expirationDays || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          expirationDays:
-                            e.target.value === ""
-                              ? null
-                              : parseInt(e.target.value) || 0,
-                        })
-                      }
-                      placeholder="例: 30（30日後まで有効）"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      未入力または0の場合は無期限（有効期限なし）
-                    </p>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
           {/* 紹介報酬ポイント設定 */}
           <div className="border-t pt-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-800">

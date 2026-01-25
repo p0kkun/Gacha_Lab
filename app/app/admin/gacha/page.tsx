@@ -61,7 +61,7 @@ function GachaContent() {
         },
         {
           id: "free-gacha-settings",
-          label: "無料ガチャ設定",
+          label: "紹介特典設定",
           icon: "🎁",
           content: <FreeGachaSettingsContent />,
         },

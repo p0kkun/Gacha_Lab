@@ -229,17 +229,17 @@ export default function AdminPage() {
             <div className="mb-2 flex items-center gap-2">
               <span className="text-xl">🎁</span>
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
-                無料ガチャ設定
+                紹介特典設定
               </h2>
             </div>
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
-              友達紹介システムの無料ガチャ設定ができます
+              友達紹介システムの特典ポイントを設定できます
             </p>
             <Link
               href="/admin/free-gacha-settings"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
-              無料ガチャ設定へ
+              紹介特典設定へ
             </Link>
           </div>
 
