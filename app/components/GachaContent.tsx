@@ -68,6 +68,46 @@ export default function GachaContent({
     }
   };
 
+  const renderDescription = (text: string | null) => {
+    if (!text) return null;
+
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: Array<string | JSX.Element> = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#b08a4a] underline hover:text-[#9a7538]"
+        >
+          {match[1]}
+        </a>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return (
+      <p
+        className="text-center text-base leading-relaxed break-words sm:text-lg"
+        style={{ color: "#5a4a3a" }}
+      >
+        {parts.length > 0 ? parts : text}
+      </p>
+    );
+  };
+
   const handleDrawGachaClick = () => {
     // 確認モーダルを表示
     setShowConfirmModal(true);
@@ -438,12 +478,7 @@ export default function GachaContent({
             <div className="flex flex-1 flex-col items-center justify-center px-4 py-4 sm:py-6">
               {selectedGacha.description && (
                 <div className="mb-4 w-full max-w-2xl">
-                  <p
-                    className="text-center text-base leading-relaxed break-words sm:text-lg"
-                    style={{ color: "#5a4a3a" }}
-                  >
-                    {selectedGacha.description}
-                  </p>
+                  {renderDescription(selectedGacha.description)}
                 </div>
               )}
 
