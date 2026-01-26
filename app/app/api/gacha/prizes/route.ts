@@ -19,15 +19,36 @@ export async function GET(request: NextRequest) {
     }
 
     // ガチャタイプを取得
+    const now = new Date();
     const gachaType = await prisma.gachaType.findFirst({
       where: { code: gachaTypeCode },
-      select: { id: true, name: true },
+      select: { id: true, name: true, isActive: true, startAt: true, endAt: true },
     });
 
     if (!gachaType) {
       return NextResponse.json(
         { error: 'ガチャタイプが見つかりません' },
         { status: 404 }
+      );
+    }
+
+    if (!gachaType.isActive) {
+      return NextResponse.json(
+        { error: 'このガチャは現在無効です' },
+        { status: 403 }
+      );
+    }
+
+    if (gachaType.startAt && now < gachaType.startAt) {
+      return NextResponse.json(
+        { error: 'このガチャはまだ開始されていません' },
+        { status: 403 }
+      );
+    }
+    if (gachaType.endAt && now > gachaType.endAt) {
+      return NextResponse.json(
+        { error: 'このガチャは終了しました' },
+        { status: 403 }
       );
     }
 

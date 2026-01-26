@@ -20,7 +20,7 @@ async function ensureUserPointBalance(userId: string) {
 export async function getPointBalances(userId: string) {
   await ensureUserPointBalance(userId);
   // 有効期限切れのポイントを0に更新
-  const wasUpdated = await expirePoints();
+  const wasUpdated = await expirePoints(userId);
 
   // 有効期限切れポイントが更新された場合、キャッシュを削除
   if (wasUpdated) {
@@ -52,9 +52,59 @@ export async function getPointBalances(userId: string) {
  * 注意: スキーマにexpiresAtフィールドがないため、この機能は無効化されています
  * @returns 更新があった場合true、更新がなかった場合false
  */
-async function expirePoints(): Promise<boolean> {
-  // スキーマにexpiresAtフィールドがないため、何もしない
-  return false;
+async function expirePoints(userId: string): Promise<boolean> {
+  const balance = await prisma.userPointBalance.findUnique({ where: { userId } });
+  if (!balance) return false;
+
+  const paid = balance.paidAmount ?? 0;
+  const free = balance.freeAmount ?? 0;
+  const total = paid + free;
+  if (total <= 0) return false;
+
+  const expiresAt = balance.updatedAt
+    ? new Date(balance.updatedAt.getTime() + 365 * 24 * 60 * 60 * 1000)
+    : null;
+  if (!expiresAt || Date.now() <= expiresAt.getTime()) return false;
+
+  await prisma.$transaction(async (tx) => {
+    const beforeTotal = total;
+    let runningTotal = beforeTotal;
+
+    await tx.userPointBalance.update({
+      where: { userId },
+      data: { paidAmount: 0, freeAmount: 0 },
+    });
+
+    if (paid > 0) {
+      runningTotal -= paid;
+      await tx.pointHistory.create({
+        data: {
+          userId,
+          transactionType: PointTransactionType.CONSUME,
+          amount: -paid,
+          balanceBefore: beforeTotal,
+          balanceAfter: runningTotal,
+          description: "有償ポイントの有効期限切れ",
+        },
+      });
+    }
+
+    if (free > 0) {
+      runningTotal -= free;
+      await tx.pointHistory.create({
+        data: {
+          userId,
+          transactionType: PointTransactionType.CONSUME,
+          amount: -free,
+          balanceBefore: paid > 0 ? beforeTotal - paid : beforeTotal,
+          balanceAfter: runningTotal,
+          description: "無償ポイントの有効期限切れ",
+        },
+      });
+    }
+  });
+
+  return true;
 }
 
 /**
@@ -146,4 +196,3 @@ export async function consumePoints(
 }
 
 // 未使用のため削除: getTotalBalances関数は現在使用されていない
-
