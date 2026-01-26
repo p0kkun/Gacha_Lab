@@ -42,6 +42,9 @@ function HomeContent() {
   } | null>(null);
   const [activePage, setActivePage] = useState<ActivePage>("home");
   const [referralNotice, setReferralNotice] = useState<string | null>(null);
+  const [pendingMessageIds, setPendingMessageIds] = useState<number[]>([]);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [sendingPending, setSendingPending] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -177,6 +180,52 @@ function HomeContent() {
     initialize();
   }, []);
 
+  useEffect(() => {
+    const checkPendingMessages = async () => {
+      if (!profile?.userId) return;
+      try {
+        const response = await fetch(
+          `/api/messages/pending?userId=${profile.userId}&type=1`
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.count > 0 && Array.isArray(data.messages)) {
+          setPendingMessageIds(
+            data.messages.map((msg: { id: number }) => msg.id)
+          );
+          setShowPendingModal(true);
+        } else {
+          setPendingMessageIds([]);
+          setShowPendingModal(false);
+        }
+      } catch (error) {
+        console.error("未送信メッセージ確認エラー:", error);
+      }
+    };
+
+    checkPendingMessages();
+  }, [profile?.userId]);
+
+  const sendPendingMessages = async () => {
+    if (!profile?.userId || pendingMessageIds.length === 0) return;
+    setSendingPending(true);
+    try {
+      await fetch("/api/messages/send-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageQueueIds: pendingMessageIds,
+          userId: profile.userId,
+        }),
+      });
+      setPendingMessageIds([]);
+    } catch (error) {
+      console.error("未送信メッセージ送信エラー:", error);
+    } finally {
+      setSendingPending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -245,7 +294,71 @@ function HomeContent() {
     }
   };
 
-  return <>{renderContent()}</>;
+  return (
+    <>
+      {renderContent()}
+      {showPendingModal && pendingMessageIds.length > 0 && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+          />
+          <div
+            className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-xl"
+            style={{ backgroundColor: "#f7efe6", borderColor: "#b89f7a" }}
+          >
+            <h2
+              className="mb-2 text-lg font-bold"
+              style={{ color: "#4a3a2a" }}
+            >
+              未送信のガチャ結果があります
+            </h2>
+            <p className="mb-4 text-sm" style={{ color: "#6b5a4a" }}>
+              {pendingMessageIds.length}件の結果を送信します。
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={async () => {
+                  await sendPendingMessages();
+                  setShowPendingModal(false);
+                }}
+                disabled={sendingPending}
+                className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(to right, #e7c675, #f5d48a)",
+                  color: "#4a3a2a",
+                  border: "1px solid #b89f7a",
+                }}
+              >
+                確認する
+              </button>
+              <button
+                onClick={async () => {
+                  await sendPendingMessages();
+                  setShowPendingModal(false);
+                  setActivePage("items");
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set("action", "items");
+                  params.delete("gacha");
+                  params.delete("code");
+                  router.push(`/?${params.toString()}`);
+                }}
+                disabled={sendingPending}
+                className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-60"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                  color: "#4a3a2a",
+                  border: "1px solid #b89f7a",
+                }}
+              >
+                アイテム一覧へ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function Home() {

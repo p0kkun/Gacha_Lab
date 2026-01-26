@@ -48,50 +48,6 @@ export default function MyItems({ userId }: MyItemsProps) {
     fetchItems();
   }, [userId, page]);
 
-  // ページ表示時に未送信メッセージをチェックして送信
-  useEffect(() => {
-    const sendPendingMessages = async () => {
-      try {
-        // 未送信メッセージを取得
-        const pendingRes = await fetch(
-          `/api/messages/pending?userId=${userId}&type=1`
-        );
-        if (pendingRes.ok) {
-          const pendingData = await pendingRes.json();
-          if (pendingData.count > 0 && pendingData.messages.length > 0) {
-            // 未送信メッセージを一括送信
-            const messageQueueIds = pendingData.messages.map(
-              (msg: { id: number }) => msg.id
-            );
-            const sendRes = await fetch("/api/messages/send-batch", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                messageQueueIds,
-                userId,
-              }),
-            });
-
-            if (sendRes.ok) {
-              const sendData = await sendRes.json();
-              console.log(
-                `未送信メッセージ送信完了: ${sendData.succeeded}/${sendData.total}件成功`
-              );
-            }
-          }
-        }
-      } catch (error) {
-        console.error("未送信メッセージ送信エラー:", error);
-      }
-    };
-
-    if (userId) {
-      sendPendingMessages();
-    }
-  }, [userId]);
-
   const fetchPrizeTiers = useCallback(async () => {
     try {
       const res = await fetch('/api/prize-tiers');
