@@ -152,6 +152,7 @@ export default function GachaTypesPage() {
   const [showSimulation, setShowSimulation] = useState(false);
   const [simulationCount, setSimulationCount] = useState<number>(1000);
   const [showVariableInfo, setShowVariableInfo] = useState(false);
+  const [showHandSettings, setShowHandSettings] = useState(false);
   const [simulationResults, setSimulationResults] = useState<{
     results: Array<{
       rarity: string;
@@ -236,6 +237,11 @@ export default function GachaTypesPage() {
       "FIFTH_PRIZE",
       "LOSER",
     ];
+  };
+
+  const hasAnyHands = (hands?: Record<string, HandRank[]>): boolean => {
+    if (!hands) return false;
+    return Object.values(hands).some((values) => (values || []).length > 0);
   };
 
   const getPrizeConfigs = (
@@ -605,6 +611,7 @@ export default function GachaTypesPage() {
       };
     }
 
+    setShowHandSettings(hasAnyHands(prizeHands));
     setFormData({
       ...gachaType,
       // commonVideoIds: gachaType.commonVideoIds || [], // 共通動画は使用しないためコメントアウト
@@ -629,6 +636,7 @@ export default function GachaTypesPage() {
 
   const handleNewGachaType = () => {
     setEditingCode("__NEW__");
+    setShowHandSettings(false);
     setFormData({
       code: "",
       name: "",
@@ -909,7 +917,7 @@ export default function GachaTypesPage() {
               ? formData.rarityVideoIds
               : null,
           prizeWeights: formData.prizeWeights || null,
-          prizeHands: formData.prizeHands || null,
+          prizeHands: showHandSettings ? formData.prizeHands || null : null,
           prizeOrder: formData.prizeOrder || null,
           // 正: 等級確率テーブルに同期するための入力
           tierWeights: formData.prizeWeights || null,
@@ -2235,6 +2243,32 @@ export default function GachaTypesPage() {
                         </div>
                       )}
 
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={showHandSettings}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              setShowHandSettings(isChecked);
+                              if (!isChecked) {
+                                setFormData({
+                                  ...formData,
+                                  prizeHands: {},
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          役を設定する
+                        </label>
+                        {showHandSettings && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            役を設定しない場合は、結果送信時に役の情報は送信されません。
+                          </p>
+                        )}
+                      </div>
+
                       {getPrizeConfigs(displayData).map((config, index) => {
                         const otherWeights = getPrizeConfigs(displayData)
                           .filter((_, i) => i !== index)
@@ -2300,43 +2334,45 @@ export default function GachaTypesPage() {
                               <p className="text-xs text-gray-500">
                                 他の重みの合計: {otherWeights.toLocaleString()}
                               </p>
-                              <label className="block text-sm font-medium text-gray-700">
-                                {getTierLabel(config.rarity)}
-                                に対応する役（任意・複数選択可）
-                              </label>
-                              <p className="mb-2 text-xs text-gray-500">
-                                役を設定しない場合は、結果送信時に役の情報は送信されません。
-                              </p>
-                              <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
-                                {handRankOptions.map((option) => (
-                                  <label
-                                    key={option.value}
-                                    className="flex items-center gap-2 py-1"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={config.hands.includes(
-                                        option.value
-                                      )}
-                                      onChange={(e) => {
-                                        const currentHands = config.hands || [];
-                                        const newHands = e.target.checked
-                                          ? [...currentHands, option.value]
-                                          : currentHands.filter(
-                                              (h) => h !== option.value
-                                            );
-                                        updatePrizeConfig(index, {
-                                          hands: newHands,
-                                        });
-                                      }}
-                                      className="rounded border-gray-300"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                      {option.label}
-                                    </span>
+                              {showHandSettings && (
+                                <>
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    {getTierLabel(config.rarity)}
+                                    に対応する役（任意・複数選択可）
                                   </label>
-                                ))}
-                              </div>
+                                  <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
+                                    {handRankOptions.map((option) => (
+                                      <label
+                                        key={option.value}
+                                        className="flex items-center gap-2 py-1"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={config.hands.includes(
+                                            option.value
+                                          )}
+                                          onChange={(e) => {
+                                            const currentHands =
+                                              config.hands || [];
+                                            const newHands = e.target.checked
+                                              ? [...currentHands, option.value]
+                                              : currentHands.filter(
+                                                  (h) => h !== option.value
+                                                );
+                                            updatePrizeConfig(index, {
+                                              hands: newHands,
+                                            });
+                                          }}
+                                          className="rounded border-gray-300"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                          {option.label}
+                                        </span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         );

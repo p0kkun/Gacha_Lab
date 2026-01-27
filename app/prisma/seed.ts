@@ -1,7 +1,7 @@
 // Prisma シードファイル
 // 初期データを投入するためのスクリプト
 
-import { PrismaClient, HandRank } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { config } from "dotenv";
@@ -121,13 +121,6 @@ async function main() {
         FIFTH_PRIZE: 20,
         LOSER: 62,
       },
-      prizeHands: {
-        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
-        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
-        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
-        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
-        FIFTH_PRIZE: [HandRank.FLUSH],
-      },
       isActive: true,
       startAt: null,
       endAt: null,
@@ -147,13 +140,6 @@ async function main() {
         FOURTH_PRIZE: 10,
         FIFTH_PRIZE: 20,
         LOSER: 62,
-      },
-      prizeHands: {
-        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
-        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
-        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
-        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
-        FIFTH_PRIZE: [HandRank.FLUSH],
       },
       isActive: true,
       startAt: null,
@@ -178,13 +164,6 @@ async function main() {
         FIFTH_PRIZE: 25,
         LOSER: 42,
       },
-      prizeHands: {
-        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
-        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
-        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
-        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
-        FIFTH_PRIZE: [HandRank.FLUSH],
-      },
       isActive: true,
       startAt: null,
       endAt: null,
@@ -204,13 +183,6 @@ async function main() {
         FOURTH_PRIZE: 15,
         FIFTH_PRIZE: 25,
         LOSER: 42,
-      },
-      prizeHands: {
-        FIRST_PRIZE: [HandRank.ROYAL_FLUSH],
-        SECOND_PRIZE: [HandRank.STRAIGHT_FLUSH],
-        THIRD_PRIZE: [HandRank.FOUR_OF_A_KIND],
-        FOURTH_PRIZE: [HandRank.FULL_HOUSE],
-        FIFTH_PRIZE: [HandRank.FLUSH],
       },
       isActive: true,
       startAt: null,
