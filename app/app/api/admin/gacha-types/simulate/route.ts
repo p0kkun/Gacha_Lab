@@ -4,8 +4,8 @@ import { verifyAdminAuth } from '@/lib/admin-auth';
 
 /**
  * 動的等級設定に対応した重みベースの抽選（統一ロジック）
- * @param prizeWeights 等級ごとの重み（{"FIRST_PRIZE": 10, "SECOND_PRIZE": 20, ...}）
- * @param prizeOrder 等級の順序（["FIRST_PRIZE", "SECOND_PRIZE", ...]）
+ * @param prizeWeights 等級ごとの重み（動的）
+ * @param prizeOrder 等級の順序（動的）
  * @returns 抽選されたレアリティ
  */
 function drawRarityByDynamicWeights(
@@ -19,8 +19,8 @@ function drawRarityByDynamicWeights(
   );
 
   if (totalWeight === 0) {
-    // 確率が設定されていない場合は最後の等級（通常はLOSER）
-    return prizeOrder[prizeOrder.length - 1] || 'LOSER';
+    // 確率が設定されていない場合は最後の等級
+    return prizeOrder[prizeOrder.length - 1] || '';
   }
 
   const random = Math.random() * totalWeight;
@@ -35,51 +35,7 @@ function drawRarityByDynamicWeights(
   }
 
   // フォールバック（通常は到達しない）
-  return prizeOrder[prizeOrder.length - 1] || 'LOSER';
-}
-
-/**
- * 確率に基づいてレアリティを抽選（既存の固定フィールド用、後方互換性）
- */
-function drawRarityByWeights(weights: {
-  firstPrizeWeight: number;
-  secondPrizeWeight: number;
-  thirdPrizeWeight: number;
-  fourthPrizeWeight: number;
-  fifthPrizeWeight: number;
-  loserWeight: number;
-}): string {
-  const totalWeight =
-    weights.firstPrizeWeight +
-    weights.secondPrizeWeight +
-    weights.thirdPrizeWeight +
-    weights.fourthPrizeWeight +
-    weights.fifthPrizeWeight +
-    weights.loserWeight;
-
-  if (totalWeight === 0) {
-    return 'LOSER';
-  }
-
-  const random = Math.random() * totalWeight;
-  let current = 0;
-
-  current += weights.firstPrizeWeight;
-  if (random < current) return 'FIRST_PRIZE';
-
-  current += weights.secondPrizeWeight;
-  if (random < current) return 'SECOND_PRIZE';
-
-  current += weights.thirdPrizeWeight;
-  if (random < current) return 'THIRD_PRIZE';
-
-  current += weights.fourthPrizeWeight;
-  if (random < current) return 'FOURTH_PRIZE';
-
-  current += weights.fifthPrizeWeight;
-  if (random < current) return 'FIFTH_PRIZE';
-
-  return 'LOSER';
+  return prizeOrder[prizeOrder.length - 1] || '';
 }
 
 /**
@@ -151,11 +107,11 @@ export async function POST(request: NextRequest) {
         }));
         const total = rows.reduce((s, r) => s + r.weight, 0);
         if (total <= 0) {
-          selectedTierCode = rows[rows.length - 1]?.tierCode || 'LOSER';
+          selectedTierCode = rows[rows.length - 1]?.tierCode || '';
         } else {
           const rnd = Math.random() * total;
           let acc = 0;
-          selectedTierCode = rows[rows.length - 1]?.tierCode || 'LOSER';
+          selectedTierCode = rows[rows.length - 1]?.tierCode || '';
           for (const r of rows) {
             acc += r.weight;
             if (rnd < acc) {
@@ -165,7 +121,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } else {
-        selectedTierCode = 'LOSER';
+        selectedTierCode = '';
       }
 
       results[selectedTierCode] = (results[selectedTierCode] || 0) + 1;
@@ -212,7 +168,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-
 
 

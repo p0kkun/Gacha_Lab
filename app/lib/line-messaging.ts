@@ -150,19 +150,9 @@ export async function sendGachaResultMessage(
       select: { label: true },
     });
 
-    // 絵文字はコード内でマッピング（DBに保存する必要はない）
-    const emojiMap: Record<string, string> = {
-      FIRST_PRIZE: "🏆",
-      SECOND_PRIZE: "🥈",
-      THIRD_PRIZE: "🥉",
-      FOURTH_PRIZE: "🎖️",
-      FIFTH_PRIZE: "🎗️",
-      LOSER: "💫",
-    };
-
     const rarityData = tier
-      ? { emoji: emojiMap[rarity] || "🎁", label: tier.label }
-      : { emoji: emojiMap[rarity] || "🎁", label: rarity };
+      ? { emoji: "🎁", label: tier.label }
+      : { emoji: "🎁", label: rarity };
 
     // ポイント付与メッセージ（付与がある場合のみ）
     const grantedPointsMessage =

@@ -136,15 +136,7 @@ export default function MyPage({ profile }: MyPageProps) {
   };
 
   const getRarityColor = (rarity: string): string => {
-    const colors: Record<string, string> = {
-      FIRST_PRIZE: "from-yellow-500 to-yellow-600",
-      SECOND_PRIZE: "from-purple-500 to-purple-600",
-      THIRD_PRIZE: "from-blue-500 to-blue-600",
-      FOURTH_PRIZE: "from-green-500 to-green-600",
-      FIFTH_PRIZE: "from-gray-400 to-gray-500",
-      LOSER: "from-gray-300 to-gray-400",
-    };
-    return colors[rarity] || "from-gray-400 to-gray-500";
+    return "from-amber-100 to-amber-200";
   };
 
   return (

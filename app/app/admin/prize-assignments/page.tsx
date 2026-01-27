@@ -11,6 +11,12 @@ type GachaTypeLite = {
   tierWeights?: TierWeightLite[];
 };
 type PrizeItemLite = { id: number; name: string; isActive: boolean };
+type PrizeTierLite = {
+  code: string;
+  label: string;
+  isActive: boolean;
+  displayOrder?: number;
+};
 
 type Assignment = {
   id: number;
@@ -27,19 +33,11 @@ type Assignment = {
   };
 };
 
-const RARITIES: Array<{ value: string; label: string }> = [
-  { value: "FIRST_PRIZE", label: "1等" },
-  { value: "SECOND_PRIZE", label: "2等" },
-  { value: "THIRD_PRIZE", label: "3等" },
-  { value: "FOURTH_PRIZE", label: "4等" },
-  { value: "FIFTH_PRIZE", label: "5等" },
-  { value: "LOSER", label: "ハズレ" },
-];
-
 export default function PrizeAssignmentsPage() {
   const token = useMemo(() => getAdminAuthToken() || "", []);
   const [gachaTypes, setGachaTypes] = useState<GachaTypeLite[]>([]);
   const [items, setItems] = useState<PrizeItemLite[]>([]);
+  const [prizeTiers, setPrizeTiers] = useState<PrizeTierLite[]>([]);
   const [selectedGachaTypeId, setSelectedGachaTypeId] = useState<string>("");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,7 +50,7 @@ export default function PrizeAssignmentsPage() {
     itemId: string;
     weight: string;
     isActive: boolean;
-  }>({ tierCode: "THIRD_PRIZE", itemId: "", weight: "1", isActive: true });
+  }>({ tierCode: "", itemId: "", weight: "1", isActive: true });
 
   const [confirm, setConfirm] = useState<{
     isOpen: boolean;
@@ -91,6 +89,28 @@ export default function PrizeAssignmentsPage() {
     if (!selectedGachaTypeId && list.length > 0) {
       setSelectedGachaTypeId(list[0].id);
     }
+  };
+
+  const fetchPrizeTiers = async () => {
+    const res = await fetch("/api/admin/prize-tiers", {
+      headers: { "X-Admin-Auth": token },
+    });
+    if (res.status === 401) {
+      sessionStorage.removeItem("admin_authenticated");
+      window.location.href = "/admin";
+      return;
+    }
+    if (!res.ok) throw new Error("等級一覧の取得に失敗しました");
+    const data = await res.json();
+    const list: PrizeTierLite[] = Array.isArray(data.tiers)
+      ? data.tiers.map((tier: any) => ({
+          code: tier.code,
+          label: tier.label,
+          isActive: !!tier.isActive,
+          displayOrder: tier.displayOrder ?? 0,
+        }))
+      : [];
+    setPrizeTiers(list);
   };
 
   const fetchItems = async () => {
@@ -141,7 +161,7 @@ export default function PrizeAssignmentsPage() {
     (async () => {
       try {
         setError(null);
-        await Promise.all([fetchGachaTypes(), fetchItems()]);
+        await Promise.all([fetchGachaTypes(), fetchItems(), fetchPrizeTiers()]);
       } catch (e) {
         setError(e instanceof Error ? e.message : "初期化に失敗しました");
       }
@@ -156,8 +176,22 @@ export default function PrizeAssignmentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGachaTypeId]);
 
+  const sortedPrizeTiers = useMemo(
+    () =>
+      prizeTiers
+        .filter((tier) => tier.isActive)
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)),
+    [prizeTiers]
+  );
+
+  useEffect(() => {
+    if (!newRow.tierCode && sortedPrizeTiers.length > 0) {
+      setNewRow((prev) => ({ ...prev, tierCode: sortedPrizeTiers[0].code }));
+    }
+  }, [newRow.tierCode, sortedPrizeTiers]);
+
   const tierLabel = (tierCode: string) =>
-    RARITIES.find((r) => r.value === tierCode)?.label || tierCode;
+    sortedPrizeTiers.find((r) => r.code === tierCode)?.label || tierCode;
 
   const selectedGachaType = useMemo(
     () => gachaTypes.find((gt) => gt.id === selectedGachaTypeId),
@@ -440,8 +474,8 @@ export default function PrizeAssignmentsPage() {
                 }
                 className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
               >
-                {RARITIES.map((r) => (
-                  <option key={r.value} value={r.value}>
+                {sortedPrizeTiers.map((r) => (
+                  <option key={r.code} value={r.code}>
                     {r.label}
                   </option>
                 ))}
@@ -562,8 +596,8 @@ export default function PrizeAssignmentsPage() {
                         }
                         className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
                       >
-                        {RARITIES.map((r) => (
-                          <option key={r.value} value={r.value}>
+                        {sortedPrizeTiers.map((r) => (
+                          <option key={r.code} value={r.code}>
                             {r.label}
                           </option>
                         ))}

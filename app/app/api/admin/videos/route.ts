@@ -5,7 +5,7 @@ import { getVideoUrl } from '@/lib/s3-upload';
 
 /**
  * 動画一覧を取得
- * GET /api/admin/videos?videoType=COMMON&rarity=FIRST_PRIZE
+ * GET /api/admin/videos?videoType=COMMON
  */
 export async function GET(request: NextRequest) {
   // 認証チェック
@@ -83,7 +83,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 
 
 

@@ -50,9 +50,9 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // PrizeTierテーブルからあたりの等級（LOSER以外）を動的に取得（filterの前に取得）
+    // PrizeTierテーブルから等級を動的に取得（filterの前に取得）
     const prizeTiers = await prisma.prizeTier.findMany({
-      where: { isActive: true, code: { not: "LOSER" } },
+      where: { isActive: true },
       select: { code: true },
     });
     const requiredRarities = prizeTiers.map(t => t.code);
@@ -142,7 +142,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 
 
 

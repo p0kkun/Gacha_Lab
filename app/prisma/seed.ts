@@ -61,22 +61,21 @@ async function main() {
     },
   });
 
-  // 0. 等級マスタ（運用で増減可能だが、初期値は従来の6等級を投入）
+  // 0. 等級マスタ（運用で増減可能だが、初期値はS〜Dを投入）
   console.log("🏷️ 等級マスタ（PrizeTier）を作成中...");
   const tierCount = await prisma.prizeTier.count();
   if (tierCount === 0) {
     await prisma.prizeTier.createMany({
       data: [
-        { code: "FIRST_PRIZE", label: "1等", displayOrder: 10, isActive: true },
-        { code: "SECOND_PRIZE", label: "2等", displayOrder: 20, isActive: true },
-        { code: "THIRD_PRIZE", label: "3等", displayOrder: 30, isActive: true },
-        { code: "FOURTH_PRIZE", label: "4等", displayOrder: 40, isActive: true },
-        { code: "FIFTH_PRIZE", label: "5等", displayOrder: 50, isActive: true },
-        { code: "LOSER", label: "ハズレ", displayOrder: 60, isActive: true },
+        { code: "S", label: "S賞", displayOrder: 10, isActive: true },
+        { code: "A", label: "A賞", displayOrder: 20, isActive: true },
+        { code: "B", label: "B賞", displayOrder: 30, isActive: true },
+        { code: "C", label: "C賞", displayOrder: 40, isActive: true },
+        { code: "D", label: "D賞", displayOrder: 50, isActive: true },
       ],
       skipDuplicates: true,
     });
-    console.log("✅ 等級マスタを作成しました（6件）");
+    console.log("✅ 等級マスタを作成しました（5件）");
   } else {
     console.log("ℹ️ 等級マスタは既に存在するためスキップします:", { tierCount });
   }
@@ -114,13 +113,13 @@ async function main() {
         connect: { id: defaultTemplate.id },
       },
       prizeWeights: {
-        FIRST_PRIZE: 1,
-        SECOND_PRIZE: 2,
-        THIRD_PRIZE: 5,
-        FOURTH_PRIZE: 10,
-        FIFTH_PRIZE: 20,
-        LOSER: 62,
+        S: 5,
+        A: 30,
+        B: 200,
+        C: 300,
+        D: 465,
       },
+      prizeOrder: ["S", "A", "B", "C", "D"],
       isActive: true,
       startAt: null,
       endAt: null,
@@ -134,13 +133,13 @@ async function main() {
         connect: { id: defaultTemplate.id },
       },
       prizeWeights: {
-        FIRST_PRIZE: 1,
-        SECOND_PRIZE: 2,
-        THIRD_PRIZE: 5,
-        FOURTH_PRIZE: 10,
-        FIFTH_PRIZE: 20,
-        LOSER: 62,
+        S: 5,
+        A: 30,
+        B: 200,
+        C: 300,
+        D: 465,
       },
+      prizeOrder: ["S", "A", "B", "C", "D"],
       isActive: true,
       startAt: null,
       endAt: null,
@@ -157,13 +156,13 @@ async function main() {
         connect: { id: defaultTemplate.id },
       },
       prizeWeights: {
-        FIRST_PRIZE: 3,
-        SECOND_PRIZE: 5,
-        THIRD_PRIZE: 10,
-        FOURTH_PRIZE: 15,
-        FIFTH_PRIZE: 25,
-        LOSER: 42,
+        S: 5,
+        A: 30,
+        B: 200,
+        C: 300,
+        D: 465,
       },
+      prizeOrder: ["S", "A", "B", "C", "D"],
       isActive: true,
       startAt: null,
       endAt: null,
@@ -177,13 +176,13 @@ async function main() {
         connect: { id: defaultTemplate.id },
       },
       prizeWeights: {
-        FIRST_PRIZE: 3,
-        SECOND_PRIZE: 5,
-        THIRD_PRIZE: 10,
-        FOURTH_PRIZE: 15,
-        FIFTH_PRIZE: 25,
-        LOSER: 42,
+        S: 5,
+        A: 30,
+        B: 200,
+        C: 300,
+        D: 465,
       },
+      prizeOrder: ["S", "A", "B", "C", "D"],
       isActive: true,
       startAt: null,
       endAt: null,
@@ -194,7 +193,6 @@ async function main() {
   console.log("✅ ガチャタイプの作成が完了しました");
 
   // 1.5 ガチャタイプ別の等級確率（テーブル化）
-  // NOTE: 既存の firstPrizeWeight 等を後方互換として残しているが、抽選は基本こちらを使用する方針
   console.log("🎯 ガチャタイプ別の等級確率（GachaTierWeight）を作成中...");
   const tiers = await prisma.prizeTier.findMany({ select: { code: true } });
   const tierCodes = new Set(tiers.map((t) => t.code));
@@ -218,20 +216,18 @@ async function main() {
     }
   };
   await upsertTierWeights(normal.id, {
-    FIRST_PRIZE: 1,
-    SECOND_PRIZE: 2,
-    THIRD_PRIZE: 5,
-    FOURTH_PRIZE: 10,
-    FIFTH_PRIZE: 20,
-    LOSER: 62,
+    S: 5,
+    A: 30,
+    B: 200,
+    C: 300,
+    D: 465,
   });
   await upsertTierWeights(premium.id, {
-    FIRST_PRIZE: 3,
-    SECOND_PRIZE: 5,
-    THIRD_PRIZE: 10,
-    FOURTH_PRIZE: 15,
-    FIFTH_PRIZE: 25,
-    LOSER: 42,
+    S: 5,
+    A: 30,
+    B: 200,
+    C: 300,
+    D: 465,
   });
   console.log("✅ ガチャタイプ別の等級確率を作成しました");
 
@@ -240,34 +236,29 @@ async function main() {
 
   const items = [
     {
-      name: "MAIN EVENT 無料 voucher",
+      name: "S賞 高額家電・ゲーム機等",
       isActive: true,
-      tierCode: "FIRST_PRIZE",
+      tierCode: "S",
     },
     {
-      name: "INVITATION 無料 voucher",
+      name: "A賞 人気ブランド商品",
       isActive: true,
-      tierCode: "SECOND_PRIZE",
+      tierCode: "A",
     },
     {
-      name: "5000円 OFF voucher",
+      name: "B賞 雑貨・グッズ",
       isActive: true,
-      tierCode: "THIRD_PRIZE",
+      tierCode: "B",
     },
     {
-      name: "3000円 OFF voucher",
+      name: "C賞 デジタルクーポン",
       isActive: true,
-      tierCode: "FOURTH_PRIZE",
+      tierCode: "C",
     },
     {
-      name: "1000円 OFF voucher",
+      name: "D賞 ポイント還元等",
       isActive: true,
-      tierCode: "FIFTH_PRIZE",
-    },
-    {
-      name: "ハズレ",
-      isActive: true,
-      tierCode: "LOSER",
+      tierCode: "D",
     },
   ];
 

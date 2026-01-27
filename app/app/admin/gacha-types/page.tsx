@@ -51,7 +51,7 @@ const getHandNames = (hands: HandRank[] | null | undefined): string => {
 };
 
 type PrizeConfig = {
-  rarity: string; // "FIRST_PRIZE", "SECOND_PRIZE", etc. or "LOSER"
+  rarity: string;
   weight: number;
   hands: HandRank[];
 };
@@ -66,17 +66,6 @@ type GachaType = {
   startAt: string | null;
   endAt: string | null;
   pointCost: number;
-  firstPrizeWeight: number;
-  secondPrizeWeight: number;
-  thirdPrizeWeight: number;
-  fourthPrizeWeight: number;
-  fifthPrizeWeight: number;
-  loserWeight: number;
-  firstPrizeHands: HandRank[];
-  secondPrizeHands: HandRank[];
-  thirdPrizeHands: HandRank[];
-  fourthPrizeHands: HandRank[];
-  fifthPrizeHands: HandRank[];
   // 動的等級設定
   prizeWeights?: Record<string, number>;
   prizeHands?: Record<string, HandRank[]>;
@@ -148,7 +137,7 @@ export default function GachaTypesPage() {
   } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewVideoUrls, setPreviewVideoUrls] = useState<string[]>([]);
-  const [previewRarity, setPreviewRarity] = useState<string>("FIRST_PRIZE");
+  const [previewRarity, setPreviewRarity] = useState<string>("");
   const [showSimulation, setShowSimulation] = useState(false);
   const [simulationCount, setSimulationCount] = useState<number>(1000);
   const [showVariableInfo, setShowVariableInfo] = useState(false);
@@ -229,14 +218,10 @@ export default function GachaTypesPage() {
 
   // 動的等級管理用のヘルパー関数
   const getDefaultPrizeOrder = (): string[] => {
-    return [
-      "FIRST_PRIZE",
-      "SECOND_PRIZE",
-      "THIRD_PRIZE",
-      "FOURTH_PRIZE",
-      "FIFTH_PRIZE",
-      "LOSER",
-    ];
+    const activeTiers = prizeTiers
+      .filter((t) => t.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+    return activeTiers.map((t) => t.code);
   };
 
   const hasAnyHands = (hands?: Record<string, HandRank[]>): boolean => {
@@ -251,29 +236,10 @@ export default function GachaTypesPage() {
     const prizeWeights = gachaType.prizeWeights || {};
     const prizeHands = gachaType.prizeHands || {};
 
-    // 既存のフィールドから移行（後方互換性）
-    const legacyWeights: Record<string, number> = {
-      FIRST_PRIZE: gachaType.firstPrizeWeight || 0,
-      SECOND_PRIZE: gachaType.secondPrizeWeight || 0,
-      THIRD_PRIZE: gachaType.thirdPrizeWeight || 0,
-      FOURTH_PRIZE: gachaType.fourthPrizeWeight || 0,
-      FIFTH_PRIZE: gachaType.fifthPrizeWeight || 0,
-      LOSER: gachaType.loserWeight || 0,
-    };
-
-    const legacyHands: Record<string, HandRank[]> = {
-      FIRST_PRIZE: gachaType.firstPrizeHands || [],
-      SECOND_PRIZE: gachaType.secondPrizeHands || [],
-      THIRD_PRIZE: gachaType.thirdPrizeHands || [],
-      FOURTH_PRIZE: gachaType.fourthPrizeHands || [],
-      FIFTH_PRIZE: gachaType.fifthPrizeHands || [],
-      LOSER: [],
-    };
-
     return prizeOrder.map((rarity) => ({
       rarity,
-      weight: prizeWeights[rarity] ?? legacyWeights[rarity] ?? 0,
-      hands: prizeHands[rarity] ?? legacyHands[rarity] ?? [],
+      weight: prizeWeights[rarity] ?? 0,
+      hands: prizeHands[rarity] ?? [],
     }));
   };
 
@@ -412,6 +378,23 @@ export default function GachaTypesPage() {
     fetchMessageTemplates();
     fetchPrizeTiers();
   }, [filterIsActive, filterIsOngoing, sortBy, sortOrder]);
+
+  useEffect(() => {
+    const activeTiers = prizeTiers
+      .filter((t) => t.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+    if (activeTiers.length === 0) return;
+
+    if (!previewRarity) {
+      setPreviewRarity(activeTiers[0].code);
+      return;
+    }
+
+    const isValid = activeTiers.some((t) => t.code === previewRarity);
+    if (!isValid) {
+      setPreviewRarity(activeTiers[0].code);
+    }
+  }, [prizeTiers, previewRarity]);
 
   const fetchMessageTemplates = async () => {
     setLoadingTemplates(true);
@@ -590,25 +573,20 @@ export default function GachaTypesPage() {
     let prizeHands = gachaType.prizeHands;
     let prizeOrder = gachaType.prizeOrder;
 
-    if (!prizeOrder || !prizeWeights || !prizeHands) {
-      // 既存のフィールドから動的設定を生成
+    if (!prizeOrder || prizeOrder.length === 0) {
       prizeOrder = getDefaultPrizeOrder();
-      prizeWeights = {
-        FIRST_PRIZE: gachaType.firstPrizeWeight || 0,
-        SECOND_PRIZE: gachaType.secondPrizeWeight || 0,
-        THIRD_PRIZE: gachaType.thirdPrizeWeight || 0,
-        FOURTH_PRIZE: gachaType.fourthPrizeWeight || 0,
-        FIFTH_PRIZE: gachaType.fifthPrizeWeight || 0,
-        LOSER: gachaType.loserWeight || 0,
-      };
-      prizeHands = {
-        FIRST_PRIZE: gachaType.firstPrizeHands || [],
-        SECOND_PRIZE: gachaType.secondPrizeHands || [],
-        THIRD_PRIZE: gachaType.thirdPrizeHands || [],
-        FOURTH_PRIZE: gachaType.fourthPrizeHands || [],
-        FIFTH_PRIZE: gachaType.fifthPrizeHands || [],
-        LOSER: [],
-      };
+    }
+    if (!prizeWeights) {
+      prizeWeights = {};
+      for (const code of prizeOrder) {
+        prizeWeights[code] = 0;
+      }
+    }
+    if (!prizeHands) {
+      prizeHands = {};
+      for (const code of prizeOrder) {
+        prizeHands[code] = [];
+      }
     }
 
     setShowHandSettings(hasAnyHands(prizeHands));
@@ -649,7 +627,7 @@ export default function GachaTypesPage() {
       rarityVideoIds: {},
       prizeWeights: {},
       prizeHands: {},
-      prizeOrder: [],
+      prizeOrder: getDefaultPrizeOrder(),
       resultMessageTemplateId: null,
       useDefaultVideos: true,
     });
@@ -864,9 +842,8 @@ export default function GachaTypesPage() {
       //   return;
       // }
 
-      // 各レアリティの動画が設定されているか確認（あたりの場合のみ、PrizeTierテーブルから動的に取得）
-      // LOSERコード以外の等級（あたり）のみをチェック
-      const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive && t.code !== "LOSER");
+      // 各レアリティの動画が設定されているか確認（PrizeTierテーブルから動的に取得）
+      const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive);
       const missingRarities: string[] = [];
       for (const tier of prizeTiersForValidation) {
         const rarityVideos = rarityVideoIds[tier.code] || [];
@@ -962,32 +939,7 @@ export default function GachaTypesPage() {
         return sum + numWeight;
       }, 0);
     }
-
-    // レガシーフィールドを使用（後方互換性）
-    const first =
-      typeof gachaType.firstPrizeWeight === "number"
-        ? gachaType.firstPrizeWeight
-        : 0;
-    const second =
-      typeof gachaType.secondPrizeWeight === "number"
-        ? gachaType.secondPrizeWeight
-        : 0;
-    const third =
-      typeof gachaType.thirdPrizeWeight === "number"
-        ? gachaType.thirdPrizeWeight
-        : 0;
-    const fourth =
-      typeof gachaType.fourthPrizeWeight === "number"
-        ? gachaType.fourthPrizeWeight
-        : 0;
-    const fifth =
-      typeof gachaType.fifthPrizeWeight === "number"
-        ? gachaType.fifthPrizeWeight
-        : 0;
-    const loser =
-      typeof gachaType.loserWeight === "number" ? gachaType.loserWeight : 0;
-
-    return first + second + third + fourth + fifth + loser;
+    return 0;
   };
 
   const calculatePercentage = (weight: number, total: number): number => {
@@ -1011,8 +963,8 @@ export default function GachaTypesPage() {
         //   reasons.push("共通動画が設定されていません");
         // } // 共通動画は使用しないためコメントアウト
 
-        // PrizeTierテーブルからあたりの等級（LOSER以外）を動的に取得
-        const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive && t.code !== "LOSER");
+        // PrizeTierテーブルから等級を動的に取得
+        const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive);
         const missingRarities: string[] = [];
         for (const tier of prizeTiersForValidation) {
           const rarityVideos = (rarityVideoIds as Record<string, number[]>)[tier.code] || [];
@@ -2080,7 +2032,7 @@ export default function GachaTypesPage() {
                             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                           >
                             {prizeTiers
-                              .filter((t) => t.isActive && t.code !== "LOSER")
+                              .filter((t) => t.isActive)
                               .sort((a, b) => {
                                 const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
                                 return orderDiff !== 0 ? orderDiff : a.code.localeCompare(b.code);
@@ -2379,392 +2331,6 @@ export default function GachaTypesPage() {
                       })}
                     </div>
 
-                    {/* 既存の固定表示（非表示、後方互換性のため残す） */}
-                    <div className="space-y-6 hidden">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            1等の重み（旧形式）
-                          </label>
-                          <input
-                            type="number"
-                            value={displayData.firstPrizeWeight || 0}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                firstPrizeWeight: parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            他の重みの合計:{" "}
-                            {(
-                              (displayData.secondPrizeWeight || 0) +
-                              (displayData.thirdPrizeWeight || 0) +
-                              (displayData.fourthPrizeWeight || 0) +
-                              (displayData.fifthPrizeWeight || 0) +
-                              (displayData.loserWeight || 0)
-                            ).toLocaleString()}
-                          </p>
-                          <label className="block text-sm font-medium text-gray-700">
-                            1等に対応する役（複数選択可）
-                          </label>
-                          <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
-                            {handRankOptions.map((option) => (
-                              <label
-                                key={option.value}
-                                className="flex items-center gap-2 py-1"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    displayData.firstPrizeHands || []
-                                  ).includes(option.value)}
-                                  onChange={(e) => {
-                                    const currentHands =
-                                      displayData.firstPrizeHands || [];
-                                    if (e.target.checked) {
-                                      setFormData({
-                                        ...formData,
-                                        firstPrizeHands: [
-                                          ...currentHands,
-                                          option.value,
-                                        ],
-                                      });
-                                    } else {
-                                      setFormData({
-                                        ...formData,
-                                        firstPrizeHands: currentHands.filter(
-                                          (h) => h !== option.value
-                                        ),
-                                      });
-                                    }
-                                  }}
-                                  className="rounded border-gray-300"
-                                />
-                                <span className="text-sm text-gray-700">
-                                  {option.label}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            2等の重み
-                          </label>
-                          <input
-                            type="number"
-                            value={displayData.secondPrizeWeight || 0}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                secondPrizeWeight:
-                                  parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            他の重みの合計:{" "}
-                            {(
-                              (displayData.firstPrizeWeight || 0) +
-                              (displayData.thirdPrizeWeight || 0) +
-                              (displayData.fourthPrizeWeight || 0) +
-                              (displayData.fifthPrizeWeight || 0) +
-                              (displayData.loserWeight || 0)
-                            ).toLocaleString()}
-                          </p>
-                          <label className="block text-sm font-medium text-gray-700">
-                            2等に対応する役（複数選択可）
-                          </label>
-                          <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
-                            {handRankOptions.map((option) => (
-                              <label
-                                key={option.value}
-                                className="flex items-center gap-2 py-1"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    displayData.secondPrizeHands || []
-                                  ).includes(option.value)}
-                                  onChange={(e) => {
-                                    const currentHands =
-                                      displayData.secondPrizeHands || [];
-                                    if (e.target.checked) {
-                                      setFormData({
-                                        ...formData,
-                                        secondPrizeHands: [
-                                          ...currentHands,
-                                          option.value,
-                                        ],
-                                      });
-                                    } else {
-                                      setFormData({
-                                        ...formData,
-                                        secondPrizeHands: currentHands.filter(
-                                          (h) => h !== option.value
-                                        ),
-                                      });
-                                    }
-                                  }}
-                                  className="rounded border-gray-300"
-                                />
-                                <span className="text-sm text-gray-700">
-                                  {option.label}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            3等の重み
-                          </label>
-                          <input
-                            type="number"
-                            value={displayData.thirdPrizeWeight || 0}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                thirdPrizeWeight: parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            他の重みの合計:{" "}
-                            {(
-                              (displayData.firstPrizeWeight || 0) +
-                              (displayData.secondPrizeWeight || 0) +
-                              (displayData.fourthPrizeWeight || 0) +
-                              (displayData.fifthPrizeWeight || 0) +
-                              (displayData.loserWeight || 0)
-                            ).toLocaleString()}
-                          </p>
-                          <label className="block text-sm font-medium text-gray-700">
-                            3等に対応する役（複数選択可）
-                          </label>
-                          <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
-                            {handRankOptions.map((option) => (
-                              <label
-                                key={option.value}
-                                className="flex items-center gap-2 py-1"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    displayData.thirdPrizeHands || []
-                                  ).includes(option.value)}
-                                  onChange={(e) => {
-                                    const currentHands =
-                                      displayData.thirdPrizeHands || [];
-                                    if (e.target.checked) {
-                                      setFormData({
-                                        ...formData,
-                                        thirdPrizeHands: [
-                                          ...currentHands,
-                                          option.value,
-                                        ],
-                                      });
-                                    } else {
-                                      setFormData({
-                                        ...formData,
-                                        thirdPrizeHands: currentHands.filter(
-                                          (h) => h !== option.value
-                                        ),
-                                      });
-                                    }
-                                  }}
-                                  className="rounded border-gray-300"
-                                />
-                                <span className="text-sm text-gray-700">
-                                  {option.label}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            4等の重み
-                          </label>
-                          <input
-                            type="number"
-                            value={displayData.fourthPrizeWeight || 0}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                fourthPrizeWeight:
-                                  parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            他の重みの合計:{" "}
-                            {(
-                              (displayData.firstPrizeWeight || 0) +
-                              (displayData.secondPrizeWeight || 0) +
-                              (displayData.thirdPrizeWeight || 0) +
-                              (displayData.fifthPrizeWeight || 0) +
-                              (displayData.loserWeight || 0)
-                            ).toLocaleString()}
-                          </p>
-                          <label className="block text-sm font-medium text-gray-700">
-                            4等に対応する役（複数選択可）
-                          </label>
-                          <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
-                            {handRankOptions.map((option) => (
-                              <label
-                                key={option.value}
-                                className="flex items-center gap-2 py-1"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    displayData.fourthPrizeHands || []
-                                  ).includes(option.value)}
-                                  onChange={(e) => {
-                                    const currentHands =
-                                      displayData.fourthPrizeHands || [];
-                                    if (e.target.checked) {
-                                      setFormData({
-                                        ...formData,
-                                        fourthPrizeHands: [
-                                          ...currentHands,
-                                          option.value,
-                                        ],
-                                      });
-                                    } else {
-                                      setFormData({
-                                        ...formData,
-                                        fourthPrizeHands: currentHands.filter(
-                                          (h) => h !== option.value
-                                        ),
-                                      });
-                                    }
-                                  }}
-                                  className="rounded border-gray-300"
-                                />
-                                <span className="text-sm text-gray-700">
-                                  {option.label}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            5等の重み
-                          </label>
-                          <input
-                            type="number"
-                            value={displayData.fifthPrizeWeight || 0}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                fifthPrizeWeight: parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            他の重みの合計:{" "}
-                            {(
-                              (displayData.firstPrizeWeight || 0) +
-                              (displayData.secondPrizeWeight || 0) +
-                              (displayData.thirdPrizeWeight || 0) +
-                              (displayData.fourthPrizeWeight || 0) +
-                              (displayData.loserWeight || 0)
-                            ).toLocaleString()}
-                          </p>
-                          <label className="block text-sm font-medium text-gray-700">
-                            5等に対応する役（複数選択可）
-                          </label>
-                          <div className="max-h-32 overflow-y-auto rounded-md border border-gray-300 p-2">
-                            {handRankOptions.map((option) => (
-                              <label
-                                key={option.value}
-                                className="flex items-center gap-2 py-1"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    displayData.fifthPrizeHands || []
-                                  ).includes(option.value)}
-                                  onChange={(e) => {
-                                    const currentHands =
-                                      displayData.fifthPrizeHands || [];
-                                    if (e.target.checked) {
-                                      setFormData({
-                                        ...formData,
-                                        fifthPrizeHands: [
-                                          ...currentHands,
-                                          option.value,
-                                        ],
-                                      });
-                                    } else {
-                                      setFormData({
-                                        ...formData,
-                                        fifthPrizeHands: currentHands.filter(
-                                          (h) => h !== option.value
-                                        ),
-                                      });
-                                    }
-                                  }}
-                                  className="rounded border-gray-300"
-                                />
-                                <span className="text-sm text-gray-700">
-                                  {option.label}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            ハズレの重み
-                          </label>
-                          <input
-                            type="number"
-                            value={displayData.loserWeight || 0}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                loserWeight: parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            他の重みの合計:{" "}
-                            {(
-                              (displayData.firstPrizeWeight || 0) +
-                              (displayData.secondPrizeWeight || 0) +
-                              (displayData.thirdPrizeWeight || 0) +
-                              (displayData.fourthPrizeWeight || 0) +
-                              (displayData.fifthPrizeWeight || 0)
-                            ).toLocaleString()}
-                          </p>
-                          <div className="rounded-md bg-gray-50 p-3">
-                            <p className="text-xs text-gray-600">
-                              💡
-                              ハズレは、上位の当たり（1等〜5等）に設定されていない役すべてが対象になります。
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="flex gap-2">
                       <Button
                         variant="primary"
@@ -2818,29 +2384,7 @@ export default function GachaTypesPage() {
                                 <div className="mt-2 text-xs text-gray-600 lg:text-sm">
                                   役:{" "}
                                   <span className="font-medium">
-                                    {config.rarity === "LOSER"
-                                      ? (() => {
-                                          // 上位の当たりに設定されている役を取得
-                                          const assignedHands =
-                                            new Set<string>();
-                                          prizeConfigs.forEach((c) => {
-                                            if (c.rarity !== "LOSER") {
-                                              c.hands.forEach((h) =>
-                                                assignedHands.add(h)
-                                              );
-                                            }
-                                          });
-                                          // すべての役から、設定されている役を除外
-                                          const loserHands = handRankOptions
-                                            .map((opt) => opt.value)
-                                            .filter(
-                                              (hand) => !assignedHands.has(hand)
-                                            );
-                                          return loserHands.length > 0
-                                            ? getHandNames(loserHands)
-                                            : "なし（すべての役が当たりに設定されています）";
-                                        })()
-                                      : config.hands && config.hands.length > 0
+                                    {config.hands && config.hands.length > 0
                                       ? getHandNames(config.hands)
                                       : "未設定"}
                                   </span>

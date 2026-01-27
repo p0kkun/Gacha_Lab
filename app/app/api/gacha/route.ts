@@ -133,10 +133,9 @@ export async function POST(request: NextRequest) {
           : gachaTypeForVideos.tierVideoAssetIds
         : {};
 
-      // 各レアリティの動画が設定されているか確認（あたりの場合のみ、PrizeTierテーブルから動的に取得）
-      // LOSERコード以外の等級（あたり）のみをチェック
+      // 各レアリティの動画が設定されているか確認（PrizeTierテーブルから動的に取得）
       const prizeTiers = await prisma.prizeTier.findMany({
-        where: { isActive: true, code: { not: "LOSER" } },
+        where: { isActive: true },
         select: { code: true, label: true },
       });
 

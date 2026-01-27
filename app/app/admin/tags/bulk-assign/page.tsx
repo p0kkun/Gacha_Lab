@@ -30,6 +30,9 @@ type SearchConditions = {
 export default function BulkAssignTagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
+  const [prizeTiers, setPrizeTiers] = useState<
+    Array<{ code: string; label: string; isActive: boolean; displayOrder?: number }>
+  >([]);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [conditions, setConditions] = useState<SearchConditions>({});
   const [previewCount, setPreviewCount] = useState<number | null>(null);
@@ -47,6 +50,7 @@ export default function BulkAssignTagsPage() {
   useEffect(() => {
     fetchTags();
     fetchGachaTypes();
+    fetchPrizeTiers();
   }, []);
 
   const fetchTags = async () => {
@@ -82,6 +86,33 @@ export default function BulkAssignTagsPage() {
       }
     } catch (error) {
       console.error("ガチャタイプ取得エラー:", error);
+    }
+  };
+
+  const fetchPrizeTiers = async () => {
+    try {
+      const authToken = getAdminAuthToken();
+      const res = await fetch("/api/admin/prize-tiers", {
+        headers: {
+          "X-Admin-Auth": authToken || "",
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setPrizeTiers(
+          Array.isArray(data.tiers)
+            ? data.tiers.map((tier: any) => ({
+                code: tier.code,
+                label: tier.label,
+                isActive: !!tier.isActive,
+                displayOrder: tier.displayOrder ?? 0,
+              }))
+            : []
+        );
+      }
+    } catch (error) {
+      console.error("等級取得エラー:", error);
     }
   };
 
@@ -208,14 +239,10 @@ export default function BulkAssignTagsPage() {
     );
   };
 
-  const rarityOptions = [
-    { value: "FIRST_PRIZE", label: "1等" },
-    { value: "SECOND_PRIZE", label: "2等" },
-    { value: "THIRD_PRIZE", label: "3等" },
-    { value: "FOURTH_PRIZE", label: "4等" },
-    { value: "FIFTH_PRIZE", label: "5等" },
-    { value: "LOSER", label: "ハズレ" },
-  ];
+  const rarityOptions = prizeTiers
+    .filter((tier) => tier.isActive)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+    .map((tier) => ({ value: tier.code, label: tier.label }));
 
   return (
     <AdminLayout>
