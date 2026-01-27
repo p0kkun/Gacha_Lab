@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { GachaType } from "./GachaModal";
 import PointIcon from "./PointIcon";
 
@@ -14,6 +15,40 @@ export default function GachaMenu({
   onSelect: (gacha: GachaType) => void;
   onClose?: () => void;
 }) {
+  const renderDescription = (text: string | null): ReactNode => {
+    if (!text) return null;
+
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+          style={{ color: "#8b6f47" }}
+        >
+          {match[1]}
+        </a>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden" style={{ backgroundColor: '#e9dacb' }}>
       {/* ヘッダー */}
@@ -108,7 +143,7 @@ export default function GachaMenu({
                       color: selectedGacha.id === gacha.id ? 'rgba(255, 255, 255, 0.9)' : '#6b5a4a'
                     }}
                   >
-                    {gacha.description}
+                    {renderDescription(gacha.description)}
                   </div>
                 )}
                 {gacha.pointCost !== undefined && gacha.pointCost > 0 && (

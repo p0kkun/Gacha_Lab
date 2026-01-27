@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
           await grantPaidPoints(
             userId,
             amount,
-            null, // 有効期限は自動設定（最終更新日から1年後）
+            null, // 有効期限は自動設定（最終更新日から180日後）
             description || `${amount}ポイント付与（有償）`
           );
         } else {
           await grantFreePoints(
             userId,
             amount,
-            null, // 有効期限は自動設定（最終更新日から1年後）
+            null, // 有効期限は自動設定（最終更新日から180日後）
             description || `${amount}ポイント付与（無償）`,
             PointTransactionType.GRANT
           );
@@ -161,4 +161,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

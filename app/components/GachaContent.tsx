@@ -8,6 +8,7 @@ import BottomNavigation from "./BottomNavigation";
 import PrizeListModal from "./PrizeListModal";
 import GachaConfirmModal from "./GachaConfirmModal";
 import PointIcon from "./PointIcon";
+import { useErrorModal } from "./ErrorModalProvider";
 
 type GachaResult = {
   item: {
@@ -43,6 +44,7 @@ export default function GachaContent({
   const [videoUrlsToPlay, setVideoUrlsToPlay] = useState<string[]>([]);
   const [showPrizeList, setShowPrizeList] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const { showError } = useErrorModal();
 
   // メッセージ送信の共通関数
   const sendMessageAsync = async (messageQueueId: number) => {
@@ -146,9 +148,11 @@ export default function GachaContent({
           response.status === 403 &&
           errorMessage.includes("ポイントが不足")
         ) {
-          alert("ポイントが不足しています。ポイント購入ページへ移動します。");
+          showError("ポイントが不足しています。ポイント購入ページへ移動します。", {
+            redirectTo: "/points",
+            confirmLabel: "ポイント購入へ",
+          });
           onVideoStateChange?.(false);
-          window.location.href = "/points";
           return;
         }
 
@@ -228,7 +232,7 @@ export default function GachaContent({
       }
     } catch (error) {
       console.error("ガチャエラー:", error);
-      alert(
+      showError(
         error instanceof Error ? error.message : "ガチャ抽選に失敗しました"
       );
       setIsDrawing(false);

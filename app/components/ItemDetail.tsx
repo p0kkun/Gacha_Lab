@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/admin/ConfirmModal';
+import { useErrorModal } from '@/components/ErrorModalProvider';
 
 type UserItem = {
   id: number;
@@ -42,6 +43,7 @@ export default function ItemDetail({
   const [showUsageScreen, setShowUsageScreen] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
+  const { showError } = useErrorModal();
 
   useEffect(() => {
     fetchPrizeTiers();
@@ -150,7 +152,7 @@ export default function ItemDetail({
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'アイテムの使用に失敗しました');
+        showError(error.error || 'アイテムの使用に失敗しました');
         return;
       }
 
@@ -158,7 +160,7 @@ export default function ItemDetail({
       onUse(); // 親コンポーネントに通知
     } catch (error) {
       console.error('アイテム使用エラー:', error);
-      alert('アイテムの使用に失敗しました');
+      showError('アイテムの使用に失敗しました');
     } finally {
       setIsUsing(false);
     }

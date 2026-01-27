@@ -15,7 +15,7 @@ async function ensureUserPointBalance(userId: string) {
 
 /**
  * ポイント残高を取得（有効期限切れを考慮）
- * 有効期限は updatedAt + 1年で計算される
+ * 有効期限は updatedAt + 180日で計算される
  */
 export async function getPointBalances(userId: string) {
   await ensureUserPointBalance(userId);
@@ -31,16 +31,16 @@ export async function getPointBalances(userId: string) {
   const paid = balance?.paidAmount ?? 0;
   const free = balance?.freeAmount ?? 0;
 
-  // 有効期限は updatedAt + 1年で計算
-  const expiresAt = balance?.updatedAt 
-    ? new Date(balance.updatedAt.getTime() + 365 * 24 * 60 * 60 * 1000)
+  // 有効期限は updatedAt + 180日で計算
+  const expiresAt = balance?.updatedAt
+    ? addDays(balance.updatedAt, 180)
     : null;
 
   return {
     paid,
     free,
     total: paid + free,
-    // 有償・無償ともに同じ有効期限（updatedAt + 1年）
+    // 有償・無償ともに同じ有効期限（updatedAt + 180日）
     paidExpiresAt: expiresAt?.toISOString() ?? null,
     freeExpiresAt: expiresAt?.toISOString() ?? null,
     lastUpdated: balance?.updatedAt ?? null,
@@ -61,9 +61,7 @@ async function expirePoints(userId: string): Promise<boolean> {
   const total = paid + free;
   if (total <= 0) return false;
 
-  const expiresAt = balance.updatedAt
-    ? new Date(balance.updatedAt.getTime() + 365 * 24 * 60 * 60 * 1000)
-    : null;
+  const expiresAt = balance.updatedAt ? addDays(balance.updatedAt, 180) : null;
   if (!expiresAt || Date.now() <= expiresAt.getTime()) return false;
 
   await prisma.$transaction(async (tx) => {
@@ -196,3 +194,9 @@ export async function consumePoints(
 }
 
 // 未使用のため削除: getTotalBalances関数は現在使用されていない
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date.getTime());
+  result.setDate(result.getDate() + days);
+  return result;
+}

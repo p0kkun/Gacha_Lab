@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から1年後、重複付与は防止）
+          // 有償 + おまけ無償ポイントを付与（有効期限は最終更新日から180日後、重複付与は防止）
           const { grantPurchasePoints } = await import('@/lib/point-service');
           await grantPurchasePoints(
             userId,

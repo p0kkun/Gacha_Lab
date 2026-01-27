@@ -6,6 +6,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
 import type { PointPlan } from "@/lib/point-plan-types";
 import PointIcon from "@/components/PointIcon";
+import BottomNavigation from "@/components/BottomNavigation";
+import { useErrorModal } from "@/components/ErrorModalProvider";
 import {
   Elements,
   PaymentElement,
@@ -340,6 +342,7 @@ function PointsPageContent() {
   const [plans, setPlans] = useState<PointPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
   const [points, setPoints] = useState<number | null>(null);
   const [pointBalances, setPointBalances] = useState<{
     paid: number;
@@ -361,6 +364,7 @@ function PointsPageContent() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const { showError } = useErrorModal();
 
   // 購入プランを取得（公開API）
   useEffect(() => {
@@ -534,7 +538,7 @@ function PointsPageContent() {
                     "決済がキャンセルされました:",
                     updatedPaymentIntent.status
                   );
-                  alert("決済がキャンセルされました。");
+                  showError("決済がキャンセルされました。");
                   setSelectedPlan(null);
                   return;
                 }
@@ -544,8 +548,9 @@ function PointsPageContent() {
                 console.warn(
                   "PaymentIntentがsucceeded状態になりませんでした。"
                 );
-                alert(
-                  "決済の処理に時間がかかっています。しばらくしてからページを更新してください。"
+                showError(
+                  "決済の処理に時間がかかっています。しばらくしてからページを更新してください。",
+                  { redirectTo: null, confirmLabel: "閉じる" }
                 );
                 setSelectedPlan(null);
                 return;
@@ -641,14 +646,15 @@ function PointsPageContent() {
 
                 // フォールバック処理も失敗した場合
                 await updatePointBalances(profile.userId);
-                alert(
-                  "決済は成功しましたが、ポイントの反映に時間がかかっています。\nしばらくしてからページを更新してください。"
+                showError(
+                  "決済は成功しましたが、ポイントの反映に時間がかかっています。\nしばらくしてからページを更新してください。",
+                  { redirectTo: null, confirmLabel: "閉じる" }
                 );
                 setSelectedPlan(null);
               }
             } else if (paymentIntent.status === "requires_payment_method") {
               // 決済がキャンセルされた場合
-              alert("決済がキャンセルされました。");
+              showError("決済がキャンセルされました。");
               setSelectedPlan(null);
             }
           } else if (success === "true") {
@@ -695,8 +701,9 @@ function PointsPageContent() {
               // successパラメータのみの場合は、PaymentIntent IDが取得できないため、
               // ユーザーにページを更新してもらう
               await updatePointBalances(profile.userId);
-              alert(
-                "決済は成功しましたが、ポイントの反映に時間がかかっています。\nページを更新してください。"
+              showError(
+                "決済は成功しましたが、ポイントの反映に時間がかかっています。\nページを更新してください。",
+                { redirectTo: null, confirmLabel: "閉じる" }
               );
               setSelectedPlan(null);
             }
@@ -790,6 +797,56 @@ function PointsPageContent() {
             <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>
               プランを選択
             </h2>
+            {/* 同意ボックス */}
+            <div className="mb-4 rounded-lg border p-4 text-sm" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-1"
+                />
+                <span style={{ color: '#5a4a3a' }}>
+                  以下の規約に同意します
+                </span>
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <Link href="/terms" className="underline" style={{ color: '#8b6f47' }}>
+                  利用規約
+                </Link>
+                <Link href="/privacy" className="underline" style={{ color: '#8b6f47' }}>
+                  プライバシーポリシー
+                </Link>
+                <Link
+                  href="/commercial-transaction"
+                  className="underline"
+                  style={{ color: '#8b6f47' }}
+                >
+                  特定商取引法に基づく表記
+                </Link>
+              </div>
+              {!agreed && (
+                <div className="mt-2 text-xs" style={{ color: '#8b6f47' }}>
+                  ※ 同意しないとポイントプランを選択できません
+                </div>
+              )}
+            </div>
+            {/* 最終確認事項 */}
+            <div className="mb-4 rounded-lg border p-4 text-xs" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.5)', color: '#5a4a3a' }}>
+              <div className="mb-2 text-sm font-semibold" style={{ color: '#4a3a2a' }}>
+                最終確認事項
+              </div>
+              <ul className="space-y-1">
+                <li>分量: 選択したポイント数</li>
+                <li>販売価格: 選択した金額（税込）</li>
+                <li>支払方法: クレジットカード / PayPay</li>
+                <li>支払時期: 決済完了時に請求が確定</li>
+                <li>提供時期: 決済成功後、基本的にはすぐに付与（処理状況により遅延する場合あり）</li>
+                <li>有効期限: 最終更新日時から180日（同日・同時刻まで、秒単位で判定）</li>
+                <li>申込みの撤回・解除: デジタル商品のためキャンセル・返金不可</li>
+                <li>申込期間: 特に定めなし（販売終了時は購入不可）</li>
+              </ul>
+            </div>
             {plansLoading ? (
               <div className="rounded-lg p-6 text-center shadow" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)', color: '#6b5a4a' }}>
                 読み込み中...
@@ -807,8 +864,13 @@ function PointsPageContent() {
                 {plans.map((plan) => (
                 <button
                     key={plan.id}
-                  onClick={() => setSelectedPlan(plan)}
-                  className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
+                  onClick={() => agreed && setSelectedPlan(plan)}
+                  disabled={!agreed}
+                  className={`rounded-lg border-2 p-4 text-center transition-colors ${
+                    agreed
+                      ? 'border-gray-300 bg-white hover:border-blue-500 hover:bg-blue-50'
+                      : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
                 >
                   <div className="mb-2 text-lg font-bold text-gray-800">
                     {plan.label}
@@ -952,16 +1014,19 @@ function PointsPageContent() {
 
 export default function PointsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <div className="mb-4 text-lg">読み込み中...</div>
+    <>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center">
+              <div className="mb-4 text-lg">読み込み中...</div>
+            </div>
           </div>
-        </div>
-      }
-    >
-      <PointsPageContent />
-    </Suspense>
+        }
+      >
+        <PointsPageContent />
+      </Suspense>
+      <BottomNavigation />
+    </>
   );
 }

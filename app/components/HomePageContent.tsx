@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { LiffProfile } from "@/lib/liff";
 import BottomNavigation from "./BottomNavigation";
@@ -47,6 +47,39 @@ export default function HomePageContent({
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loadingGacha, setLoadingGacha] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
+
+  const renderDescription = (text: string | null): ReactNode => {
+    if (!text) return null;
+
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#8b6f47] underline hover:text-[#7a5f37]"
+        >
+          {match[1]}
+        </a>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
 
   useEffect(() => {
     // ガチャタイプ一覧を取得
@@ -349,7 +382,7 @@ export default function HomePageContent({
                           </h3>
                           {gacha.description && (
                             <p className="mb-2 text-xs text-gray-600 line-clamp-2">
-                              {gacha.description}
+                              {renderDescription(gacha.description)}
                             </p>
                           )}
                           <div className="flex items-center gap-2">

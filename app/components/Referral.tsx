@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import BottomNavigation from "./BottomNavigation";
+import { useErrorModal } from "./ErrorModalProvider";
 
 type ReferralHistory = {
   id: number;
@@ -29,6 +30,7 @@ export default function Referral({ userId }: { userId: string }) {
   const [referralHistory, setReferralHistory] = useState<ReferralHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showError } = useErrorModal();
 
   useEffect(() => {
     fetchReferralData();
@@ -117,7 +119,7 @@ export default function Referral({ userId }: { userId: string }) {
       alert("紹介リンクをコピーしました！");
     } catch (error) {
       console.error("コピーエラー:", error);
-      alert("コピーに失敗しました");
+      showError("コピーに失敗しました", { redirectTo: null, confirmLabel: "OK" });
     }
   };
 
