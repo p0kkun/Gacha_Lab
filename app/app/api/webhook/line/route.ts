@@ -140,6 +140,22 @@ function getLiffUrl(params?: Record<string, string>): string {
   return `${baseUrl}?${queryString}`;
 }
 
+function stripMarkdownForLine(text: string): string {
+  // Markdownリンク [text](url) -> text
+  let result = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+  // そのほかの簡易Markdownを除去
+  result = result
+    .replace(/[*_`#>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return result;
+}
+
+function truncateLineText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, Math.max(0, maxLength - 3)) + "...";
+}
+
 // ガチャタイプ一覧を取得（引けるもののみ）
 async function getGachaTypes() {
   try {
@@ -286,6 +302,7 @@ async function getGachaTypes() {
     // 必要な情報のみを返す
     return validGachaTypes.slice(0, 10).map((gt) => ({
       id: gt.id,
+      code: gt.code,
       name: gt.name,
       description: gt.description,
       pointCost: gt.pointCost,
@@ -339,18 +356,26 @@ async function sendGachaSelectionCard(
       const pointCostText = gachaType.pointCost > 0 
         ? `${gachaType.pointCost}P` 
         : '無料';
-      
+
+      const descriptionText = gachaType.description
+        ? stripMarkdownForLine(gachaType.description)
+        : "";
+      const combinedText = descriptionText
+        ? `${descriptionText}\n💰 ${pointCostText}`
+        : `💰 ${pointCostText}`;
+      const text = truncateLineText(combinedText, 60);
+
       return {
         thumbnailImageUrl: getFullImageUrl(gachaType.iconImageUrl),
         title: gachaType.name,
-        text: `${gachaType.description || ''}\n💰 ${pointCostText}`,
+        text,
         actions: [
           {
             type: 'uri',
             label: 'このガチャを引く',
             uri: getLiffUrl({
               action: 'gacha',
-              gachaTypeId: String(gachaType.id),
+              gacha: String(gachaType.code),
             }),
           } as URIAction,
         ],

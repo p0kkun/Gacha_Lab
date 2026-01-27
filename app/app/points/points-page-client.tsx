@@ -368,6 +368,26 @@ function PointsPageContent() {
   const [historyPage, setHistoryPage] = useState(1);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const { showError } = useErrorModal();
+  const AGREED_SESSION_KEY = "points_purchase_agreed";
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(AGREED_SESSION_KEY);
+      if (saved === "true") {
+        setAgreed(true);
+      }
+    } catch {
+      // ignore session storage errors
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(AGREED_SESSION_KEY, agreed ? "true" : "false");
+    } catch {
+      // ignore session storage errors
+    }
+  }, [agreed]);
 
   // 購入プランを取得（公開API）
   useEffect(() => {
@@ -836,6 +856,59 @@ function PointsPageContent() {
             <h2 className="mb-4 text-lg font-semibold" style={{ color: "#4a3a2a" }}>
               プランを選択
             </h2>
+            {/* 確認事項 */}
+            <div
+              className="mb-4 rounded-xl border p-4 text-xs shadow-sm"
+              style={{
+                borderColor: "#b89f7a",
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                color: "#5a4a3a",
+              }}
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-base">📝</span>
+                <div
+                  className="text-sm font-semibold"
+                  style={{ color: "#4a3a2a" }}
+                >
+                  確認事項
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>分量</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>選択したポイント数</div>
+                </div>
+                <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>販売価格</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>選択した金額（税込）</div>
+                </div>
+                <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>支払方法</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>クレジットカード / PayPay</div>
+                </div>
+                <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>支払時期</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>決済完了時に請求が確定</div>
+                </div>
+                <div className="rounded-lg border px-3 py-2 sm:col-span-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>提供時期</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>
+                    決済成功後、基本的にはすぐに付与（処理状況により遅延する場合あり）
+                  </div>
+                </div>
+                <div className="rounded-lg border px-3 py-2 sm:col-span-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>有効期限</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>
+                    最終更新日時から180日（同日・同時刻まで、秒単位で判定）
+                  </div>
+                </div>
+                <div className="rounded-lg border px-3 py-2 sm:col-span-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
+                  <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>申込みの撤回・解除</div>
+                  <div className="text-sm" style={{ color: "#4a3a2a" }}>デジタル商品のためキャンセル・返金不可</div>
+                </div>
+              </div>
+            </div>
             {/* 同意ボックス */}
             <div
               className="mb-4 rounded-lg border p-4 text-sm"
@@ -881,37 +954,6 @@ function PointsPageContent() {
                   ※ 同意しないとポイントプランを選択できません
                 </div>
               )}
-            </div>
-            {/* 最終確認事項 */}
-            <div
-              className="mb-4 rounded-lg border p-4 text-xs"
-              style={{
-                borderColor: "#b89f7a",
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
-                color: "#5a4a3a",
-              }}
-            >
-              <div
-                className="mb-2 text-sm font-semibold"
-                style={{ color: "#4a3a2a" }}
-              >
-                最終確認事項
-              </div>
-              <ul className="space-y-1">
-                <li>分量: 選択したポイント数</li>
-                <li>販売価格: 選択した金額（税込）</li>
-                <li>支払方法: クレジットカード / PayPay</li>
-                <li>支払時期: 決済完了時に請求が確定</li>
-                <li>
-                  提供時期:
-                  決済成功後、基本的にはすぐに付与（処理状況により遅延する場合あり）
-                </li>
-                <li>
-                  有効期限: 最終更新日時から180日（同日・同時刻まで、秒単位で判定）
-                </li>
-                <li>申込みの撤回・解除: デジタル商品のためキャンセル・返金不可</li>
-                <li>申込期間: 特に定めなし（販売終了時は購入不可）</li>
-              </ul>
             </div>
             {plansLoading ? (
               <div

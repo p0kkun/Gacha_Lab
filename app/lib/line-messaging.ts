@@ -107,9 +107,15 @@ function getFullImageUrl(imageUrl: string | null | undefined): string {
 /**
  * LIFF URLを取得
  */
-function getLiffUrl(): string {
+function getLiffUrl(params?: Record<string, string | null | undefined>): string {
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "2008642684-d8jPmggE";
-  return `https://liff.line.me/${liffId}`;
+  const baseUrl = `https://liff.line.me/${liffId}`;
+  if (!params) return baseUrl;
+  const filtered = Object.entries(params).filter(
+    ([, value]) => typeof value === "string" && value.length > 0
+  ) as Array<[string, string]>;
+  if (filtered.length === 0) return baseUrl;
+  return `${baseUrl}?${new URLSearchParams(filtered).toString()}`;
 }
 
 /**
@@ -127,7 +133,8 @@ export async function sendGachaResultMessage(
     communityCards: Array<{ suit: string; rank: string }>;
   },
   grantedPoints?: number,
-  gachaTypeIconImageUrl?: string | null
+  gachaTypeIconImageUrl?: string | null,
+  gachaTypeCode?: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getLineClient();
@@ -240,8 +247,11 @@ export async function sendGachaResultMessage(
       actions: [
         {
           type: "uri" as const,
-          label: "アプリを開く",
-          uri: getLiffUrl(),
+          label: "このガチャを引く",
+          uri: getLiffUrl({
+            action: "gacha",
+            gacha: gachaTypeCode || "",
+          }),
         },
       ],
     };

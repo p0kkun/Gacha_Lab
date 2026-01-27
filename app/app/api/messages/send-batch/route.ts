@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
           tierCode: string;
           gachaTypeName: string;
           gachaTypeId: number;
+          gachaTypeCode?: string | null;
           pokerHand?: {
             handName: string;
             holeCards: Array<{ suit: string; rank: string }>;
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
         // ガチャタイプのiconImageUrlを取得
         const gachaType = await prisma.gachaType.findUnique({
           where: { id: jsonData.gachaTypeId },
-          select: { iconImageUrl: true },
+          select: { iconImageUrl: true, code: true },
         });
 
         // LINEメッセージを送信
@@ -94,7 +95,8 @@ export async function POST(request: NextRequest) {
           messageTemplate,
           jsonData.pokerHand,
           jsonData.grantedPoints,
-          gachaType?.iconImageUrl || null
+          gachaType?.iconImageUrl || null,
+          jsonData.gachaTypeCode || gachaType?.code || null
         );
 
         if (sendResult.success) {

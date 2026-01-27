@@ -466,6 +466,7 @@ export async function POST(request: NextRequest) {
             itemName: selectedItem.name,
             tierCode: selectedTierCode,
             gachaTypeName: gachaType.name,
+            gachaTypeCode: gachaType.code,
             gachaTypeId: gachaTypeInternalId,
             pokerHand: pokerHand && pokerHand.handName
               ? {
