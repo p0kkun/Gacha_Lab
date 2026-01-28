@@ -116,15 +116,6 @@ export default function Referral({ userId }: { userId: string }) {
     await requestReferralLink(true);
   };
 
-  const handleReloadLink = async () => {
-    setLoading(true);
-    try {
-      await loadCurrentReferralLink();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const formatExpiryDateTime = (value: string | null) => {
     if (!value) return null;
     const date = new Date(value);
@@ -320,30 +311,10 @@ export default function Referral({ userId }: { userId: string }) {
                   <div className="flex gap-2">
                     <button
                       onClick={handleShare}
-                      className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
+                      className="w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
                       style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                     >
                       シェア
-                    </button>
-                    <button
-                      onClick={() => {
-                        setReferralLink(null);
-                        setQrCodeUrl(null);
-                        setExpiresAt(null);
-                      }}
-                      disabled={true}
-                      className="rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-95"
-                      style={{ backgroundColor: "rgba(255, 255, 255, 0.4)", color: "#8b7a6a", border: "1px solid #c8b8a6" }}
-                    >
-                      再生成
-                    </button>
-                    <button
-                      onClick={handleReloadLink}
-                      disabled={loading}
-                      className="rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-95 disabled:opacity-50"
-                      style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
-                    >
-                      リロード
                     </button>
                   </div>
                 </div>
