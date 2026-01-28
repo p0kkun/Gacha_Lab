@@ -97,6 +97,12 @@ export default function LandingPage() {
                 特定商取引法に基づく表記
               </Link>
               <Link
+                href="/compensation-policy"
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                課金トラブル時の補填ポリシー
+              </Link>
+              <Link
                 href="/terms"
                 className="text-blue-600 hover:text-blue-800 hover:underline"
               >

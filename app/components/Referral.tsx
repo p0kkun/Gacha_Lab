@@ -36,8 +36,31 @@ export default function Referral({ userId }: { userId: string }) {
     fetchReferralData();
   }, [userId]);
 
+  const loadCurrentReferralLink = async () => {
+    const currentRes = await fetch(`/api/referral/current?userId=${userId}`);
+    if (!currentRes.ok) return;
+
+    const currentData = await currentRes.json();
+    if (currentData?.referralLink) {
+      setReferralLink(currentData.referralLink);
+      setExpiresAt(currentData.expiresAt || null);
+      const qrCode = await QRCode.toDataURL(currentData.referralLink, {
+        width: 300,
+        margin: 2,
+      });
+      setQrCodeUrl(qrCode);
+      return;
+    }
+
+    setReferralLink(null);
+    setQrCodeUrl(null);
+    setExpiresAt(null);
+  };
+
   const fetchReferralData = async () => {
     try {
+      await loadCurrentReferralLink();
+
       // 紹介履歴を取得
       const historyRes = await fetch(`/api/referral/history?userId=${userId}`);
       if (historyRes.ok) {
@@ -94,7 +117,12 @@ export default function Referral({ userId }: { userId: string }) {
   };
 
   const handleReloadLink = async () => {
-    await requestReferralLink(true);
+    setLoading(true);
+    try {
+      await loadCurrentReferralLink();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatExpiryDateTime = (value: string | null) => {
@@ -184,6 +212,7 @@ export default function Referral({ userId }: { userId: string }) {
                   <li>紹介リンクを生成してQRコードまたはリンクを共有</li>
                   <li>友だちがリンクを開いてアプリにアクセス</li>
                   <li>友だちが公式LINEアカウントを友だち追加すると紹介成立！</li>
+                  <li>紹介リンクの有効期限は生成から1週間です</li>
                 </ol>
               </div>
 

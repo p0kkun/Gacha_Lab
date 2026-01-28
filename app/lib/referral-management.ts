@@ -104,6 +104,38 @@ export async function generateReferralLink(userId: string): Promise<{
 }
 
 /**
+ * 有効な紹介リンクを取得（期限切れは返さない）
+ */
+export async function getActiveReferralLink(userId: string): Promise<{
+  referralLinkId: string;
+  referralLink: string;
+  expiresAt: Date;
+} | null> {
+  const existingReferral = await prisma.referral.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!existingReferral) {
+    return null;
+  }
+
+  const expiresAt =
+    existingReferral.expiresAt ??
+    new Date(existingReferral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  if (expiresAt.getTime() < Date.now()) {
+    return null;
+  }
+
+  return {
+    referralLinkId: existingReferral.referralLinkId,
+    referralLink: existingReferral.referralLink,
+    expiresAt,
+  };
+}
+
+/**
  * 紹介リンクを検証（LIFFアプリアクセス時）
  * ReferralHistoryにアクセス履歴をインサート
  * userIdを指定すると、User.lastAccessedReferralLinkIdに記録される

@@ -76,6 +76,23 @@ export default function HelpPage() {
               表記を見る →
             </Link>
           </div>
+
+          <div className="rounded-lg p-6 shadow" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+            <h2 className="mb-4 text-lg font-semibold" style={{ color: '#4a3a2a' }}>
+              課金トラブル時の補填ポリシー
+            </h2>
+            <p className="mb-4 text-sm" style={{ color: '#6b5a4a' }}>
+              課金トラブル時の補填方針をご確認ください。
+            </p>
+            <Link
+              href="/compensation-policy"
+              className="hover:underline"
+              style={{ color: '#8b6f47' }}
+              target="_blank"
+            >
+              ポリシーを見る →
+            </Link>
+          </div>
         </div>
 
       </div>
@@ -83,5 +100,4 @@ export default function HelpPage() {
     </div>
   );
 }
-
 

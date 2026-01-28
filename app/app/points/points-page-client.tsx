@@ -989,6 +989,13 @@ function PointsPageContent() {
                 >
                   特定商取引法に基づく表記
                 </Link>
+                <Link
+                  href="/compensation-policy"
+                  className="underline"
+                  style={{ color: "#8b6f47" }}
+                >
+                  課金トラブル時の補填ポリシー
+                </Link>
               </div>
               {!agreed && (
                 <div className="mt-2 text-xs" style={{ color: "#8b6f47" }}>

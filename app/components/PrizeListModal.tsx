@@ -25,6 +25,8 @@ type TierInfo = {
 type PrizeListData = {
   gachaTypeId: string;
   gachaTypeName: string;
+  startAt?: string | null;
+  endAt?: string | null;
   totalTierWeight: number;
   tiers: TierInfo[];
 };
@@ -68,6 +70,47 @@ export default function PrizeListModal({
     }
   };
 
+  const formatDate = (value?: string | null): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(
+      date.getDate()
+    )}`;
+  };
+
+  const formatPeriod = (start?: string | null, end?: string | null): string => {
+    const startText = formatDate(start);
+    const endText = formatDate(end);
+    if (startText && endText) return `${startText}〜${endText}`;
+    if (startText) return `${startText}〜`;
+    if (endText) return `〜${endText}`;
+    return '未設定';
+  };
+
+  const formatProbability = (value: number): string => {
+    if (!Number.isFinite(value)) return '0%';
+    const digits = value < 1 ? 1 : 1;
+    return `${value.toFixed(digits)}%`;
+  };
+
+  const getTierContent = (tier: TierInfo): string => {
+    const descriptions = tier.prizes
+      .map((prize) => prize.itemDescription?.trim())
+      .filter((value): value is string => Boolean(value));
+    if (descriptions.length > 0) {
+      return Array.from(new Set(descriptions)).join(' / ');
+    }
+    const names = tier.prizes
+      .map((prize) => prize.itemName?.trim())
+      .filter((value): value is string => Boolean(value));
+    if (names.length > 0) {
+      return Array.from(new Set(names)).join(' / ');
+    }
+    return '記載なし';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -109,82 +152,78 @@ export default function PrizeListModal({
             <div className="p-6 text-center" style={{ color: '#ef4444' }}>{error}</div>
           ) : data ? (
             <div className="p-6">
-              <div className="mb-4 text-center">
-                <h3 className="text-lg font-semibold" style={{ color: '#4a3a2a' }}>{data.gachaTypeName}</h3>
-                <p className="mt-1 text-sm" style={{ color: '#6b5a4a' }}>各景品の獲得確率</p>
-              </div>
+              <div className="space-y-8">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold" style={{ color: '#4a3a2a' }}>
+                    ガチャ提供割合（排出確率）表示
+                  </h3>
+                  <p className="mt-2 text-sm" style={{ color: '#6b5a4a' }}>
+                    本サービスにおける各ガチャの賞品提供割合（排出確率）は以下の通りです。
+                  </p>
+                  <p className="mt-1 text-sm" style={{ color: '#6b5a4a' }}>
+                    表示される確率は統計的な理論値であり、特定結果を保証するものではありません。
+                  </p>
+                </div>
 
-              {/* 等級別に表示 */}
-              <div className="space-y-6">
-                {data.tiers.map((tier) => (
-                  <div key={tier.tierCode} className="rounded-lg border-2" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-                    {/* 等級ヘッダー */}
-                    <div className="border-b px-4 py-3" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(184, 159, 122, 0.2)' }}>
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-bold" style={{ color: '#4a3a2a' }}>{tier.tierLabel}</h4>
-                        <div className="text-right">
-                          <div className="text-sm" style={{ color: '#6b5a4a' }}>等級確率</div>
-                          <div className="text-lg font-bold" style={{ color: '#8b6f47' }}>
-                            {tier.tierProbability.toFixed(2)}%
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 景品一覧 */}
-                    {tier.prizes.length === 0 ? (
-                      <div className="p-4 text-center" style={{ color: '#6b5a4a' }}>
-                        この等級には景品が設定されていません
-                      </div>
-                    ) : (
-                      <div className="divide-y" style={{ borderColor: '#b89f7a' }}>
-                        {tier.prizes.map((prize, index) => (
-                          <div key={`${tier.tierCode}-${prize.itemId}-${index}`} className="p-4">
-                            <div className="flex items-start gap-4">
-                              {prize.itemImageUrl && (
-                                <img
-                                  src={prize.itemImageUrl}
-                                  alt={prize.itemName}
-                                  className="h-16 w-16 flex-shrink-0 rounded-lg object-cover border border-gray-300"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                  }}
-                                />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <h5 className="font-semibold text-gray-800 break-words">
-                                      {prize.itemName}
-                                    </h5>
-                                    {prize.itemDescription && (
-                                      <p className="mt-1 text-sm text-gray-600 break-words">
-                                        {prize.itemDescription}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <div className="flex-shrink-0 text-right">
-                                    <div className="text-sm text-gray-600">獲得確率</div>
-                                    <div className="text-lg font-bold text-green-600">
-                                      {prize.probability.toFixed(3)}%
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                <div className="rounded-lg border-2 p-4" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
+                  <div className="mb-4 text-sm font-semibold" style={{ color: '#4a3a2a' }}>
+                    ■ {data.gachaTypeName}（販売期間：{formatPeriod(data.startAt, data.endAt)}）
                   </div>
-                ))}
-              </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-gray-700">
+                      <thead>
+                        <tr className="border-b" style={{ borderColor: '#b89f7a' }}>
+                          <th className="py-2">賞品名</th>
+                          <th className="py-2">内容</th>
+                          <th className="py-2 text-right">提供割合</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: '#e0d1bd' }}>
+                        {data.tiers.map((tier) => (
+                          <tr key={tier.tierCode}>
+                            <td className="py-2 font-medium">{tier.tierLabel}</td>
+                            <td className="py-2">{getTierContent(tier)}</td>
+                            <td className="py-2 text-right font-semibold" style={{ color: '#8b6f47' }}>
+                              {formatProbability(tier.tierProbability)}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr>
+                          <td className="py-2 font-semibold">合計</td>
+                          <td className="py-2"> </td>
+                          <td className="py-2 text-right font-semibold" style={{ color: '#8b6f47' }}>
+                            {formatProbability(
+                              data.tiers.reduce((sum, tier) => sum + tier.tierProbability, 0)
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-              {/* 法的リンク */}
-              <div className="mt-8 border-t pt-6" style={{ borderColor: '#b89f7a' }}>
-                <div className="space-y-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
-                  <p>※ 表示されている確率は理論値です。実際の抽選結果は異なる場合があります。</p>
-                  <div className="flex flex-wrap justify-center gap-4">
+                <div className="space-y-3 text-sm" style={{ color: '#6b5a4a' }}>
+                  <div className="font-semibold">■ 提供割合に関する説明</div>
+                  <ul className="list-disc space-y-1 pl-6">
+                    <li>提供割合は抽選1回ごとの当選確率を示します。</li>
+                    <li>抽選は独立した確率で実施され、回数を重ねても特定賞品の当選確率が上昇することはありません。</li>
+                    <li>抽選結果はシステムによりランダムに決定されます。</li>
+                    <li>在庫状況やキャンペーンにより、提供割合が変更される場合があります。その場合は事前に表示内容を更新します。</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-3 text-sm" style={{ color: '#6b5a4a' }}>
+                  <div className="font-semibold">■ 注意事項</div>
+                  <ul className="list-disc space-y-1 pl-6">
+                    <li>画像はイメージを含み、実際の賞品と異なる場合があります。</li>
+                    <li>賞品の市場価格は変動する場合があります。</li>
+                    <li>本サービスは娯楽提供を目的としたものであり、支払額以上の価値取得を保証するものではありません。</li>
+                    <li>不正行為が確認された場合、当選は無効となる場合があります。</li>
+                  </ul>
+                </div>
+
+                <div className="border-t pt-4" style={{ borderColor: '#b89f7a' }}>
+                  <div className="flex flex-wrap justify-center gap-4 text-xs">
                     <Link
                       href="/terms"
                       target="_blank"
@@ -208,6 +247,14 @@ export default function PrizeListModal({
                       style={{ color: '#8b6f47' }}
                     >
                       特定商取引法に基づく表記
+                    </Link>
+                    <Link
+                      href="/compensation-policy"
+                      target="_blank"
+                      className="hover:underline"
+                      style={{ color: '#8b6f47' }}
+                    >
+                      課金トラブル時の補填ポリシー
                     </Link>
                   </div>
                 </div>

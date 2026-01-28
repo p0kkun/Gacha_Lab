@@ -174,6 +174,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       gachaTypeId: gachaTypeCode,
       gachaTypeName: gachaType.name,
+      startAt: gachaType.startAt,
+      endAt: gachaType.endAt,
       totalTierWeight,
       tiers: tierInfo,
     });

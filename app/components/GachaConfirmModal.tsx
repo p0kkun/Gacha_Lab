@@ -118,6 +118,15 @@ export default function GachaConfirmModal({
                 >
                   特定商取引法に基づく表記
                 </Link>
+                <Link
+                  href="/compensation-policy"
+                  target="_blank"
+                  className="hover:underline"
+                  style={{ color: '#8b6f47' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  課金トラブル時の補填ポリシー
+                </Link>
               </div>
             </div>
           </div>

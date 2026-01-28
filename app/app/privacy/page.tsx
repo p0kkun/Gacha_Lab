@@ -3,115 +3,138 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-8 text-center text-3xl font-bold text-gray-800">
-          Gacha Lab プライバシーポリシー
+          プライバシーポリシー
         </h1>
 
         <div className="rounded-lg bg-white p-6 shadow-md">
-          <p className="mb-6 text-sm text-gray-500">最終更新日：2025年1月</p>
-
           <p className="mb-8 text-gray-600">
-            Gacha Lab（以下「当サービス」といいます）は、ユーザーの個人情報の保護を重要視しており、以下のとおりプライバシーポリシーを定めます。
+            株式会社Az-Story（以下「当社」）は、当社が提供するガチャアプリ「Gacha Lab」
+            （以下「本サービス」）におけるユーザーの個人情報について、以下のとおり取り扱います。
           </p>
 
           <div className="prose max-w-none space-y-8">
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">1. 個人情報の取得主体</h2>
-              <p className="text-gray-600">
-                本サービスにおける個人情報の取得主体は、以下のとおりです。
-              </p>
-              <p className="mt-2 text-gray-600">
-                <strong>プロバイダー名：</strong>Gacha Lab
-              </p>
-            </section>
-
-            <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">2. 取得する個人情報</h2>
-              <p className="mb-2 text-gray-600">当サービスでは、以下の個人情報を取得する場合があります。</p>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第1条（取得する情報）
+              </h2>
+              <p className="mb-2 text-gray-600">当社は、以下の情報を取得する場合があります。</p>
               <ol className="list-decimal space-y-2 pl-6 text-gray-600">
-                <li>
-                  <strong>LINEアカウント情報</strong>
-                  <br />
-                  ユーザーID、表示名、プロフィール画像（LINEプラットフォーム経由で取得）
-                </li>
-                <li>
-                  <strong>サービス利用情報</strong>
-                  <br />
-                  ガチャ抽選履歴、動画視聴履歴、アクセス日時
-                </li>
-                <li>
-                  <strong>端末情報</strong>
-                  <br />
-                  デバイス情報、OS情報、ブラウザ情報（サービス改善のため）
-                </li>
+                <li>アカウント情報（ニックネーム、ID 等）</li>
+                <li>連絡先情報（メールアドレス）</li>
+                <li>賞品発送情報（氏名、住所、電話番号）</li>
+                <li>決済関連情報（決済履歴、購入情報）</li>
+                <li>端末情報（OS、端末識別情報、IPアドレス）</li>
+                <li>アクセスログ・利用履歴</li>
               </ol>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">3. 個人情報の利用目的</h2>
-              <p className="mb-2 text-gray-600">取得した個人情報は、以下の目的で利用します。</p>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第2条（利用目的）
+              </h2>
+              <p className="mb-2 text-gray-600">取得した情報は、以下の目的で利用します。</p>
               <ol className="list-decimal space-y-2 pl-6 text-gray-600">
                 <li>本サービスの提供・運営</li>
-                <li>ガチャ抽選機能の提供</li>
-                <li>サービス改善のための分析</li>
-                <li>不正利用の防止</li>
+                <li>抽選結果の通知および賞品発送</li>
+                <li>本人確認（高額賞品当選時）</li>
+                <li>不正行為の防止および調査</li>
                 <li>お問い合わせ対応</li>
+                <li>サービス改善・統計分析</li>
+                <li>法令に基づく対応</li>
               </ol>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">4. 個人情報の管理</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第3条（第三者提供）
+              </h2>
+              <p className="mb-2 text-gray-600">
+                当社は、以下の場合を除き、個人情報を第三者に提供しません。
+              </p>
               <ol className="list-decimal space-y-2 pl-6 text-gray-600">
-                <li>当サービスは、個人情報を適切に管理し、漏洩、滅失、毀損の防止に努めます。</li>
-                <li>個人情報は、暗号化通信（HTTPS）により保護します。</li>
+                <li>ユーザーの同意がある場合</li>
+                <li>賞品配送のため配送業者へ提供する場合</li>
+                <li>法令に基づく場合</li>
               </ol>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">5. 個人情報の第三者提供</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第4条（委託）
+              </h2>
               <p className="text-gray-600">
-                当サービスは、法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に提供することはありません。
+                当社は、業務の一部を外部事業者に委託する場合があります。その際、適切な管理・監督を行います。
               </p>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">6. 個人情報の開示・訂正・削除</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第5条（安全管理）
+              </h2>
               <p className="text-gray-600">
-                ユーザーは、当サービスが保有する個人情報について、開示・訂正・削除を請求することができます。請求方法については、お問い合わせ先までご連絡ください。
+                当社は、個人情報の漏えい・滅失・改ざんを防止するため、適切な安全管理措置を講じます。
               </p>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">7. Cookie等の利用</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第6条（保存期間）
+              </h2>
               <p className="text-gray-600">
-                当サービスでは、サービス改善のため、Cookie等の技術を使用する場合があります。
+                個人情報は利用目的達成に必要な期間保存し、その後適切に削除します。
               </p>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">8. お問い合わせ先</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第7条（開示・訂正・削除）
+              </h2>
               <p className="text-gray-600">
-                個人情報に関するお問い合わせは、以下の方法でご連絡ください。
-              </p>
-              <p className="mt-2 text-gray-600">
-                <strong>プロバイダー名：</strong>Gacha Lab
+                ユーザーは、当社所定の方法により自己の個人情報の開示・訂正・削除を請求できます。
               </p>
             </section>
 
             <section>
-              <h2 className="mb-4 text-2xl font-semibold text-gray-700">9. プライバシーポリシーの変更</h2>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第8条（未成年の個人情報）
+              </h2>
               <p className="text-gray-600">
-                本ポリシーは、法令の変更やサービス内容の変更に伴い、予告なく変更される場合があります。変更後のポリシーは、本ページに掲載した時点から効力を生じるものとします。
+                未成年者が利用する場合、保護者の同意を得るものとします。
               </p>
             </section>
-          </div>
 
-          <div className="mt-8 border-t pt-6">
-            <p className="text-gray-600">
-              <strong>制定日：</strong>2025年1月
-            </p>
-            <p className="mt-2 text-gray-600">
-              <strong>運営者：</strong>Gacha Lab
-            </p>
+            <section>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第9条（クッキー等の利用）
+              </h2>
+              <p className="text-gray-600">
+                本サービスでは利用状況分析のためクッキーや類似技術を利用する場合があります。
+              </p>
+            </section>
+
+            <section>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第10条（ポリシーの変更）
+              </h2>
+              <p className="text-gray-600">
+                本ポリシーは必要に応じて変更されます。変更後は本サービス上に掲示した時点で効力を生じます。
+              </p>
+            </section>
+
+            <section>
+              <h2 className="mb-4 text-2xl font-semibold text-gray-700">
+                第11条（お問い合わせ窓口）
+              </h2>
+              <p className="text-gray-600">
+                株式会社Az-Story
+                <br />
+                顧客情報責任者
+                <br />
+                西村　昌紘
+                <br />
+                メール：azstory.customer@gmail.com
+              </p>
+            </section>
           </div>
         </div>
       </div>
