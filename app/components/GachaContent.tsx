@@ -9,6 +9,7 @@ import PrizeListModal from "./PrizeListModal";
 import GachaConfirmModal from "./GachaConfirmModal";
 import PointIcon from "./PointIcon";
 import { useErrorModal } from "./ErrorModalProvider";
+import LegalFooterLinks from "./LegalFooterLinks";
 
 type GachaResult = {
   item: {
@@ -632,11 +633,24 @@ export default function GachaContent({
 
       {/* ボトムナビゲーション - 動画再生中は非表示 */}
       {!showVideo && (
-        <BottomNavigation
-          currentPage="gacha"
-          hideSpacer={true}
-          transparent={false}
-        />
+        <>
+          <div className="px-4 pb-4">
+            <div
+              className="rounded-xl px-3 py-2 text-xs shadow"
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+            >
+              <LegalFooterLinks
+                className="flex flex-wrap justify-center gap-3"
+                linkClassName="text-[#8b6f47] hover:underline"
+              />
+            </div>
+          </div>
+          <BottomNavigation
+            currentPage="gacha"
+            hideSpacer={true}
+            transparent={false}
+          />
+        </>
       )}
 
       {/* 景品一覧モーダル */}

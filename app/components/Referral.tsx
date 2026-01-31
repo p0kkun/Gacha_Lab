@@ -5,6 +5,7 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import BottomNavigation from "./BottomNavigation";
 import { useErrorModal } from "./ErrorModalProvider";
+import LegalFooterLinks from "./LegalFooterLinks";
 
 type ReferralHistory = {
   id: number;
@@ -394,6 +395,17 @@ export default function Referral({ userId }: { userId: string }) {
               )}
             </div>
           </div>
+        </div>
+      </div>
+      <div className="px-4 pb-4">
+        <div
+          className="rounded-xl px-3 py-2 text-xs shadow"
+          style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+        >
+          <LegalFooterLinks
+            className="flex flex-wrap justify-center gap-3"
+            linkClassName="text-[#8b6f47] hover:underline"
+          />
         </div>
       </div>
       <BottomNavigation currentPage="referral" />

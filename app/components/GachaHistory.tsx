@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BottomNavigation from './BottomNavigation';
+import LegalFooterLinks from './LegalFooterLinks';
 
 type GachaHistoryItem = {
   id: number;
@@ -216,6 +217,17 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
               </>
             )}
           </div>
+        </div>
+      </div>
+      <div className="px-4 pb-4">
+        <div
+          className="rounded-xl px-3 py-2 text-xs shadow"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
+        >
+          <LegalFooterLinks
+            className="flex flex-wrap justify-center gap-3"
+            linkClassName="text-[#8b6f47] hover:underline"
+          />
         </div>
       </div>
       <BottomNavigation currentPage="history" />

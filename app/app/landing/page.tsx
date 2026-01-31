@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import LegalFooterLinks from '@/components/LegalFooterLinks';
 
 export default function LandingPage() {
   return (
@@ -90,31 +91,8 @@ export default function LandingPage() {
               >
                 サービスについて
               </Link>
-              <Link
-                href="/commercial-transaction"
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                特定商取引法に基づく表記
-              </Link>
-              <Link
-                href="/compensation-policy"
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                課金トラブル時の補填ポリシー
-              </Link>
-              <Link
-                href="/terms"
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                サービス利用規約
-              </Link>
-              <Link
-                href="/privacy"
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                プライバシーポリシー
-              </Link>
             </div>
+            <LegalFooterLinks />
             <p className="text-center text-sm text-gray-500">
               © 2025 Gacha Lab. All rights reserved.
             </p>

@@ -9,6 +9,7 @@ import type { PointPlan } from "@/lib/point-plan-types";
 import PointIcon from "@/components/PointIcon";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useErrorModal } from "@/components/ErrorModalProvider";
+import LegalFooterLinks from "@/components/LegalFooterLinks";
 import {
   Elements,
   PaymentElement,
@@ -47,12 +48,16 @@ function CheckoutSection({
   onSuccess,
   onCancel,
   onPointsUpdated,
+  agreed,
+  onAgreedChange,
 }: {
   plan: PointPlan;
   userId: string;
   onSuccess: () => void;
   onCancel: () => void;
   onPointsUpdated?: (newPoints: number) => void;
+  agreed: boolean;
+  onAgreedChange: (next: boolean) => void;
 }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +159,8 @@ function CheckoutSection({
           onSuccess={onSuccess}
           onCancel={onCancel}
           onPointsUpdated={onPointsUpdated}
+          agreed={agreed}
+          onAgreedChange={onAgreedChange}
         />
       </Elements>
     </div>
@@ -167,6 +174,8 @@ function CheckoutForm({
   onSuccess,
   onCancel,
   onPointsUpdated,
+  agreed,
+  onAgreedChange,
 }: {
   amount: number;
   points: number;
@@ -174,6 +183,8 @@ function CheckoutForm({
   onSuccess: () => void;
   onCancel?: () => void;
   onPointsUpdated?: (newPoints: number) => void;
+  agreed: boolean;
+  onAgreedChange: (next: boolean) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -183,7 +194,7 @@ function CheckoutForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !agreed) return;
 
     setLoading(true);
     setError(null);
@@ -303,7 +314,7 @@ function CheckoutForm({
       <PaymentElement
         options={{
           wallets: {
-            applePay: "auto",
+            applePay: "never",
             googlePay: "auto",
           },
           // PayPayはautomatic_payment_methodsで自動的に有効化される
@@ -313,10 +324,58 @@ function CheckoutForm({
           console.log("PaymentElement ready:", e);
         }}
       />
+      <div
+        className="rounded-lg border p-4 text-sm"
+        style={{
+          borderColor: "#b89f7a",
+          backgroundColor: "rgba(255, 255, 255, 0.6)",
+        }}
+      >
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => onAgreedChange(e.target.checked)}
+            className="mt-1"
+          />
+          <span style={{ color: "#5a4a3a" }}>以下の規約に同意します</span>
+        </label>
+        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+          <Link href="/terms" className="underline" style={{ color: "#8b6f47" }}>
+            利用規約
+          </Link>
+          <Link
+            href="/privacy"
+            className="underline"
+            style={{ color: "#8b6f47" }}
+          >
+            プライバシーポリシー
+          </Link>
+          <Link
+            href="/commercial-transaction"
+            className="underline"
+            style={{ color: "#8b6f47" }}
+          >
+            特定商取引法に基づく表記
+          </Link>
+          <Link
+            href="/compensation-policy"
+            className="underline"
+            style={{ color: "#8b6f47" }}
+          >
+            課金トラブル時の補填ポリシー
+          </Link>
+        </div>
+        {!agreed && (
+          <div className="mt-2 text-xs" style={{ color: "#8b6f47" }}>
+            ※ 同意しないと支払えません
+          </div>
+        )}
+      </div>
       <div className="flex gap-2">
         <button
           type="submit"
-          disabled={!stripe || loading}
+          disabled={!stripe || loading || !agreed}
           className="flex-1 rounded-lg bg-blue-500 px-6 py-3 font-bold text-white transition-colors hover:bg-blue-600 disabled:bg-gray-400"
         >
           {loading ? "処理中..." : `¥${amount.toLocaleString()} を支払う`}
@@ -950,59 +1009,6 @@ function PointsPageContent() {
                 </div>
               )}
             </div>
-            {/* 同意ボックス */}
-            <div
-              className="mb-4 rounded-lg border p-4 text-sm"
-              style={{
-                borderColor: "#b89f7a",
-                backgroundColor: "rgba(255, 255, 255, 0.6)",
-              }}
-            >
-              <label className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-1"
-                />
-                <span style={{ color: "#5a4a3a" }}>以下の規約に同意します</span>
-              </label>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                <Link
-                  href="/terms"
-                  className="underline"
-                  style={{ color: "#8b6f47" }}
-                >
-                  利用規約
-                </Link>
-                <Link
-                  href="/privacy"
-                  className="underline"
-                  style={{ color: "#8b6f47" }}
-                >
-                  プライバシーポリシー
-                </Link>
-                <Link
-                  href="/commercial-transaction"
-                  className="underline"
-                  style={{ color: "#8b6f47" }}
-                >
-                  特定商取引法に基づく表記
-                </Link>
-                <Link
-                  href="/compensation-policy"
-                  className="underline"
-                  style={{ color: "#8b6f47" }}
-                >
-                  課金トラブル時の補填ポリシー
-                </Link>
-              </div>
-              {!agreed && (
-                <div className="mt-2 text-xs" style={{ color: "#8b6f47" }}>
-                  ※ 同意しないとポイントプランを選択できません
-                </div>
-              )}
-            </div>
             {plansLoading ? (
               <div
                 className="rounded-lg p-6 text-center shadow"
@@ -1026,13 +1032,8 @@ function PointsPageContent() {
                 {plans.map((plan) => (
                   <button
                     key={plan.id}
-                    onClick={() => agreed && setSelectedPlan(plan)}
-                    disabled={!agreed}
-                    className={`rounded-lg border-2 p-4 text-center transition-colors ${
-                      agreed
-                        ? "border-gray-300 bg-white hover:border-blue-500 hover:bg-blue-50"
-                        : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                    }`}
+                    onClick={() => setSelectedPlan(plan)}
+                    className="rounded-lg border-2 border-gray-300 bg-white p-4 text-center transition-colors hover:border-blue-500 hover:bg-blue-50"
                   >
                     <div className="mb-2 text-lg font-bold text-gray-800">
                       {plan.label}
@@ -1081,6 +1082,8 @@ function PointsPageContent() {
                 }
               }
             }}
+            agreed={agreed}
+            onAgreedChange={setAgreed}
           />
         )}
 
@@ -1179,6 +1182,17 @@ function PointsPageContent() {
               )}
             </>
           )}
+        </div>
+      </div>
+      <div className="px-4 pb-4">
+        <div
+          className="rounded-xl px-3 py-2 text-xs shadow"
+          style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+        >
+          <LegalFooterLinks
+            className="flex flex-wrap justify-center gap-3"
+            linkClassName="text-[#8b6f47] hover:underline"
+          />
         </div>
       </div>
       <BottomNavigation />

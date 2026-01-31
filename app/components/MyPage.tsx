@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { LiffProfile } from "@/lib/liff";
 import BottomNavigation from "./BottomNavigation";
 import PointCard from "./PointCard";
+import LegalFooterLinks from "./LegalFooterLinks";
 
 type MyPageProps = {
   profile: LiffProfile;
@@ -486,6 +487,17 @@ export default function MyPage({ profile }: MyPageProps) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div className="px-4 pb-4">
+        <div
+          className="rounded-xl px-3 py-2 text-xs shadow"
+          style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+        >
+          <LegalFooterLinks
+            className="flex flex-wrap justify-center gap-3"
+            linkClassName="text-[#8b6f47] hover:underline"
+          />
         </div>
       </div>
       <BottomNavigation currentPage="mypage" />

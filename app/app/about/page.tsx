@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import LegalFooterLinks from '@/components/LegalFooterLinks';
 
 export default function AboutPage() {
   return (
@@ -70,32 +71,10 @@ export default function AboutPage() {
           {/* リンク */}
           <section className="rounded-lg bg-white p-6 shadow-md">
             <h2 className="mb-4 text-2xl font-semibold text-gray-700">関連ページ</h2>
-            <div className="space-y-2">
-              <Link
-                href="/commercial-transaction"
-                className="block text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                特定商取引法に基づく表記
-              </Link>
-              <Link
-                href="/compensation-policy"
-                className="block text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                課金トラブル時の補填ポリシー
-              </Link>
-              <Link
-                href="/terms"
-                className="block text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                サービス利用規約
-              </Link>
-              <Link
-                href="/privacy"
-                className="block text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                プライバシーポリシー
-              </Link>
-            </div>
+            <LegalFooterLinks
+              className="space-y-2"
+              linkClassName="block text-blue-600 hover:text-blue-800 hover:underline"
+            />
           </section>
         </div>
       </div>
