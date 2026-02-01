@@ -49,3 +49,6 @@ github_認証情報.md
 
 /lib/generated/prisma
 /STRIPE_BACKUP_CODE.txt
+
+# LocalStack
+/localstack-data

@@ -1,18 +1,45 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - cd app
-        - npm install
-    build:
-      commands:
-        - npm run build
-  artifacts:
-    baseDirectory: app/.next
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - app/node_modules/**/*
-
+applications:
+  - appRoot: app
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm install
+            - npm run db:generate
+            # データベースマイグレーションの自動適用（環境変数が設定されている場合のみ）
+            - |
+              if [ -n "$DATABASE_URL" ]; then
+                echo "📝 データベースマイグレーションを適用中..."
+                npm run db:deploy || echo "⚠️  マイグレーションに失敗しました（既に適用済みの可能性があります）"
+                # シードデータの投入（環境変数RUN_SEEDが設定されている場合のみ）
+                if [ -n "$RUN_SEED" ] && [ "$RUN_SEED" = "true" ]; then
+                  echo "🌱 シードデータを投入中..."
+                  npm run db:seed || echo "⚠️  シードデータの投入に失敗しました"
+                else
+                  echo "ℹ️  RUN_SEEDが設定されていないため、シードデータの投入をスキップします"
+                fi
+              else
+                echo "ℹ️  DATABASE_URLが設定されていないため、マイグレーションをスキップします"
+              fi
+        build:
+          commands:
+            - rm -rf .next
+            - npm run build
+        postBuild:
+          commands:
+            # デジタルウォレット（Apple Pay、Google Payなど）用ドメインを自動登録（環境変数が設定されている場合のみ）
+            - |
+              if [ -n "$PAYMENT_METHOD_DOMAIN" ] && [ -n "$STRIPE_SECRET_KEY" ]; then
+                echo "📝 デジタルウォレット用ドメインを登録中: $PAYMENT_METHOD_DOMAIN"
+                npx tsx scripts/register-payment-method-domain.ts "$PAYMENT_METHOD_DOMAIN" || echo "⚠️  ドメイン登録に失敗しました（既に登録済みの可能性があります）"
+              else
+                echo "ℹ️  PAYMENT_METHOD_DOMAINまたはSTRIPE_SECRET_KEYが設定されていないため、ドメイン登録をスキップします"
+              fi
+      artifacts:
+        baseDirectory: .next
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - node_modules/**/*

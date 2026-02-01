@@ -1,27 +1,89 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { initLiff, getProfile, isLoggedIn, login, type LiffProfile } from '@/lib/liff';
-import GachaModal from '@/components/GachaModal';
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  initLiff,
+  getProfile,
+  isLoggedIn,
+  login,
+  type LiffProfile,
+} from "@/lib/liff";
+import MyPage from "@/components/MyPage";
+import GachaHistory from "@/components/GachaHistory";
+import MyItems from "@/components/MyItems";
+import HelpPage from "@/components/HelpPage";
+import Referral from "@/components/Referral";
+import HomePageContent from "@/components/HomePageContent";
+import GachaScreen from "@/components/GachaScreen";
 
-export default function Home() {
-  const searchParams = useSearchParams();
+type ActivePage =
+  | "home"
+  | "gacha"
+  | "mypage"
+  | "history"
+  | "items"
+  | "help"
+  | "referral";
+
+function HomeContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isGachaModalOpen, setIsGachaModalOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activePage, setActivePage] = useState<'home' | 'mypage' | 'history' | 'referral'>('home');
+  const [defaultGachaCode, setDefaultGachaCode] = useState<string | undefined>(undefined);
+  const [points, setPoints] = useState<number | null>(null);
+  const [pointBalances, setPointBalances] = useState<{
+    paid: number;
+    free: number;
+    total: number;
+    paidExpiresAt: string | null;
+    freeExpiresAt: string | null;
+    lastUpdated: string | null;
+  } | null>(null);
+  const [activePage, setActivePage] = useState<ActivePage>("home");
+  const [referralNotice, setReferralNotice] = useState<string | null>(null);
+  const [pendingMessageIds, setPendingMessageIds] = useState<number[]>([]);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [sendingPending, setSendingPending] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // URLパラメータからactionを取得してページを切り替え
+  useEffect(() => {
+    const action = searchParams.get("action");
+    const gachaCode =
+      searchParams.get("gacha") || searchParams.get("code") || undefined;
+
+    if (action === "gacha") {
+      setDefaultGachaCode(gachaCode);
+      setActivePage("gacha");
+      return;
+    }
+
+    setDefaultGachaCode(undefined);
+    if (action === "mypage") {
+      setActivePage("mypage");
+    } else if (action === "history") {
+      setActivePage("history");
+    } else if (action === "items") {
+      setActivePage("items");
+    } else if (action === "help") {
+      setActivePage("help");
+    } else if (action === "referral") {
+      setActivePage("referral");
+    } else {
+      setActivePage("home");
+    }
+  }, [searchParams, profile]);
 
   useEffect(() => {
     const initialize = async () => {
       try {
         // LIFF IDは環境変数から取得（後で設定）
-        const liffId = process.env.NEXT_PUBLIC_LIFF_ID || '';
-        
+        const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "";
+
         if (!liffId) {
-          setError('LIFF IDが設定されていません');
+          setError("LIFF IDが設定されていません");
           setLoading(false);
           return;
         }
@@ -35,8 +97,81 @@ export default function Home() {
 
         const userProfile = await getProfile();
         setProfile(userProfile);
+
+        // ユーザー登録
+        try {
+          await fetch("/api/users/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: userProfile.userId,
+              displayName: userProfile.displayName,
+              pictureUrl: userProfile.pictureUrl,
+            }),
+          });
+        } catch (error) {
+          console.error("ユーザー登録エラー:", error);
+        }
+
+        // 紹介リンクの検証（URLパラメータにrefがある場合）
+        const urlParams = new URLSearchParams(window.location.search);
+        const referralLinkId = urlParams.get('ref');
+        if (referralLinkId && userProfile.userId) {
+          try {
+            const verifyRes = await fetch("/api/referral/verify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ 
+                referralLinkId,
+                userId: userProfile.userId, // ユーザーIDも送信してUser.lastAccessedReferralLinkIdに記録
+              }),
+            });
+
+            const verifyData = verifyRes.ok ? await verifyRes.json() : null;
+            if (verifyData?.isValid) {
+              setReferralNotice(null);
+              console.log("紹介リンクが適用されました:", referralLinkId);
+              // 注意: 友だち追加時の判定は、User.lastAccessedReferralLinkIdを参照するため、
+              // セッションストレージへの保存は不要（既にDBに記録されている）
+            } else {
+              setReferralNotice(
+                verifyData?.reason || "紹介リンクの検証に失敗しました"
+              );
+            }
+          } catch (error) {
+            console.error("紹介リンク検証エラー:", error);
+            setReferralNotice("紹介リンクの検証に失敗しました");
+          }
+        } else {
+          setReferralNotice(null);
+        }
+
+        // ポイント残高を取得
+        try {
+          const res = await fetch(
+            `/api/points/balance?userId=${userProfile.userId}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setPoints(data.points);
+            setPointBalances({
+              paid: data.paid || 0,
+              free: data.free || 0,
+              total: data.total || 0,
+              paidExpiresAt: data.paidExpiresAt,
+              freeExpiresAt: data.freeExpiresAt,
+              lastUpdated: data.lastUpdated,
+            });
+          }
+        } catch (error) {
+          console.error("ポイント残高取得エラー:", error);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'エラーが発生しました');
+        setError(err instanceof Error ? err.message : "エラーが発生しました");
       } finally {
         setLoading(false);
       }
@@ -45,30 +180,51 @@ export default function Home() {
     initialize();
   }, []);
 
-  // URLパラメータからアクションを取得して処理
   useEffect(() => {
-    const action = searchParams.get('action');
-    
-    if (action) {
-      switch (action) {
-        case 'gacha':
-          setIsGachaModalOpen(true);
-          setActivePage('home');
-          break;
-        case 'mypage':
-          setActivePage('mypage');
-          break;
-        case 'history':
-          setActivePage('history');
-          break;
-        case 'referral':
-          setActivePage('referral');
-          break;
-        default:
-          setActivePage('home');
+    const checkPendingMessages = async () => {
+      if (!profile?.userId) return;
+      try {
+        const response = await fetch(
+          `/api/messages/pending?userId=${profile.userId}&type=1`
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.count > 0 && Array.isArray(data.messages)) {
+          setPendingMessageIds(
+            data.messages.map((msg: { id: number }) => msg.id)
+          );
+          setShowPendingModal(true);
+        } else {
+          setPendingMessageIds([]);
+          setShowPendingModal(false);
+        }
+      } catch (error) {
+        console.error("未送信メッセージ確認エラー:", error);
       }
+    };
+
+    checkPendingMessages();
+  }, [profile?.userId]);
+
+  const sendPendingMessages = async () => {
+    if (!profile?.userId || pendingMessageIds.length === 0) return;
+    setSendingPending(true);
+    try {
+      await fetch("/api/messages/send-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageQueueIds: pendingMessageIds,
+          userId: profile.userId,
+        }),
+      });
+      setPendingMessageIds([]);
+    } catch (error) {
+      console.error("未送信メッセージ送信エラー:", error);
+    } finally {
+      setSendingPending(false);
     }
-  }, [searchParams]);
+  };
 
   if (loading) {
     return (
@@ -90,188 +246,133 @@ export default function Home() {
     );
   }
 
+  // アクティブページに応じたコンテンツを表示
+  const renderContent = () => {
+    if (!profile) {
+      return null;
+    }
+
+    switch (activePage) {
+      case "gacha":
+        return (
+          <GachaScreen
+            userId={profile.userId}
+            defaultGachaCode={defaultGachaCode}
+          />
+        );
+      case "mypage":
+        return <MyPage profile={profile} />;
+      case "history":
+        return <GachaHistory userId={profile.userId} />;
+      case "items":
+        return <MyItems userId={profile.userId} />;
+      case "help":
+        return <HelpPage />;
+      case "referral":
+        return <Referral userId={profile.userId} />;
+      case "home":
+      default:
+        return (
+          <HomePageContent
+            profile={profile}
+            pointBalances={pointBalances}
+            referralNotice={referralNotice}
+            onOpenGacha={(gachaCode) => {
+              setDefaultGachaCode(gachaCode);
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("action", "gacha");
+              if (gachaCode) {
+                params.set("gacha", gachaCode);
+              } else {
+                params.delete("gacha");
+                params.delete("code");
+              }
+              router.push(`/?${params.toString()}`);
+            }}
+          />
+        );
+    }
+  };
+
   return (
     <>
-      <div className="flex h-screen flex-col bg-gray-100">
-        {/* メインコンテンツ領域 */}
-        <main className={`overflow-y-auto p-4 ${isMenuOpen ? 'flex-[2]' : 'flex-1'}`}>
-          <div className="mx-auto max-w-md">
-            {/* アクティブページに応じたコンテンツを表示 */}
-            {activePage === 'home' && (
-              <>
-                <h1 className="mb-4 text-center text-2xl font-bold text-gray-800">
-                  Gacha Lab
-                </h1>
-                
-                {profile && (
-                  <div className="mb-4 rounded-lg bg-white p-4 shadow">
-                    <div className="flex items-center gap-3">
-                      {profile.pictureUrl && (
-                        <img
-                          src={profile.pictureUrl}
-                          alt={profile.displayName}
-                          className="h-12 w-12 rounded-full"
-                        />
-                      )}
-                      <div>
-                        <div className="font-semibold">{profile.displayName}</div>
-                        <div className="text-xs text-gray-500">ID: {profile.userId}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-lg bg-white p-4 shadow">
-                  <p className="mb-4 text-center text-gray-600">
-                    ガチャボタンを押してガチャを引こう！
-                  </p>
-                </div>
-              </>
-            )}
-
-            {activePage === 'mypage' && (
-              <div className="space-y-4">
-                <h1 className="text-2xl font-bold text-gray-800">マイページ</h1>
-                {profile && (
-                  <div className="rounded-lg bg-white p-4 shadow">
-                    <div className="flex items-center gap-3">
-                      {profile.pictureUrl && (
-                        <img
-                          src={profile.pictureUrl}
-                          alt={profile.displayName}
-                          className="h-16 w-16 rounded-full"
-                        />
-                      )}
-                      <div>
-                        <div className="text-lg font-semibold">{profile.displayName}</div>
-                        <div className="text-sm text-gray-500">ID: {profile.userId}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div className="rounded-lg bg-white p-4 shadow">
-                  <h2 className="mb-2 font-semibold">獲得アイテム</h2>
-                  <p className="text-sm text-gray-600">（今後実装予定）</p>
-                </div>
-              </div>
-            )}
-
-            {activePage === 'history' && (
-              <div className="space-y-4">
-                <h1 className="text-2xl font-bold text-gray-800">抽選履歴</h1>
-                <div className="rounded-lg bg-white p-4 shadow">
-                  <p className="text-sm text-gray-600">（今後実装予定）</p>
-                </div>
-              </div>
-            )}
-
-            {activePage === 'referral' && (
-              <div className="space-y-4">
-                <h1 className="text-2xl font-bold text-gray-800">友達を招待</h1>
-                <div className="rounded-lg bg-white p-4 shadow">
-                  <p className="text-sm text-gray-600">（今後実装予定）</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* 閉じる機構（メニューが開いている時、メニュー領域の上に表示） */}
-        {isMenuOpen && (
-          <div className="border-t bg-gray-100 p-2">
-            <button
-              onClick={() => setIsMenuOpen(false)}
-              className="w-full rounded-lg bg-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-400"
+      {renderContent()}
+      {showPendingModal && pendingMessageIds.length > 0 && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+          />
+          <div
+            className="relative z-10 w-full max-w-md rounded-2xl border p-6 shadow-xl"
+            style={{ backgroundColor: "#f7efe6", borderColor: "#b89f7a" }}
+          >
+            <h2
+              className="mb-2 text-lg font-bold"
+              style={{ color: "#4a3a2a" }}
             >
-              メニューを閉じる
-            </button>
-          </div>
-        )}
-
-        {/* 下部メニュー領域（開閉式、1/3の高さ） */}
-        {isMenuOpen && (
-          <div className="flex-[1] border-t bg-gray-50">
-            <div className="flex h-full flex-col px-4 py-2">
-              {/* 上4個のボタン */}
-              <div className="mb-2 flex flex-1 gap-2">
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー1
-                </button>
-                <button
-                  onClick={() => setIsGachaModalOpen(true)}
-                  className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                >
-                  ガチャ
-                </button>
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー3
-                </button>
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー4
-                </button>
-              </div>
-
-              {/* 下4個のボタン */}
-              <div className="flex flex-1 gap-2">
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー5
-                </button>
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー6
-                </button>
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー7
-                </button>
-                <button
-                  onClick={() => {}}
-                  className="flex-1 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
-                >
-                  メニュー8
-                </button>
-              </div>
+              未送信のガチャ結果があります
+            </h2>
+            <p className="mb-4 text-sm" style={{ color: "#6b5a4a" }}>
+              {pendingMessageIds.length}件の結果を送信します。
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={async () => {
+                  await sendPendingMessages();
+                  setShowPendingModal(false);
+                }}
+                disabled={sendingPending}
+                className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(to right, #e7c675, #f5d48a)",
+                  color: "#4a3a2a",
+                  border: "1px solid #b89f7a",
+                }}
+              >
+                確認する
+              </button>
+              <button
+                onClick={async () => {
+                  await sendPendingMessages();
+                  setShowPendingModal(false);
+                  setActivePage("items");
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set("action", "items");
+                  params.delete("gacha");
+                  params.delete("code");
+                  router.push(`/?${params.toString()}`);
+                }}
+                disabled={sendingPending}
+                className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-60"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.8)",
+                  color: "#4a3a2a",
+                  border: "1px solid #b89f7a",
+                }}
+              >
+                アイテム一覧へ
+              </button>
             </div>
           </div>
-        )}
-
-        {/* メニュー開閉ボタン（常に表示） */}
-        {!isMenuOpen && (
-          <div className="border-t bg-white p-3">
-            <button
-              onClick={() => setIsMenuOpen(true)}
-              className="w-full rounded-lg bg-gray-300 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-400"
-            >
-              メニューを開く
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 全画面ガチャモーダル */}
-      {profile && (
-        <GachaModal
-          isOpen={isGachaModalOpen}
-          onClose={() => setIsGachaModalOpen(false)}
-          userId={profile.userId}
-        />
+        </div>
       )}
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="mb-4 text-lg">読み込み中...</div>
+          </div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

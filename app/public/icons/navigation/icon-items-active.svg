@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Items Active">
+  <title>Items Active</title>
+  
+  <g transform="rotate(-8 12 12)">
+    <rect x="6.2" y="6.2" width="9.2" height="11.8" rx="1.5" fill="#DCFCE7" stroke="#D4AF37" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+    <rect x="9.0" y="7.2" width="9.2" height="11.8" rx="1.5" fill="#DCFCE7" stroke="#D4AF37" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+</svg>
