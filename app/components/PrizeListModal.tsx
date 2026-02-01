@@ -9,6 +9,8 @@ type Prize = {
   itemDescription: string | null;
   itemImageUrl: string | null;
   itemUsageType: string;
+  rewardType: string;
+  points: number;
   weight: number;
   probability: number;
 };
@@ -103,7 +105,15 @@ export default function PrizeListModal({
       return Array.from(new Set(descriptions)).join(' / ');
     }
     const names = tier.prizes
-      .map((prize) => prize.itemName?.trim())
+      .map((prize) => {
+        if (prize.rewardType === 'POINTS') {
+          const pointsLabel = Number.isFinite(prize.points)
+            ? prize.points.toLocaleString()
+            : '0';
+          return `ポイント付与: ${pointsLabel}ポイント`;
+        }
+        return prize.itemName?.trim();
+      })
       .filter((value): value is string => Boolean(value));
     if (names.length > 0) {
       return Array.from(new Set(names)).join(' / ');

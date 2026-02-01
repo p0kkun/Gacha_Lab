@@ -22,7 +22,9 @@ type Assignment = {
   id: number;
   gachaTypeId: number;
   tierCode: string;
-  itemId: number;
+  itemId: number | null;
+  rewardType: "ITEM" | "POINTS";
+  points: number;
   weight: number;
   isActive: boolean;
   tier?: { code: string; label: string };
@@ -30,7 +32,7 @@ type Assignment = {
     id: number;
     name: string;
     isActive: boolean;
-  };
+  } | null;
 };
 
 export default function PrizeAssignmentsPage() {
@@ -48,9 +50,18 @@ export default function PrizeAssignmentsPage() {
   const [newRow, setNewRow] = useState<{
     tierCode: string;
     itemId: string;
+    rewardType: "ITEM" | "POINTS";
+    points: string;
     weight: string;
     isActive: boolean;
-  }>({ tierCode: "", itemId: "", weight: "1", isActive: true });
+  }>({
+    tierCode: "",
+    itemId: "",
+    rewardType: "ITEM",
+    points: "",
+    weight: "1",
+    isActive: true,
+  });
 
   const [confirm, setConfirm] = useState<{
     isOpen: boolean;
@@ -261,14 +272,22 @@ export default function PrizeAssignmentsPage() {
     setError(null);
     setSuccess(null);
     const itemId = Number(newRow.itemId);
+    const points = Number(newRow.points);
     const weight = Number(newRow.weight);
     if (!selectedGachaTypeId) {
       setError("ガチャタイプを選択してください");
       return;
     }
-    if (!Number.isFinite(itemId) || itemId <= 0) {
-      setError("景品（アイテム）を選択してください");
-      return;
+    if (newRow.rewardType === "ITEM") {
+      if (!Number.isFinite(itemId) || itemId <= 0) {
+        setError("景品（アイテム）を選択してください");
+        return;
+      }
+    } else {
+      if (!Number.isFinite(points) || points <= 0) {
+        setError("ポイント数は1以上である必要があります");
+        return;
+      }
     }
     if (!Number.isFinite(weight) || weight <= 0) {
       setError("重みは1以上である必要があります");
@@ -276,6 +295,12 @@ export default function PrizeAssignmentsPage() {
     }
 
     const item = items.find((i) => i.id === itemId);
+    const rewardLabel =
+      newRow.rewardType === "POINTS"
+        ? `ポイント付与（${points.toLocaleString()}pt）`
+        : item
+        ? `${item.name}（ID:${item.id}）`
+        : `ID:${itemId}`;
     openConfirm({
       title: "景品割当の追加",
       message: "この内容で景品割当を追加します。よろしいですか？",
@@ -284,11 +309,8 @@ export default function PrizeAssignmentsPage() {
       changes: [
         { label: "ガチャタイプ", from: "-", to: selectedGachaTypeId },
         { label: "等級", from: "-", to: tierLabel(newRow.tierCode) },
-        {
-          label: "景品",
-          from: "-",
-          to: item ? `${item.name}（ID:${item.id}）` : `ID:${itemId}`,
-        },
+        { label: "景品", from: "-", to: rewardLabel },
+        { label: "報酬種別", from: "-", to: newRow.rewardType },
         { label: "重み", from: "-", to: String(weight) },
         { label: "状態", from: "-", to: newRow.isActive ? "有効" : "無効" },
       ],
@@ -304,7 +326,9 @@ export default function PrizeAssignmentsPage() {
             body: JSON.stringify({
               gachaTypeId: selectedGachaTypeId,
               tierCode: newRow.tierCode,
-              itemId,
+              rewardType: newRow.rewardType,
+              itemId: newRow.rewardType === "ITEM" ? itemId : null,
+              points: newRow.rewardType === "POINTS" ? points : 0,
               weight,
               isActive: newRow.isActive,
             }),
@@ -321,6 +345,8 @@ export default function PrizeAssignmentsPage() {
           setNewRow({
             tierCode: newRow.tierCode,
             itemId: "",
+            rewardType: "ITEM",
+            points: "",
             weight: "1",
             isActive: true,
           });
@@ -335,6 +361,12 @@ export default function PrizeAssignmentsPage() {
   const saveAssignment = async (row: Assignment) => {
     setError(null);
     setSuccess(null);
+    const rewardLabel =
+      row.rewardType === "POINTS"
+        ? `ポイント付与（${row.points.toLocaleString()}pt）`
+        : row.item
+        ? `${row.item.name}（ID:${row.item.id}）`
+        : "未設定";
     openConfirm({
       title: "景品割当の保存",
       message: "この変更を保存します。よろしいですか？",
@@ -342,11 +374,8 @@ export default function PrizeAssignmentsPage() {
       variant: "info",
       changes: [
         { label: "等級", from: "-", to: tierLabel(row.tierCode) },
-        {
-          label: "景品",
-          from: "-",
-          to: `${row.item.name}（ID:${row.item.id}）`,
-        },
+        { label: "景品", from: "-", to: rewardLabel },
+        { label: "報酬種別", from: "-", to: row.rewardType },
         { label: "重み", from: "-", to: String(row.weight) },
         { label: "状態", from: "-", to: row.isActive ? "有効" : "無効" },
       ],
@@ -361,7 +390,9 @@ export default function PrizeAssignmentsPage() {
             },
             body: JSON.stringify({
               tierCode: row.tierCode,
-              itemId: row.itemId,
+              rewardType: row.rewardType,
+              itemId: row.rewardType === "ITEM" ? row.itemId : null,
+              points: row.rewardType === "POINTS" ? row.points : 0,
               weight: row.weight,
               isActive: row.isActive,
             }),
@@ -386,6 +417,12 @@ export default function PrizeAssignmentsPage() {
   const deleteAssignment = async (row: Assignment) => {
     setError(null);
     setSuccess(null);
+    const rewardLabel =
+      row.rewardType === "POINTS"
+        ? `ポイント付与（${row.points.toLocaleString()}pt）`
+        : row.item
+        ? `${row.item.name}（ID:${row.item.id}）`
+        : "未設定";
     openConfirm({
       title: "景品割当の削除",
       message: "この割当を削除しますか？この操作は取り消せません。",
@@ -400,7 +437,7 @@ export default function PrizeAssignmentsPage() {
         {
           label: "景品",
           from: "割当済み",
-          to: `${row.item.name}（ID:${row.item.id}）`,
+          to: rewardLabel,
         },
       ],
       onConfirm: async () => {
@@ -481,30 +518,80 @@ export default function PrizeAssignmentsPage() {
                 ))}
               </select>
               <select
+                value={newRow.rewardType}
+                onChange={(e) =>
+                  setNewRow((p) => ({
+                    ...p,
+                    rewardType: e.target.value as "ITEM" | "POINTS",
+                    itemId: "",
+                    points: "",
+                  }))
+                }
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+              >
+                <option value="ITEM">アイテム</option>
+                <option value="POINTS">ポイント</option>
+              </select>
+              <select
                 value={newRow.itemId}
                 onChange={(e) =>
                   setNewRow((p) => ({ ...p, itemId: e.target.value }))
                 }
                 className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 md:col-span-2"
+                disabled={newRow.rewardType === "POINTS"}
               >
-                <option value="">景品（アイテム）を選択</option>
+                <option value="">
+                  {newRow.rewardType === "POINTS"
+                    ? "ポイント付与を選択中"
+                    : "景品（アイテム）を選択"}
+                </option>
                 {items.map((it) => (
                   <option key={it.id} value={String(it.id)}>
                     {it.name}（ID:{it.id}）
                   </option>
                 ))}
               </select>
-              <input
-                type="number"
-                min={1}
-                value={newRow.weight}
-                onChange={(e) =>
-                  setNewRow((p) => ({ ...p, weight: e.target.value }))
-                }
-                className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                placeholder="重み"
-              />
+              {newRow.rewardType === "POINTS" ? (
+                <input
+                  type="number"
+                  min={1}
+                  value={newRow.points}
+                  onChange={(e) =>
+                    setNewRow((p) => ({ ...p, points: e.target.value }))
+                  }
+                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="ポイント"
+                />
+              ) : (
+                <input
+                  type="number"
+                  min={1}
+                  value={newRow.weight}
+                  onChange={(e) =>
+                    setNewRow((p) => ({ ...p, weight: e.target.value }))
+                  }
+                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="重み"
+                />
+              )}
             </div>
+            {newRow.rewardType === "POINTS" && (
+              <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-4">
+                <div className="md:col-span-3 text-xs text-gray-500">
+                  ポイント付与を選択すると、アイテムレコードは作成されません。
+                </div>
+                <input
+                  type="number"
+                  min={1}
+                  value={newRow.weight}
+                  onChange={(e) =>
+                    setNewRow((p) => ({ ...p, weight: e.target.value }))
+                  }
+                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                  placeholder="重み"
+                />
+              </div>
+            )}
             <div className="mt-2 flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-gray-900">
                 <input
@@ -557,6 +644,9 @@ export default function PrizeAssignmentsPage() {
                     等級
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                    報酬
+                  </th>
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     景品
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
@@ -605,36 +695,82 @@ export default function PrizeAssignmentsPage() {
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-900">
                       <select
-                        value={String(a.itemId)}
+                        value={a.rewardType}
                         onChange={(e) => {
-                          const nextId = Number(e.target.value);
-                          const it = items.find((i) => i.id === nextId);
+                          const nextType = e.target.value as "ITEM" | "POINTS";
                           setAssignments((prev) =>
                             prev.map((x) =>
                               x.id === a.id
                                 ? {
                                     ...x,
-                                    itemId: nextId,
-                                    item: it
-                                      ? {
-                                          id: it.id,
-                                          name: it.name,
-                                          isActive: it.isActive,
-                                        }
-                                      : x.item,
+                                    rewardType: nextType,
+                                    itemId: nextType === "ITEM" ? x.itemId : null,
+                                    item: nextType === "ITEM" ? x.item : null,
+                                    points: nextType === "POINTS" ? x.points || 100 : 0,
                                   }
                                 : x
                             )
                           );
                         }}
-                        className="w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+                        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
                       >
-                        {items.map((it) => (
-                          <option key={it.id} value={String(it.id)}>
-                            {it.name}（ID:{it.id}）
-                          </option>
-                        ))}
+                        <option value="ITEM">アイテム</option>
+                        <option value="POINTS">ポイント</option>
                       </select>
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-900">
+                      {a.rewardType === "POINTS" ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            value={a.points}
+                            onChange={(e) =>
+                              setAssignments((prev) =>
+                                prev.map((x) =>
+                                  x.id === a.id
+                                    ? { ...x, points: Number(e.target.value) }
+                                    : x
+                                )
+                              )
+                            }
+                            className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900"
+                          />
+                          <span className="text-xs text-gray-500">pt</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={a.itemId ? String(a.itemId) : ""}
+                          onChange={(e) => {
+                            const nextId = Number(e.target.value);
+                            const it = items.find((i) => i.id === nextId);
+                            setAssignments((prev) =>
+                              prev.map((x) =>
+                                x.id === a.id
+                                  ? {
+                                      ...x,
+                                      itemId: nextId,
+                                      item: it
+                                        ? {
+                                            id: it.id,
+                                            name: it.name,
+                                            isActive: it.isActive,
+                                          }
+                                        : x.item,
+                                    }
+                                  : x
+                              )
+                            );
+                          }}
+                          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+                        >
+                          {items.map((it) => (
+                            <option key={it.id} value={String(it.id)}>
+                              {it.name}（ID:{it.id}）
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-900">
                       <input

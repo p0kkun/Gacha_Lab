@@ -15,7 +15,7 @@ type GachaResult = {
   item: {
     id: number;
     name: string;
-    rarity: "common" | "rare" | "epic";
+    rarity: string;
   };
   videoUrls?: string[]; // 新しい動画システム（複数動画対応）
   timestamp: string;
@@ -337,7 +337,7 @@ export default function GachaContent({
       case "rare":
         return "レア";
       default:
-        return "コモン";
+        return rarity || "不明";
     }
   };
 

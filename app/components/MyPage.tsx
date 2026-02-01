@@ -142,7 +142,7 @@ export default function MyPage({ profile }: MyPageProps) {
 
   return (
     <>
-      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
+      <div className="min-h-screen" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション - プロフィール */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">

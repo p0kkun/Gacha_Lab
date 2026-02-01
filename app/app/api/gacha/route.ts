@@ -26,7 +26,12 @@ type PrizeItemRow = {
   name: string;
   isActive: boolean;
 };
-type AssignmentRow = { weight: number; item: PrizeItemRow };
+type AssignmentRow = {
+  weight: number;
+  rewardType: "ITEM" | "POINTS";
+  points: number;
+  item: PrizeItemRow | null;
+};
 
 type PrismaClientForTiers = {
   gachaTierWeight: {
@@ -41,10 +46,11 @@ type PrismaClientForTiers = {
         gachaTypeId: number;
         tierCode: string;
         isActive: boolean;
-        item: { isActive: boolean };
       };
       select: {
         weight: true;
+        rewardType: true;
+        points: true;
         item: {
           select: { id: true; name: true; isActive: true };
         };
@@ -322,10 +328,11 @@ export async function POST(request: NextRequest) {
         gachaTypeId: gachaTypeInternalId,
         tierCode: selectedTierCode,
         isActive: true,
-        item: { isActive: true },
       },
       select: {
         weight: true,
+        rewardType: true,
+        points: true,
         item: {
           select: { id: true, name: true, isActive: true },
         },
@@ -342,15 +349,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedItem = drawByWeights(
+    const selectedAssignment = drawByWeights(
       assignments.map((a: AssignmentRow) => ({
+        rewardType: a.rewardType === "POINTS" ? "POINTS" : "ITEM",
+        points: Number.isFinite(a.points) ? a.points : 0,
         item: a.item,
         weight:
           typeof a.weight === "number" && Number.isFinite(a.weight)
             ? a.weight
             : 1,
       }))
-    ).item;
+    );
+
+    const isPointReward = selectedAssignment.rewardType === "POINTS";
+    const selectedItem = selectedAssignment.item;
+    const grantedPoints = isPointReward
+      ? Math.trunc(Number.isFinite(selectedAssignment.points) ? selectedAssignment.points : 0)
+      : 0;
+
+    if (!isPointReward && (!selectedItem || !selectedItem.isActive)) {
+      return NextResponse.json(
+        { error: "景品アイテムが無効です（管理画面で確認してください）" },
+        { status: 404 }
+      );
+    }
 
     // ポイント消費とガチャ履歴保存をトランザクションで実行
     const result = await prisma.$transaction(async (tx) => {
@@ -359,31 +381,25 @@ export async function POST(request: NextRequest) {
         data: {
           userId: userId,
           gachaTypeId: gachaTypeInternalId,
-          itemId: selectedItem.id,
+          itemId: isPointReward ? null : selectedItem?.id ?? null,
           tierCode: selectedTierCode,
           pointsUsed: pointCost,
         } as unknown as Prisma.GachaHistoryUncheckedCreateInput,
       });
 
-      // ステップ13: ユーザーのアイテム所持情報を保存する
-      // UserItemテーブルにcreate（同じアイテムを複数所持できるようにする）
-      await tx.userItem.create({
-        data: {
-          userId: userId,
-          itemId: selectedItem.id,
-          gachaHistoryId: gachaHistory.id,
-          status: "UNUSED",
-        },
-      });
+      // ステップ13: ユーザーのアイテム所持情報を保存する（アイテム報酬のみ）
+      if (!isPointReward && selectedItem) {
+        await tx.userItem.create({
+          data: {
+            userId: userId,
+            itemId: selectedItem.id,
+            gachaHistoryId: gachaHistory.id,
+            status: "UNUSED",
+          },
+        });
+      }
 
-      // ステップ14: ポイント消費を行う（pointCost > 0 の場合のみ）
-      let newBalance = 0;
-      if (pointCost > 0) {
-        const nowDate = new Date();
-        const unifiedExpiresAt = new Date(nowDate);
-        unifiedExpiresAt.setFullYear(unifiedExpiresAt.getFullYear() + 1);
-
-        // 残高行を確実に作成
+      const ensureBalanceRow = async () => {
         const existing = await tx.userPointBalance.findUnique({
           where: { userId },
         });
@@ -396,6 +412,12 @@ export async function POST(request: NextRequest) {
             },
           });
         }
+      };
+
+      // ステップ14: ポイント消費を行う（pointCost > 0 の場合のみ）
+      let newBalance = 0;
+      if (pointCost > 0) {
+        await ensureBalanceRow();
 
         const balance = await tx.userPointBalance.findUnique({
           where: { userId },
@@ -437,18 +459,59 @@ export async function POST(request: NextRequest) {
 
         newBalance = totalBalances;
       } else {
-        // ポイント不要の場合は残高を取得
+        await ensureBalanceRow();
         const balance = await tx.userPointBalance.findUnique({
           where: { userId },
         });
         newBalance = (balance?.paidAmount ?? 0) + (balance?.freeAmount ?? 0);
       }
 
-      // ステップ15: メッセージ管理テーブルにレコード作成
+      // ステップ15: ポイント報酬の付与（ポイント報酬のみ）
+      let grantedPointsApplied = 0;
+      if (isPointReward && grantedPoints > 0) {
+        await ensureBalanceRow();
+        const balance = await tx.userPointBalance.findUnique({
+          where: { userId },
+        });
+        const freeAmount = balance?.freeAmount ?? 0;
+        const paidAmount = balance?.paidAmount ?? 0;
+        const beforeTotal = freeAmount + paidAmount;
+        const newFreeAmount = freeAmount + grantedPoints;
+        const totalBalances = newFreeAmount + paidAmount;
+
+        await tx.userPointBalance.update({
+          where: { userId },
+          data: {
+            freeAmount: newFreeAmount,
+          },
+        });
+
+        await tx.pointHistory.create({
+          data: {
+            userId,
+            transactionType: PointTransactionType.GRANT,
+            amount: grantedPoints,
+            balanceBefore: beforeTotal,
+            balanceAfter: totalBalances,
+            description: `${gachaType.name}ガチャ当選ポイント付与`,
+            historyTable: "gacha_histories",
+            historyTableId: gachaHistory.id,
+          },
+        });
+
+        newBalance = totalBalances;
+        grantedPointsApplied = grantedPoints;
+      }
+
+      // ステップ16: メッセージ管理テーブルにレコード作成
       const templateId = (
         gachaType as unknown as { resultMessageTemplateId?: number | null }
       ).resultMessageTemplateId;
-      
+
+      const rewardLabel = isPointReward
+        ? `${grantedPoints.toLocaleString()}ポイント`
+        : selectedItem?.name || "不明なアイテム";
+
       const messageQueue = await tx.messageQueue.create({
         data: {
           userId,
@@ -462,7 +525,7 @@ export async function POST(request: NextRequest) {
               : null,
           jsonData: {
             gachaHistoryId: gachaHistory.id,
-            itemName: selectedItem.name,
+            itemName: rewardLabel,
             tierCode: selectedTierCode,
             gachaTypeName: gachaType.name,
             gachaTypeCode: gachaType.code,
@@ -474,13 +537,13 @@ export async function POST(request: NextRequest) {
                   communityCards: [],
                 }
               : undefined,
-            grantedPoints: 0,
+            grantedPoints: grantedPointsApplied,
           },
         },
       });
 
-      // ステップ16: DBコミットを行う（トランザクション成功時）
-      return { gachaHistory, newBalance, grantedPoints: 0, messageQueue };
+      // ステップ17: DBコミットを行う（トランザクション成功時）
+      return { gachaHistory, newBalance, grantedPoints: grantedPointsApplied, messageQueue };
     });
 
     // ガチャ実行完了後、キャッシュを削除
@@ -502,11 +565,15 @@ export async function POST(request: NextRequest) {
       console.error("被紹介者行動更新エラー:", error);
     });
 
+    const rewardLabel = isPointReward
+      ? `${result.grantedPoints.toLocaleString()}ポイント`
+      : selectedItem?.name || "不明なアイテム";
+
     return NextResponse.json({
       success: true,
       item: {
-        id: selectedItem.id,
-        name: selectedItem.name,
+        id: isPointReward ? 0 : selectedItem?.id ?? 0,
+        name: rewardLabel,
         rarity: selectedTierCode, // 後方互換: フロントは従来通り rarity 文字列で受ける
         // 後方互換: 旧クライアントが参照していても壊れないよう先頭動画を返す
         videoUrl: videoUrls[0] || "",

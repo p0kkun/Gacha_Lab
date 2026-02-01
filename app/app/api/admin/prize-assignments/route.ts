@@ -5,7 +5,9 @@ import { verifyAdminAuth } from "@/lib/admin-auth";
 type CreateBody = {
   gachaTypeId?: string; // 外部からは code を受け取る（互換のためキー名は維持）
   tierCode?: string;
-  itemId?: number;
+  itemId?: number | null;
+  rewardType?: "ITEM" | "POINTS";
+  points?: number;
   weight?: number;
   isActive?: boolean;
 };
@@ -80,7 +82,14 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as CreateBody;
     const gachaTypeCode = typeof body.gachaTypeId === "string" ? body.gachaTypeId : "";
     const tierCode = typeof body.tierCode === "string" ? body.tierCode : "";
-    const itemId = typeof body.itemId === "number" ? body.itemId : Number(body.itemId);
+    const rewardType = body.rewardType === "POINTS" ? "POINTS" : "ITEM";
+    const itemId =
+      rewardType === "ITEM"
+        ? typeof body.itemId === "number"
+          ? body.itemId
+          : Number(body.itemId)
+        : null;
+    const points = typeof body.points === "number" ? body.points : Number(body.points ?? 0);
     const weight = typeof body.weight === "number" ? body.weight : Number(body.weight ?? 1);
     const isActive = typeof body.isActive === "boolean" ? body.isActive : true;
 
@@ -93,11 +102,20 @@ export async function POST(request: NextRequest) {
     if (!tierCode) {
       return NextResponse.json({ error: "tierCode は必須です" }, { status: 400 });
     }
-    if (!Number.isFinite(itemId) || itemId <= 0) {
-      return NextResponse.json(
-        { error: "itemId が無効です" },
-        { status: 400 }
-      );
+    if (rewardType === "ITEM") {
+      if (!Number.isFinite(itemId) || (itemId as number) <= 0) {
+        return NextResponse.json(
+          { error: "itemId が無効です" },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (!Number.isFinite(points) || points <= 0) {
+        return NextResponse.json(
+          { error: "points は1以上である必要があります" },
+          { status: 400 }
+        );
+      }
     }
     if (!Number.isFinite(weight) || weight <= 0) {
       return NextResponse.json(
@@ -121,7 +139,9 @@ export async function POST(request: NextRequest) {
       data: {
         gachaTypeId: gachaType.id,
         tierCode,
-        itemId: Math.trunc(itemId),
+        rewardType,
+        points: rewardType === "POINTS" ? Math.trunc(points) : 0,
+        itemId: rewardType === "ITEM" ? Math.trunc(itemId as number) : null,
         weight: Math.trunc(weight),
         isActive,
       },
@@ -154,5 +174,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
 

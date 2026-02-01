@@ -280,7 +280,7 @@ export default function MyItems({ userId }: MyItemsProps) {
 
   return (
     <>
-      <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
+      <div className="min-h-screen" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* ヒーローセクション */}
           <div className="relative overflow-hidden px-4 pt-8 pb-6">

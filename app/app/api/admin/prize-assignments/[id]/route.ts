@@ -4,7 +4,9 @@ import { verifyAdminAuth } from "@/lib/admin-auth";
 
 type UpdateBody = {
   tierCode?: string;
-  itemId?: number;
+  itemId?: number | null;
+  rewardType?: "ITEM" | "POINTS";
+  points?: number;
   weight?: number;
   isActive?: boolean;
 };
@@ -29,15 +31,29 @@ export async function PUT(
     }
 
     const body = (await request.json()) as UpdateBody;
-    const data: any = {};
+    const rewardType = body.rewardType === "POINTS" ? "POINTS" : "ITEM";
+    const data: any = { rewardType };
 
     if (typeof body.tierCode === "string" && body.tierCode) data.tierCode = body.tierCode;
-    if (body.itemId !== undefined) {
-      const itemId = typeof body.itemId === "number" ? body.itemId : Number(body.itemId);
-      if (!Number.isFinite(itemId) || itemId <= 0) {
-        return NextResponse.json({ error: "itemId が無効です" }, { status: 400 });
+    if (rewardType === "ITEM") {
+      if (body.itemId !== undefined) {
+        const itemId = typeof body.itemId === "number" ? body.itemId : Number(body.itemId);
+        if (!Number.isFinite(itemId) || itemId <= 0) {
+          return NextResponse.json({ error: "itemId が無効です" }, { status: 400 });
+        }
+        data.itemId = Math.trunc(itemId);
       }
-      data.itemId = Math.trunc(itemId);
+      data.points = 0;
+    } else {
+      const points = typeof body.points === "number" ? body.points : Number(body.points ?? 0);
+      if (!Number.isFinite(points) || points <= 0) {
+        return NextResponse.json(
+          { error: "points は1以上である必要があります" },
+          { status: 400 }
+        );
+      }
+      data.points = Math.trunc(points);
+      data.itemId = null;
     }
     if (body.weight !== undefined) {
       const weight = typeof body.weight === "number" ? body.weight : Number(body.weight);
@@ -125,5 +141,4 @@ export async function DELETE(
     );
   }
 }
-
 

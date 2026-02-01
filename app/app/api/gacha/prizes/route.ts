@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       where: {
         gachaTypeId: gachaType.id,
         isActive: true,
-        item: { isActive: true },
+        OR: [{ rewardType: 'POINTS' }, { item: { isActive: true } }],
       },
       include: {
         tier: {
@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
             description: true,
             imageUrl: true,
             usageType: true,
+            isActive: true,
           },
         },
       },
@@ -116,6 +117,8 @@ export async function GET(request: NextRequest) {
         itemDescription: string | null;
         itemImageUrl: string | null;
         itemUsageType: string;
+        rewardType: string;
+        points: number;
         weight: number;
         probability: number;
       }>
@@ -143,12 +146,24 @@ export async function GET(request: NextRequest) {
       const itemProbabilityInTier = tierTotalWeight > 0 ? (itemWeight / tierTotalWeight) * 100 : 0;
       const itemProbability = (tierProbability * itemProbabilityInTier) / 100;
 
+      const rewardType = assignment.rewardType === 'POINTS' ? 'POINTS' : 'ITEM';
+      const points = Number.isFinite(assignment.points) ? assignment.points : 0;
+      const itemName =
+        rewardType === 'POINTS'
+          ? `${points.toLocaleString()}ポイント`
+          : assignment.item?.name || '不明なアイテム';
+
       prizesByTier[tierCode].push({
-        itemId: assignment.itemId || 0,
-        itemName: assignment.item?.name || '不明なアイテム',
-        itemDescription: assignment.item?.description || null,
-        itemImageUrl: assignment.item?.imageUrl || null,
-        itemUsageType: assignment.item?.usageType || 'IMAGE',
+        itemId: rewardType === 'POINTS' ? 0 : assignment.itemId || 0,
+        itemName,
+        itemDescription:
+          rewardType === 'POINTS' ? null : assignment.item?.description || null,
+        itemImageUrl:
+          rewardType === 'POINTS' ? null : assignment.item?.imageUrl || null,
+        itemUsageType:
+          rewardType === 'POINTS' ? 'POINTS' : assignment.item?.usageType || 'IMAGE',
+        rewardType,
+        points,
         weight: itemWeight,
         probability: itemProbability,
       });
