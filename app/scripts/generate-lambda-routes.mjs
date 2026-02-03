@@ -55,11 +55,10 @@ const buildRegex = (apiPath) => {
 };
 
 const toModulePath = (filePath) => {
-  // Build paths relative to the app root so Lambda can import from /var/task/app/...
-  const rel = path.relative(appRoot, filePath);
-  const withoutExt = rel.replace(/\.ts$/, '');
-  const withJsExt = `${withoutExt}.js`;
-  return withJsExt.startsWith('.') ? withJsExt : `./${withJsExt}`;
+  // Lambda package places compiled routes under /var/task/api/...
+  const rel = path.relative(apiRoot, filePath).replace(/\.ts$/, '.js');
+  const normalized = rel.split(path.sep).join('/');
+  return `./api/${normalized}`;
 };
 
 const routes = walk(apiRoot)
