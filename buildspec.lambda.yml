@@ -17,6 +17,9 @@ phases:
   build:
     commands:
       - cd $APP_DIR
+      - pwd
+      - ls -la
+      - ls -la lambda || true
       - test -f lambda/handler.ts
       - npm run lambda:routes
       - npm run db:generate
