@@ -58,7 +58,8 @@ const toModulePath = (filePath) => {
   // Build paths relative to the app root so Lambda can import from /var/task/app/...
   const rel = path.relative(appRoot, filePath);
   const withoutExt = rel.replace(/\.ts$/, '');
-  return withoutExt.startsWith('.') ? withoutExt : `./${withoutExt}`;
+  const withJsExt = `${withoutExt}.js`;
+  return withJsExt.startsWith('.') ? withJsExt : `./${withJsExt}`;
 };
 
 const routes = walk(apiRoot)
