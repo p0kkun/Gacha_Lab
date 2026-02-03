@@ -15,10 +15,11 @@ phases:
   build:
     commands:
       - npm run lambda:routes
+      - npm run db:generate
       - npx esbuild lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs
       - mkdir -p lambda-dist/node_modules
       - cp -r node_modules/@prisma lambda-dist/node_modules/
-      - cp -r node_modules/.prisma lambda-dist/node_modules/
+      - if [ -d node_modules/.prisma ]; then cp -r node_modules/.prisma lambda-dist/node_modules/; fi
       - cd lambda-dist
       - zip -r ../lambda.zip .
       - cd ..
