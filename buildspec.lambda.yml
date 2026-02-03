@@ -16,10 +16,11 @@ phases:
       - npm ci
   build:
     commands:
+      - cd $APP_DIR
       - npm run lambda:routes
       - npm run db:generate
       - npx esbuild lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs
-      - npx esbuild $(find app/app/api -name route.ts -print) --platform=node --target=node20 --format=cjs --outbase=app --outdir=lambda-dist
+      - npx esbuild $(find app/api -name route.ts -print) --platform=node --target=node20 --format=cjs --outbase=app --outdir=lambda-dist
       - if [ ! -f lambda-dist/app/api/admin/prize-tiers/route.js ]; then echo "Missing compiled route.js"; exit 1; fi
       - mkdir -p lambda-dist/node_modules
       - cp -r node_modules/@prisma lambda-dist/node_modules/
@@ -28,8 +29,6 @@ phases:
       - cp -r node_modules/react lambda-dist/node_modules/
       - cp -r node_modules/react-dom lambda-dist/node_modules/
       - if [ -d node_modules/.prisma ]; then cp -r node_modules/.prisma lambda-dist/node_modules/; fi
-      - cd lambda-dist
-      - zip -r ../lambda.zip .
-      - cd ..
+      - zip -r lambda.zip lambda-dist
       - aws s3 cp lambda.zip s3://$LAMBDA_ARTIFACT_BUCKET/$LAMBDA_ARTIFACT_KEY
       - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --s3-bucket $LAMBDA_ARTIFACT_BUCKET --s3-key $LAMBDA_ARTIFACT_KEY
