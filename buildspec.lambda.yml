@@ -4,6 +4,8 @@ env:
   variables:
     LAMBDA_FUNCTION_NAME: poker-gacha-api
     APP_DIR: app
+    LAMBDA_ARTIFACT_BUCKET: poker-gacha-lambda-artifacts
+    LAMBDA_ARTIFACT_KEY: lambda/poker-gacha-api.zip
 
 phases:
   install:
@@ -29,4 +31,5 @@ phases:
       - cd lambda-dist
       - zip -r ../lambda.zip .
       - cd ..
-      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
+      - aws s3 cp lambda.zip s3://$LAMBDA_ARTIFACT_BUCKET/$LAMBDA_ARTIFACT_KEY
+      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --s3-bucket $LAMBDA_ARTIFACT_BUCKET --s3-key $LAMBDA_ARTIFACT_KEY
