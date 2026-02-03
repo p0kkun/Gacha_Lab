@@ -52,3 +52,7 @@ github_認証情報.md
 
 # LocalStack
 /localstack-data
+
+# lambda build artifacts
+/lambda-dist/
+/lambda.zip

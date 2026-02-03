@@ -1,0 +1,25 @@
+version: 0.2
+
+env:
+  variables:
+    LAMBDA_FUNCTION_NAME: poker-gacha-api
+    APP_DIR: app
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - cd $APP_DIR
+      - npm ci
+  build:
+    commands:
+      - npm run lambda:routes
+      - npx esbuild lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs
+      - mkdir -p lambda-dist/node_modules
+      - cp -r node_modules/@prisma lambda-dist/node_modules/
+      - cp -r node_modules/.prisma lambda-dist/node_modules/
+      - cd lambda-dist
+      - zip -r ../lambda.zip .
+      - cd ..
+      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
