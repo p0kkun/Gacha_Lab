@@ -17,9 +17,10 @@ phases:
   build:
     commands:
       - cd $APP_DIR
+      - test -f lambda/handler.ts
       - npm run lambda:routes
       - npm run db:generate
-      - npx esbuild lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs
+      - npx esbuild ./lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs
       - npx esbuild $(find app/api -name route.ts -print) --platform=node --target=node20 --format=cjs --outbase=app --outdir=lambda-dist
       - if [ ! -f lambda-dist/app/api/admin/prize-tiers/route.js ]; then echo "Missing compiled route.js"; exit 1; fi
       - mkdir -p lambda-dist/node_modules
