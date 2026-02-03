@@ -111,7 +111,7 @@ export const handler = async (event: LambdaEvent): Promise<LambdaResponse> => {
 
   const { entry, params } = matched;
   const mod = await loadModule(entry.modulePath);
-  const routeHandler = mod[method];
+  const routeHandler = mod[method] ?? mod?.default?.[method];
 
   if (!routeHandler) {
     return {

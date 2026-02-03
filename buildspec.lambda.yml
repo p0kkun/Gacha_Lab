@@ -17,6 +17,7 @@ phases:
       - npm run lambda:routes
       - npm run db:generate
       - npx esbuild lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs
+      - npx esbuild $(find app/api -name route.ts -print) --platform=node --target=node20 --format=cjs --outbase=app --outdir=lambda-dist
       - mkdir -p lambda-dist/node_modules
       - cp -r node_modules/@prisma lambda-dist/node_modules/
       - if [ -d node_modules/.prisma ]; then cp -r node_modules/.prisma lambda-dist/node_modules/; fi
