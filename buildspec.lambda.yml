@@ -53,8 +53,9 @@ phases:
         { "name": "next", "version": "0.0.0-lambda-shim", "main": "./server.js" }
         EOF
       - if [ -d node_modules/.prisma ]; then cp -r node_modules/.prisma lambda-dist/node_modules/; fi
-      - mkdir -p layer/nodejs
-      - cp -r node_modules layer/nodejs/
+      - mkdir -p layer/nodejs/node_modules
+      - cp -r node_modules/@prisma layer/nodejs/node_modules/
+      - if [ -d node_modules/.prisma ]; then cp -r node_modules/.prisma layer/nodejs/node_modules/; fi
       - cd lambda-dist
       - zip -r ../lambda.zip .
       - cd ..
