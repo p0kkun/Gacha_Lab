@@ -34,7 +34,7 @@ function UsersContent() {
         },
         {
           id: 'referrals',
-          label: '友達紹介履歴',
+          label: '友だち紹介履歴',
           icon: '👥',
           content: <ReferralsContent />,
         },

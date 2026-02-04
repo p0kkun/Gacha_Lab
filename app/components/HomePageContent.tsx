@@ -497,7 +497,7 @@ export default function HomePageContent({
                   <div className="flex items-center gap-3">
                     <img
                       src="/icons/navigation/icon-referral.svg"
-                      alt="友達紹介"
+                      alt="友だち紹介"
                       className="h-5 w-5"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
@@ -509,7 +509,7 @@ export default function HomePageContent({
                       }}
                     />
                     <div className="text-xl hidden">👥</div>
-                    <span className="text-sm font-medium">友達紹介</span>
+                    <span className="text-sm font-medium">友だち紹介</span>
                   </div>
                   <svg
                     className="h-5 w-5"

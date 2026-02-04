@@ -255,7 +255,7 @@ export default function MyPage({ profile }: MyPageProps) {
               >
                 <img
                   src="/icons/navigation/icon-referral.svg"
-                  alt="友達紹介"
+                  alt="友だち紹介"
                   className="mb-2 h-8 w-8"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";

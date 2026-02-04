@@ -49,7 +49,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: 'referral',
-    label: '友達紹介',
+    label: '友だち紹介',
     href: '/?action=referral',
     iconName: 'referral',
     activePattern: ['referral'],

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 
 /**
- * 友達紹介履歴を取得
+ * 友だち紹介履歴を取得
  * GET /api/admin/referrals
  */
 export async function GET(request: NextRequest) {
