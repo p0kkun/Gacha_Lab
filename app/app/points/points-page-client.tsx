@@ -403,7 +403,6 @@ function PointsPageContent() {
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
-  const [showConfirmations, setShowConfirmations] = useState(true);
   const [points, setPoints] = useState<number | null>(null);
   const [pointBalances, setPointBalances] = useState<{
     paid: number;
@@ -428,30 +427,6 @@ function PointsPageContent() {
   const [historyPage, setHistoryPage] = useState(1);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const { showError } = useErrorModal();
-  const AGREED_SESSION_KEY = "points_purchase_agreed";
-
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(AGREED_SESSION_KEY);
-      if (saved === "true") {
-        setAgreed(true);
-        setShowConfirmations(false);
-      }
-    } catch {
-      // ignore session storage errors
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(AGREED_SESSION_KEY, agreed ? "true" : "false");
-    } catch {
-      // ignore session storage errors
-    }
-    if (agreed) {
-      setShowConfirmations(false);
-    }
-  }, [agreed]);
 
   // 購入プランを取得（公開API）
   useEffect(() => {
@@ -921,95 +896,6 @@ function PointsPageContent() {
             <h2 className="mb-4 text-lg font-semibold" style={{ color: "#4a3a2a" }}>
               プランを選択
             </h2>
-            {/* 確認事項 */}
-            <div
-              className="mb-4 rounded-xl border p-4 text-xs shadow-sm"
-              style={{
-                borderColor: "#b89f7a",
-                backgroundColor: "rgba(255, 255, 255, 0.7)",
-                color: "#5a4a3a",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowConfirmations((prev) => !prev)}
-                className="flex w-full items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">📝</span>
-                  <div
-                    className="text-sm font-semibold"
-                    style={{ color: "#4a3a2a" }}
-                  >
-                    確認事項
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs" style={{ color: "#6b5a4a" }}>
-                    {showConfirmations ? "閉じる" : "開く"}
-                  </span>
-                  <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full border"
-                    style={{
-                      borderColor: "rgba(184,159,122,0.7)",
-                      backgroundColor: "rgba(255, 255, 255, 0.7)",
-                    }}
-                  >
-                    <img
-                      src="/icons/navigation/icon-chevron.svg"
-                      alt=""
-                      className="h-3 w-3"
-                      style={{
-                        transform: showConfirmations
-                          ? "rotate(180deg)"
-                          : "rotate(0deg)",
-                        transition: "transform 0.2s ease",
-                      }}
-                    />
-                  </span>
-                </div>
-              </button>
-              {!showConfirmations ? (
-                <div className="mt-2 text-xs" style={{ color: "#6b5a4a" }}>
-                  すでに確認済みです。必要に応じて開いてください。
-                </div>
-              ) : (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>分量</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>選択したポイント数</div>
-                  </div>
-                  <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>販売価格</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>選択した金額（税込）</div>
-                  </div>
-                  <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>支払方法</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>クレジットカード / PayPay</div>
-                  </div>
-                  <div className="rounded-lg border px-3 py-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>支払時期</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>決済完了時に請求が確定</div>
-                  </div>
-                  <div className="rounded-lg border px-3 py-2 sm:col-span-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>提供時期</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>
-                      決済成功後、基本的にはすぐに付与（処理状況により遅延する場合あり）
-                    </div>
-                  </div>
-                  <div className="rounded-lg border px-3 py-2 sm:col-span-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>有効期限</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>
-                      最終更新日時から180日（同日・同時刻まで、秒単位で判定）
-                    </div>
-                  </div>
-                  <div className="rounded-lg border px-3 py-2 sm:col-span-2" style={{ borderColor: "rgba(184,159,122,0.4)" }}>
-                    <div className="text-[11px] font-semibold" style={{ color: "#6b5a4a" }}>申込みの撤回・解除</div>
-                    <div className="text-sm" style={{ color: "#4a3a2a" }}>デジタル商品のためキャンセル・返金不可</div>
-                  </div>
-                </div>
-              )}
-            </div>
             {plansLoading ? (
               <div
                 className="rounded-lg p-6 text-center shadow"
