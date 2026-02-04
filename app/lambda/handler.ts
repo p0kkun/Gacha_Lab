@@ -1,5 +1,5 @@
 import { NextRequest } from './next-server-shim';
-import { lambdaRouteManifest, lambdaRouteModules } from '../lib/lambda-route-manifest';
+import { lambdaRouteManifest, lambdaRouteModules } from './route-manifest';
 
 type LambdaEvent = {
   rawPath?: string;

@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const appRoot = path.resolve(__dirname, '..');
 const apiRoot = path.join(appRoot, 'app', 'api');
-const outputPath = path.join(appRoot, 'lib', 'lambda-route-manifest.ts');
+const outputPath = path.join(appRoot, 'lambda', 'route-manifest.ts');
 
 const isRouteFile = (filePath) => path.basename(filePath) === 'route.ts';
 

@@ -56,3 +56,4 @@ github_認証情報.md
 # lambda build artifacts
 /lambda-dist/
 /lambda.zip
+/lambda/route-manifest.ts
