@@ -65,4 +65,5 @@ phases:
       - aws s3 cp layer.zip s3://$LAMBDA_ARTIFACT_BUCKET/$LAMBDA_LAYER_KEY
       - LAYER_VERSION_ARN=$(aws lambda publish-layer-version --layer-name $LAMBDA_LAYER_NAME --content S3Bucket=$LAMBDA_ARTIFACT_BUCKET,S3Key=$LAMBDA_LAYER_KEY --compatible-runtimes nodejs20.x --query 'LayerVersionArn' --output text)
       - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers $LAYER_VERSION_ARN
+      - aws lambda wait function-updated --function-name $LAMBDA_FUNCTION_NAME
       - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --s3-bucket $LAMBDA_ARTIFACT_BUCKET --s3-key $LAMBDA_ARTIFACT_KEY
