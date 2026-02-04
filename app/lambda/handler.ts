@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { lambdaRouteManifest } from '../lib/lambda-route-manifest';
+import { NextRequest } from './next-server-shim';
+import { lambdaRouteManifest, lambdaRouteModules } from '../lib/lambda-route-manifest';
 
 type LambdaEvent = {
   rawPath?: string;
@@ -23,8 +23,6 @@ type LambdaResponse = {
   body?: string;
   isBase64Encoded?: boolean;
 };
-
-const moduleCache = new Map<string, any>();
 
 const getHeader = (headers: Record<string, string | undefined> | undefined, key: string) => {
   if (!headers) {
@@ -65,15 +63,6 @@ const matchRoute = (path: string) => {
   return null;
 };
 
-const loadModule = async (modulePath: string) => {
-  if (moduleCache.has(modulePath)) {
-    return moduleCache.get(modulePath);
-  }
-  const mod = await import(modulePath);
-  moduleCache.set(modulePath, mod);
-  return mod;
-};
-
 const toLambdaResponse = async (response: Response): Promise<LambdaResponse> => {
   const headers: Record<string, string> = {};
   response.headers.forEach((value, key) => {
@@ -110,7 +99,7 @@ export const handler = async (event: LambdaEvent): Promise<LambdaResponse> => {
   }
 
   const { entry, params } = matched;
-  const mod = await loadModule(entry.modulePath);
+  const mod = lambdaRouteModules[entry.moduleIndex];
   const routeHandler = mod[method] ?? mod?.default?.[method];
 
   if (!routeHandler) {
