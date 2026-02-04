@@ -876,8 +876,9 @@ function PointsPageContent() {
                   </span>
                 </div>
                 {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
-                {(pointBalances.paidExpiresAt ||
-                  pointBalances.freeExpiresAt) && (
+                {pointBalances.total > 0 &&
+                  (pointBalances.paidExpiresAt ||
+                    pointBalances.freeExpiresAt) && (
                   <div className="text-xs text-gray-500">
                     有効期限:{" "}
                     {formatExpiryText(

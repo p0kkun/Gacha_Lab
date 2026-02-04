@@ -69,7 +69,9 @@ export default function PointDisplay({
           <PointIcon size={size === 'small' ? 20 : size === 'medium' ? 24 : 32} className={size === 'small' ? 'h-5 w-5' : size === 'medium' ? 'h-6 w-6' : 'h-8 w-8'} active={true} />
           {pointBalances.total.toLocaleString()}
         </div>
-        {showExpiry && (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+        {showExpiry &&
+          pointBalances.total > 0 &&
+          (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
           <div className={`${currentSize.detail} mt-1 text-gray-500`}>
             {pointBalances.paidExpiresAt && (
               <div>
@@ -127,7 +129,9 @@ export default function PointDisplay({
       </div>
       
       {/* 有効期限（オプション、小さく表示） */}
-      {showExpiry && (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+      {showExpiry &&
+        pointBalances.total > 0 &&
+        (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
         <div className={`${currentSize.detail} text-gray-400 ml-auto`}>
           {pointBalances.paidExpiresAt && (
             <span className="mr-2">
@@ -144,4 +148,3 @@ export default function PointDisplay({
     </div>
   );
 }
-

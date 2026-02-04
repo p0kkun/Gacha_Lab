@@ -196,7 +196,8 @@ export default function GachaModal({
                       </span>
                     </div>
                     {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
-                    {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+                    {pointBalances.total > 0 &&
+                      (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
                       <div className="mt-1 text-[9px] text-yellow-600/80">
                         有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
                       </div>

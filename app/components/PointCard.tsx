@@ -45,13 +45,13 @@ export default function PointCard({
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <div className="text-xs text-yellow-200">所持ポイント</div>
-          <div className="text-4xl font-bold text-yellow-300 drop-shadow-md flex items-center gap-2">
+          <div className="text-xs text-amber-900/80">所持ポイント</div>
+          <div className="text-4xl font-bold text-amber-900 flex items-center gap-2">
             <PointIcon size={32} className="h-8 w-8" active={true} />
             {pointBalances.total.toLocaleString()}
           </div>
           {variant === "mypage" && (
-            <div className="mt-2 flex justify-center gap-4 text-xs text-yellow-200/80">
+            <div className="mt-2 flex justify-center gap-4 text-xs text-amber-800/90">
               <span className="flex items-center gap-0.5">
                 有償:{" "}
                 <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
@@ -65,8 +65,9 @@ export default function PointCard({
             </div>
           )}
           {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
-          {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
-            <div className="mt-2 text-center text-xs text-yellow-200/70">
+          {pointBalances.total > 0 &&
+            (pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
+            <div className="mt-2 text-center text-xs text-amber-800/80">
               有効期限: {formatExpiryText(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt)}
               {(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && formatExpiryDate(pointBalances.paidExpiresAt || pointBalances.freeExpiresAt) && (
                 <span className="ml-1">
@@ -76,7 +77,7 @@ export default function PointCard({
             </div>
           )}
         </div>
-        <div className="text-yellow-300 opacity-70 transition-opacity group-hover:opacity-100">
+        <div className="text-amber-800 opacity-70 transition-opacity group-hover:opacity-100">
           <img
             src="/icons/navigation/icon-point.svg"
             alt="ポイント購入"
