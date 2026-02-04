@@ -6,6 +6,8 @@ env:
     APP_DIR: app
     LAMBDA_ARTIFACT_BUCKET: poker-gacha-lambda-artifacts
     LAMBDA_ARTIFACT_KEY: lambda/poker-gacha-api.zip
+    LAMBDA_LAYER_KEY: layer/poker-gacha-deps.zip
+    LAMBDA_LAYER_NAME: poker-gacha-deps
 
 phases:
   install:
@@ -51,8 +53,16 @@ phases:
         { "name": "next", "version": "0.0.0-lambda-shim", "main": "./server.js" }
         EOF
       - if [ -d node_modules/.prisma ]; then cp -r node_modules/.prisma lambda-dist/node_modules/; fi
+      - mkdir -p layer/nodejs
+      - cp -r node_modules layer/nodejs/
       - cd lambda-dist
       - zip -r ../lambda.zip .
       - cd ..
+      - cd layer
+      - zip -r ../layer.zip .
+      - cd ..
       - aws s3 cp lambda.zip s3://$LAMBDA_ARTIFACT_BUCKET/$LAMBDA_ARTIFACT_KEY
+      - aws s3 cp layer.zip s3://$LAMBDA_ARTIFACT_BUCKET/$LAMBDA_LAYER_KEY
+      - LAYER_VERSION_ARN=$(aws lambda publish-layer-version --layer-name $LAMBDA_LAYER_NAME --content S3Bucket=$LAMBDA_ARTIFACT_BUCKET,S3Key=$LAMBDA_LAYER_KEY --compatible-runtimes nodejs20.x --query 'LayerVersionArn' --output text)
+      - aws lambda update-function-configuration --function-name $LAMBDA_FUNCTION_NAME --layers $LAYER_VERSION_ARN
       - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --s3-bucket $LAMBDA_ARTIFACT_BUCKET --s3-key $LAMBDA_ARTIFACT_KEY
