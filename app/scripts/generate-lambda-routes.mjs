@@ -55,8 +55,7 @@ const buildRegex = (apiPath) => {
 };
 
 const toModulePath = (filePath) => {
-  // Lambda package places compiled routes under /var/task/api/...
-  const rel = path.relative(apiRoot, filePath).replace(/\.ts$/, '.js');
+  const rel = path.relative(apiRoot, filePath);
   const normalized = rel.split(path.sep).join('/');
   return `./api/${normalized}`;
 };
