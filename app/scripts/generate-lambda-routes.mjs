@@ -57,7 +57,9 @@ const buildRegex = (apiPath) => {
 const toModulePath = (filePath) => {
   const rel = path.relative(apiRoot, filePath);
   const normalized = rel.split(path.sep).join('/');
-  return `./api/${normalized}`;
+  // Route files live under app/app/api, and this manifest is in app/lib.
+  // So the import path needs ../app/api/...
+  return `./app/api/${normalized}`;
 };
 
 const routes = walk(apiRoot)
