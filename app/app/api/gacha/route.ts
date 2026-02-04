@@ -19,60 +19,13 @@ const PointTransactionType = {
 import { logError } from "@/lib/error-logger";
 import { deleteCache, getCache, setCache } from "@/lib/cache";
 import { CacheKeys } from "@/lib/cache-keys";
-
-type TierWeightRow = { tierCode: string; weight: number };
-type PrizeItemRow = {
-  id: number;
-  name: string;
-  isActive: boolean;
-};
-type AssignmentRow = {
-  weight: number;
-  rewardType: "ITEM" | "POINTS";
-  points: number;
-  item: PrizeItemRow | null;
-};
-
-type PrismaClientForTiers = {
-  gachaTierWeight: {
-    findMany(args: {
-      where: { gachaTypeId: number; isActive: boolean };
-      select: { tierCode: true; weight: true };
-    }): Promise<TierWeightRow[]>;
-  };
-  gachaPrizeAssignment: {
-    findMany(args: {
-      where: {
-        gachaTypeId: number;
-        tierCode: string;
-        isActive: boolean;
-      };
-      select: {
-        weight: true;
-        rewardType: true;
-        points: true;
-        item: {
-          select: { id: true; name: true; isActive: true };
-        };
-      };
-    }): Promise<AssignmentRow[]>;
-  };
-};
-
-function drawByWeights<T extends { weight: number }>(rows: T[]): T {
-  const total = rows.reduce(
-    (sum, r) => sum + (Number.isFinite(r.weight) ? r.weight : 0),
-    0
-  );
-  if (total <= 0) return rows[Math.floor(Math.random() * rows.length)];
-  const rnd = Math.random() * total;
-  let acc = 0;
-  for (const row of rows) {
-    acc += row.weight;
-    if (rnd < acc) return row;
-  }
-  return rows[rows.length - 1];
-}
+import {
+  type PrismaClientForGachaDraw,
+  getAssignmentsForTier,
+  getTierWeights,
+  selectAssignment,
+  selectTierCode,
+} from "@/lib/gacha-draw";
 
 // NOTE: 旧ロジック（GachaTypeの固定カラム/JSON）による抽選は廃止。
 // 正は GachaTierWeight（等級×重み）テーブル。
@@ -245,25 +198,17 @@ export async function POST(request: NextRequest) {
     let selectedTierCode: string;
 
     // ESLint/TSサーバーの型キャッシュ差異を避けるため、必要なdelegateのみを明示型で参照
-    const prismaForTiers = prisma as unknown as PrismaClientForTiers;
+    const prismaForTiers = prisma as unknown as PrismaClientForGachaDraw;
 
     // まず等級マスタと、ガチャ別の確率テーブルを確認（これが正）
     const gachaTypeInternalId = (gachaType as unknown as { id: number }).id;
 
-    const tierWeights = await prismaForTiers.gachaTierWeight.findMany({
-      where: { gachaTypeId: gachaTypeInternalId, isActive: true },
-      select: { tierCode: true, weight: true },
-    });
+    const tierWeights = await getTierWeights(
+      prismaForTiers,
+      gachaTypeInternalId
+    );
     if (tierWeights.length > 0) {
-      selectedTierCode = drawByWeights(
-        tierWeights.map((t: TierWeightRow) => ({
-          tierCode: t.tierCode,
-          weight:
-            typeof t.weight === "number" && Number.isFinite(t.weight)
-              ? t.weight
-              : 0,
-        }))
-      ).tierCode;
+      selectedTierCode = selectTierCode(tierWeights);
     } else {
       return NextResponse.json(
         {
@@ -323,21 +268,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 選択された等級の景品を取得（ガチャタイプ別割当が最優先）
-    const assignments = await prismaForTiers.gachaPrizeAssignment.findMany({
-      where: {
-        gachaTypeId: gachaTypeInternalId,
-        tierCode: selectedTierCode,
-        isActive: true,
-      },
-      select: {
-        weight: true,
-        rewardType: true,
-        points: true,
-        item: {
-          select: { id: true, name: true, isActive: true },
-        },
-      },
-    });
+    const assignments = await getAssignmentsForTier(
+      prismaForTiers,
+      gachaTypeInternalId,
+      selectedTierCode
+    );
 
     if (assignments.length === 0) {
       return NextResponse.json(
@@ -349,17 +284,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const selectedAssignment = drawByWeights(
-      assignments.map((a: AssignmentRow) => ({
-        rewardType: a.rewardType === "POINTS" ? "POINTS" : "ITEM",
-        points: Number.isFinite(a.points) ? a.points : 0,
-        item: a.item,
-        weight:
-          typeof a.weight === "number" && Number.isFinite(a.weight)
-            ? a.weight
-            : 1,
-      }))
-    );
+    const selectedAssignment = selectAssignment(assignments);
 
     const isPointReward = selectedAssignment.rewardType === "POINTS";
     const selectedItem = selectedAssignment.item;

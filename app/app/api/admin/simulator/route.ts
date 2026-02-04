@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/admin-auth';
-
-// アプリ側と同じ抽選ロジック
-function drawByWeights<T extends { weight: number }>(rows: T[]): T {
-  const total = rows.reduce(
-    (sum, r) => sum + (Number.isFinite(r.weight) ? r.weight : 0),
-    0
-  );
-  if (total <= 0) return rows[Math.floor(Math.random() * rows.length)];
-  const rnd = Math.random() * total;
-  let acc = 0;
-  for (const row of rows) {
-    acc += row.weight;
-    if (rnd < acc) return row;
-  }
-  return rows[rows.length - 1];
-}
+import {
+  type AssignmentRow,
+  type PrismaClientForGachaDraw,
+  getAssignmentsForTier,
+  getTierWeights,
+  selectAssignment,
+  selectTierCode,
+} from '@/lib/gacha-draw';
 
 /**
  * ガチャシミュレータを実行
@@ -61,11 +53,8 @@ export async function POST(request: NextRequest) {
     const gachaTypeInternalId = gachaType.id;
 
     // ステップ1: 等級確率テーブル（正）
-    const tierWeights = await (prisma as any).gachaTierWeight.findMany({
-      where: { gachaTypeId: gachaTypeInternalId, isActive: true },
-      select: { tierCode: true, weight: true },
-      orderBy: [{ tierCode: 'asc' }],
-    });
+    const prismaForDraw = prisma as unknown as PrismaClientForGachaDraw;
+    const tierWeights = await getTierWeights(prismaForDraw, gachaTypeInternalId);
 
     if (!Array.isArray(tierWeights) || tierWeights.length === 0) {
       return NextResponse.json(
@@ -85,61 +74,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ステップ2: 各等級の景品割当を取得（アイテム抽選用）
-    const tierAssignments: Record<string, Array<{ itemId: number; itemName: string; weight: number }>> = {};
+    // ステップ2: 各等級の景品割当を取得（2段階抽選用）
+    const tierAssignments: Record<string, AssignmentRow[]> = {};
     const tierCodes = tierWeights.map((r: any) => r.tierCode);
     
     for (const tierCode of tierCodes) {
-      const assignments = await (prisma as any).gachaPrizeAssignment.findMany({
-        where: {
-          gachaTypeId: gachaTypeInternalId,
-          tierCode: tierCode,
-          isActive: true,
-          item: { isActive: true },
-        },
-        select: {
-          weight: true,
-          item: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-
-      if (assignments.length > 0) {
-        tierAssignments[tierCode] = assignments.map((a: any) => ({
-          itemId: a.item.id,
-          itemName: a.item.name,
-          weight: Number.isFinite(a.weight) ? a.weight : 1,
-        }));
-      }
+      const assignments = await getAssignmentsForTier(
+        prismaForDraw,
+        gachaTypeInternalId,
+        tierCode
+      );
+      if (assignments.length > 0) tierAssignments[tierCode] = assignments;
     }
 
     // ステップ3: シミュレーション実行（アプリ側と同じ2段階抽選）
     const tierResults: Record<string, number> = {};
-    const itemResults: Record<string, number> = {}; // key: "tierCode:itemId"
-    const itemDetails: Record<string, { tierCode: string; itemName: string }> = {}; // key: "tierCode:itemId"
+    const itemResults: Record<string, number> = {}; // key: "tierCode:rewardKey"
+    const itemDetails: Record<
+      string,
+      { tierCode: string; itemId: number; itemName: string; weight: number }
+    > = {}; // key: "tierCode:rewardKey"
 
     for (let i = 0; i < iterations; i++) {
       // 第1段階: 等級抽選（アプリ側と同じロジック）
-      const selectedTier = drawByWeights(
-        tierWeights.map((r: any) => ({
-          tierCode: r.tierCode,
-          weight: Number.isFinite(r.weight) ? r.weight : 0,
-        }))
-      );
-      const selectedTierCode = selectedTier.tierCode;
+      const selectedTierCode = selectTierCode(tierWeights);
       tierResults[selectedTierCode] = (tierResults[selectedTierCode] || 0) + 1;
 
       // 第2段階: アイテム抽選（アプリ側と同じロジック）
       if (includeItems && tierAssignments[selectedTierCode]) {
         const assignments = tierAssignments[selectedTierCode];
-        const selectedItem = drawByWeights(assignments);
-        const itemKey = `${selectedTierCode}:${selectedItem.itemId}`;
+        const selected = selectAssignment(assignments);
+        const isPointReward = selected.rewardType === 'POINTS';
+        const points = Math.trunc(Number.isFinite(selected.points) ? selected.points : 0);
+        const itemId = isPointReward
+          ? -Math.abs(points || 0)
+          : selected.item?.id ?? 0;
+        const itemName = isPointReward
+          ? `${points.toLocaleString()}ポイント`
+          : selected.item?.name || '無効アイテム';
+        const itemKey = `${selectedTierCode}:${itemId}:${isPointReward ? 'POINTS' : 'ITEM'}`;
         itemResults[itemKey] = (itemResults[itemKey] || 0) + 1;
         if (!itemDetails[itemKey]) {
           itemDetails[itemKey] = {
             tierCode: selectedTierCode,
-            itemName: selectedItem.itemName,
+            itemId,
+            itemName,
+            weight: Number.isFinite(selected.weight) ? selected.weight : 1,
           };
         }
       }
@@ -174,14 +154,26 @@ export async function POST(request: NextRequest) {
         const tierProb = tierExpectedRates[tierCode] / 100;
         const assignments = tierAssignments[tierCode] || [];
         const totalItemWeight = assignments.reduce(
-          (sum: number, a: any) => sum + (Number.isFinite(a.weight) ? a.weight : 0),
+          (sum: number, a: any) =>
+            sum + (Number.isFinite(a.weight) ? a.weight : 0),
           0
         );
 
         for (const assignment of assignments) {
-          const itemKey = `${tierCode}:${assignment.itemId}`;
+          const isPointReward = assignment.rewardType === 'POINTS';
+          const points = Math.trunc(
+            Number.isFinite(assignment.points) ? assignment.points : 0
+          );
+          const itemId = isPointReward
+            ? -Math.abs(points || 0)
+            : assignment.item?.id ?? 0;
+          const itemName = isPointReward
+            ? `${points.toLocaleString()}ポイント`
+            : assignment.item?.name || '無効アイテム';
+          const itemKey = `${tierCode}:${itemId}:${isPointReward ? 'POINTS' : 'ITEM'}`;
           const itemProb = totalItemWeight > 0
-            ? (Number.isFinite(assignment.weight) ? assignment.weight : 0) / totalItemWeight
+            ? (Number.isFinite(assignment.weight) ? assignment.weight : 0) /
+              totalItemWeight
             : 0;
           const combinedProb = tierProb * itemProb;
           const actualCount = itemResults[itemKey] || 0;
@@ -189,10 +181,10 @@ export async function POST(request: NextRequest) {
 
           itemProbabilities.push({
             tierCode,
-            itemId: assignment.itemId,
-            itemName: assignment.itemName,
+            itemId,
+            itemName,
             tierProbability: tierProb * 100,
-            itemWeight: assignment.weight,
+            itemWeight: Number.isFinite(assignment.weight) ? assignment.weight : 0,
             itemProbability: itemProb * 100,
             combinedProbability: combinedProb * 100,
             actualCount,
@@ -226,8 +218,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-
 
 
 
