@@ -74,7 +74,17 @@ const routes = walk(apiRoot)
       regex,
     };
   })
-  .sort((a, b) => a.path.localeCompare(b.path));
+  .sort((a, b) => {
+    // Static routes before dynamic ones so /presigned-url wins over /[id]
+    if (a.paramNames.length !== b.paramNames.length) {
+      return a.paramNames.length - b.paramNames.length;
+    }
+    // Longer paths first to avoid accidental prefix captures
+    if (a.path.length !== b.path.length) {
+      return b.path.length - a.path.length;
+    }
+    return a.path.localeCompare(b.path);
+  });
 
 const importLines = routes
   .map((route, index) => `import * as route${index} from '../${route.modulePath.replace(/^\.\//, '')}';`)
