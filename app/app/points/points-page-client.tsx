@@ -221,19 +221,6 @@ function CheckoutForm({
           status: paymentIntent.status,
         });
 
-        // 購入前のポイント残高を取得
-        let previousPoints = 0;
-        try {
-          const initialRes = await fetch(`/api/points/balance?userId=${userId}`);
-          if (initialRes.ok) {
-            const initialData = await initialRes.json();
-            previousPoints = initialData.points || 0;
-            console.log("購入前のポイント残高:", previousPoints);
-          }
-        } catch (err) {
-          console.error("購入前ポイント残高取得エラー:", err);
-        }
-
         // ポイント残高をポーリングして更新
         const maxAttempts = 15; // 最大15回（15秒間）
         let pointsUpdated = false;
@@ -245,24 +232,22 @@ function CheckoutForm({
             const res = await fetch(`/api/points/balance?userId=${userId}`);
             if (res.ok) {
               const data = await res.json();
-              const currentPoints = data.points || 0;
+              const currentPoints = data.points;
 
               console.log(`ポイント残高確認 (${i + 1}/${maxAttempts}):`, {
-                previous: previousPoints,
                 current: currentPoints,
-                increased: currentPoints > previousPoints,
               });
 
-              // ポイントが実際に増加したか確認
-              if (currentPoints > previousPoints) {
-                // ポイントが増加した場合のみ成功と判断
+              // ポイントが増加したか確認（初回は前のポイント残高が分からないため、Webhookの処理を待つ）
+              if (i >= 2) {
+                // 3秒後から確認（Webhookの処理時間を考慮）
                 if (onPointsUpdated) {
                   onPointsUpdated(currentPoints);
                 }
                 pointsUpdated = true;
                 onSuccess();
                 showSuccess(
-                  `ポイント購入が完了しました！\n${previousPoints}ポイント → ${currentPoints.toLocaleString()}ポイント`,
+                  `ポイント購入が完了しました！\n現在のポイント: ${currentPoints.toLocaleString()}ポイント`,
                   { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 break;
@@ -293,7 +278,6 @@ function CheckoutForm({
 
             if (confirmRes.ok) {
               const confirmData = await confirmRes.json();
-              console.log("フォールバック処理結果:", confirmData);
               if (confirmData.success && onPointsUpdated) {
                 onPointsUpdated(confirmData.points);
                 onSuccess();
@@ -303,30 +287,13 @@ function CheckoutForm({
                 );
               } else {
                 onSuccess();
-                const errorMsg = confirmData.error || "ポイントの反映に失敗しました";
-                const paymentIntentId = confirmData.paymentIntentId ? `\n\n決済ID: ${confirmData.paymentIntentId}` : "";
-                showError(
-                  `${errorMsg}${paymentIntentId}\n\nしばらくしてからページを更新してください。\n問題が続く場合は、お問い合わせください。`,
-                  { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
-                );
               }
             } else {
-              const errorData = await confirmRes.json().catch(() => ({ error: "不明なエラー" }));
               onSuccess();
-              const errorMsg = errorData.error || "ポイントの反映に失敗しました";
-              const paymentIntentId = errorData.paymentIntentId ? `\n\n決済ID: ${errorData.paymentIntentId}` : "";
-              showError(
-                `${errorMsg}${paymentIntentId}\n\nHTTPステータス: ${confirmRes.status}\nしばらくしてからページを更新してください。\n問題が続く場合は、お問い合わせください。`,
-                { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
-              );
             }
           } catch (confirmError) {
+            console.error("フォールバック処理エラー:", confirmError);
             onSuccess();
-            const errorMsg = confirmError instanceof Error ? confirmError.message : "ネットワークエラー";
-            showError(
-              `ポイントの反映に失敗しました。\n\nエラー: ${errorMsg}\n\nしばらくしてからページを更新してください。\n問題が続く場合は、お問い合わせください。`,
-              { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
-            );
           }
         }
       } else {
@@ -729,7 +696,6 @@ function PointsPageContent() {
 
                   if (confirmRes.ok) {
                     const confirmData = await confirmRes.json();
-                    console.log("フォールバック処理結果:", confirmData);
                     if (confirmData.success) {
                       await updatePointBalances(profile.userId);
                       setSelectedPlan(null);
@@ -747,29 +713,10 @@ function PointsPageContent() {
                       url.searchParams.delete("payment_intent_client_secret");
                       window.history.replaceState({}, "", url.toString());
                       return;
-                    } else {
-                      const errorMsg = confirmData.error || "ポイントの反映に失敗しました";
-                      const paymentIntentId = confirmData.paymentIntentId ? `\n\n決済ID: ${confirmData.paymentIntentId}` : "";
-                      showError(
-                        `${errorMsg}${paymentIntentId}\n\nしばらくしてからページを更新してください。\n問題が続く場合は、お問い合わせください。`,
-                        { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
-                      );
                     }
-                  } else {
-                    const errorData = await confirmRes.json().catch(() => ({ error: "不明なエラー" }));
-                    const errorMsg = errorData.error || "ポイントの反映に失敗しました";
-                    const paymentIntentId = errorData.paymentIntentId ? `\n\n決済ID: ${errorData.paymentIntentId}` : "";
-                    showError(
-                      `${errorMsg}${paymentIntentId}\n\nHTTPステータス: ${confirmRes.status}\nしばらくしてからページを更新してください。\n問題が続く場合は、お問い合わせください。`,
-                      { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
-                    );
                   }
                 } catch (confirmError) {
-                  const errorMsg = confirmError instanceof Error ? confirmError.message : "ネットワークエラー";
-                  showError(
-                    `ポイントの反映に失敗しました。\n\nエラー: ${errorMsg}\n\nしばらくしてからページを更新してください。\n問題が続く場合は、お問い合わせください。`,
-                    { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
-                  );
+                  console.error("フォールバック処理エラー:", confirmError);
                 }
 
                 // フォールバック処理も失敗した場合

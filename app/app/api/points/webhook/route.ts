@@ -191,45 +191,9 @@ export async function POST(request: NextRequest) {
             }
           );
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          const errorStack = error instanceof Error ? error.stack : undefined;
-          
-          console.error("Webhook: ポイント付与エラー:", {
-            error: errorMessage,
-            stack: errorStack,
-            userId,
-            points,
-            bonusFreePoints,
-            paymentIntentId: paymentIntent.id,
-          });
-          
-          // エラーログに記録
-          try {
-            const { logError } = await import("@/lib/error-logger");
-            await logError(
-              error instanceof Error ? error : new Error(String(error)),
-              {
-                userId,
-                route: "/api/points/webhook",
-                customData: {
-                  paymentIntentId: paymentIntent.id,
-                  points,
-                  bonusFreePoints,
-                  eventId: event.id,
-                  errorMessage,
-                },
-              },
-              request as any
-            );
-          } catch (logErr) {
-            console.error("エラーログ記録失敗:", logErr);
-          }
-          
+          console.error("Webhook: ポイント付与エラー:", error);
           return NextResponse.json(
-            { 
-              error: `ポイント付与に失敗しました: ${errorMessage}`,
-              paymentIntentId: paymentIntent.id,
-            },
+            { error: "ポイント付与に失敗しました" },
             { status: 500 }
           );
         }

@@ -225,62 +225,16 @@ export async function grantPurchasePoints(
 
   const result = await prisma.$transaction(async (tx) => {
     // 既に付与済みなら何もしない（idempotent）
-    // purchaseLogIdがない場合でも、stripePaymentIdで重複チェックを行う
-    let existing = null;
-    if (purchaseLogId) {
-      existing = await tx.pointHistory.findFirst({
-        where: {
-          historyTable: 'point_purchase_logs',
-          historyTableId: purchaseLogId,
-        },
-        select: { id: true },
-      });
-    }
-    
-    // purchaseLogIdがない場合、stripePaymentIdで重複チェック
-    if (!existing && stripePaymentId) {
-      // pointHistoryのdescriptionにstripePaymentIdが含まれているか確認
-      // または、pointPurchaseLogから履歴を確認
-      const prismaAny = tx as unknown as {
-        pointPurchaseLog: {
-          findFirst: (args: {
-            where: { providerPaymentIntentId: string };
-            select: { id: true };
-          }) => Promise<{ id: number } | null>;
-        };
-        pointHistory: {
-          findFirst: (args: {
-            where: {
-              historyTable: 'point_purchase_logs';
-              historyTableId: number;
-            };
-            select: { id: true };
-          }) => Promise<{ id: number } | null>;
-        };
-      };
-      
-      const existingLog = await prismaAny.pointPurchaseLog.findFirst({
-        where: { providerPaymentIntentId: stripePaymentId },
-        select: { id: true },
-      });
-      
-      if (existingLog) {
-        existing = await prismaAny.pointHistory.findFirst({
+    const existing = purchaseLogId
+      ? await tx.pointHistory.findFirst({
           where: {
             historyTable: 'point_purchase_logs',
-            historyTableId: existingLog.id,
+            historyTableId: purchaseLogId,
           },
           select: { id: true },
-        });
-      }
-    }
-    
+        })
+      : null;
     if (existing) {
-      console.log("ポイントは既に付与済みです:", {
-        purchaseLogId,
-        stripePaymentId,
-        historyId: existing.id,
-      });
       return { alreadyGranted: true };
     }
 

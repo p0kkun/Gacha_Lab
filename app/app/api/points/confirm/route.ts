@@ -201,130 +201,52 @@ export async function POST(request: NextRequest) {
     const { grantPurchasePoints } = await import("@/lib/point-service");
     const { getPointBalances } = await import("@/lib/point-management");
     
-    console.log("ポイント付与処理開始:", {
+    const grantResult = await grantPurchasePoints(
       userId,
       points,
       bonusFreePoints,
       paymentIntentId,
-      purchaseLogId,
-    });
-    
-    try {
-      const grantResult = await grantPurchasePoints(
-        userId,
-        points,
-        bonusFreePoints,
-        paymentIntentId,
-        purchaseLogId
-      );
+      purchaseLogId
+    );
 
-      console.log("ポイント付与処理結果:", {
-        alreadyGranted: grantResult.alreadyGranted,
-        updatedBalance: grantResult.updatedBalance,
-      });
+    // userPointBalanceキャッシュ削除（ポイント付与後）
+    await deleteCache(CacheKeys.pointBalance(userId));
 
-      // userPointBalanceキャッシュ削除（ポイント付与後）
-      await deleteCache(CacheKeys.pointBalance(userId));
-
-      // 既に付与済みの場合は、現在のポイント残高を返す
-      if (grantResult.alreadyGranted) {
-        console.log("既にポイントが付与されています:", {
-          paymentIntentId,
-          purchaseLogId,
-        });
-        const balances = await getPointBalances(userId);
-        return NextResponse.json({
-          success: true,
-          alreadyGranted: true,
-          points: balances.total,
-        });
-      }
-
-      // 現在のポイント残高を取得
-      const balances = await getPointBalances(userId);
-      const result = balances.total;
-
-      console.log(
-        `ポイント付与成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`,
-        {
-          paymentIntentId,
-          purchaseLogId,
-          newBalance: result,
-          timestamp: new Date().toISOString(),
-        }
-      );
-
-      return NextResponse.json({
-        success: true,
-        points: result,
-      });
-    } catch (grantError) {
-      const errorMessage = grantError instanceof Error ? grantError.message : String(grantError);
-      const errorStack = grantError instanceof Error ? grantError.stack : undefined;
-      
-      console.error("ポイント付与処理エラー:", {
-        error: errorMessage,
-        stack: errorStack,
-        userId,
-        points,
-        bonusFreePoints,
+    // 既に付与済みの場合は、現在のポイント残高を返す
+    if (grantResult.alreadyGranted) {
+      console.log("既にポイントが付与されています:", {
         paymentIntentId,
         purchaseLogId,
       });
-      
-      await logError(
-        grantError instanceof Error ? grantError : new Error(String(grantError)),
-        {
-          userId,
-          route: "/api/points/confirm",
-          customData: {
-            paymentIntentId,
-            purchaseLogId,
-            points,
-            bonusFreePoints,
-            errorMessage,
-          },
-        },
-        request
-      );
-      
-      // ユーザーに見えるエラーメッセージを返す
-      return NextResponse.json(
-        { 
-          success: false,
-          error: `ポイント付与に失敗しました: ${errorMessage}`,
-          paymentIntentId, // デバッグ用
-          details: process.env.NODE_ENV === "development" ? {
-            errorMessage,
-            stack: errorStack,
-            userId,
-            points,
-            bonusFreePoints,
-          } : undefined,
-        },
-        { status: 500 }
-      );
+      const balances = await getPointBalances(userId);
+      return NextResponse.json({
+        success: true,
+        alreadyGranted: true,
+        points: balances.total,
+      });
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    console.error("ポイント付与確認エラー:", {
-      error: errorMessage,
-      stack: errorStack,
+
+    // 現在のポイント残高を取得
+    const balances = await getPointBalances(userId);
+    const result = balances.total;
+
+    console.log(
+      `ポイント付与成功: ユーザー ${userId} に 有償${points}pt / おまけ無償${bonusFreePoints}pt 付与`,
+      {
+        paymentIntentId,
+        newBalance: result,
+        timestamp: new Date().toISOString(),
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      points: result,
     });
-    
+  } catch (error) {
     await logError(error, { route: "/api/points/confirm" }, request);
-    
     return NextResponse.json(
-      { 
-        success: false,
-        error: `ポイント付与確認に失敗しました: ${errorMessage}`,
-        details: process.env.NODE_ENV === "development" ? {
-          errorMessage,
-          stack: errorStack,
-        } : undefined,
-      },
+      { error: "ポイント付与に失敗しました" },
       { status: 500 }
     );
   }

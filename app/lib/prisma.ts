@@ -145,19 +145,4 @@ if (!globalForPrisma.prisma) {
 
 export const prisma = globalForPrisma.prisma!;
 
-// データベース接続をテストする関数
-export async function testDatabaseConnection(): Promise<boolean> {
-  try {
-    await prisma.$connect();
-    // 簡単なクエリで接続を確認
-    await prisma.$queryRaw`SELECT 1`;
-    console.log("[Prisma] データベース接続テスト成功");
-    return true;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[Prisma] データベース接続テスト失敗:", errorMessage);
-    return false;
-  }
-}
-
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
