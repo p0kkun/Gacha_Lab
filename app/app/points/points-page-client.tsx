@@ -188,6 +188,7 @@ function CheckoutForm({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const { showError, showSuccess } = useErrorModal();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -245,8 +246,9 @@ function CheckoutForm({
                 }
                 pointsUpdated = true;
                 onSuccess();
-                alert(
-                  `ポイント購入が完了しました！\n${currentPoints.toLocaleString()}ポイント`
+                showSuccess(
+                  `ポイント購入が完了しました！\n現在のポイント: ${currentPoints.toLocaleString()}ポイント`,
+                  { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 break;
               }
@@ -279,8 +281,9 @@ function CheckoutForm({
               if (confirmData.success && onPointsUpdated) {
                 onPointsUpdated(confirmData.points);
                 onSuccess();
-                alert(
-                  `ポイント購入が完了しました！\n${confirmData.points.toLocaleString()}ポイント`
+                showSuccess(
+                  `ポイント購入が完了しました！\n現在のポイント: ${confirmData.points.toLocaleString()}ポイント`,
+                  { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                 );
               } else {
                 onSuccess();
@@ -426,7 +429,7 @@ function PointsPageContent() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const { showError } = useErrorModal();
+  const { showError, showSuccess } = useErrorModal();
 
   // 購入プランを取得（公開API）
   useEffect(() => {
@@ -604,7 +607,11 @@ function PointsPageContent() {
                     "決済がキャンセルされました:",
                     updatedPaymentIntent.status
                   );
-                  showError("決済がキャンセルされました。");
+                  showError("決済がキャンセルされました。", {
+                    title: "ポイント購入",
+                    redirectTo: null,
+                    confirmLabel: "閉じる",
+                  });
                   setSelectedPlan(null);
                   return;
                 }
@@ -616,7 +623,7 @@ function PointsPageContent() {
                 );
                 showError(
                   "決済の処理に時間がかかっています。しばらくしてからページを更新してください。",
-                  { redirectTo: null, confirmLabel: "閉じる" }
+                  { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 setSelectedPlan(null);
                 return;
@@ -651,8 +658,9 @@ function PointsPageContent() {
                   if (data.points > previousPoints) {
                     await updatePointBalances(profile.userId);
                     setSelectedPlan(null);
-                    alert(
-                      `ポイント購入が完了しました！\n${points}ポイント → ${data.points}ポイント`
+                    showSuccess(
+                      `ポイント購入が完了しました！\n${points}ポイント → ${data.points}ポイント`,
+                      { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                     );
                     pointsUpdated = true;
 
@@ -691,10 +699,11 @@ function PointsPageContent() {
                     if (confirmData.success) {
                       await updatePointBalances(profile.userId);
                       setSelectedPlan(null);
-                      alert(
+                      showSuccess(
                         `ポイント購入が完了しました！\n${
                           points || 0
-                        }ポイント → ${confirmData.points}ポイント`
+                        }ポイント → ${confirmData.points}ポイント`,
+                        { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                       );
 
                       // URLパラメータをクリア
@@ -714,13 +723,17 @@ function PointsPageContent() {
                 await updatePointBalances(profile.userId);
                 showError(
                   "決済は成功しましたが、ポイントの反映に時間がかかっています。\nしばらくしてからページを更新してください。",
-                  { redirectTo: null, confirmLabel: "閉じる" }
+                  { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 setSelectedPlan(null);
               }
             } else if (paymentIntent.status === "requires_payment_method") {
               // 決済がキャンセルされた場合
-              showError("決済がキャンセルされました。");
+              showError("決済がキャンセルされました。", {
+                title: "ポイント購入",
+                redirectTo: null,
+                confirmLabel: "閉じる",
+              });
               setSelectedPlan(null);
             }
           } else if (success === "true") {
@@ -749,8 +762,9 @@ function PointsPageContent() {
                 if (data.points > previousPoints) {
                   await updatePointBalances(profile.userId);
                   setSelectedPlan(null);
-                  alert(
-                    `ポイント購入が完了しました！\n${previousPoints}ポイント → ${data.points}ポイント`
+                  showSuccess(
+                    `ポイント購入が完了しました！\n${previousPoints}ポイント → ${data.points}ポイント`,
+                    { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                   );
                   pointsUpdated = true;
 
@@ -769,7 +783,7 @@ function PointsPageContent() {
               await updatePointBalances(profile.userId);
               showError(
                 "決済は成功しましたが、ポイントの反映に時間がかかっています。\nページを更新してください。",
-                { redirectTo: null, confirmLabel: "閉じる" }
+                { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
               );
               setSelectedPlan(null);
             }
