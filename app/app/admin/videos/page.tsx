@@ -492,28 +492,95 @@ export default function VideosPage() {
     const after = defaultSettings;
     const changes: Array<{ label: string; from: string; to: string }> = [];
 
-    // const beforeCommon = before.commonVideoAssetIds?.length ?? 0; // 共通動画は使用しないためコメントアウト
-    // const afterCommon = after.commonVideoAssetIds?.length ?? 0; // 共通動画は使用しないためコメントアウト
-    // if (beforeCommon !== afterCommon) {
-    //   changes.push({
-    //     label: "共通動画（選択数）",
-    //     from: `${beforeCommon}件`,
-    //     to: `${afterCommon}件`,
-    //   });
-    // }
+    // 等級別動画の変更を詳細に比較
+    const beforeTiers = before.tierVideoAssetIds || {};
+    const afterTiers = after.tierVideoAssetIds || {};
+    
+    // すべての等級コードを取得（変更前と変更後の両方）
+    const allTierCodes = new Set([
+      ...Object.keys(beforeTiers),
+      ...Object.keys(afterTiers),
+    ]);
 
-    const beforeRarityKeys = before.tierVideoAssetIds
-      ? Object.keys(before.tierVideoAssetIds).length
-      : 0;
-    const afterRarityKeys = after.tierVideoAssetIds
-      ? Object.keys(after.tierVideoAssetIds).length
-      : 0;
-    if (beforeRarityKeys !== afterRarityKeys) {
-      changes.push({
-        label: "等級別動画（設定数）",
-        from: `${beforeRarityKeys}等級`,
-        to: `${afterRarityKeys}等級`,
-      });
+    // 等級マスタから等級名を取得するためのマップ
+    const tierMap = new Map(
+      prizeTiers.map((tier) => [tier.code, tier.label])
+    );
+
+    for (const tierCode of allTierCodes) {
+      const beforeIds = beforeTiers[tierCode] || [];
+      const afterIds = afterTiers[tierCode] || [];
+      
+      // 動画IDの配列をソートして比較
+      const beforeIdsSorted = [...beforeIds].sort((a, b) => a - b);
+      const afterIdsSorted = [...afterIds].sort((a, b) => a - b);
+      
+      // 配列が異なる場合のみ変更として記録
+      if (
+        beforeIdsSorted.length !== afterIdsSorted.length ||
+        beforeIdsSorted.some((id, index) => id !== afterIdsSorted[index])
+      ) {
+        // 動画名を取得
+        const beforeVideoNames = beforeIdsSorted
+          .map((id) => {
+            const video = videos.find((v) => v.id === id);
+            return video ? video.fileName : `ID:${id}`;
+          })
+          .join(", ");
+        const afterVideoNames = afterIdsSorted
+          .map((id) => {
+            const video = videos.find((v) => v.id === id);
+            return video ? video.fileName : `ID:${id}`;
+          })
+          .join(", ");
+
+        const tierLabel = tierMap.get(tierCode) || tierCode;
+        changes.push({
+          label: `等級別動画（${tierLabel}）`,
+          from: beforeVideoNames || "なし",
+          to: afterVideoNames || "なし",
+        });
+      }
+    }
+
+    // 等級が追加または削除された場合
+    const beforeTierCodes = new Set(Object.keys(beforeTiers));
+    const afterTierCodes = new Set(Object.keys(afterTiers));
+    
+    // 削除された等級
+    for (const tierCode of beforeTierCodes) {
+      if (!afterTierCodes.has(tierCode)) {
+        const tierLabel = tierMap.get(tierCode) || tierCode;
+        const beforeVideoNames = (beforeTiers[tierCode] || [])
+          .map((id) => {
+            const video = videos.find((v) => v.id === id);
+            return video ? video.fileName : `ID:${id}`;
+          })
+          .join(", ");
+        changes.push({
+          label: `等級別動画（${tierLabel}）`,
+          from: beforeVideoNames || "なし",
+          to: "削除",
+        });
+      }
+    }
+    
+    // 追加された等級
+    for (const tierCode of afterTierCodes) {
+      if (!beforeTierCodes.has(tierCode)) {
+        const tierLabel = tierMap.get(tierCode) || tierCode;
+        const afterVideoNames = (afterTiers[tierCode] || [])
+          .map((id) => {
+            const video = videos.find((v) => v.id === id);
+            return video ? video.fileName : `ID:${id}`;
+          })
+          .join(", ");
+        changes.push({
+          label: `等級別動画（${tierLabel}）`,
+          from: "なし",
+          to: afterVideoNames || "なし",
+        });
+      }
     }
 
     if (changes.length === 0) {
