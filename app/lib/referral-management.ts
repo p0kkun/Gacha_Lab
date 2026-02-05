@@ -13,11 +13,27 @@ export async function generateReferralLink(userId: string): Promise<{
   expiresAt: Date;
   qrCodeUrl?: string;
 }> {
+  // データベース接続を確認
+  try {
+    await prisma.$connect();
+  } catch (dbError) {
+    const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+    console.error("[generateReferralLink] データベース接続エラー:", errorMessage);
+    throw new Error(`データベースに接続できません: ${errorMessage}`);
+  }
+
   // 既存の紹介リンクを検索（最新のものを取得）
-  const existingReferral = await prisma.referral.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  let existingReferral;
+  try {
+    existingReferral = await prisma.referral.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[generateReferralLink] 紹介リンク検索エラー:", errorMessage);
+    throw new Error(`紹介リンクの検索に失敗しました: ${errorMessage}`);
+  }
 
   if (existingReferral) {
     const currentExpiresAt =
@@ -86,15 +102,22 @@ export async function generateReferralLink(userId: string): Promise<{
 
   const referralLink = `${liffUrl}?ref=${referralLinkId}`;
 
-  const referral = await prisma.referral.create({
-    data: {
-      userId,
-      referralLinkId,
-      referralLink,
-      status: ReferralStatus.PENDING,
-      expiresAt,
-    },
-  });
+  let referral;
+  try {
+    referral = await prisma.referral.create({
+      data: {
+        userId,
+        referralLinkId,
+        referralLink,
+        status: ReferralStatus.PENDING,
+        expiresAt,
+      },
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[generateReferralLink] 紹介リンク作成エラー:", errorMessage);
+    throw new Error(`紹介リンクの作成に失敗しました: ${errorMessage}`);
+  }
 
   return {
     referralLinkId: referral.referralLinkId,

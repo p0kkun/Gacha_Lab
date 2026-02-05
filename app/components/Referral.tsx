@@ -90,10 +90,18 @@ export default function Referral({ userId }: { userId: string }) {
       });
 
       if (!res.ok) {
-        throw new Error("紹介リンクの生成に失敗しました");
+        const errorData = await res.json().catch(() => ({ error: "不明なエラー" }));
+        const errorMsg = errorData.error || "紹介リンクの生成に失敗しました";
+        const details = errorData.details ? `\n\n詳細: ${errorData.details}` : "";
+        throw new Error(`${errorMsg}${details}`);
       }
 
       const data = await res.json();
+      
+      if (!data.success || !data.referralLink) {
+        throw new Error(data.error || "紹介リンクの生成に失敗しました");
+      }
+      
       setReferralLink(data.referralLink);
       setExpiresAt(data.expiresAt || null);
 
@@ -104,8 +112,14 @@ export default function Referral({ userId }: { userId: string }) {
       });
       setQrCodeUrl(qrCode);
     } catch (err: any) {
-      console.error("紹介リンク生成エラー:", err);
-      setError(err.message || "紹介リンクの生成に失敗しました");
+      const errorMsg = err.message || "紹介リンクの生成に失敗しました";
+      setError(errorMsg);
+      showError(
+        errorMsg.includes("データベース") 
+          ? `${errorMsg}\n\nデータベース接続に問題がある可能性があります。しばらくしてから再度お試しください。`
+          : errorMsg,
+        { redirectTo: null, confirmLabel: "閉じる" }
+      );
     } finally {
       if (showLoading) {
         setLoading(false);

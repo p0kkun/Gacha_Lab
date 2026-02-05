@@ -221,6 +221,19 @@ function CheckoutForm({
           status: paymentIntent.status,
         });
 
+        // 購入前のポイント残高を取得
+        let previousPoints = 0;
+        try {
+          const initialRes = await fetch(`/api/points/balance?userId=${userId}`);
+          if (initialRes.ok) {
+            const initialData = await initialRes.json();
+            previousPoints = initialData.points || 0;
+            console.log("購入前のポイント残高:", previousPoints);
+          }
+        } catch (err) {
+          console.error("購入前ポイント残高取得エラー:", err);
+        }
+
         // ポイント残高をポーリングして更新
         const maxAttempts = 15; // 最大15回（15秒間）
         let pointsUpdated = false;
@@ -232,22 +245,24 @@ function CheckoutForm({
             const res = await fetch(`/api/points/balance?userId=${userId}`);
             if (res.ok) {
               const data = await res.json();
-              const currentPoints = data.points;
+              const currentPoints = data.points || 0;
 
               console.log(`ポイント残高確認 (${i + 1}/${maxAttempts}):`, {
+                previous: previousPoints,
                 current: currentPoints,
+                increased: currentPoints > previousPoints,
               });
 
-              // ポイントが増加したか確認（初回は前のポイント残高が分からないため、Webhookの処理を待つ）
-              if (i >= 2) {
-                // 3秒後から確認（Webhookの処理時間を考慮）
+              // ポイントが実際に増加したか確認
+              if (currentPoints > previousPoints) {
+                // ポイントが増加した場合のみ成功と判断
                 if (onPointsUpdated) {
                   onPointsUpdated(currentPoints);
                 }
                 pointsUpdated = true;
                 onSuccess();
                 showSuccess(
-                  `ポイント購入が完了しました！\n現在のポイント: ${currentPoints.toLocaleString()}ポイント`,
+                  `ポイント購入が完了しました！\n${previousPoints}ポイント → ${currentPoints.toLocaleString()}ポイント`,
                   { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 break;
