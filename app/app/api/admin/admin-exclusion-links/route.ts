@@ -4,10 +4,14 @@ import { getAdminAuthContext } from '@/lib/admin-auth';
 import { recordAdminAction } from '@/lib/admin-action-history';
 import { AdminActionType } from '@/lib/admin-action-types';
 
-async function requireSuperAdmin(request: NextRequest) {
+type SuperAdminAuthResult =
+  | { ok: false; response: NextResponse }
+  | { ok: true; adminUser: NonNullable<Awaited<ReturnType<typeof prisma.adminUser.findUnique>>> };
+
+async function requireSuperAdmin(request: NextRequest): Promise<SuperAdminAuthResult> {
   const context = await getAdminAuthContext(request);
   if (!context) {
-    return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+    return { ok: false as const, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
   const adminUser = await prisma.adminUser.findUnique({
@@ -16,10 +20,10 @@ async function requireSuperAdmin(request: NextRequest) {
   });
 
   if (!adminUser || adminUser.role?.name !== 'super_admin') {
-    return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+    return { ok: false as const, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
 
-  return { ok: true, adminUser };
+  return { ok: true as const, adminUser };
 }
 
 function normalizeLink(link: string): string {
