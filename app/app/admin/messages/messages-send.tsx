@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Tag = {
   id: number;
@@ -46,10 +45,9 @@ export default function MessagesSendContent() {
 
   const fetchTags = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -64,10 +62,9 @@ export default function MessagesSendContent() {
 
   const fetchUsers = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/users", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -85,12 +82,11 @@ export default function MessagesSendContent() {
 
     setLoadingTagUsers(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/users/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           tagIds: selectedTagIds,
@@ -143,12 +139,11 @@ export default function MessagesSendContent() {
     setSendError(null);
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/messages/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           message: message.trim(),

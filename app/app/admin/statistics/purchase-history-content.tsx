@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import {
   BarChart,
   Bar,
@@ -12,8 +11,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-} from "recharts";
+  ResponsiveContainer } from "recharts";
 
 type PurchaseHistoryStat = {
   date?: string;
@@ -57,7 +55,6 @@ export default function PurchaseHistoryContent() {
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month" | "plan">("day");
   const [planId, setPlanId] = useState<string>("");
 
-  const token = getAdminAuthToken();
 
   useEffect(() => {
     const fetchStatistics = async () => {
@@ -67,15 +64,13 @@ export default function PurchaseHistoryContent() {
       try {
         const params = new URLSearchParams({
           period,
-          groupBy,
-        });
+          groupBy });
         if (planId) {
           params.append("planId", planId);
         }
 
         const res = await fetch(`/api/admin/statistics/purchase-history?${params.toString()}`, {
-          headers: { "X-Admin-Auth": token || "" },
-        });
+          headers: {} });
 
         if (res.status === 401) {
           sessionStorage.removeItem("admin_authenticated");
@@ -132,16 +127,14 @@ export default function PurchaseHistoryContent() {
         count: item.count,
         amount: item.totalAmount,
         paidPoints: item.totalPaidPoints,
-        freePoints: item.totalFreePoints,
-      };
+        freePoints: item.totalFreePoints };
     } else {
       return {
         name: item.date || "",
         count: item.count,
         amount: item.totalAmount,
         paidPoints: item.totalPaidPoints,
-        freePoints: item.totalFreePoints,
-      };
+        freePoints: item.totalFreePoints };
     }
   });
 

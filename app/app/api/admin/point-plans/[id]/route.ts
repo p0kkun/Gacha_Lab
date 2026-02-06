@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getAdminAuthContext } from "@/lib/admin-auth";
 import { recordAdminAction } from "@/lib/admin-action-history";
 import { AdminActionType } from "@/lib/admin-action-types";
 import { deleteCache } from "@/lib/cache";
@@ -14,11 +14,17 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true },
+    });
+
     const { id } = await params;
     const planId = id;
     if (!planId || planId.trim() === "") {
@@ -33,8 +39,6 @@ export async function PUT(
       label,
       isActive,
       displayOrder,
-      adminUserId,
-      adminName,
     }: {
       points?: number;
       bonusFreePoints?: number;
@@ -42,9 +46,10 @@ export async function PUT(
       label?: string;
       isActive?: boolean;
       displayOrder?: number;
-      adminUserId?: string;
-      adminName?: string;
     } = body;
+
+    const adminUserId = adminUser?.id ?? authContext.adminUserId;
+    const adminName = adminUser?.name ?? "unknown";
 
     const data: any = {};
     if (points !== undefined) {
@@ -128,8 +133,8 @@ export async function PUT(
 
     await recordAdminAction({
       actionType: AdminActionType.POINT_PLAN_UPDATE,
-      adminUserId: adminUserId || 'unknown',
-      adminName: adminName || 'unknown',
+      adminUserId: String(adminUserId),
+      adminName,
       description: `ポイント購入プラン「${updated.label}」を更新（ID: ${planId}）`,
       metadata: {
         planId,
@@ -164,11 +169,17 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true },
+    });
+
     const { id } = await params;
     const planId = id;
     if (!planId || planId.trim() === "") {
@@ -180,8 +191,8 @@ export async function DELETE(
       where: { id: planId },
     });
 
-    const body = await request.json().catch(() => ({}));
-    const { adminUserId, adminName } = body as { adminUserId?: string; adminName?: string };
+    const adminUserId = adminUser?.id ?? authContext.adminUserId;
+    const adminName = adminUser?.name ?? "unknown";
 
     await prisma.pointPurchasePlan.delete({ where: { id: planId } });
 
@@ -189,8 +200,8 @@ export async function DELETE(
     if (oldPlan) {
       await recordAdminAction({
         actionType: AdminActionType.POINT_PLAN_DELETE,
-        adminUserId: adminUserId || 'unknown',
-        adminName: adminName || 'unknown',
+        adminUserId: String(adminUserId),
+        adminName,
         description: `ポイント購入プラン「${oldPlan.label}」を削除（ID: ${planId}）`,
         metadata: {
           planId,

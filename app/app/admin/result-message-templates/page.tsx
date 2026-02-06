@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Template = {
   id: number;
@@ -16,7 +15,6 @@ type Template = {
 };
 
 export default function ResultMessageTemplatesPage() {
-  const token = useMemo(() => getAdminAuthToken() || "", []);
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,8 +47,7 @@ export default function ResultMessageTemplatesPage() {
 
   const fetchTemplates = async () => {
     const res = await fetch("/api/admin/result-message-templates", {
-      headers: { "X-Admin-Auth": token },
-    });
+      headers: {} });
     if (res.status === 401) {
       sessionStorage.removeItem("admin_authenticated");
       window.location.href = "/admin";
@@ -109,23 +106,18 @@ export default function ResultMessageTemplatesPage() {
         const res = await fetch("/api/admin/result-message-templates", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "X-Admin-Auth": token,
-          },
+            "Content-Type": "application/json" },
           body: JSON.stringify({
             code,
             template,
             description: newRow.description.trim() || null,
-            isActive: newRow.isActive,
-          }),
-        });
+            isActive: newRow.isActive }) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "作成に失敗しました");
         setNewRow({ code: "", template: "", description: "", isActive: true });
         await fetchTemplates();
         setSuccess("作成しました");
-      },
-    });
+      } });
   };
 
   const saveEdit = async () => {
@@ -143,8 +135,7 @@ export default function ResultMessageTemplatesPage() {
       description:
         typeof editRow.description === "string" ? editRow.description : before.description,
       isActive:
-        typeof editRow.isActive === "boolean" ? editRow.isActive : before.isActive,
-    };
+        typeof editRow.isActive === "boolean" ? editRow.isActive : before.isActive };
 
     const changes: Array<{ label: string; from: string; to: string }> = [];
     if (next.code !== before.code) changes.push({ label: "テンプレート識別コード", from: before.code, to: String(next.code) });
@@ -163,24 +154,19 @@ export default function ResultMessageTemplatesPage() {
         const res = await fetch(`/api/admin/result-message-templates/${editingId}`, {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
-            "X-Admin-Auth": token,
-          },
+            "Content-Type": "application/json" },
           body: JSON.stringify({
             code: next.code,
             template: next.template,
             description: next.description ?? null,
-            isActive: next.isActive,
-          }),
-        });
+            isActive: next.isActive }) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "保存に失敗しました");
         await fetchTemplates();
         setEditingId(null);
         setEditRow({});
         setSuccess("保存しました");
-      },
-    });
+      } });
   };
 
   const deleteTemplate = async (t: Template) => {
@@ -197,14 +183,12 @@ export default function ResultMessageTemplatesPage() {
       onConfirm: async () => {
         const res = await fetch(`/api/admin/result-message-templates/${t.id}`, {
           method: "DELETE",
-          headers: { "X-Admin-Auth": token },
-        });
+          headers: {} });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "削除に失敗しました");
         await fetchTemplates();
         setSuccess("削除しました");
-      },
-    });
+      } });
   };
 
   return (

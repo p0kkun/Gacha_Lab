@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import {
   Card,
   Button,
@@ -131,10 +130,9 @@ export default function ReferralsPage() {
         params.append("status", filters.status);
       }
 
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/referrals?${params}`, {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

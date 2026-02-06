@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button, Select, Card, Alert } from '@/components/admin/ui';
-import { getAdminAuthToken } from '@/lib/admin-auth';
 
 type GachaType = {
   id: number;
@@ -36,16 +35,9 @@ export default function PickupSettingsContent() {
       setLoading(true);
       setError(null);
 
-      const authToken = getAdminAuthToken();
-      if (!authToken) {
-        throw new Error('認証が必要です');
-      }
-
       // ガチャタイプ一覧を取得
       const gachaTypesRes = await fetch('/api/admin/gacha-types', {
-        headers: {
-          'X-Admin-Auth': authToken,
-        },
+        headers: {},
       });
       if (!gachaTypesRes.ok) {
         throw new Error('ガチャタイプ一覧の取得に失敗しました');
@@ -65,9 +57,7 @@ export default function PickupSettingsContent() {
 
       // ピックアップ設定を取得
       const pickupRes = await fetch('/api/admin/pickup', {
-        headers: {
-          'X-Admin-Auth': authToken,
-        },
+        headers: {},
       });
       if (!pickupRes.ok) {
         throw new Error('ピックアップ設定の取得に失敗しました');
@@ -90,16 +80,10 @@ export default function PickupSettingsContent() {
       setError(null);
       setSuccess(null);
 
-      const authToken = getAdminAuthToken();
-      if (!authToken) {
-        throw new Error('認証が必要です');
-      }
-
       const res = await fetch('/api/admin/pickup', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-Auth': authToken,
         },
         body: JSON.stringify({
           pickupGachaId: selectedGachaId,
@@ -191,8 +175,7 @@ export default function PickupSettingsContent() {
                           const status = getGachaStatus(gacha);
                           return {
                             value: gacha.id.toString(),
-                            label: `${gacha.name || '無名'} (${gacha.code || 'N/A'}) - ${status}`,
-                          };
+                            label: `${gacha.name || '無名'} (${gacha.code || 'N/A'}) - ${status}` };
                         }),
                     ]
                   : [{ value: '', label: 'ガチャタイプがありません' }]

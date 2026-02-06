@@ -17,6 +17,9 @@ CREATE TYPE "PaymentProvider" AS ENUM ('STRIPE');
 CREATE TYPE "PaymentStatus" AS ENUM ('SUCCEEDED', 'FAILED', 'PENDING');
 
 -- CreateEnum
+CREATE TYPE "AdminActionType" AS ENUM ('LOGIN', 'LOGOUT', 'CREATE_ADMIN', 'UPDATE_ADMIN', 'DELETE_ADMIN', 'RESET_PASSWORD', 'UPDATE_ROLE', 'CREATE_ROLE', 'DELETE_ROLE', 'UPDATE_EXCLUSION_LINK', 'CREATE_EXCLUSION_LINK', 'DELETE_EXCLUSION_LINK', 'ACCESS');
+
+-- CreateEnum
 CREATE TYPE "ItemUsageType" AS ENUM ('IMAGE', 'SHOW_TO_STAFF');
 
 -- CreateEnum
@@ -234,17 +237,84 @@ CREATE TABLE "point_purchase_logs" (
 );
 
 -- CreateTable
-CREATE TABLE "admin_action_histories" (
+CREATE TABLE "admin_audit_logs" (
     "id" SERIAL NOT NULL,
-    "actionType" TEXT NOT NULL,
-    "adminUserId" TEXT NOT NULL,
-    "adminName" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
+    "actionType" "AdminActionType" NOT NULL,
+    "adminUserId" INTEGER,
+    "adminEmail" TEXT,
+    "adminName" TEXT,
+    "actionTarget" TEXT,
+    "actionTargetId" TEXT,
+    "route" TEXT,
+    "method" TEXT,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "statusCode" INTEGER,
+    "success" BOOLEAN NOT NULL DEFAULT true,
+    "message" TEXT,
     "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "targetUserIds" JSONB,
 
-    CONSTRAINT "admin_action_histories_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "admin_audit_logs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_roles" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admin_roles_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_users" (
+    "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "roleId" INTEGER NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "lastPasswordChangedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admin_users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_exclusion_links" (
+    "id" SERIAL NOT NULL,
+    "adminRoleId" INTEGER NOT NULL,
+    "link" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admin_exclusion_links_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_sessions" (
+    "id" SERIAL NOT NULL,
+    "adminUserId" INTEGER NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "revokedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admin_sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_password_histories" (
+    "id" SERIAL NOT NULL,
+    "adminUserId" INTEGER NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "admin_password_histories_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -551,13 +621,43 @@ CREATE INDEX "point_purchase_logs_userId_createdAt_idx" ON "point_purchase_logs"
 CREATE INDEX "point_purchase_logs_provider_status_idx" ON "point_purchase_logs"("provider", "status");
 
 -- CreateIndex
-CREATE INDEX "admin_action_histories_actionType_idx" ON "admin_action_histories"("actionType");
+CREATE INDEX "admin_audit_logs_actionType_idx" ON "admin_audit_logs"("actionType");
 
 -- CreateIndex
-CREATE INDEX "admin_action_histories_adminUserId_idx" ON "admin_action_histories"("adminUserId");
+CREATE INDEX "admin_audit_logs_adminUserId_idx" ON "admin_audit_logs"("adminUserId");
 
 -- CreateIndex
-CREATE INDEX "admin_action_histories_createdAt_idx" ON "admin_action_histories"("createdAt");
+CREATE INDEX "admin_audit_logs_createdAt_idx" ON "admin_audit_logs"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "admin_roles_name_key" ON "admin_roles"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "admin_users_email_key" ON "admin_users"("email");
+
+-- CreateIndex
+CREATE INDEX "admin_users_roleId_idx" ON "admin_users"("roleId");
+
+-- CreateIndex
+CREATE INDEX "admin_users_isActive_idx" ON "admin_users"("isActive");
+
+-- CreateIndex
+CREATE INDEX "admin_exclusion_links_adminRoleId_idx" ON "admin_exclusion_links"("adminRoleId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "admin_exclusion_links_adminRoleId_link_key" ON "admin_exclusion_links"("adminRoleId", "link");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "admin_sessions_tokenHash_key" ON "admin_sessions"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "admin_sessions_adminUserId_idx" ON "admin_sessions"("adminUserId");
+
+-- CreateIndex
+CREATE INDEX "admin_sessions_expiresAt_idx" ON "admin_sessions"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "admin_password_histories_adminUserId_idx" ON "admin_password_histories"("adminUserId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "video_assets_s3Key_key" ON "video_assets"("s3Key");
@@ -657,6 +757,18 @@ ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_ti
 
 -- AddForeignKey
 ALTER TABLE "gacha_prize_assignments" ADD CONSTRAINT "gacha_prize_assignments_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "gacha_items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_users" ADD CONSTRAINT "admin_users_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "admin_roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_exclusion_links" ADD CONSTRAINT "admin_exclusion_links_adminRoleId_fkey" FOREIGN KEY ("adminRoleId") REFERENCES "admin_roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_sessions" ADD CONSTRAINT "admin_sessions_adminUserId_fkey" FOREIGN KEY ("adminUserId") REFERENCES "admin_users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_password_histories" ADD CONSTRAINT "admin_password_histories_adminUserId_fkey" FOREIGN KEY ("adminUserId") REFERENCES "admin_users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "video_asset_categories" ADD CONSTRAINT "video_asset_categories_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "video_assets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

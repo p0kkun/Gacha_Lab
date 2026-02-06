@@ -11,6 +11,8 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [exclusionLinks, setExclusionLinks] = useState<string[]>([]);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   const menuItems = [
     { href: "/admin", label: "ダッシュボード", icon: "📊" },
@@ -20,9 +22,20 @@ export default function AdminLayout({
     { href: "/admin/users", label: "ユーザー管理", icon: "👥" },
     { href: "/admin/messages", label: "メッセージ配信", icon: "💬" },
     { href: "/admin/statistics", label: "統計", icon: "📈" },
+    { href: "/admin/admin-management", label: "管理者管理", icon: "🛡️" },
     { href: "/admin/system", label: "システム", icon: "⚙️" },
     { href: "/admin/help", label: "ヘルプ", icon: "❓" },
   ];
+
+  const isExcluded = (path: string) => {
+    return exclusionLinks.some((pattern) => {
+      if (pattern.endsWith("/*")) {
+        const prefix = pattern.slice(0, -2);
+        return path === prefix || path.startsWith(`${prefix}/`);
+      }
+      return path === pattern;
+    });
+  };
 
   // アクティブ状態の判定を最適化
   const isActiveItem = useMemo(() => {
@@ -45,6 +58,11 @@ export default function AdminLayout({
         "/admin/users": ["/admin/tags", "/admin/referrals"],
         "/admin/messages": [],
         "/admin/statistics": [],
+        "/admin/admin-management": [
+          "/admin/admin-users",
+          "/admin/admin-roles",
+          "/admin/admin-exclusion-links",
+        ],
         "/admin/system": ["/admin/action-history", "/admin/cache"],
       };
 
@@ -52,6 +70,42 @@ export default function AdminLayout({
       return subPaths?.some((subPath) => pathname?.startsWith(subPath)) || false;
     };
   }, [pathname]);
+
+  // 認証状態と除外リンクを取得
+  useEffect(() => {
+    const loadAdminContext = async () => {
+      try {
+        const res = await fetch("/api/admin/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!res.ok) {
+          window.location.href = "/admin";
+          return;
+        }
+        const data = await res.json();
+        setExclusionLinks(data.exclusionLinks ?? []);
+        if (data.adminUser) {
+          sessionStorage.setItem("admin_authenticated", "true");
+          sessionStorage.setItem("admin_user_id", String(data.adminUser.id));
+          sessionStorage.setItem("admin_name", data.adminUser.name ?? "");
+        }
+      } catch {
+        window.location.href = "/admin";
+      } finally {
+        setIsAuthChecked(true);
+      }
+    };
+    void loadAdminContext();
+  }, []);
+
+  // 権限で除外されているパスはリダイレクト
+  useEffect(() => {
+    if (!isAuthChecked) return;
+    if (pathname && isExcluded(pathname)) {
+      window.location.href = "/admin";
+    }
+  }, [isAuthChecked, pathname, exclusionLinks]);
 
   // モバイルメニューを閉じる（ESCキー対応）
   useEffect(() => {
@@ -77,10 +131,21 @@ export default function AdminLayout({
     };
   }, [isMobileMenuOpen]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("admin_authenticated");
-    window.location.href = "/admin";
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      sessionStorage.removeItem("admin_authenticated");
+      window.location.href = "/admin";
+    }
   };
+
+  if (!isAuthChecked) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -133,7 +198,9 @@ export default function AdminLayout({
           aria-label="サイドナビゲーション"
         >
           <div className="space-y-1.5">
-            {menuItems.map((item) => {
+            {menuItems
+              .filter((item) => !isExcluded(item.href))
+              .map((item) => {
               const isActive = isActiveItem(item.href);
 
               return (

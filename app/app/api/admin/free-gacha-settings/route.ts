@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getAdminAuthContext, verifyAdminAuth } from "@/lib/admin-auth";
+import { recordAdminAction } from "@/lib/admin-action-history";
+import { AdminActionType } from "@/lib/admin-action-types";
 
 /**
  * 無料ガチャ設定を取得
  * GET /api/admin/free-gacha-settings
  */
 export async function GET(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -55,11 +57,21 @@ export async function GET(request: NextRequest) {
  * PUT /api/admin/free-gacha-settings
  */
 export async function PUT(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true, email: true },
+    });
+
     const body = await request.json();
     const {
       isActive,
@@ -139,6 +151,17 @@ export async function PUT(request: NextRequest) {
           data,
         })
       : await prisma.freeGachaSettings.create({ data });
+
+    await recordAdminAction({
+      actionType: AdminActionType.FREE_GACHA_SETTINGS_UPDATE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
+      description: "無料ガチャ設定を更新",
+      metadata: {
+        previous: existing ?? null,
+        updated,
+      },
+    });
 
     return NextResponse.json({ settings: updated });
   } catch (error: any) {

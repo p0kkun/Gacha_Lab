@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import { CacheKeys } from "@/lib/cache-keys";
 
 type CacheKeyInfo = {
@@ -11,7 +10,6 @@ type CacheKeyInfo = {
 };
 
 export default function CacheManagementContent() {
-  const token = useMemo(() => getAdminAuthToken() || "", []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -34,18 +32,15 @@ export default function CacheManagementContent() {
       {
         key: CacheKeys.pointBalance("{userId}"),
         description: "ポイント残高（{userId}を実際のユーザーIDに置換）",
-        pattern: CacheKeys.pointBalancePattern(),
-      },
+        pattern: CacheKeys.pointBalancePattern() },
       {
         key: CacheKeys.userStatsGacha("{userId}"),
         description: "ユーザー統計情報（ガチャ実行情報）",
-        pattern: CacheKeys.userStatsPattern(),
-      },
+        pattern: CacheKeys.userStatsPattern() },
       {
         key: CacheKeys.pointPurchasePlans(),
         description: "ポイント購入プラン一覧",
-        pattern: CacheKeys.pointPurchasePlans(),
-      },
+        pattern: CacheKeys.pointPurchasePlans() },
     ],
     []
   );
@@ -57,8 +52,7 @@ export default function CacheManagementContent() {
 
     try {
       const res = await fetch(`/api/admin/cache?key=${encodeURIComponent(key)}`, {
-        headers: { "X-Admin-Auth": token },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -92,11 +86,8 @@ export default function CacheManagementContent() {
       const res = await fetch("/api/admin/cache", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": token,
-        },
-        body: JSON.stringify({ key }),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify({ key }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -130,11 +121,8 @@ export default function CacheManagementContent() {
       const res = await fetch("/api/admin/cache", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": token,
-        },
-        body: JSON.stringify({ pattern }),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify({ pattern }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -163,8 +151,7 @@ export default function CacheManagementContent() {
     setUserSearchLoading(true);
     try {
       const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(query)}`, {
-        headers: { "X-Admin-Auth": token },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -221,11 +208,8 @@ export default function CacheManagementContent() {
       const res = await fetch("/api/admin/cache", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": token,
-        },
-        body: JSON.stringify({ type: "all" }),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "all" }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");

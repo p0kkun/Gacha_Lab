@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import { Button, Input, Card, Alert, Badge, PageHeader } from "@/components/admin/ui";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type PrizeTier = {
   id: number;
@@ -47,8 +46,7 @@ export default function PrizeTiersPage() {
     code: "",
     label: "",
     displayOrder: 0,
-    isActive: true,
-  });
+    isActive: true });
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -64,10 +62,8 @@ export default function PrizeTiersPage() {
     setLoading(true);
     setError(null);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/prize-tiers", {
-        headers: { "X-Admin-Auth": authToken || "" },
-      });
+        headers: {} });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -96,15 +92,11 @@ export default function PrizeTiersPage() {
     setError(null);
     setSuccess(null);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/prize-tiers", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
-        body: JSON.stringify(payload),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify(payload) });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -126,15 +118,11 @@ export default function PrizeTiersPage() {
     setError(null);
     setSuccess(null);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/prize-tiers/${tierId}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
-        body: JSON.stringify(payload),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify(payload) });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -156,11 +144,9 @@ export default function PrizeTiersPage() {
     setError(null);
     setSuccess(null);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/prize-tiers/${tierId}`, {
         method: "DELETE",
-        headers: { "X-Admin-Auth": authToken || "" },
-      });
+        headers: {} });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -279,8 +265,7 @@ export default function PrizeTiersPage() {
                     message: `以下の等級マスタを作成しますか？\n\n等級コード: ${newTier.code}\n表示名: ${newTier.label}`,
                     confirmText: "作成",
                     variant: "info",
-                    action: { type: "create", payload: newTier },
-                  });
+                    action: { type: "create", payload: newTier } });
                 }}
               >
                 追加
@@ -393,8 +378,7 @@ export default function PrizeTiersPage() {
                                 confirmText: "保存",
                                 variant: "info",
                                 changes,
-                                action: { type: "update", tierId: tier.id, payload: edited },
-                              });
+                                action: { type: "update", tierId: tier.id, payload: edited } });
                             }}
                           >
                             保存
@@ -435,8 +419,7 @@ export default function PrizeTiersPage() {
                                 confirmText: tier.isActive ? "無効化" : "有効化",
                                 variant: tier.isActive ? "warning" : "info",
                                 changes,
-                                action: { type: "toggle", tierId: tier.id, nextActive: !tier.isActive, payload: {} },
-                              });
+                                action: { type: "toggle", tierId: tier.id, nextActive: !tier.isActive, payload: {} } });
                             }}
                           >
                             {tier.isActive ? "無効化" : "有効化"}
@@ -451,8 +434,7 @@ export default function PrizeTiersPage() {
                                 message: `等級マスタ「${tier.label}」を削除しますか？\n\n使用中の場合は削除できず、無効化されます。`,
                                 confirmText: "削除",
                                 variant: "danger",
-                                action: { type: "delete", tierId: tier.id },
-                              });
+                                action: { type: "delete", tierId: tier.id } });
                             }}
                           >
                             削除

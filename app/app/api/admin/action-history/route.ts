@@ -8,7 +8,7 @@ import { verifyAdminAuth } from '@/lib/admin-auth';
  */
 export async function GET(request: NextRequest) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     // フィルタ条件を構築
     const where: {
       actionType?: string;
-      adminUserId?: string;
-      targetUserId?: string;
+      adminUserId?: number;
+      actionTargetId?: string;
       createdAt?: {
         gte?: Date;
         lte?: Date;
@@ -43,14 +43,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (adminUserId) {
-      where.adminUserId = adminUserId;
+      const adminUserIdNumber = Number(adminUserId);
+      if (!Number.isNaN(adminUserIdNumber)) {
+        where.adminUserId = adminUserIdNumber;
+      }
     }
 
     if (targetUserId) {
-      // targetUserIdが直接一致するか、targetUserIdsのJSON配列に含まれているかをチェック
-      // 注意: PrismaではJSON配列の検索が複雑なため、まずはtargetUserIdの直接一致のみをチェック
-      // 将来的には生のSQLクエリでJSON配列検索を実装することも可能
-      where.targetUserId = targetUserId;
+      // まずは単一ターゲットIDでフィルタ
+      where.actionTargetId = targetUserId;
     }
 
     if (startDate || endDate) {
@@ -65,24 +66,38 @@ export async function GET(request: NextRequest) {
 
     // 履歴を取得
     const [histories, total] = await Promise.all([
-      prisma.adminActionHistory.findMany({
+      prisma.adminAuditLog.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      prisma.adminActionHistory.count({ where }),
+      prisma.adminAuditLog.count({ where }),
     ]);
 
-    // targetUserIdsを配列として正しく処理
-    const formattedHistories = histories.map((history) => ({
-      ...history,
-      targetUserIds: Array.isArray(history.targetUserIds)
-        ? history.targetUserIds
-        : history.targetUserIds
-        ? JSON.parse(JSON.stringify(history.targetUserIds))
-        : null,
-    }));
+    // 既存UIの形に整形
+    const formattedHistories = histories.map((history) => {
+      const metadata =
+        history.metadata && typeof history.metadata === 'object'
+          ? history.metadata
+          : null;
+      const targetUserIdsRaw =
+        metadata && Array.isArray((metadata as { targetUserIds?: unknown }).targetUserIds)
+          ? (metadata as { targetUserIds: string[] }).targetUserIds
+          : [];
+
+      return {
+        id: history.id,
+        actionType: history.actionType,
+        adminUserId: history.adminUserId ? String(history.adminUserId) : null,
+        adminName: history.adminName ?? null,
+        targetUserId: history.actionTargetId ?? null,
+        targetUserIds: targetUserIdsRaw,
+        description: history.message ?? '',
+        metadata,
+        createdAt: history.createdAt,
+      };
+    });
 
     return NextResponse.json({
       histories: formattedHistories,
@@ -101,4 +116,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

@@ -17,7 +17,7 @@ type CreateBody = {
  * GET /api/admin/prize-assignments?gachaTypeId=xxx
  */
 export async function GET(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/prize-assignments
  */
 export async function POST(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

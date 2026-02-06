@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getAdminAuthContext } from "@/lib/admin-auth";
 import { recordTagAssignAction } from "@/lib/admin-action-history";
 
 /**
@@ -8,8 +8,8 @@ import { recordTagAssignAction } from "@/lib/admin-action-history";
  * POST /api/admin/tags/bulk-assign
  */
 export async function POST(request: NextRequest) {
-  // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,8 +19,6 @@ export async function POST(request: NextRequest) {
       tagId,
       userIds, // 直接ユーザーIDを指定する場合
       conditions, // 条件を指定する場合
-      adminUserId,
-      adminName,
     } = body;
 
     if (!tagId) {
@@ -226,9 +224,14 @@ export async function POST(request: NextRequest) {
 
     // 操作履歴を記録（新規付与したユーザーに対して）
     if (newUserIds.length > 0) {
+      const adminUser = await prisma.adminUser.findUnique({
+        where: { id: authContext.adminUserId },
+        select: { id: true, name: true },
+      });
+
       await recordTagAssignAction({
-        adminUserId: adminUserId || "unknown",
-        adminName: adminName || "unknown",
+        adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+        adminName: adminUser?.name ?? "unknown",
         targetUserIds: newUserIds,
         tagId,
         tagName: tag.name,

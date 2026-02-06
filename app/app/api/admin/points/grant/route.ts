@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { grantFreePoints, grantPaidPoints } from '@/lib/point-service';
 import { PointTransactionType } from '@prisma/client';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { getAdminAuthContext } from '@/lib/admin-auth';
 import { sendMessage } from '@/lib/line-messaging';
 import { recordPointGrantAction } from '@/lib/admin-action-history';
 
@@ -12,13 +12,18 @@ import { recordPointGrantAction } from '@/lib/admin-action-history';
  */
 export async function POST(request: NextRequest) {
   try {
-    // 管理者認証
-    if (!verifyAdminAuth(request)) {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { userIds, amount, pointType, description, sendNotification, notificationMessage, adminUserId, adminName } = body;
+    const { userIds, amount, pointType, description, sendNotification, notificationMessage } = body;
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true },
+    });
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json(
@@ -136,9 +141,11 @@ export async function POST(request: NextRequest) {
 
     // 操作履歴を記録（成功したユーザーに対して）
     if (successfulUserIds.length > 0) {
+      const adminUserId = adminUser?.id ?? authContext.adminUserId;
+      const adminName = adminUser?.name ?? 'unknown';
       await recordPointGrantAction({
-        adminUserId: adminUserId || 'unknown',
-        adminName: adminName || 'unknown',
+        adminUserId: String(adminUserId),
+        adminName,
         targetUserIds: successfulUserIds,
         amount,
         pointType,

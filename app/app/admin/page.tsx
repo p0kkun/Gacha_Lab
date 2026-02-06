@@ -7,39 +7,65 @@ import AdminLayout from "@/components/admin/AdminLayout";
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   // クライアント側でのみ認証状態をチェック（ハイドレーションエラー回避）
   useEffect(() => {
-    // setStateを非同期的に実行することで、カスケーディングレンダーを防ぐ
-    const initialize = () => {
+    const initialize = async () => {
       setMounted(true);
-      const authStatus = sessionStorage.getItem("admin_authenticated");
-      if (authStatus === "true") {
-        setIsAuthenticated(true);
+      try {
+        const res = await fetch("/api/admin/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.adminUser) {
+            sessionStorage.setItem("admin_authenticated", "true");
+            sessionStorage.setItem("admin_user_id", String(data.adminUser.id));
+            sessionStorage.setItem("admin_name", data.adminUser.name ?? "");
+          }
+          setIsAuthenticated(true);
+          return;
+        }
+      } catch {
+        // ignore
       }
+      sessionStorage.removeItem("admin_authenticated");
+      sessionStorage.removeItem("admin_user_id");
+      sessionStorage.removeItem("admin_name");
+      setIsAuthenticated(false);
     };
-    
-    // 次のイベントループで実行
-    const timeoutId = setTimeout(initialize, 0);
+
+    const timeoutId = setTimeout(() => {
+      void initialize();
+    }, 0);
     return () => clearTimeout(timeoutId);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 環境変数から管理者パスワードを取得（デフォルトは "admin"）
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin";
-
-    if (password === adminPassword) {
+    setError("");
+    try {
+      const res = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        setError("メールアドレスまたはパスワードが正しくありません");
+        return;
+      }
+      const data = await res.json();
       sessionStorage.setItem("admin_authenticated", "true");
-      // 管理者情報を保存（簡易的な実装）
-      sessionStorage.setItem("admin_user_id", "admin");
-      sessionStorage.setItem("admin_name", "管理者");
+      sessionStorage.setItem("admin_user_id", String(data.adminUser?.id ?? ""));
+      sessionStorage.setItem("admin_name", data.adminUser?.name ?? "");
       setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("パスワードが正しくありません");
+    } catch {
+      setError("ログインに失敗しました");
     }
   };
 
@@ -60,6 +86,23 @@ export default function AdminPage() {
             管理画面ログイン
           </h1>
           <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                placeholder="admin@example.com"
+                required
+              />
+            </div>
             <div>
               <label
                 htmlFor="password"
@@ -89,12 +132,6 @@ export default function AdminPage() {
               ログイン
             </button>
           </form>
-          <div className="mt-4 text-center text-sm text-black">
-            <p>デフォルトパスワード: admin</p>
-            <p className="mt-2 text-xs">
-              環境変数 NEXT_PUBLIC_ADMIN_PASSWORD で変更可能
-            </p>
-          </div>
         </div>
       </div>
     );

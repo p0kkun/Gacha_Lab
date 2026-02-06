@@ -7,7 +7,7 @@ import { verifyAdminAuth } from "@/lib/admin-auth";
  * GET /api/admin/prize-tiers
  */
 export async function GET(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/prize-tiers
  */
 export async function POST(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

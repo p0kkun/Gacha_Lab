@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { getAdminAuthContext, verifyAdminAuth } from '@/lib/admin-auth';
 import { uploadImageToS3, generateGachaTypeIconS3Key } from '@/lib/s3-upload';
+import { prisma } from '@/lib/prisma';
+import { recordAdminAction } from '@/lib/admin-action-history';
+import { AdminActionType } from '@/lib/admin-action-types';
 
 /**
  * ガチャタイプのアイコン画像をS3にアップロード
@@ -8,7 +11,7 @@ import { uploadImageToS3, generateGachaTypeIconS3Key } from '@/lib/s3-upload';
  */
 export async function POST(request: NextRequest) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }
@@ -16,6 +19,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true, email: true },
+    });
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const gachaTypeId = formData.get('gachaTypeId') as string;
@@ -57,6 +73,21 @@ export async function POST(request: NextRequest) {
 
     // S3にアップロード
     const { s3Url } = await uploadImageToS3(file, s3Key, file.type);
+
+    await recordAdminAction({
+      actionType: AdminActionType.GACHA_TYPE_ICON_UPDATE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
+      description: `ガチャタイプのアイコンを更新: ${gachaTypeId}`,
+      metadata: {
+        gachaTypeId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        s3Key,
+        imageUrl: s3Url,
+      },
+    });
 
     return NextResponse.json({
       success: true,

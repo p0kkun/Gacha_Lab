@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { getAdminAuthContext } from '@/lib/admin-auth';
 import { sendMessage } from '@/lib/line-messaging';
 import { recordMessageSendAction } from '@/lib/admin-action-history';
 
@@ -9,8 +9,8 @@ import { recordMessageSendAction } from '@/lib/admin-action-history';
  * POST /api/admin/messages/send
  */
 export async function POST(request: NextRequest) {
-  // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }
@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { message, tagIds, userIds, adminUserId, adminName } = body;
+    const { message, tagIds, userIds } = body;
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true },
+    });
 
     if (!message || message.trim() === '') {
       return NextResponse.json(
@@ -111,9 +116,11 @@ export async function POST(request: NextRequest) {
 
     // 操作履歴を記録（送信成功したユーザーに対して）
     if (results.success > 0) {
+      const adminUserId = adminUser?.id ?? authContext.adminUserId;
+      const adminName = adminUser?.name ?? 'unknown';
       await recordMessageSendAction({
-        adminUserId: adminUserId || 'unknown',
-        adminName: adminName || 'unknown',
+        adminUserId: String(adminUserId),
+        adminName,
         targetUserIds: targetUserIds,
         message: message.trim(),
         tagIds: tagIds || [],

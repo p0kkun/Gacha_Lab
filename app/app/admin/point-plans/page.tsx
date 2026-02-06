@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import type { PointPlan } from "@/lib/point-plan-types";
 
 type AdminPointPlan = PointPlan & {
@@ -63,8 +62,7 @@ export default function AdminPointPlansPage() {
     bonusFreePoints: "0",
     price: "",
     displayOrder: "0",
-    isActive: true,
-  });
+    isActive: true });
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -76,15 +74,13 @@ export default function AdminPointPlansPage() {
     action: ConfirmAction;
   } | null>(null);
 
-  const token = useMemo(() => getAdminAuthToken() || "", []);
 
   const fetchPlans = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/admin/point-plans", {
-        headers: { "X-Admin-Auth": token },
-      });
+        headers: {} });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -122,11 +118,8 @@ export default function AdminPointPlansPage() {
       const res = await fetch("/api/admin/point-plans", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": token,
-        },
-        body: JSON.stringify(payload),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify(payload) });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -144,8 +137,7 @@ export default function AdminPointPlansPage() {
         bonusFreePoints: "0",
         price: "",
         displayOrder: String(defaultNextOrder + 1),
-        isActive: true,
-      });
+        isActive: true });
       await fetchPlans();
     } catch (e) {
       console.error(e);
@@ -169,11 +161,8 @@ export default function AdminPointPlansPage() {
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
-            "X-Admin-Auth": token,
-          },
-          body: JSON.stringify(payload),
-        }
+            "Content-Type": "application/json" },
+          body: JSON.stringify(payload) }
       );
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -208,8 +197,7 @@ export default function AdminPointPlansPage() {
         `/api/admin/point-plans/${encodeURIComponent(planId)}`,
         {
           method: "DELETE",
-          headers: { "X-Admin-Auth": token },
-        }
+          headers: {} }
       );
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -267,32 +255,27 @@ export default function AdminPointPlansPage() {
       changes.push({
         label: "ポイント",
         from: toNumStr(before.points),
-        to: toNumStr(after.points),
-      });
+        to: toNumStr(after.points) });
     if (before.bonusFreePoints !== after.bonusFreePoints)
       changes.push({
         label: "おまけ無償ポイント",
         from: toNumStr(before.bonusFreePoints),
-        to: toNumStr(after.bonusFreePoints),
-      });
+        to: toNumStr(after.bonusFreePoints) });
     if (before.price !== after.price)
       changes.push({
         label: "価格(円)",
         from: toNumStr(before.price),
-        to: toNumStr(after.price),
-      });
+        to: toNumStr(after.price) });
     if (before.displayOrder !== after.displayOrder)
       changes.push({
         label: "表示順",
         from: String(before.displayOrder),
-        to: String(after.displayOrder),
-      });
+        to: String(after.displayOrder) });
     if (before.isActive !== after.isActive)
       changes.push({
         label: "状態",
         from: formatBool(before.isActive),
-        to: formatBool(after.isActive),
-      });
+        to: formatBool(after.isActive) });
     return changes;
   };
 
@@ -309,8 +292,7 @@ export default function AdminPointPlansPage() {
         newPlan.displayOrder.trim() === ""
           ? defaultNextOrder
           : Number(newPlan.displayOrder),
-      isActive: newPlan.isActive,
-    };
+      isActive: newPlan.isActive };
     setConfirmModal({
       isOpen: true,
       title: "購入プランの作成",
@@ -324,14 +306,12 @@ export default function AdminPointPlansPage() {
         {
           label: "おまけ無償ポイント",
           from: "-",
-          to: toNumStr(payload.bonusFreePoints),
-        },
+          to: toNumStr(payload.bonusFreePoints) },
         { label: "価格(円)", from: "-", to: toNumStr(payload.price) },
         { label: "表示順", from: "-", to: String(payload.displayOrder) },
         { label: "状態", from: "-", to: formatBool(payload.isActive) },
       ],
-      action: { type: "create", payload },
-    });
+      action: { type: "create", payload } });
   };
 
   const requestUpdateConfirm = (after: AdminPointPlan) => {
@@ -348,8 +328,7 @@ export default function AdminPointPlansPage() {
       bonusFreePoints: after.bonusFreePoints,
       price: after.price,
       displayOrder: after.displayOrder,
-      isActive: after.isActive,
-    };
+      isActive: after.isActive };
     const changes = buildPlanChanges(before, after);
     if (changes.length === 0) {
       setSuccess("変更点がないため、保存は不要です。");
@@ -362,8 +341,7 @@ export default function AdminPointPlansPage() {
       confirmText: "保存",
       variant: "info",
       changes,
-      action: { type: "update", planId: after.id, payload },
-    });
+      action: { type: "update", planId: after.id, payload } });
   };
 
   const requestToggleConfirm = (planId: string, nextActive: boolean) => {
@@ -379,8 +357,7 @@ export default function AdminPointPlansPage() {
       bonusFreePoints: after.bonusFreePoints,
       price: after.price,
       displayOrder: after.displayOrder,
-      isActive: after.isActive,
-    };
+      isActive: after.isActive };
     setConfirmModal({
       isOpen: true,
       title: "購入プランの状態変更",
@@ -390,8 +367,7 @@ export default function AdminPointPlansPage() {
       confirmText: nextActive ? "有効化" : "無効化",
       variant: nextActive ? "info" : "warning",
       changes: buildPlanChanges(before, after),
-      action: { type: "toggle", planId, nextActive, payload },
-    });
+      action: { type: "toggle", planId, nextActive, payload } });
   };
 
   const requestDeleteConfirm = (planId: string) => {
@@ -412,14 +388,12 @@ export default function AdminPointPlansPage() {
         {
           label: "おまけ無償ポイント",
           from: "-",
-          to: toNumStr(plan.bonusFreePoints),
-        },
+          to: toNumStr(plan.bonusFreePoints) },
         { label: "価格(円)", from: "-", to: toNumStr(plan.price) },
         { label: "表示順", from: "-", to: String(plan.displayOrder) },
         { label: "状態", from: "-", to: formatBool(plan.isActive) },
       ],
-      action: { type: "delete", planId },
-    });
+      action: { type: "delete", planId } });
   };
 
   return (
@@ -640,8 +614,7 @@ export default function AdminPointPlansPage() {
                               x.id === p.id
                                 ? {
                                     ...x,
-                                    bonusFreePoints: Number(e.target.value),
-                                  }
+                                    bonusFreePoints: Number(e.target.value) }
                                 : x
                             )
                           )
@@ -676,8 +649,7 @@ export default function AdminPointPlansPage() {
                               x.id === p.id
                                 ? {
                                     ...x,
-                                    displayOrder: Number(e.target.value),
-                                  }
+                                    displayOrder: Number(e.target.value) }
                                 : x
                             )
                           )

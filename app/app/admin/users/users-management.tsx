@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type User = {
   userId: string;
@@ -56,10 +55,9 @@ export default function UsersManagementContent() {
         params.append("search", search);
       }
 
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users?${params.toString()}`, {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

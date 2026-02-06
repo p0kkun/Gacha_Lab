@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaItem = {
   id: number;
@@ -107,12 +106,8 @@ export default function ItemEditPage() {
   const fetchItem = async () => {
     setLoading(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/items/${id}`, {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -142,15 +137,11 @@ export default function ItemEditPage() {
     }
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/items/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
-        body: JSON.stringify(formData),
-      });
+          "Content-Type": "application/json" },
+        body: JSON.stringify(formData) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -391,8 +382,7 @@ export default function ItemEditPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    grantFreePoints: parseInt(e.target.value) || 0,
-                  })
+                    grantFreePoints: parseInt(e.target.value) || 0 })
                 }
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                 placeholder="0"
@@ -445,16 +435,12 @@ export default function ItemEditPage() {
                         uploadFormData.append("file", imageFile);
                         uploadFormData.append("itemId", id.toString());
 
-                        const authToken = getAdminAuthToken();
                         const res = await fetch(
                           "/api/admin/items/upload-image",
                           {
                             method: "POST",
-                            headers: {
-                              "X-Admin-Auth": authToken || "",
-                            },
-                            body: uploadFormData,
-                          }
+                            headers: {},
+                            body: uploadFormData }
                         );
 
                         if (!res.ok) {
@@ -515,8 +501,7 @@ export default function ItemEditPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      useStartAt: fromDatetimeLocalValue(e.target.value),
-                    })
+                      useStartAt: fromDatetimeLocalValue(e.target.value) })
                   }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                 />
@@ -534,8 +519,7 @@ export default function ItemEditPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      useEndAt: fromDatetimeLocalValue(e.target.value),
-                    })
+                      useEndAt: fromDatetimeLocalValue(e.target.value) })
                   }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
                 />

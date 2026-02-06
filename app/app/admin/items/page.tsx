@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaItem = {
   id: number;
@@ -125,10 +124,9 @@ export default function ItemsPage() {
 
   const fetchGachaTypes = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -149,10 +147,9 @@ export default function ItemsPage() {
         params.append("isActive", isActiveFilter);
       }
 
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/items?${params}`, {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -183,12 +180,11 @@ export default function ItemsPage() {
     }
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/items", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify(formData),
       });
@@ -218,7 +214,7 @@ export default function ItemsPage() {
           const uploadRes = await fetch("/api/admin/items/upload-image", {
             method: "POST",
             headers: {
-              "X-Admin-Auth": authToken || "",
+
             },
             body: uploadFormData,
           });
@@ -230,7 +226,7 @@ export default function ItemsPage() {
               method: "PUT",
               headers: {
                 "Content-Type": "application/json",
-                "X-Admin-Auth": authToken || "",
+
               },
               body: JSON.stringify({
                 ...formData,
@@ -277,11 +273,10 @@ export default function ItemsPage() {
     setDeleteConfirm({ isOpen: false, itemId: null });
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/items/${id}`, {
         method: "DELETE",
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

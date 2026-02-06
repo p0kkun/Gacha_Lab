@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type ItemUsageStat = {
   itemId: number;
@@ -55,10 +54,9 @@ export default function ItemStatisticsContent() {
   const fetchItemStatistics = async () => {
     setLoading(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/statistics?includeItems=true", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

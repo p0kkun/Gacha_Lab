@@ -58,8 +58,14 @@ export default function TabbedPage({
       <div className="relative">
         {/* タブボタン */}
         <nav
-          className="flex flex-nowrap gap-0 border-b border-gray-300 overflow-x-auto"
+          className="flex flex-nowrap gap-0 border-b border-gray-300 overflow-x-auto overflow-y-hidden overscroll-y-contain"
           aria-label="Navigation"
+          onWheel={(event) => {
+            if (event.deltaY !== 0) {
+              event.preventDefault();
+              event.currentTarget.scrollLeft += event.deltaY;
+            }
+          }}
         >
           {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;

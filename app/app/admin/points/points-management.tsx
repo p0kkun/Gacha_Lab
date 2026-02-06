@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type User = {
   userId: string;
@@ -65,10 +64,9 @@ export default function PointsManagementContent() {
 
   const fetchTags = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -83,12 +81,11 @@ export default function PointsManagementContent() {
 
   const fetchTagUserCount = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/users/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           tagIds: selectedTagIds,
@@ -115,12 +112,11 @@ export default function PointsManagementContent() {
     setSearchResults([]);
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(
         `/api/admin/users/search?q=${encodeURIComponent(searchQuery)}`,
         {
           headers: {
-            "X-Admin-Auth": authToken || "",
+
           },
         }
       );
@@ -182,14 +178,13 @@ export default function PointsManagementContent() {
     setGrantResults(null);
 
     try {
-      const authToken = getAdminAuthToken();
 
       // 全員付与の場合は、全ユーザーIDを取得
       let userIds: string[] = [];
       if (grantType === "all") {
         const res = await fetch("/api/admin/users?limit=10000", {
           headers: {
-            "X-Admin-Auth": authToken || "",
+
           },
         });
 
@@ -211,7 +206,7 @@ export default function PointsManagementContent() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Admin-Auth": authToken || "",
+
           },
           body: JSON.stringify({
             tagIds: selectedTagIds,
@@ -244,7 +239,7 @@ export default function PointsManagementContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           userIds,

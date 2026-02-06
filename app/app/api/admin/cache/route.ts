@@ -8,7 +8,7 @@ import { CacheKeys } from "@/lib/cache-keys";
  * GET /api/admin/cache
  */
 export async function GET(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
  * DELETE /api/admin/cache
  */
 export async function DELETE(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import {
   BarChart,
   Bar,
@@ -113,10 +112,9 @@ export default function GachaStatisticsContent() {
 
   const fetchGachaTypeOptions = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -143,10 +141,9 @@ export default function GachaStatisticsContent() {
         params.append("gachaTypeIds", selectedGachaTypeIds.join(","));
       }
 
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/statistics?${params}`, {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

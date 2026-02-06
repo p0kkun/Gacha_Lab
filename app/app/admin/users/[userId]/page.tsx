@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaHistory = {
   id: number;
@@ -80,12 +79,8 @@ export default function UserDetailPage() {
 
   const fetchPrizeTiers = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/prize-tiers", {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
       if (res.ok) {
         const data = await res.json();
         const tierMap: Record<string, string> = {};
@@ -104,12 +99,8 @@ export default function UserDetailPage() {
   const fetchUserDetail = async () => {
     setLoading(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}`, {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -134,12 +125,8 @@ export default function UserDetailPage() {
 
   const fetchUserTags = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}/tags`, {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.ok) {
         const data = await res.json();
@@ -152,12 +139,8 @@ export default function UserDetailPage() {
 
   const fetchAllTags = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags", {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.ok) {
         const data = await res.json();
@@ -170,19 +153,14 @@ export default function UserDetailPage() {
 
   const handleAddTag = async (tagId: number) => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}/tags`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
+          "Content-Type": "application/json" },
         body: JSON.stringify({
           tagId,
           adminUserId: sessionStorage.getItem("admin_user_id") || null,
-          adminName: sessionStorage.getItem("admin_name") || null,
-        }),
-      });
+          adminName: sessionStorage.getItem("admin_name") || null }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -215,13 +193,9 @@ export default function UserDetailPage() {
     setDeleteTagConfirm({ isOpen: false, tagId: null });
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/users/${userId}/tags/${tagId}`, {
         method: "DELETE",
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -503,13 +477,11 @@ export default function UserDetailPage() {
                 from: "-",
                 to: user?.displayName
                   ? `${user.displayName}（${user.userId}）`
-                  : user?.userId || userId,
-              },
+                  : user?.userId || userId },
               {
                 label: "対象タグ",
                 from: "付与済み",
-                to: `削除（${tag.name}）`,
-              },
+                to: `削除（${tag.name}）` },
             ];
           })()}
           confirmText="削除"

@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

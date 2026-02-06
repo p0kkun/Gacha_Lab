@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Tag = {
   id: number;
@@ -55,10 +54,9 @@ export default function BulkAssignTagsPage() {
 
   const fetchTags = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -73,10 +71,9 @@ export default function BulkAssignTagsPage() {
 
   const fetchGachaTypes = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -91,10 +88,9 @@ export default function BulkAssignTagsPage() {
 
   const fetchPrizeTiers = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/prize-tiers", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -127,12 +123,11 @@ export default function BulkAssignTagsPage() {
     setPreviewCount(null);
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/users/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify(conditions),
       });
@@ -187,12 +182,11 @@ export default function BulkAssignTagsPage() {
     setResult(null);
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags/bulk-assign", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           tagId: selectedTagId,

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import {
   AdminActionTypeLabels,
   type AdminActionType,
 } from "@/lib/admin-action-types";
 
-type AdminActionHistory = {
+type AdminAuditLogEntry = {
   id: number;
   actionType: string;
   adminUserId: string | null;
@@ -20,7 +19,7 @@ type AdminActionHistory = {
 };
 
 export default function ActionHistoryPage() {
-  const [histories, setHistories] = useState<AdminActionHistory[]>([]);
+  const [histories, setHistories] = useState<AdminAuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -61,10 +60,9 @@ export default function ActionHistoryPage() {
         params.append("endDate", filters.endDate);
       }
 
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/action-history?${params}`, {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

@@ -9,7 +9,7 @@ import { Prisma } from '@prisma/client';
  */
 export async function GET(request: NextRequest) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

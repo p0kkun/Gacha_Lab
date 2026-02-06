@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaType = {
   id: number; // 内部ID（DB）
@@ -77,10 +76,9 @@ export default function SimulatorPage() {
 
   const fetchGachaTypes = async () => {
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -116,12 +114,11 @@ export default function SimulatorPage() {
     setError(null);
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/simulator", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           gachaTypeId: selectedGachaTypeId,

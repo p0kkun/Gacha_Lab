@@ -3,6 +3,21 @@
  * アプリ側で管理するため、DBマイグレーションなしで追加可能
  */
 export const AdminActionType = {
+  // 認証/管理者管理
+  LOGIN: 'LOGIN',
+  LOGOUT: 'LOGOUT',
+  CREATE_ADMIN: 'CREATE_ADMIN',
+  UPDATE_ADMIN: 'UPDATE_ADMIN',
+  DELETE_ADMIN: 'DELETE_ADMIN',
+  RESET_PASSWORD: 'RESET_PASSWORD',
+  CREATE_ROLE: 'CREATE_ROLE',
+  UPDATE_ROLE: 'UPDATE_ROLE',
+  DELETE_ROLE: 'DELETE_ROLE',
+  CREATE_EXCLUSION_LINK: 'CREATE_EXCLUSION_LINK',
+  UPDATE_EXCLUSION_LINK: 'UPDATE_EXCLUSION_LINK',
+  DELETE_EXCLUSION_LINK: 'DELETE_EXCLUSION_LINK',
+  ACCESS: 'ACCESS',
+
   // ポイント関連
   POINT_GRANT: 'POINT_GRANT',
   POINT_PLAN_CREATE: 'POINT_PLAN_CREATE',
@@ -21,10 +36,13 @@ export const AdminActionType = {
   GACHA_TYPE_CREATE: 'GACHA_TYPE_CREATE',
   GACHA_TYPE_UPDATE: 'GACHA_TYPE_UPDATE',
   GACHA_TYPE_DELETE: 'GACHA_TYPE_DELETE',
+  GACHA_TYPE_ICON_UPDATE: 'GACHA_TYPE_ICON_UPDATE',
+  GACHA_SIMULATE: 'GACHA_SIMULATE',
   GACHA_TIER_WEIGHT_UPDATE: 'GACHA_TIER_WEIGHT_UPDATE',
   GACHA_PRIZE_ASSIGNMENT_CREATE: 'GACHA_PRIZE_ASSIGNMENT_CREATE',
   GACHA_PRIZE_ASSIGNMENT_UPDATE: 'GACHA_PRIZE_ASSIGNMENT_UPDATE',
   GACHA_PRIZE_ASSIGNMENT_DELETE: 'GACHA_PRIZE_ASSIGNMENT_DELETE',
+  FREE_GACHA_SETTINGS_UPDATE: 'FREE_GACHA_SETTINGS_UPDATE',
 
   // 動画関連
   VIDEO_UPLOAD: 'VIDEO_UPLOAD',
@@ -66,6 +84,19 @@ export type AdminActionType = typeof AdminActionType[keyof typeof AdminActionTyp
  * アクションタイプの日本語ラベル
  */
 export const AdminActionTypeLabels: Record<AdminActionType, string> = {
+  LOGIN: 'ログイン',
+  LOGOUT: 'ログアウト',
+  CREATE_ADMIN: '管理者作成',
+  UPDATE_ADMIN: '管理者更新',
+  DELETE_ADMIN: '管理者削除',
+  RESET_PASSWORD: '管理者パスワード変更',
+  CREATE_ROLE: '管理者ロール作成',
+  UPDATE_ROLE: '管理者ロール更新',
+  DELETE_ROLE: '管理者ロール削除',
+  CREATE_EXCLUSION_LINK: '非表示リンク作成',
+  UPDATE_EXCLUSION_LINK: '非表示リンク更新',
+  DELETE_EXCLUSION_LINK: '非表示リンク削除',
+  ACCESS: 'アクセス',
   POINT_GRANT: 'ポイント付与',
   POINT_PLAN_CREATE: 'ポイント購入プラン作成',
   POINT_PLAN_UPDATE: 'ポイント購入プラン更新',
@@ -79,10 +110,13 @@ export const AdminActionTypeLabels: Record<AdminActionType, string> = {
   GACHA_TYPE_CREATE: 'ガチャタイプ作成',
   GACHA_TYPE_UPDATE: 'ガチャタイプ更新',
   GACHA_TYPE_DELETE: 'ガチャタイプ削除',
+  GACHA_TYPE_ICON_UPDATE: 'ガチャアイコン更新',
+  GACHA_SIMULATE: 'ガチャシミュレーション',
   GACHA_TIER_WEIGHT_UPDATE: 'ガチャ等級重み更新',
   GACHA_PRIZE_ASSIGNMENT_CREATE: '景品割当作成',
   GACHA_PRIZE_ASSIGNMENT_UPDATE: '景品割当更新',
   GACHA_PRIZE_ASSIGNMENT_DELETE: '景品割当削除',
+  FREE_GACHA_SETTINGS_UPDATE: '無料ガチャ設定更新',
   VIDEO_UPLOAD: '動画アップロード',
   VIDEO_UPDATE: '動画更新',
   VIDEO_DELETE: '動画削除',
@@ -103,6 +137,4 @@ export const AdminActionTypeLabels: Record<AdminActionType, string> = {
   PRIZE_TIER_DELETE: '等級マスタ削除',
   OTHER: 'その他',
 };
-
-
 

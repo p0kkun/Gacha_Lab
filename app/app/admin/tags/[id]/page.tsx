@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Tag = {
   id: number;
@@ -25,8 +24,7 @@ export default function TagDetailPage() {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
-  });
+    description: "" });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -37,12 +35,8 @@ export default function TagDetailPage() {
   const fetchTag = async () => {
     setLoading(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/tags/${id}`, {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -58,8 +52,7 @@ export default function TagDetailPage() {
       setTag(data.tag);
       setFormData({
         name: data.tag.name,
-        description: data.tag.description || "",
-      });
+        description: data.tag.description || "" });
     } catch (error) {
       console.error("タグ取得エラー:", error);
       setError("タグ詳細の取得に失敗しました");
@@ -75,18 +68,13 @@ export default function TagDetailPage() {
     }
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/tags/${id}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
+          "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name.trim(),
-          description: formData.description.trim() || null,
-        }),
-      });
+          description: formData.description.trim() || null }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");

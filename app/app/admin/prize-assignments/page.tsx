@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type TierWeightLite = { tierCode: string; weight: number; isActive: boolean };
 type GachaTypeLite = {
@@ -36,7 +35,6 @@ type Assignment = {
 };
 
 export default function PrizeAssignmentsPage() {
-  const token = useMemo(() => getAdminAuthToken() || "", []);
   const [gachaTypes, setGachaTypes] = useState<GachaTypeLite[]>([]);
   const [items, setItems] = useState<PrizeItemLite[]>([]);
   const [prizeTiers, setPrizeTiers] = useState<PrizeTierLite[]>([]);
@@ -60,8 +58,7 @@ export default function PrizeAssignmentsPage() {
     rewardType: "ITEM",
     points: "",
     weight: "1",
-    isActive: true,
-  });
+    isActive: true });
 
   const [confirm, setConfirm] = useState<{
     isOpen: boolean;
@@ -75,8 +72,7 @@ export default function PrizeAssignmentsPage() {
 
   const fetchGachaTypes = async () => {
     const res = await fetch("/api/admin/gacha-types", {
-      headers: { "X-Admin-Auth": token },
-    });
+      headers: {} });
     if (res.status === 401) {
       sessionStorage.removeItem("admin_authenticated");
       window.location.href = "/admin";
@@ -92,10 +88,8 @@ export default function PrizeAssignmentsPage() {
         ? gt.tierWeights.map((tw: any) => ({
             tierCode: tw.tierCode,
             weight: Number(tw.weight) || 0,
-            isActive: !!tw.isActive,
-          }))
-        : [],
-    }));
+            isActive: !!tw.isActive }))
+        : [] }));
     setGachaTypes(list);
     if (!selectedGachaTypeId && list.length > 0) {
       setSelectedGachaTypeId(list[0].id);
@@ -104,8 +98,7 @@ export default function PrizeAssignmentsPage() {
 
   const fetchPrizeTiers = async () => {
     const res = await fetch("/api/admin/prize-tiers", {
-      headers: { "X-Admin-Auth": token },
-    });
+      headers: {} });
     if (res.status === 401) {
       sessionStorage.removeItem("admin_authenticated");
       window.location.href = "/admin";
@@ -118,16 +111,14 @@ export default function PrizeAssignmentsPage() {
           code: tier.code,
           label: tier.label,
           isActive: !!tier.isActive,
-          displayOrder: tier.displayOrder ?? 0,
-        }))
+          displayOrder: tier.displayOrder ?? 0 }))
       : [];
     setPrizeTiers(list);
   };
 
   const fetchItems = async () => {
     const res = await fetch("/api/admin/items?isActive=true", {
-      headers: { "X-Admin-Auth": token },
-    });
+      headers: {} });
     if (res.status === 401) {
       sessionStorage.removeItem("admin_authenticated");
       window.location.href = "/admin";
@@ -138,8 +129,7 @@ export default function PrizeAssignmentsPage() {
     const list: PrizeItemLite[] = (data.items || []).map((it: any) => ({
       id: it.id,
       name: it.name,
-      isActive: !!it.isActive,
-    }));
+      isActive: !!it.isActive }));
     setItems(list);
   };
 
@@ -152,7 +142,7 @@ export default function PrizeAssignmentsPage() {
         `/api/admin/prize-assignments?gachaTypeId=${encodeURIComponent(
           gachaTypeId
         )}`,
-        { headers: { "X-Admin-Auth": token } }
+        { headers: {} }
       );
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -320,9 +310,7 @@ export default function PrizeAssignmentsPage() {
           const res = await fetch("/api/admin/prize-assignments", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "X-Admin-Auth": token,
-            },
+              "Content-Type": "application/json" },
             body: JSON.stringify({
               gachaTypeId: selectedGachaTypeId,
               tierCode: newRow.tierCode,
@@ -330,9 +318,7 @@ export default function PrizeAssignmentsPage() {
               itemId: newRow.rewardType === "ITEM" ? itemId : null,
               points: newRow.rewardType === "POINTS" ? points : 0,
               weight,
-              isActive: newRow.isActive,
-            }),
-          });
+              isActive: newRow.isActive }) });
           if (res.status === 401) {
             sessionStorage.removeItem("admin_authenticated");
             window.location.href = "/admin";
@@ -348,14 +334,12 @@ export default function PrizeAssignmentsPage() {
             rewardType: "ITEM",
             points: "",
             weight: "1",
-            isActive: true,
-          });
+            isActive: true });
           await fetchAssignments(selectedGachaTypeId);
         } finally {
           setSavingId(null);
         }
-      },
-    });
+      } });
   };
 
   const saveAssignment = async (row: Assignment) => {
@@ -385,18 +369,14 @@ export default function PrizeAssignmentsPage() {
           const res = await fetch(`/api/admin/prize-assignments/${row.id}`, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/json",
-              "X-Admin-Auth": token,
-            },
+              "Content-Type": "application/json" },
             body: JSON.stringify({
               tierCode: row.tierCode,
               rewardType: row.rewardType,
               itemId: row.rewardType === "ITEM" ? row.itemId : null,
               points: row.rewardType === "POINTS" ? row.points : 0,
               weight: row.weight,
-              isActive: row.isActive,
-            }),
-          });
+              isActive: row.isActive }) });
           if (res.status === 401) {
             sessionStorage.removeItem("admin_authenticated");
             window.location.href = "/admin";
@@ -410,8 +390,7 @@ export default function PrizeAssignmentsPage() {
         } finally {
           setSavingId(null);
         }
-      },
-    });
+      } });
   };
 
   const deleteAssignment = async (row: Assignment) => {
@@ -432,21 +411,18 @@ export default function PrizeAssignmentsPage() {
         {
           label: "等級",
           from: "割当済み",
-          to: `削除（${tierLabel(row.tierCode)}）`,
-        },
+          to: `削除（${tierLabel(row.tierCode)}）` },
         {
           label: "景品",
           from: "割当済み",
-          to: rewardLabel,
-        },
+          to: rewardLabel },
       ],
       onConfirm: async () => {
         setSavingId(`__delete__:${row.id}`);
         try {
           const res = await fetch(`/api/admin/prize-assignments/${row.id}`, {
             method: "DELETE",
-            headers: { "X-Admin-Auth": token },
-          });
+            headers: {} });
           if (res.status === 401) {
             sessionStorage.removeItem("admin_authenticated");
             window.location.href = "/admin";
@@ -460,8 +436,7 @@ export default function PrizeAssignmentsPage() {
         } finally {
           setSavingId(null);
         }
-      },
-    });
+      } });
   };
 
   return (
@@ -524,8 +499,7 @@ export default function PrizeAssignmentsPage() {
                     ...p,
                     rewardType: e.target.value as "ITEM" | "POINTS",
                     itemId: "",
-                    points: "",
-                  }))
+                    points: "" }))
                 }
                 className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
               >
@@ -706,8 +680,7 @@ export default function PrizeAssignmentsPage() {
                                     rewardType: nextType,
                                     itemId: nextType === "ITEM" ? x.itemId : null,
                                     item: nextType === "ITEM" ? x.item : null,
-                                    points: nextType === "POINTS" ? x.points || 100 : 0,
-                                  }
+                                    points: nextType === "POINTS" ? x.points || 100 : 0 }
                                 : x
                             )
                           );
@@ -754,10 +727,8 @@ export default function PrizeAssignmentsPage() {
                                         ? {
                                             id: it.id,
                                             name: it.name,
-                                            isActive: it.isActive,
-                                          }
-                                        : x.item,
-                                    }
+                                            isActive: it.isActive }
+                                        : x.item }
                                   : x
                               )
                             );

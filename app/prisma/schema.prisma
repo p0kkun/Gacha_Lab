@@ -268,20 +268,103 @@ model PointPurchaseLog {
   @@map("point_purchase_logs")
 }
 
-model AdminActionHistory {
-  id            Int      @id @default(autoincrement())
-  actionType    String
-  adminUserId   String
-  adminName     String
-  description   String
-  metadata      Json?
-  createdAt     DateTime @default(now())
-  targetUserIds Json?
+// New admin audit log (restructured). Use this going forward.
+model AdminAuditLog {
+  id             Int      @id @default(autoincrement())
+  actionType     AdminActionType
+  adminUserId    Int?
+  adminEmail     String?
+  adminName      String?
+  actionTarget   String?
+  actionTargetId String?
+  route          String?
+  method         String?
+  ipAddress      String?
+  userAgent      String?
+  statusCode     Int?
+  success        Boolean  @default(true)
+  message        String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
 
   @@index([actionType])
   @@index([adminUserId])
   @@index([createdAt])
-  @@map("admin_action_histories")
+  @@map("admin_audit_logs")
+}
+
+model AdminRole {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          AdminUser[]
+  exclusionLinks AdminExclusionLink[]
+
+  @@map("admin_roles")
+}
+
+model AdminUser {
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  name                  String
+  roleId                Int
+  passwordHash          String
+  isActive              Boolean   @default(true)
+  lastPasswordChangedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  role              AdminRole             @relation(fields: [roleId], references: [id])
+  sessions          AdminSession[]
+  passwordHistories AdminPasswordHistory[]
+
+  @@index([roleId])
+  @@index([isActive])
+  @@map("admin_users")
+}
+
+model AdminExclusionLink {
+  id           Int      @id @default(autoincrement())
+  adminRoleId  Int
+  link         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role AdminRole @relation(fields: [adminRoleId], references: [id])
+
+  @@unique([adminRoleId, link])
+  @@index([adminRoleId])
+  @@map("admin_exclusion_links")
+}
+
+model AdminSession {
+  id         Int       @id @default(autoincrement())
+  adminUserId Int
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+model AdminPasswordHistory {
+  id          Int      @id @default(autoincrement())
+  adminUserId Int
+  passwordHash String
+  createdAt   DateTime @default(now())
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId])
+  @@map("admin_password_histories")
 }
 
 model VideoAsset {
@@ -443,6 +526,22 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   PENDING
+}
+
+enum AdminActionType {
+  LOGIN
+  LOGOUT
+  CREATE_ADMIN
+  UPDATE_ADMIN
+  DELETE_ADMIN
+  RESET_PASSWORD
+  UPDATE_ROLE
+  CREATE_ROLE
+  DELETE_ROLE
+  UPDATE_EXCLUSION_LINK
+  CREATE_EXCLUSION_LINK
+  DELETE_EXCLUSION_LINK
+  ACCESS
 }
 
 enum ItemUsageType {

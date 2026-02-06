@@ -12,6 +12,7 @@
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "admin:seed": "tsx scripts/admin-seed.ts",
     "lambda:routes": "node scripts/generate-lambda-routes.mjs",
     "localstack:up": "docker-compose -f docker-compose.localstack.yml up -d",
     "localstack:down": "docker-compose -f docker-compose.localstack.yml down",

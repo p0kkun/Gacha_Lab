@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { getAdminAuthContext, verifyAdminAuth } from '@/lib/admin-auth';
+import { recordAdminAction } from '@/lib/admin-action-history';
+import { AdminActionType } from '@/lib/admin-action-types';
 
 /**
  * 動的等級設定に対応した重みベースの抽選（統一ロジック）
@@ -44,7 +46,7 @@ function drawRarityByDynamicWeights(
  */
 export async function POST(request: NextRequest) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }
@@ -52,6 +54,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true, email: true },
+    });
+
     const body = await request.json();
     const { gachaTypeId, count } = body;
 
@@ -151,6 +166,18 @@ export async function POST(request: NextRequest) {
       const indexA = order.indexOf(a.rarity);
       const indexB = order.indexOf(b.rarity);
       return indexA - indexB;
+    });
+
+    await recordAdminAction({
+      actionType: AdminActionType.GACHA_SIMULATE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
+      description: `ガチャシミュレーションを実行: ${gachaType.code}`,
+      metadata: {
+        gachaTypeId: gachaType.id,
+        gachaTypeCode: gachaType.code,
+        simulationCount,
+      },
     });
 
     return NextResponse.json({

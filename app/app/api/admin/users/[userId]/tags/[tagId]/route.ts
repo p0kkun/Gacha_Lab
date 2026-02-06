@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { getAdminAuthContext } from '@/lib/admin-auth';
+import { recordAdminAction } from '@/lib/admin-action-history';
+import { AdminActionType } from '@/lib/admin-action-types';
 
 /**
  * ユーザーからタグを削除
@@ -10,8 +12,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string; tagId: string }> }
 ) {
-  // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }
@@ -29,6 +31,35 @@ export async function DELETE(
       );
     }
 
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true },
+    });
+
+    const userTag = await prisma.userTag.findUnique({
+      where: {
+        userId_tagId: {
+          userId,
+          tagId: tagIdNum,
+        },
+      },
+      include: {
+        tag: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!userTag) {
+      return NextResponse.json(
+        { error: 'タグが見つかりません' },
+        { status: 404 }
+      );
+    }
+
     // ユーザータグを削除
     await prisma.userTag.delete({
       where: {
@@ -36,6 +67,18 @@ export async function DELETE(
           userId,
           tagId: tagIdNum,
         },
+      },
+    });
+
+    await recordAdminAction({
+      actionType: AdminActionType.USER_TAG_REMOVE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? 'unknown',
+      targetUserId: userId,
+      description: `ユーザーからタグ「${userTag.tag.name}」を削除`,
+      metadata: {
+        tagId: userTag.tag.id,
+        tagName: userTag.tag.name,
       },
     });
 

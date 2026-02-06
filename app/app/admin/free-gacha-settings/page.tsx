@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import { Button, Input, Select, Card, Alert } from "@/components/admin/ui";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 
@@ -54,10 +53,9 @@ export default function FreeGachaSettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/free-gacha-settings", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -138,12 +136,11 @@ export default function FreeGachaSettingsPage() {
     setSuccess(null);
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/free-gacha-settings", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify(formData),
       });

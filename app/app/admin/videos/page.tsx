@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type GachaVideo = {
   id: number;
@@ -78,10 +77,9 @@ export default function VideosPage() {
     try {
       setLoading(true);
       setError(null);
-      const token = getAdminAuthToken();
       const res = await fetch("/api/admin/videos", {
         headers: {
-          "X-Admin-Auth": token || "",
+
         },
       });
 
@@ -133,14 +131,13 @@ export default function VideosPage() {
       setUploading(true);
       setError(null);
 
-      const token = getAdminAuthToken();
 
       // ステップ1: Presigned URLを取得
       const presignedRes = await fetch("/api/admin/videos/presigned-url", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": token || "",
+
         },
         body: JSON.stringify({
           fileName: uploadFile.name,
@@ -199,7 +196,7 @@ export default function VideosPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": token || "",
+
         },
         body: JSON.stringify({
           s3Key,
@@ -235,12 +232,11 @@ export default function VideosPage() {
   // 動画の有効/無効を切り替え
   const toggleVideoActive = async (videoId: number, nextStatus: boolean) => {
     try {
-      const token = getAdminAuthToken();
       const res = await fetch(`/api/admin/videos/${videoId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": token || "",
+
         },
         body: JSON.stringify({
           isActive: nextStatus,
@@ -278,12 +274,11 @@ export default function VideosPage() {
   // 動画削除の確認モーダルを開く（使用状況を確認）
   const handleDeleteClick = async (videoId: number) => {
     try {
-      const token = getAdminAuthToken();
       // 使用状況を取得
       const res = await fetch(`/api/admin/videos/${videoId}`, {
         method: "GET",
         headers: {
-          "X-Admin-Auth": token || "",
+
         },
       });
 
@@ -312,11 +307,10 @@ export default function VideosPage() {
     if (!deleteConfirm.videoId) return;
 
     try {
-      const token = getAdminAuthToken();
       const res = await fetch(`/api/admin/videos/${deleteConfirm.videoId}`, {
         method: "DELETE",
         headers: {
-          "X-Admin-Auth": token || "",
+
         },
       });
 
@@ -373,10 +367,9 @@ export default function VideosPage() {
     try {
       setLoadingDefaultSettings(true);
       setError(null);
-      const token = getAdminAuthToken();
       const res = await fetch("/api/admin/videos/default-settings", {
         headers: {
-          "X-Admin-Auth": token || "",
+
         },
       });
 
@@ -432,12 +425,11 @@ export default function VideosPage() {
       setSavingDefaultSettings(true);
       setError(null);
 
-      const token = getAdminAuthToken();
       const res = await fetch("/api/admin/videos/default-settings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": token || "",
+
         },
         body: JSON.stringify({
           // commonVideoAssetIds: defaultSettings.commonVideoAssetIds, // 共通動画は使用しないためコメントアウト

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getAdminAuthContext, verifyAdminAuth } from "@/lib/admin-auth";
 import type { Prisma } from "@prisma/client";
+import { recordAdminAction } from "@/lib/admin-action-history";
+import { AdminActionType } from "@/lib/admin-action-types";
 
 /**
  * ガチャタイプ一覧を取得
@@ -9,7 +11,7 @@ import type { Prisma } from "@prisma/client";
  */
 export async function GET(request: NextRequest) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -94,11 +96,21 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   // 認証チェック
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true, email: true },
+    });
+
     const body = await request.json();
     const {
       code,
@@ -125,6 +137,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const existing = await prisma.gachaType.findUnique({
+      where: { code },
+      select: { id: true, name: true, isActive: true },
+    });
 
     const normalizedTemplateId =
       resultMessageTemplateId === null || resultMessageTemplateId === undefined
@@ -255,6 +272,31 @@ export async function POST(request: NextRequest) {
       }
 
       return saved;
+    });
+
+    await recordAdminAction({
+      actionType: existing
+        ? AdminActionType.GACHA_TYPE_UPDATE
+        : AdminActionType.GACHA_TYPE_CREATE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
+      description: existing
+        ? `ガチャタイプを更新: ${gachaType.code}`
+        : `ガチャタイプを作成: ${gachaType.code}`,
+      metadata: {
+        code: gachaType.code,
+        name: gachaType.name,
+        previousName: existing?.name ?? null,
+        previousIsActive: existing?.isActive ?? null,
+        isActive: gachaType.isActive,
+        startAt: gachaType.startAt,
+        endAt: gachaType.endAt,
+        pointCost: gachaType.pointCost,
+        resultMessageTemplateId: gachaType.resultMessageTemplateId,
+        useDefaultVideos: gachaType.useDefaultVideos,
+        tierWeights: parsedTierWeights,
+        tierOrder: parsedTierOrder,
+      },
     });
 
     return NextResponse.json({ gachaType });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getAdminAuthContext } from "@/lib/admin-auth";
 import { recordAdminAction } from "@/lib/admin-action-history";
 import { AdminActionType } from "@/lib/admin-action-types";
 import { deleteCache } from "@/lib/cache";
@@ -16,7 +16,8 @@ function isValidPlanId(id: string): boolean {
  * GET /api/admin/point-plans
  */
 export async function GET(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -39,11 +40,17 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/point-plans
  */
 export async function POST(request: NextRequest) {
-  if (!verifyAdminAuth(request)) {
+  const authContext = await getAdminAuthContext(request);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true },
+    });
+
     const body = await request.json();
     const {
       id,
@@ -125,13 +132,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const { adminUserId, adminName } = body as { adminUserId?: string; adminName?: string };
+    const adminUserId = adminUser?.id ?? authContext.adminUserId;
+    const adminName = adminUser?.name ?? 'unknown';
 
     // 操作履歴を記録
     await recordAdminAction({
       actionType: AdminActionType.POINT_PLAN_CREATE,
-      adminUserId: adminUserId || 'unknown',
-      adminName: adminName || 'unknown',
+      adminUserId: String(adminUserId),
+      adminName,
       description: `ポイント購入プラン「${lbl}」を作成（ID: ${normalizedId}, ${Math.trunc(pts)}ポイント, ${Math.trunc(prc)}円）`,
       metadata: {
         planId: normalizedId,

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAdminAuth } from "@/lib/admin-auth";
+import { getAdminAuthContext, verifyAdminAuth } from "@/lib/admin-auth";
+import { recordAdminAction } from "@/lib/admin-action-history";
+import { AdminActionType } from "@/lib/admin-action-types";
 
 /**
  * ガチャタイプ削除（論理削除：isActiveをfalseに、使用中の場合は削除不可）
@@ -10,11 +12,21 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
-  if (!verifyAdminAuth(request)) {
+  if (!await verifyAdminAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true, email: true },
+    });
+
     const { code } = await params;
 
     // ガチャタイプを取得
@@ -41,6 +53,20 @@ export async function DELETE(
         where: { code },
         data: { isActive: false },
       });
+
+      await recordAdminAction({
+        actionType: AdminActionType.GACHA_TYPE_UPDATE,
+        adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+        adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
+        description: `ガチャタイプを無効化: ${gachaType.code}`,
+        metadata: {
+          code: gachaType.code,
+          name: gachaType.name,
+          previousIsActive: gachaType.isActive,
+          isActive: updated.isActive,
+        },
+      });
+
       return NextResponse.json({
         gachaType: updated,
         message: "このガチャタイプは使用されているため、無効化しました",
@@ -64,6 +90,17 @@ export async function DELETE(
       await tx.gachaType.delete({
         where: { code },
       });
+    });
+
+    await recordAdminAction({
+      actionType: AdminActionType.GACHA_TYPE_DELETE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
+      description: `ガチャタイプを削除: ${gachaType.code}`,
+      metadata: {
+        code: gachaType.code,
+        name: gachaType.name,
+      },
     });
 
     return NextResponse.json({ ok: true });

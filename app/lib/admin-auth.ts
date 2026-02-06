@@ -1,82 +1,97 @@
 /**
- * 管理画面の認証ユーティリティ
- * 
- * 注意: 現在は簡易的な認証のみ実装。
- * 本番環境では、より強固な認証（JWT、セッション管理など）を実装することを推奨。
+ * 管理画面の認証ユーティリティ（DBセッション）
  */
 
+import 'server-only';
 import { NextRequest } from 'next/server';
-// import { cookies } from 'next/headers'; // 現在未使用（コメントアウトされているため削除）
+import { prisma } from '@/lib/prisma';
+import { hashToken } from '@/lib/admin-crypto';
 
-/**
- * 管理画面の認証トークンを検証
- * 
- * 現在の実装:
- * - クライアント側で sessionStorage に 'admin_authenticated' を保存
- * - API ルートでは、カスタムヘッダー 'X-Admin-Auth' で認証情報を送信
- * - サーバー側の環境変数 ADMIN_AUTH_TOKEN と比較
- * 
- * 改善案:
- * - JWT トークンを使用
- * - セッション管理をサーバー側で行う
- * - クッキーを使用した認証
- */
-export function verifyAdminAuth(request: NextRequest): boolean {
-  // 方法1: カスタムヘッダーで認証トークンを送信
-  const authToken = request.headers.get('X-Admin-Auth');
-  const expectedToken = process.env.ADMIN_AUTH_TOKEN || 'admin'; // サーバー側の環境変数
+const ADMIN_SESSION_COOKIE = 'admin_session';
+const SESSION_DAYS = 7;
 
-  if (authToken === expectedToken) {
-    return true;
-  }
+export type AdminAuthContext = {
+  adminUserId: number;
+  roleName: string | null;
+  exclusionLinks: string[];
+};
 
-  // 方法2: クッキーで認証トークンを送信（Next.js 15以降）
-  // 注意: これはサーバーコンポーネントでのみ使用可能
-  // const cookieStore = cookies();
-  // const authCookie = cookieStore.get('admin_auth_token');
-  // if (authCookie?.value === expectedToken) {
-  //   return true;
-  // }
-
-  return false;
+function getCookieValue(request: NextRequest, name: string): string | null {
+  const cookie = request.cookies.get(name);
+  return cookie?.value ?? null;
 }
 
-/**
- * 認証が必要なAPIルートで使用するミドルウェア
- */
-export function withAdminAuth<T>(
-  handler: (req: NextRequest) => Promise<T>
-) {
+function isPathExcluded(pathname: string, exclusionLinks: string[]): boolean {
+  if (!exclusionLinks.length) return false;
+  return exclusionLinks.some((pattern) => {
+    if (!pattern) return false;
+    if (pattern.endsWith('/*')) {
+      const prefix = pattern.slice(0, -2);
+      return pathname === prefix || pathname.startsWith(`${prefix}/`);
+    }
+    return pathname === pattern;
+  });
+}
+
+export async function getAdminAuthContext(
+  request: NextRequest
+): Promise<AdminAuthContext | null> {
+  const rawToken = getCookieValue(request, ADMIN_SESSION_COOKIE);
+  if (!rawToken) return null;
+
+  const tokenHash = hashToken(rawToken);
+  const session = await prisma.adminSession.findFirst({
+    where: {
+      tokenHash,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    include: {
+      adminUser: {
+        include: {
+          role: {
+            include: { exclusionLinks: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!session?.adminUser || !session.adminUser.isActive) return null;
+
+  const exclusionLinks =
+    session.adminUser.role?.exclusionLinks?.map((l) => l.link) ?? [];
+
+  return {
+    adminUserId: session.adminUser.id,
+    roleName: session.adminUser.role?.name ?? null,
+    exclusionLinks,
+  };
+}
+
+export async function verifyAdminAuth(request: NextRequest): Promise<boolean> {
+  const context = await getAdminAuthContext(request);
+  if (!context) return false;
+
+  const pathname = request.nextUrl?.pathname ?? '';
+  if (pathname && isPathExcluded(pathname, context.exclusionLinks)) {
+    return false;
+  }
+
+  return true;
+}
+
+export function withAdminAuth<T>(handler: (req: NextRequest) => Promise<T>) {
   return async (req: NextRequest): Promise<T | Response> => {
-    if (!verifyAdminAuth(req)) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      ) as unknown as T;
+    if (!(await verifyAdminAuth(req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }) as unknown as T;
     }
     return handler(req);
   };
 }
 
-/**
- * クライアント側で認証トークンを取得
- * 現在は sessionStorage から取得
- * 
- * 注意: この関数はクライアント側でのみ使用可能
- */
-export function getAdminAuthToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  const authStatus = sessionStorage.getItem('admin_authenticated');
-  if (authStatus === 'true') {
-    // 簡易的なトークン（本番環境では JWT などを使用）
-    // クライアント側では NEXT_PUBLIC_ プレフィックスが必要
-    return process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin';
-  }
-  return null;
-}
-
+export const ADMIN_SESSION_COOKIE_NAME = ADMIN_SESSION_COOKIE;
+export const ADMIN_SESSION_TTL_DAYS = SESSION_DAYS;

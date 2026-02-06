@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 
 type Tag = {
   id: number;
@@ -38,10 +37,9 @@ export default function TagsPage() {
   const fetchTags = async () => {
     setLoading(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags", {
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 
@@ -72,12 +70,11 @@ export default function TagsPage() {
     }
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/tags", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
+
         },
         body: JSON.stringify({
           name: formData.name.trim(),
@@ -119,11 +116,10 @@ export default function TagsPage() {
     setDeleteConfirm({ isOpen: false, tagId: null });
 
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/tags/${tagId}`, {
         method: "DELETE",
         headers: {
-          "X-Admin-Auth": authToken || "",
+
         },
       });
 

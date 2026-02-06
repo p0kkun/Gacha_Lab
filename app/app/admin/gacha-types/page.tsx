@@ -8,10 +8,8 @@ import {
   Alert,
   Badge,
   PageHeader,
-  Input,
-} from "@/components/admin/ui";
+  Input } from "@/components/admin/ui";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
-import { getAdminAuthToken } from "@/lib/admin-auth";
 import MultiVideoPlayer from "@/components/MultiVideoPlayer";
 
 type HandRank =
@@ -239,8 +237,7 @@ export default function GachaTypesPage() {
     return prizeOrder.map((rarity) => ({
       rarity,
       weight: prizeWeights[rarity] ?? 0,
-      hands: prizeHands[rarity] ?? [],
-    }));
+      hands: prizeHands[rarity] ?? [] }));
   };
 
   const updatePrizeConfig = (index: number, updates: Partial<PrizeConfig>) => {
@@ -262,8 +259,7 @@ export default function GachaTypesPage() {
       ...formData,
       prizeWeights,
       prizeHands,
-      prizeOrder,
-    });
+      prizeOrder });
   };
 
   const addPrize = (selectedTierCode?: string) => {
@@ -287,8 +283,7 @@ export default function GachaTypesPage() {
     const newConfig: PrizeConfig = {
       rarity: newRarity,
       weight: 0,
-      hands: [],
-    };
+      hands: [] };
 
     const newConfigs = [...currentConfigs, newConfig];
 
@@ -306,8 +301,7 @@ export default function GachaTypesPage() {
       ...formData,
       prizeWeights,
       prizeHands,
-      prizeOrder,
-    });
+      prizeOrder });
     setShowAddPrizeModal(false);
   };
 
@@ -334,8 +328,7 @@ export default function GachaTypesPage() {
       ...formData,
       prizeWeights,
       prizeHands,
-      prizeOrder,
-    });
+      prizeOrder });
   };
 
   const movePrize = (index: number, direction: "up" | "down") => {
@@ -368,8 +361,7 @@ export default function GachaTypesPage() {
       ...formData,
       prizeWeights,
       prizeHands,
-      prizeOrder,
-    });
+      prizeOrder });
   };
 
   useEffect(() => {
@@ -399,10 +391,8 @@ export default function GachaTypesPage() {
   const fetchMessageTemplates = async () => {
     setLoadingTemplates(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/result-message-templates", {
-        headers: { "X-Admin-Auth": authToken || "" },
-      });
+        headers: {} });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -421,10 +411,8 @@ export default function GachaTypesPage() {
   const fetchPrizeTiers = async () => {
     setLoadingPrizeTiers(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/prize-tiers", {
-        headers: { "X-Admin-Auth": authToken || "" },
-      });
+        headers: {} });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -438,8 +426,7 @@ export default function GachaTypesPage() {
               code: t.code,
               label: t.label,
               isActive: t.isActive,
-              displayOrder: t.displayOrder ?? 0,
-            }))
+              displayOrder: t.displayOrder ?? 0 }))
           : []
       );
     } catch (e) {
@@ -468,12 +455,8 @@ export default function GachaTypesPage() {
       params.append("sortBy", sortBy);
       params.append("sortOrder", sortOrder);
 
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/gacha-types?${params}`, {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -533,8 +516,7 @@ export default function GachaTypesPage() {
                 }
                 return { prizeOrder: order, prizeWeights: weights };
               })()
-            : {}),
-        })
+            : {}) })
       );
       setGachaTypes(processedGachaTypes);
     } catch (error) {
@@ -548,12 +530,8 @@ export default function GachaTypesPage() {
   const fetchVideos = async () => {
     setLoadingVideos(true);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/videos", {
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-      });
+        headers: {} });
 
       if (res.ok) {
         const data = await res.json();
@@ -597,8 +575,7 @@ export default function GachaTypesPage() {
       prizeWeights,
       prizeHands,
       prizeOrder,
-      resultMessageTemplateId: gachaType.resultMessageTemplateId ?? null,
-    });
+      resultMessageTemplateId: gachaType.resultMessageTemplateId ?? null });
     setImagePreview(gachaType.iconImageUrl || null);
     setError(null);
     setSuccess(null);
@@ -629,8 +606,7 @@ export default function GachaTypesPage() {
       prizeHands: {},
       prizeOrder: getDefaultPrizeOrder(),
       resultMessageTemplateId: null,
-      useDefaultVideos: true,
-    });
+      useDefaultVideos: true });
     setImagePreview(null);
     setError(null);
     setSuccess(null);
@@ -640,11 +616,9 @@ export default function GachaTypesPage() {
     setError(null);
     setSuccess(null);
     try {
-      const authToken = getAdminAuthToken();
       const res = await fetch(`/api/admin/gacha-types/${code}`, {
         method: "DELETE",
-        headers: { "X-Admin-Auth": authToken || "" },
-      });
+        headers: {} });
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
         window.location.href = "/admin";
@@ -732,18 +706,13 @@ export default function GachaTypesPage() {
       setError(null);
       setShowSimulation(true);
 
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types/simulate", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
+          "Content-Type": "application/json" },
         body: JSON.stringify({
           gachaTypeId: formData.code,
-          count: simulationCount,
-        }),
-      });
+          count: simulationCount }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -785,14 +754,10 @@ export default function GachaTypesPage() {
       formDataToSend.append("file", file);
       formDataToSend.append("gachaTypeId", formData.code);
 
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types/upload-icon", {
         method: "POST",
-        headers: {
-          "X-Admin-Auth": authToken || "",
-        },
-        body: formDataToSend,
-      });
+        headers: {},
+        body: formDataToSend });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -877,13 +842,10 @@ export default function GachaTypesPage() {
     try {
       setSaving(true);
       setError(null);
-      const authToken = getAdminAuthToken();
       const res = await fetch("/api/admin/gacha-types", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Auth": authToken || "",
-        },
+          "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           rarityVideoIds:
@@ -900,9 +862,7 @@ export default function GachaTypesPage() {
           tierWeights: formData.prizeWeights || null,
           tierOrder: formData.prizeOrder || null,
           resultMessageTemplateId: formData.resultMessageTemplateId ?? null,
-          useDefaultVideos: formData.useDefaultVideos ?? true,
-        }),
-      });
+          useDefaultVideos: formData.useDefaultVideos ?? true }) });
 
       if (res.status === 401) {
         sessionStorage.removeItem("admin_authenticated");
@@ -1126,8 +1086,7 @@ export default function GachaTypesPage() {
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  name: e.target.value,
-                                })
+                                  name: e.target.value })
                               }
                               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                             />
@@ -1144,8 +1103,7 @@ export default function GachaTypesPage() {
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    description: e.target.value,
-                                  })
+                                    description: e.target.value })
                                 }
                                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                                 rows={2}
@@ -1185,8 +1143,7 @@ export default function GachaTypesPage() {
                                     onClick={() => {
                                       setFormData({
                                         ...formData,
-                                        iconImageUrl: null,
-                                      });
+                                        iconImageUrl: null });
                                       setImagePreview(null);
                                     }}
                                     className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
@@ -1238,8 +1195,7 @@ export default function GachaTypesPage() {
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    isActive: e.target.checked,
-                                  })
+                                    isActive: e.target.checked })
                                 }
                                 className="rounded border-gray-300"
                               />
@@ -1264,8 +1220,7 @@ export default function GachaTypesPage() {
                                     ...formData,
                                     startAt: e.target.value
                                       ? new Date(e.target.value).toISOString()
-                                      : null,
-                                  })
+                                      : null })
                                 }
                                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                               />
@@ -1285,8 +1240,7 @@ export default function GachaTypesPage() {
                                     ...formData,
                                     endAt: e.target.value
                                       ? new Date(e.target.value).toISOString()
-                                      : null,
-                                  })
+                                      : null })
                                 }
                                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                               />
@@ -1306,8 +1260,7 @@ export default function GachaTypesPage() {
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  pointCost: parseInt(e.target.value) || 0,
-                                })
+                                  pointCost: parseInt(e.target.value) || 0 })
                               }
                               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                               min="0"
@@ -1363,8 +1316,7 @@ export default function GachaTypesPage() {
                           setConfirmDeleteModal({
                             isOpen: true,
                             gachaTypeCode: gachaType.code,
-                            gachaTypeName: gachaType.name,
-                          });
+                            gachaTypeName: gachaType.name });
                         }}
                       >
                         削除
@@ -1518,8 +1470,7 @@ export default function GachaTypesPage() {
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              description: e.target.value,
-                            })
+                              description: e.target.value })
                           }
                           className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                           rows={2}
@@ -1560,8 +1511,7 @@ export default function GachaTypesPage() {
                                 onClick={() => {
                                   setFormData({
                                     ...formData,
-                                    iconImageUrl: null,
-                                  });
+                                    iconImageUrl: null });
                                   setImagePreview(null);
                                 }}
                                 className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
@@ -1614,8 +1564,7 @@ export default function GachaTypesPage() {
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              isActive: e.target.checked,
-                            })
+                              isActive: e.target.checked })
                           }
                           className="rounded border-gray-300"
                         />
@@ -1638,8 +1587,7 @@ export default function GachaTypesPage() {
                               ...formData,
                               startAt: e.target.value
                                 ? new Date(e.target.value).toISOString()
-                                : null,
-                            })
+                                : null })
                           }
                           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                         />
@@ -1659,8 +1607,7 @@ export default function GachaTypesPage() {
                               ...formData,
                               endAt: e.target.value
                                 ? new Date(e.target.value).toISOString()
-                                : null,
-                            })
+                                : null })
                           }
                           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                         />
@@ -1680,8 +1627,7 @@ export default function GachaTypesPage() {
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            pointCost: parseInt(e.target.value) || 0,
-                          })
+                            pointCost: parseInt(e.target.value) || 0 })
                         }
                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                         min="0"
@@ -1708,8 +1654,7 @@ export default function GachaTypesPage() {
                                 ...formData,
                                 resultMessageTemplateId: e.target.value
                                   ? Number(e.target.value)
-                                  : null,
-                              })
+                                  : null })
                             }
                             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
                             disabled={loadingTemplates}
@@ -1823,8 +1768,7 @@ export default function GachaTypesPage() {
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                useDefaultVideos: e.target.checked,
-                              })
+                                useDefaultVideos: e.target.checked })
                             }
                             className="rounded border-gray-300"
                           />
@@ -1879,8 +1823,7 @@ export default function GachaTypesPage() {
                                             );
                                         setFormData({
                                           ...formData,
-                                          commonVideoIds: newIds,
-                                        });
+                                          commonVideoIds: newIds });
                                       }}
                                       className="rounded border-gray-300"
                                     />
@@ -1976,9 +1919,7 @@ export default function GachaTypesPage() {
                                                     string,
                                                     number[]
                                                   >) || {}),
-                                                  [tier.code]: newRarityIds,
-                                                },
-                                              });
+                                                  [tier.code]: newRarityIds } });
                                             }}
                                             className="rounded border-gray-300"
                                           />
@@ -2206,8 +2147,7 @@ export default function GachaTypesPage() {
                               if (!isChecked) {
                                 setFormData({
                                   ...formData,
-                                  prizeHands: {},
-                                });
+                                  prizeHands: {} });
                               }
                             }}
                             className="rounded border-gray-300"
@@ -2277,8 +2217,7 @@ export default function GachaTypesPage() {
                                 value={config.weight || 0}
                                 onChange={(e) =>
                                   updatePrizeConfig(index, {
-                                    weight: parseInt(e.target.value) || 0,
-                                  })
+                                    weight: parseInt(e.target.value) || 0 })
                                 }
                                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                                 min="0"
@@ -2312,8 +2251,7 @@ export default function GachaTypesPage() {
                                                   (h) => h !== option.value
                                                 );
                                             updatePrizeConfig(index, {
-                                              hands: newHands,
-                                            });
+                                              hands: newHands });
                                           }}
                                           className="rounded border-gray-300"
                                         />

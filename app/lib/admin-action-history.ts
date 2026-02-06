@@ -15,18 +15,36 @@ export async function recordAdminAction(params: {
   metadata?: Record<string, unknown>;
 }) {
   try {
-    await prisma.adminActionHistory.create({
+    const adminUserIdNumber =
+      params.adminUserId && !Number.isNaN(Number(params.adminUserId))
+        ? Number(params.adminUserId)
+        : null;
+
+    const hasTargets =
+      (params.targetUserIds && params.targetUserIds.length > 0) ||
+      !!params.targetUserId;
+
+    const mergedMetadata: Record<string, unknown> = {
+      ...(params.metadata ?? {}),
+      ...(params.targetUserIds && params.targetUserIds.length > 0
+        ? { targetUserIds: params.targetUserIds }
+        : params.targetUserId
+        ? { targetUserIds: [params.targetUserId] }
+        : {}),
+    };
+
+    await prisma.adminAuditLog.create({
       data: {
         actionType: params.actionType,
-        adminUserId: params.adminUserId,
+        adminUserId: adminUserIdNumber,
         adminName: params.adminName,
-        targetUserIds: params.targetUserIds && params.targetUserIds.length > 0 
-          ? (params.targetUserIds as Prisma.InputJsonValue)
-          : params.targetUserId 
-            ? ([params.targetUserId] as Prisma.InputJsonValue)
+        actionTarget: hasTargets ? 'user' : null,
+        actionTargetId: params.targetUserId ?? null,
+        message: params.description,
+        metadata:
+          Object.keys(mergedMetadata).length > 0
+            ? (mergedMetadata as Prisma.InputJsonValue)
             : Prisma.JsonNull,
-        description: params.description,
-        metadata: params.metadata ? (params.metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     });
   } catch (error) {
@@ -228,4 +246,3 @@ export async function recordVideoDeleteAction(params: {
     },
   });
 }
-
