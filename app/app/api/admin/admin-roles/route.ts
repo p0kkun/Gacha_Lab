@@ -4,7 +4,11 @@ import { getAdminAuthContext } from '@/lib/admin-auth';
 import { recordAdminAction } from '@/lib/admin-action-history';
 import { AdminActionType } from '@/lib/admin-action-types';
 
-async function requireSuperAdmin(request: NextRequest) {
+type RequireSuperAdminResult =
+  | { ok: true; adminUser: { id: number; name: string | null; email: string } }
+  | { ok: false; response: NextResponse };
+
+async function requireSuperAdmin(request: NextRequest): Promise<RequireSuperAdminResult> {
   const context = await getAdminAuthContext(request);
   if (!context) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
@@ -19,7 +23,7 @@ async function requireSuperAdmin(request: NextRequest) {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
 
-  return { ok: true, adminUser };
+  return { ok: true, adminUser: { id: adminUser.id, name: adminUser.name, email: adminUser.email } };
 }
 
 export async function GET(request: NextRequest) {

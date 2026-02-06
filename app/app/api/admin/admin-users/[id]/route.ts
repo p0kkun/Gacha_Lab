@@ -8,7 +8,15 @@ import { AdminActionType } from '@/lib/admin-action-types';
 const MIN_PASSWORD_LENGTH = 12;
 const PASSWORD_HISTORY_LIMIT = 5;
 
-async function requireSuperAdmin(request: NextRequest) {
+type RequireSuperAdminResult =
+  | { ok: false; response: NextResponse }
+  | {
+      ok: true;
+      adminUser: { id: number; name: string | null; email: string };
+      context: { adminUserId: number };
+    };
+
+async function requireSuperAdmin(request: NextRequest): Promise<RequireSuperAdminResult> {
   const context = await getAdminAuthContext(request);
   if (!context) {
     return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
@@ -23,7 +31,11 @@ async function requireSuperAdmin(request: NextRequest) {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
 
-  return { ok: true, adminUser, context };
+  return {
+    ok: true,
+    adminUser: { id: adminUser.id, name: adminUser.name, email: adminUser.email },
+    context: { adminUserId: context.adminUserId },
+  };
 }
 
 function parseId(request: NextRequest): number | null {
