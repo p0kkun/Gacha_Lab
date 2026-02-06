@@ -93,7 +93,7 @@ export default function PurchaseHistoryContent() {
     };
 
     fetchStatistics();
-  }, [period, groupBy, planId, token]);
+  }, [period, groupBy, planId]);
 
   if (loading) {
     return (
