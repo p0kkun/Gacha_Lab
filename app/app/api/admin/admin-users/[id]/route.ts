@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  let newRole = targetUser.role;
+  let newRole: typeof targetUser.role | null = targetUser.role ?? null;
   if (roleId !== undefined) {
     if (!Number.isFinite(roleId)) {
       return NextResponse.json({ error: 'ロールIDが不正です' }, { status: 400 });
