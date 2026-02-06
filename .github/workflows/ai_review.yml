@@ -1,0 +1,226 @@
+name: AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai_review:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      # PRの差分(patch)を取得
+      # 注意: GitHub CLI (gh) はGitHub Actionsランナーにデフォルトでインストールされています
+      - name: Fetch PR diff
+        id: diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -L -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" \
+            > pr.diff
+          
+          # diffが空でないか確認
+          if [ ! -s pr.diff ]; then
+            echo "No diff found, skipping review"
+            echo "HAS_DIFF=false" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_DIFF=true" >> $GITHUB_OUTPUT
+            # 差分が大きすぎる場合は制限（50KB程度）
+            head -c 50000 pr.diff > pr.diff.truncated || cp pr.diff pr.diff.truncated
+            mv pr.diff.truncated pr.diff
+          fi
+
+      # プロンプトを組み立て（固定指示 + PR本文 + diff）
+      - name: Build prompt
+        id: prompt
+        if: steps.diff.outputs.HAS_DIFF == 'true'
+        run: |
+          {
+            echo "## System Instructions"
+            cat prompts/review.md
+            echo ""
+            echo "## PR Information"
+            echo "Title: ${{ github.event.pull_request.title }}"
+            echo "Author: ${{ github.event.pull_request.user.login }}"
+            echo ""
+            echo "## PR Description"
+            if [ -z "${{ github.event.pull_request.body }}" ]; then
+              echo "（説明なし）"
+            else
+              echo "${{ github.event.pull_request.body }}"
+            fi
+            echo ""
+            echo "## Code Diff"
+            cat pr.diff
+          } > prompt.txt
+          
+          # プロンプトサイズを確認
+          PROMPT_SIZE=$(wc -c < prompt.txt)
+          echo "Prompt size: $PROMPT_SIZE bytes"
+          
+          # プロンプトを出力（デバッグ用、実際のAPIキーは含まれない）
+          echo "PROMPT_FILE=prompt.txt" >> $GITHUB_OUTPUT
+
+      # モデル存在/アクセス確認（デバッグ用）
+      - name: Debug HF model access
+        if: steps.diff.outputs.HAS_DIFF == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_MODEL: ${{ secrets.HF_MODEL }}
+        run: |
+          set -euo pipefail
+          echo "HF_MODEL='${HF_MODEL:-}'"
+          if [ -z "${HF_MODEL:-}" ]; then
+            echo "HF_MODEL is empty (you should set it or use default in script)."
+          fi
+
+          # モデル存在/アクセス確認（これが 404/401/403 になるなら原因確定）
+          CODE=$(curl -s -o /tmp/model.json -w "%{http_code}" \
+            -H "Authorization: Bearer $HF_TOKEN" \
+            "https://huggingface.co/api/models/${HF_MODEL}")
+          echo "huggingface.co/api/models -> HTTP $CODE"
+          head -c 400 /tmp/model.json || true
+
+      # LLM API を叩いてレビュー文を生成（Hugging Face router - OpenAI互換API使用）
+      - name: Call Hugging Face (router) for Review
+        id: llm
+        if: steps.diff.outputs.HAS_DIFF == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_MODEL: ${{ secrets.HF_MODEL || 'moonshotai/Kimi-K2-Instruct-0905' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${HF_TOKEN:-}" ]; then
+            echo "⚠️ HF_TOKEN is not set. Skipping AI review."
+            echo "⚠️ AIレビューをスキップしました。HF_TOKENが設定されていません。" > review.txt
+            echo "REVIEW_FILE=review.txt" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # HF_MODELのデフォルト値設定と空白/改行の除去
+          HF_MODEL="${HF_MODEL:-}"
+          HF_MODEL="$(echo -n "$HF_MODEL" | tr -d '\r\n' | sed 's/[[:space:]]\+$//')"
+          if [ -z "$HF_MODEL" ]; then
+            HF_MODEL="moonshotai/Kimi-K2-Instruct-0905"  # デフォルトモデル（日本語対応）
+          fi
+          echo "Using HF_MODEL=$HF_MODEL"
+
+          # プロンプトを読み込み
+          PROMPT_CONTENT=$(cat ${{ steps.prompt.outputs.PROMPT_FILE }})
+          SYSTEM_PROMPT="あなたは熟練のコードレビュアーです。日本語でレビューを提供してください。"
+
+          # OpenAI互換 messages を作る
+          PAYLOAD=$(jq -n \
+            --arg model "$HF_MODEL" \
+            --arg sys "$SYSTEM_PROMPT" \
+            --arg user "$PROMPT_CONTENT" \
+            '{
+              model: $model,
+              messages: [
+                {role:"system", content:$sys},
+                {role:"user", content:$user}
+              ],
+              max_tokens: 1200,
+              temperature: 0.3
+            }'
+          )
+
+          # router endpoint（OpenAI互換）
+          ENDPOINT="https://router.huggingface.co/v1/chat/completions"
+
+          # リトライ（429/503/524あたり対策）
+          max_retries=3
+          http_code=""
+          for i in $(seq 1 $max_retries); do
+            http_code=$(curl -sS -o /tmp/hf.json -w "%{http_code}" "$ENDPOINT" \
+              -H "Authorization: Bearer $HF_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" || echo "000")
+
+            echo "HTTP $http_code (attempt $i/$max_retries)"
+            cat /tmp/hf.json | jq '.' 2>/dev/null || cat /tmp/hf.json
+            echo
+
+            if [ "$http_code" = "200" ]; then
+              break
+            fi
+
+            # 200以外は待ってリトライ（最後の試行でなければ）
+            if [ $i -lt $max_retries ]; then
+              sleep $((10 * i))
+            fi
+          done
+
+          # ここで成功してなければエラー文章をレビューにする
+          if [ "${http_code:-}" != "200" ]; then
+            ERROR_DETAIL=$(head -c 300 /tmp/hf.json 2>/dev/null || echo "Unknown error")
+            echo "❌ Inference error (HTTP ${http_code:-000})。レスポンス先頭: ${ERROR_DETAIL}" > review.txt
+            echo "REVIEW_FILE=review.txt" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # OpenAI互換レスポンスから抽出
+          REVIEW_TEXT=$(jq -r '.choices[0].message.content // empty' /tmp/hf.json)
+          if [ -z "$REVIEW_TEXT" ] || [ "$REVIEW_TEXT" = "null" ]; then
+            ERROR_DETAIL=$(cat /tmp/hf.json | head -c 500)
+            echo "❌ 形式不正: ${ERROR_DETAIL}" > review.txt
+          else
+            echo "$REVIEW_TEXT" > review.txt
+          fi
+
+          echo "REVIEW_FILE=review.txt" >> $GITHUB_OUTPUT
+          
+          # レビュー本文の長さを確認
+          REVIEW_LENGTH=$(wc -c < review.txt)
+          echo "Generated review length: $REVIEW_LENGTH bytes"
+
+      # PRにコメントとして投稿
+      - name: Comment on PR
+        if: steps.diff.outputs.HAS_DIFF == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVIEW_BODY: ${{ steps.llm.outputs.REVIEW_FILE }}
+        run: |
+          # 既存のAIレビューコメントを削除（重複防止）
+          COMMENT_IDS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+            --jq '.[] | select(.user.login == "github-actions[bot]") | select(.body | startswith("## 🤖 AIレビュー")) | .id' || echo "")
+          
+          if [ -n "$COMMENT_IDS" ]; then
+            echo "$COMMENT_IDS" | while read -r comment_id; do
+              if [ -n "$comment_id" ]; then
+                gh api repos/${{ github.repository }}/pulls/comments/$comment_id -X DELETE || true
+              fi
+            done
+          fi
+          
+          # レビューコメントを投稿
+          REVIEW_CONTENT=$(cat ${{ steps.llm.outputs.REVIEW_FILE }})
+          
+          # マークダウン形式で整形（改行を明示的に処理）
+          HEADER="## 🤖 AIレビュー"
+          FOOTER="---"$'\n'"*このレビューは自動生成されました。問題があれば修正をお願いします。*"
+          COMMENT_BODY="${HEADER}"$'\n'$'\n'"${REVIEW_CONTENT}"$'\n'$'\n'"${FOOTER}"
+          
+          echo "$COMMENT_BODY" | gh pr comment ${{ github.event.pull_request.number }} --body-file /dev/stdin
