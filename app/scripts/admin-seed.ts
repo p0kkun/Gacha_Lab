@@ -1,7 +1,9 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { createPasswordHash } from '@/lib/admin-crypto';
-import type { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 // Load env for Prisma adapter initialization (DATABASE_URL)
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
@@ -65,6 +67,30 @@ const roleExclusions: Record<'admin' | 'viewer', string[]> = {
 
 let prismaClient: PrismaClient | null = null;
 
+function createSeedPrismaClient() {
+  const databaseUrl = process.env.DATABASE_URL || '';
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required to run admin:seed');
+  }
+
+  const logOptions: ('query' | 'error' | 'warn')[] = ['error'];
+  const isPrismaDataPlatform = databaseUrl.startsWith('prisma+');
+  const isRds = databaseUrl.includes('rds.amazonaws.com');
+
+  if (isPrismaDataPlatform) {
+    return new PrismaClient({ log: logOptions });
+  }
+
+  const cleanUrl = databaseUrl.replace(/[?&]sslmode=[^&]*/g, '');
+  const pool = new Pool({
+    connectionString: cleanUrl,
+    ssl: isRds ? { rejectUnauthorized: false } : false,
+  });
+
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ log: logOptions, adapter });
+}
+
 async function ensureRole(prisma: PrismaClient, name: string) {
   const existing = await prisma.adminRole.findUnique({ where: { name } });
   if (existing) return existing;
@@ -118,8 +144,8 @@ async function seedAdmin(prisma: PrismaClient, admin: SeedAdmin) {
 }
 
 async function main() {
-  const { prisma } = await import('@/lib/prisma');
-  prismaClient = prisma;
+  prismaClient = createSeedPrismaClient();
+  const prisma = prismaClient;
 
   console.log('🌱 管理者初期データの投入を開始します...');
 
