@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         whereClause.referralLinkId = { in: pendingLinkIds };
       }
 
-      const [historiesRaw, totalHistories] = await Promise.all([
+      const [historiesRaw, totalHistoriesCount] = await Promise.all([
         prisma.referralHistory.findMany({
           where: whereClause,
           orderBy: { referredAt: "desc" },
@@ -133,6 +133,7 @@ export async function GET(request: NextRequest) {
         }),
         prisma.referralHistory.count({ where: whereClause }),
       ]);
+      totalHistories = totalHistoriesCount;
 
       // Referralを手動でjoin
       const referralIds = [...new Set(historiesRaw.map((h) => h.referralId))];
