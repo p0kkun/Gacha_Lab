@@ -12,3 +12,4 @@ phases:
       - npm run db:generate
       - npm run db:deploy
       - if [ "$RUN_SEED" = "true" ]; then npm run db:seed; fi
+      - if [ "$RUN_ADMIN_SEED" = "true" ]; then npm run admin:seed; fi
