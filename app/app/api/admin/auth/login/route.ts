@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import {
   ADMIN_SESSION_COOKIE_NAME,
   ADMIN_SESSION_TTL_DAYS,
+  setResponseCookie,
 } from '@/lib/admin-auth';
 import {
   generateSessionToken,
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     exclusionLinks: adminUser.role?.exclusionLinks?.map((l) => l.link) ?? [],
   });
 
-  response.cookies.set(ADMIN_SESSION_COOKIE_NAME, rawToken, {
+  setResponseCookie(response, ADMIN_SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

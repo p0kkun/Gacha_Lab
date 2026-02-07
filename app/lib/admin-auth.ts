@@ -3,7 +3,7 @@
  */
 
 import 'server-only';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashToken } from '@/lib/admin-crypto';
 
@@ -17,8 +17,66 @@ export type AdminAuthContext = {
 };
 
 function getCookieValue(request: NextRequest, name: string): string | null {
-  const cookie = request.cookies.get(name);
-  return cookie?.value ?? null;
+  if (request.cookies?.get) {
+    const cookie = request.cookies.get(name);
+    return cookie?.value ?? null;
+  }
+  const cookieHeader = request.headers?.get?.('cookie');
+  if (!cookieHeader) return null;
+  const parsed = parseCookieHeader(cookieHeader);
+  return parsed[name] ?? null;
+}
+
+export function getAdminSessionToken(request: NextRequest): string | null {
+  return getCookieValue(request, ADMIN_SESSION_COOKIE);
+}
+
+function parseCookieHeader(cookieHeader: string): Record<string, string> {
+  return cookieHeader.split(';').reduce<Record<string, string>>((acc, part) => {
+    const [rawName, ...rest] = part.trim().split('=');
+    if (!rawName) return acc;
+    acc[rawName] = decodeURIComponent(rest.join('='));
+    return acc;
+  }, {});
+}
+
+function formatCookie(
+  name: string,
+  value: string,
+  options: {
+    httpOnly?: boolean;
+    secure?: boolean;
+    sameSite?: 'lax' | 'strict' | 'none';
+    path?: string;
+    expires?: Date;
+  }
+): string {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+  if (options.path) parts.push(`Path=${options.path}`);
+  if (options.expires) parts.push(`Expires=${options.expires.toUTCString()}`);
+  if (options.httpOnly) parts.push('HttpOnly');
+  if (options.secure) parts.push('Secure');
+  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
+  return parts.join('; ');
+}
+
+export function setResponseCookie(
+  response: NextResponse,
+  name: string,
+  value: string,
+  options: {
+    httpOnly?: boolean;
+    secure?: boolean;
+    sameSite?: 'lax' | 'strict' | 'none';
+    path?: string;
+    expires?: Date;
+  }
+) {
+  if (response.cookies?.set) {
+    response.cookies.set(name, value, options);
+    return;
+  }
+  response.headers.append('Set-Cookie', formatCookie(name, value, options));
 }
 
 function isPathExcluded(pathname: string, exclusionLinks: string[]): boolean {

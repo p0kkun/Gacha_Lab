@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ADMIN_SESSION_COOKIE_NAME, getAdminAuthContext } from '@/lib/admin-auth';
+import {
+  ADMIN_SESSION_COOKIE_NAME,
+  getAdminAuthContext,
+  getAdminSessionToken,
+  setResponseCookie,
+} from '@/lib/admin-auth';
 import { hashToken } from '@/lib/admin-crypto';
 import { recordAdminAction } from '@/lib/admin-action-history';
 import { AdminActionType } from '@/lib/admin-action-types';
 
 export async function POST(request: NextRequest) {
   const authContext = await getAdminAuthContext(request);
-  const cookieValue = request.cookies.get(ADMIN_SESSION_COOKIE_NAME)?.value;
+  const cookieValue = getAdminSessionToken(request);
 
   if (cookieValue) {
     const tokenHash = hashToken(cookieValue);
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_SESSION_COOKIE_NAME, '', {
+  setResponseCookie(response, ADMIN_SESSION_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
