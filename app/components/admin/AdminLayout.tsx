@@ -76,7 +76,12 @@ export default function AdminLayout({
     const originalFetch = window.fetch.bind(window);
     window.fetch = (input, init = {}) => {
       const token = sessionStorage.getItem("admin_token");
-      const url = typeof input === "string" ? input : input.url;
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
       if (!token || !url.startsWith("/api/admin/")) {
         return originalFetch(input, init);
       }
