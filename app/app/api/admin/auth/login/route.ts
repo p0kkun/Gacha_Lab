@@ -63,6 +63,7 @@ export async function POST(request: Request) {
   });
 
   const response = NextResponse.json({
+    token: rawToken,
     adminUser: {
       id: adminUser.id,
       email: adminUser.email,

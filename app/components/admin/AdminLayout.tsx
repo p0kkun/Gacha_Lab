@@ -73,11 +73,41 @@ export default function AdminLayout({
 
   // 認証状態と除外リンクを取得
   useEffect(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+      const token = sessionStorage.getItem("admin_token");
+      const url = typeof input === "string" ? input : input.url;
+      if (!token || !url.startsWith("/api/admin/")) {
+        return originalFetch(input, init);
+      }
+      const headers = new Headers(
+        init.headers || (input instanceof Request ? input.headers : undefined)
+      );
+      headers.set("Authorization", `Bearer ${token}`);
+      if (input instanceof Request) {
+        return originalFetch(new Request(input, { headers }), init);
+      }
+      return originalFetch(input, { ...init, headers });
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
+  useEffect(() => {
     const loadAdminContext = async () => {
       try {
+        const token = sessionStorage.getItem("admin_token");
+        if (!token) {
+          window.location.href = "/admin";
+          return;
+        }
         const res = await fetch("/api/admin/auth/me", {
           method: "GET",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
         if (!res.ok) {
           window.location.href = "/admin";
@@ -135,10 +165,12 @@ export default function AdminLayout({
     try {
       await fetch("/api/admin/auth/logout", {
         method: "POST",
-        credentials: "include",
       });
     } finally {
       sessionStorage.removeItem("admin_authenticated");
+      sessionStorage.removeItem("admin_user_id");
+      sessionStorage.removeItem("admin_name");
+      sessionStorage.removeItem("admin_token");
       window.location.href = "/admin";
     }
   };

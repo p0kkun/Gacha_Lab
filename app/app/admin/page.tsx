@@ -18,7 +18,9 @@ export default function AdminPage() {
       try {
         const res = await fetch("/api/admin/auth/me", {
           method: "GET",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("admin_token") ?? ""}`,
+          },
         });
         if (res.ok) {
           const data = await res.json();
@@ -51,7 +53,6 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/auth/login", {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -63,6 +64,9 @@ export default function AdminPage() {
       sessionStorage.setItem("admin_authenticated", "true");
       sessionStorage.setItem("admin_user_id", String(data.adminUser?.id ?? ""));
       sessionStorage.setItem("admin_name", data.adminUser?.name ?? "");
+      if (data.token) {
+        sessionStorage.setItem("admin_token", data.token);
+      }
       setIsAuthenticated(true);
     } catch {
       setError("ログインに失敗しました");

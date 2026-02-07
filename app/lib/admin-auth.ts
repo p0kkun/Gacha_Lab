@@ -27,8 +27,16 @@ function getCookieValue(request: NextRequest, name: string): string | null {
   return parsed[name] ?? null;
 }
 
+function getBearerToken(request: NextRequest): string | null {
+  const authHeader = request.headers?.get?.('authorization');
+  if (!authHeader) return null;
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null;
+  return token.trim();
+}
+
 export function getAdminSessionToken(request: NextRequest): string | null {
-  return getCookieValue(request, ADMIN_SESSION_COOKIE);
+  return getBearerToken(request) ?? getCookieValue(request, ADMIN_SESSION_COOKIE);
 }
 
 function parseCookieHeader(cookieHeader: string): Record<string, string> {
@@ -94,7 +102,7 @@ function isPathExcluded(pathname: string, exclusionLinks: string[]): boolean {
 export async function getAdminAuthContext(
   request: NextRequest
 ): Promise<AdminAuthContext | null> {
-  const rawToken = getCookieValue(request, ADMIN_SESSION_COOKIE);
+  const rawToken = getAdminSessionToken(request);
   if (!rawToken) return null;
 
   const tokenHash = hashToken(rawToken);
