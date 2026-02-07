@@ -26,7 +26,7 @@ phases:
       - test -f lambda/handler.ts
       - npm run lambda:routes
       - npm run db:generate
-      - npx esbuild ./lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs --alias:next/server=./lambda/next-server-shim.ts --external:server-only
+      - npx esbuild ./lambda/handler.ts --bundle --platform=node --target=node20 --outfile=lambda-dist/handler.js --format=cjs --alias:next/server=./lambda/next-server-shim.ts --alias:server-only=./lambda/server-only-shim.ts
       # Prisma deps are provided via Lambda Layer
       - mkdir -p layer/nodejs/node_modules
       - cp -r node_modules/@prisma layer/nodejs/node_modules/
