@@ -6,7 +6,7 @@ import { ReactNode, useCallback, useMemo } from "react";
 type Tab = {
   id: string;
   label: string;
-  icon?: string;
+  icon?: ReactNode;
   content: ReactNode;
 };
 

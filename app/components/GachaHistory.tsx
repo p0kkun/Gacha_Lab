@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import BottomNavigation from './BottomNavigation';
 import LegalFooterLinks from './LegalFooterLinks';
+import { CardBackIcon } from '@/components/icons/AppIcons';
 
 type GachaHistoryItem = {
   id: number;
@@ -36,6 +37,7 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchPrizeTiers();
@@ -44,6 +46,23 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
   useEffect(() => {
     fetchHistories();
   }, [userId, page]);
+
+  useEffect(() => {
+    const target = loaderRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        if (loading || !hasMore) return;
+        setPage((p) => p + 1);
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
 
   const fetchPrizeTiers = async () => {
     try {
@@ -66,7 +85,7 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
   const fetchHistories = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/users/${userId}/gacha-histories?page=${page}&limit=20`);
+      const res = await fetch(`/api/users/${userId}/gacha-histories?page=${page}&limit=50`);
       if (res.ok) {
         const data = await res.json();
         if (page === 1) {
@@ -112,10 +131,18 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-10 left-10 text-6xl">🂡</div>
-              <div className="absolute top-20 right-10 text-5xl">🂮</div>
-              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
-              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+              <div className="absolute top-10 left-10">
+                <CardBackIcon className="h-14 w-14" />
+              </div>
+              <div className="absolute top-20 right-10">
+                <CardBackIcon className="h-12 w-12" />
+              </div>
+              <div className="absolute bottom-10 left-20">
+                <CardBackIcon className="h-10 w-10" />
+              </div>
+              <div className="absolute bottom-20 right-20">
+                <CardBackIcon className="h-12 w-12" />
+              </div>
             </div>
             
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
@@ -193,25 +220,10 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                   ))}
                 </div>
 
-                {/* もっと見る */}
-                {hasMore && (
-                  <div className="text-center">
-                    <button
-                      onClick={() => setPage((p) => p + 1)}
-                      disabled={loading}
-                      className="rounded-xl backdrop-blur-sm px-6 py-3 font-semibold transition-all active:scale-95 disabled:opacity-50"
-                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)', color: '#5a4a3a' }}
-                      onMouseEnter={(e) => {
-                        if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
-                      }}
-                    >
-                      {loading ? '読み込み中...' : 'もっと見る'}
-                    </button>
+                <div ref={loaderRef} />
+                {loading && histories.length > 0 && (
+                  <div className="text-center text-sm" style={{ color: '#5a4a3a' }}>
+                    読み込み中...
                   </div>
                 )}
               </>

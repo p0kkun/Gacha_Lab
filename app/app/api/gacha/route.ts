@@ -20,11 +20,12 @@ import { logError } from "@/lib/error-logger";
 import { deleteCache, getCache, setCache } from "@/lib/cache";
 import { CacheKeys } from "@/lib/cache-keys";
 import {
+  type AssignmentRow,
   type PrismaClientForGachaDraw,
+  GachaDrawError,
+  drawTierAndAssignment,
   getAssignmentsForTier,
   getTierWeights,
-  selectAssignment,
-  selectTierCode,
 } from "@/lib/gacha-draw";
 
 // NOTE: 旧ロジック（GachaTypeの固定カラム/JSON）による抽選は廃止。
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ステップ9: 景品抽選を行う
-    let selectedTierCode: string;
+    let selectedTierCode = "";
 
     // ESLint/TSサーバーの型キャッシュ差異を避けるため、必要なdelegateのみを明示型で参照
     const prismaForTiers = prisma as unknown as PrismaClientForGachaDraw;
@@ -207,17 +208,6 @@ export async function POST(request: NextRequest) {
       prismaForTiers,
       gachaTypeInternalId
     );
-    if (tierWeights.length > 0) {
-      selectedTierCode = selectTierCode(tierWeights);
-    } else {
-      return NextResponse.json(
-        {
-          error:
-            "ガチャの確率（等級×重み）が未設定です（管理画面で設定してください）",
-        },
-        { status: 400 }
-      );
-    }
 
     // ステップ10: 景品抽選結果をもとに演出内容を決定する
     // ポーカーハンドは結果表示用のみ（抽選には影響しない）
@@ -267,37 +257,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 選択された等級の景品を取得（ガチャタイプ別割当が最優先）
-    const assignments = await getAssignmentsForTier(
-      prismaForTiers,
-      gachaTypeInternalId,
-      selectedTierCode
-    );
-
-    if (assignments.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "該当する景品が見つかりません（管理画面で景品割当（ガチャ別）を設定してください）",
-        },
-        { status: 404 }
+    let selectedAssignment: AssignmentRow;
+    try {
+      const drawResult = await drawTierAndAssignment(
+        tierWeights,
+        (tierCode) =>
+          getAssignmentsForTier(prismaForTiers, gachaTypeInternalId, tierCode)
       );
+      selectedTierCode = drawResult.tierCode;
+      selectedAssignment = drawResult.assignment;
+    } catch (error) {
+      if (error instanceof GachaDrawError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
+      }
+      throw error;
     }
-
-    const selectedAssignment = selectAssignment(assignments);
 
     const isPointReward = selectedAssignment.rewardType === "POINTS";
     const selectedItem = selectedAssignment.item;
     const grantedPoints = isPointReward
-      ? Math.trunc(Number.isFinite(selectedAssignment.points) ? selectedAssignment.points : 0)
+      ? Math.trunc(
+          Number.isFinite(selectedAssignment.points)
+            ? selectedAssignment.points
+            : 0
+        )
       : 0;
-
-    if (!isPointReward && (!selectedItem || !selectedItem.isActive)) {
-      return NextResponse.json(
-        { error: "景品アイテムが無効です（管理画面で確認してください）" },
-        { status: 404 }
-      );
-    }
 
     // ポイント消費とガチャ履歴保存をトランザクションで実行
     const result = await prisma.$transaction(async (tx) => {

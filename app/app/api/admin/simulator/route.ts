@@ -3,10 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/admin-auth';
 import {
   type AssignmentRow,
+  type AssignmentsByTier,
   type PrismaClientForGachaDraw,
+  GachaDrawError,
+  drawTierAndAssignment,
   getAssignmentsForTier,
   getTierWeights,
-  selectAssignment,
   selectTierCode,
 } from '@/lib/gacha-draw';
 
@@ -67,15 +69,9 @@ export async function POST(request: NextRequest) {
       (sum: number, r: any) => sum + (Number.isFinite(r.weight) ? r.weight : 0),
       0
     );
-    if (totalTierWeight <= 0) {
-      return NextResponse.json(
-        { error: '重みの合計が0です。確率を設定してください。' },
-        { status: 400 }
-      );
-    }
 
     // ステップ2: 各等級の景品割当を取得（2段階抽選用）
-    const tierAssignments: Record<string, AssignmentRow[]> = {};
+    const tierAssignments: AssignmentsByTier = {};
     const tierCodes = tierWeights.map((r: any) => r.tierCode);
     
     for (const tierCode of tierCodes) {
@@ -96,32 +92,45 @@ export async function POST(request: NextRequest) {
     > = {}; // key: "tierCode:rewardKey"
 
     for (let i = 0; i < iterations; i++) {
-      // 第1段階: 等級抽選（アプリ側と同じロジック）
-      const selectedTierCode = selectTierCode(tierWeights);
-      tierResults[selectedTierCode] = (tierResults[selectedTierCode] || 0) + 1;
+      if (includeItems) {
+        try {
+          const drawResult = await drawTierAndAssignment(
+            tierWeights,
+            async (tierCode) => tierAssignments[tierCode] || []
+          );
+          const selectedTierCode = drawResult.tierCode;
+          const selected = drawResult.assignment;
 
-      // 第2段階: アイテム抽選（アプリ側と同じロジック）
-      if (includeItems && tierAssignments[selectedTierCode]) {
-        const assignments = tierAssignments[selectedTierCode];
-        const selected = selectAssignment(assignments);
-        const isPointReward = selected.rewardType === 'POINTS';
-        const points = Math.trunc(Number.isFinite(selected.points) ? selected.points : 0);
-        const itemId = isPointReward
-          ? -Math.abs(points || 0)
-          : selected.item?.id ?? 0;
-        const itemName = isPointReward
-          ? `${points.toLocaleString()}ポイント`
-          : selected.item?.name || '無効アイテム';
-        const itemKey = `${selectedTierCode}:${itemId}:${isPointReward ? 'POINTS' : 'ITEM'}`;
-        itemResults[itemKey] = (itemResults[itemKey] || 0) + 1;
-        if (!itemDetails[itemKey]) {
-          itemDetails[itemKey] = {
-            tierCode: selectedTierCode,
-            itemId,
-            itemName,
-            weight: Number.isFinite(selected.weight) ? selected.weight : 1,
-          };
+          tierResults[selectedTierCode] = (tierResults[selectedTierCode] || 0) + 1;
+
+          const isPointReward = selected.rewardType === 'POINTS';
+          const points = Math.trunc(Number.isFinite(selected.points) ? selected.points : 0);
+          const itemId = isPointReward
+            ? -Math.abs(points || 0)
+            : selected.item?.id ?? 0;
+          const itemName = isPointReward
+            ? `${points.toLocaleString()}ポイント`
+            : selected.item?.name || '無効アイテム';
+          const itemKey = `${selectedTierCode}:${itemId}:${isPointReward ? 'POINTS' : 'ITEM'}`;
+          itemResults[itemKey] = (itemResults[itemKey] || 0) + 1;
+          if (!itemDetails[itemKey]) {
+            itemDetails[itemKey] = {
+              tierCode: selectedTierCode,
+              itemId,
+              itemName,
+              weight: Number.isFinite(selected.weight) ? selected.weight : 1,
+            };
+          }
+        } catch (error) {
+          if (error instanceof GachaDrawError) {
+            return NextResponse.json({ error: error.message }, { status: error.status });
+          }
+          throw error;
         }
+      } else {
+        // 等級抽選のみ（アイテム抽選は行わない）
+        const selectedTierCode = selectTierCode(tierWeights);
+        tierResults[selectedTierCode] = (tierResults[selectedTierCode] || 0) + 1;
       }
     }
 
@@ -133,7 +142,9 @@ export async function POST(request: NextRequest) {
       const count = tierResults[code] || 0;
       tierActualRates[code] = (count / iterations) * 100;
       tierExpectedRates[code] =
-        ((Number.isFinite(r.weight) ? r.weight : 0) / totalTierWeight) * 100;
+        totalTierWeight > 0
+          ? ((Number.isFinite(r.weight) ? r.weight : 0) / totalTierWeight) * 100
+          : 0;
     }
 
     // ステップ5: アイテムの確率計算（等級確率 × アイテム確率）

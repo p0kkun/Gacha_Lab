@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '50', 10);
 
     if (!userId) {
       return NextResponse.json(
@@ -19,11 +21,12 @@ export async function GET(request: NextRequest) {
     }
 
     const count = await getReferralCount(userId);
-    const history = await getReferralHistory(userId);
+    const { items, totalCount } = await getReferralHistory(userId, page, limit);
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
 
     return NextResponse.json({
       count,
-      history: history.map((h) => ({
+      history: items.map((h) => ({
         id: h.id,
         refereeId: h.toUserId,
         referee: h.toUser,
@@ -33,6 +36,13 @@ export async function GET(request: NextRequest) {
         refereeLastActiveAt: null, // UserActivityモデルにlastActiveAtフィールドは存在しない
         additionalRewardGranted: h.additionalRewardGranted,
       })),
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     });
   } catch (error) {
     await logError(error, { route: '/api/referral/history' }, request);
@@ -42,7 +52,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 
 
 

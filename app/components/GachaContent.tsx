@@ -22,6 +22,79 @@ type GachaResult = {
   messageQueueId?: number; // メッセージ送信用ID
 };
 
+const SuitIcon = ({
+  suit,
+  className,
+}: {
+  suit: "heart" | "spade" | "diamond" | "club";
+  className?: string;
+}) => {
+  const common = "h-5 w-5";
+  if (suit === "heart") {
+    return (
+      <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M12 20.5C7 16.2 4 13.4 4 10.2 4 7.9 5.8 6 8.1 6c1.3 0 2.5.6 3.3 1.6C12.2 6.6 13.4 6 14.7 6 17 6 18.8 7.9 18.8 10.2c0 3.2-3 6-6.8 10.3z"
+        />
+      </svg>
+    );
+  }
+  if (suit === "spade") {
+    return (
+      <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M12 3c4.3 3.7 7 6.6 7 9.7 0 2.2-1.8 4-4 4-1.4 0-2.7-.7-3.4-1.9-.2.9-.2 1.9.1 2.7.3.7.7 1.3 1.2 1.7H9.1c.5-.4.9-1 1.2-1.7.3-.8.4-1.8.1-2.7-.7 1.2-2 1.9-3.4 1.9-2.2 0-4-1.8-4-4C2.9 9.6 7.7 5.6 12 3z"
+        />
+      </svg>
+    );
+  }
+  if (suit === "diamond") {
+    return (
+      <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M12 3.5 19.5 12 12 20.5 4.5 12 12 3.5z" />
+      </svg>
+    );
+  }
+  return (
+    <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 4c2 0 3.7 1.2 4.5 2.9 2.2.2 4 2.1 4 4.4 0 2.5-2 4.5-4.5 4.5h-1.2c.3 1.2 1.1 2.2 2.2 2.9H7c1.1-.7 1.9-1.7 2.2-2.9H8c-2.5 0-4.5-2-4.5-4.5 0-2.3 1.8-4.2 4-4.4C8.3 5.2 10 4 12 4z"
+      />
+    </svg>
+  );
+};
+
+const CardIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5"} viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+    <path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const SparkleIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5"} viewBox="0 0 24 24" aria-hidden="true">
+    <path d="m12 3 1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8L12 3z" fill="currentColor" />
+  </svg>
+);
+
+const WarningIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5"} viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3 2 20h20L12 3z" fill="currentColor" />
+    <path d="M12 8v6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="12" cy="17" r="1.2" fill="#fff" />
+  </svg>
+);
+
+const SpinnerIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5 animate-spin"} viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" opacity="0.25" fill="none" />
+    <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+  </svg>
+);
+
 export default function GachaContent({
   selectedGacha,
   userId,
@@ -343,10 +416,8 @@ export default function GachaContent({
 
   return (
     <div
-      className="relative flex h-full flex-col overflow-hidden"
-      style={{ touchAction: "none" }}
-      onTouchStart={(e) => e.preventDefault()}
-      onTouchMove={(e) => e.preventDefault()}
+      className={`relative flex min-h-full flex-col ${result ? "overflow-y-auto" : "overflow-hidden"}`}
+      style={result ? { WebkitOverflowScrolling: "touch" } : undefined}
     >
       {/* ヘッダー - ポーカーテーブル風 */}
       {!showVideo && (
@@ -376,7 +447,7 @@ export default function GachaContent({
                 selectedGacha.iconImageUrl ? "hidden" : ""
               }`}
             >
-              🂡
+              <CardIcon className="h-10 w-10 text-[#8b6f47]" />
             </div>
             <div className="min-w-0 flex-1">
               <h1
@@ -437,7 +508,7 @@ export default function GachaContent({
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
       <div
-        className={`flex-1 overflow-hidden ${showVideo ? "" : ""}`}
+        className="flex-1"
         style={{ backgroundColor: "#e9dacb" }}
       >
         {!result && (
@@ -489,10 +560,10 @@ export default function GachaContent({
 
               {/* トランプのスーツ装飾 */}
               <div className="mt-4 flex justify-center gap-4 text-2xl opacity-50 sm:gap-6 sm:text-3xl">
-                <span className="text-red-400">♥</span>
-                <span className="text-black">♠</span>
-                <span className="text-red-400">♦</span>
-                <span className="text-black">♣</span>
+                <SuitIcon suit="heart" className="h-6 w-6 text-red-400 sm:h-7 sm:w-7" />
+                <SuitIcon suit="spade" className="h-6 w-6 text-black sm:h-7 sm:w-7" />
+                <SuitIcon suit="diamond" className="h-6 w-6 text-red-400 sm:h-7 sm:w-7" />
+                <SuitIcon suit="club" className="h-6 w-6 text-black sm:h-7 sm:w-7" />
               </div>
             </div>
           </div>
@@ -500,21 +571,28 @@ export default function GachaContent({
 
         {/* 結果表示 - ポーカー風 */}
         {result && !showVideo && (
-          <div
-            className="mx-auto mt-6 max-w-md rounded-2xl border-2 p-8 shadow-2xl"
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.6)",
-              borderColor: "#b89f7a",
-            }}
-          >
+          <div className="px-4 pb-6">
+            <div
+              className="mx-auto mt-4 w-full max-w-md rounded-2xl border-2 p-8 shadow-2xl"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.6)",
+                borderColor: "#b89f7a",
+              }}
+            >
             {videoError && (
               <div className="mb-4 rounded-lg p-4 text-center text-red-700" style={{ backgroundColor: "rgba(239, 68, 68, 0.15)" }}>
-                <p className="font-semibold">⚠️ エラーが発生しました</p>
+                <p className="flex items-center justify-center gap-2 font-semibold">
+                  <WarningIcon className="h-5 w-5 text-red-600" />
+                  エラーが発生しました
+                </p>
                 <p className="mt-1 text-sm">動画の再生に失敗しました</p>
               </div>
             )}
             <h3 className="mb-6 text-center text-2xl font-bold drop-shadow-lg" style={{ color: "#4a3a2a" }}>
-              🎉 獲得！
+              <span className="inline-flex items-center gap-2">
+                <SparkleIcon className="h-5 w-5 text-yellow-500" />
+                獲得！
+              </span>
             </h3>
             <div className="text-center">
               <div
@@ -572,6 +650,7 @@ export default function GachaContent({
                 閉じる
               </button>
             </div>
+            </div>
           </div>
         )}
       </div>
@@ -590,10 +669,10 @@ export default function GachaContent({
             {/* 光るエフェクト */}
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
 
-            <span className="relative z-10 flex items-center justify-center gap-2 flex-wrap">
+            <span className="relative z-10 flex items-center justify-center gap-2 flex-nowrap">
               {isDrawing ? (
                 <>
-                  <span className="animate-spin">🎰</span>
+                  <SpinnerIcon className="h-5 w-5 text-white" />
                   <span className="whitespace-nowrap">抽選中...</span>
                 </>
               ) : (
@@ -606,7 +685,7 @@ export default function GachaContent({
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
-                  <span className="whitespace-nowrap flex items-center gap-1">
+                  <span className="whitespace-nowrap flex items-center gap-1 flex-nowrap">
                     ガチャを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
                       <span className="hidden sm:inline flex items-center gap-0.5">
@@ -623,7 +702,7 @@ export default function GachaContent({
                       <span className="hidden sm:inline"> (無料)</span>
                     )}
                   </span>
-                  <span className="flex-shrink-0">🂡</span>
+                  <CardIcon className="h-5 w-5 flex-shrink-0" />
                 </>
               )}
             </span>

@@ -134,6 +134,42 @@ export default function GachaMenu({
                     >
                       {gacha.name}
                     </div>
+                    {gacha.pointCost !== undefined && (
+                      <div
+                        className="mb-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        style={
+                          selectedGacha.id === gacha.id
+                            ? { backgroundColor: "rgba(255, 255, 255, 0.2)", color: "#fff" }
+                            : { backgroundColor: "rgba(184, 159, 122, 0.2)", color: "#5a4a3a" }
+                        }
+                      >
+                        {gacha.pointCost > 0 ? (
+                          <>
+                            <PointIcon
+                              size={12}
+                              className="h-3 w-3"
+                              active={selectedGacha.id === gacha.id}
+                            />
+                            {gacha.pointCost.toLocaleString()}
+                          </>
+                        ) : (
+                          "無料"
+                        )}
+                      </div>
+                    )}
+                    {gacha.mainPrizeLabel && (
+                      <div
+                        className="text-xs font-semibold"
+                        style={{
+                          color:
+                            selectedGacha.id === gacha.id
+                              ? "rgba(255, 255, 255, 0.9)"
+                              : "#6b5a4a",
+                        }}
+                      >
+                        メイン景品: {gacha.mainPrizeLabel}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {gacha.description && (
@@ -144,23 +180,6 @@ export default function GachaMenu({
                     }}
                   >
                     {renderDescription(gacha.description)}
-                  </div>
-                )}
-                {gacha.pointCost !== undefined && gacha.pointCost > 0 && (
-                  <div
-                    className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                    style={
-                      selectedGacha.id === gacha.id
-                        ? { backgroundColor: 'rgba(255, 255, 255, 0.2)', color: '#fff' }
-                        : { backgroundColor: 'rgba(184, 159, 122, 0.2)', color: '#5a4a3a' }
-                    }
-                  >
-                    <PointIcon
-                      size={12}
-                      className="h-3 w-3"
-                      active={selectedGacha.id === gacha.id}
-                    />
-                    {gacha.pointCost.toLocaleString()}
                   </div>
                 )}
               </button>

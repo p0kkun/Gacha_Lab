@@ -1,6 +1,6 @@
 'use client';
 
-import { formatExpiryText, formatExpiryDate } from '@/lib/point-utils';
+import { formatExpiryText, formatExpiryDate, formatPointAmount } from '@/lib/point-utils';
 import PointIcon from './PointIcon';
 
 type PointBalances = {
@@ -67,7 +67,7 @@ export default function PointDisplay({
         <div className={`${currentSize.label} text-gray-500`}>ポイント</div>
         <div className={`${currentSize.total} font-bold text-blue-600 flex items-center gap-2`}>
           <PointIcon size={size === 'small' ? 20 : size === 'medium' ? 24 : 32} className={size === 'small' ? 'h-5 w-5' : size === 'medium' ? 'h-6 w-6' : 'h-8 w-8'} active={true} />
-          {pointBalances.total.toLocaleString()}
+          {formatPointAmount(pointBalances.total)}
         </div>
         {showExpiry &&
           pointBalances.total > 0 &&
@@ -106,7 +106,7 @@ export default function PointDisplay({
       <div className="flex items-baseline gap-1">
         <PointIcon size={14} className="h-3.5 w-3.5" />
         <span className={`${currentSize.total} font-bold text-gray-800`}>
-          {pointBalances.total.toLocaleString()}
+          {formatPointAmount(pointBalances.total)}
         </span>
       </div>
       
@@ -115,7 +115,7 @@ export default function PointDisplay({
         <span className={`${currentSize.label} text-gray-500`}>有償</span>
         <span className={`text-sm font-semibold text-blue-600 flex items-center gap-0.5`}>
           <PointIcon size={12} className="h-3 w-3" />
-          {pointBalances.paid.toLocaleString()}
+          {formatPointAmount(pointBalances.paid)}
         </span>
       </div>
       
@@ -124,7 +124,7 @@ export default function PointDisplay({
         <span className={`${currentSize.label} text-gray-500`}>無償</span>
         <span className={`text-sm font-semibold text-green-600 flex items-center gap-0.5`}>
           +<PointIcon size={12} className="h-3 w-3" />
-          {pointBalances.free.toLocaleString()}
+          {formatPointAmount(pointBalances.free)}
         </span>
       </div>
       

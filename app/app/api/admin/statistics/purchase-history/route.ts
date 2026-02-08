@@ -74,11 +74,13 @@ export async function GET(request: NextRequest) {
 
     const purchaseLogs = await prismaAny.pointPurchaseLog.findMany({
       where: whereClause,
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         userId: true,
         planId: true,
         amountYen: true,
+        paymentMethod: true,
         createdAt: true,
       },
     });
@@ -356,6 +358,22 @@ export async function GET(request: NextRequest) {
         : (uniqueUserCount > 0 ? 100 : 0),
     } : null;
 
+    const recentLogs = purchaseLogs.slice(0, 200).map((log) => {
+      const points = pointHistoryMap.get(log.id) || { paid: 0, free: 0 };
+      const planLabel = log.planId ? planMap.get(log.planId)?.label ?? 'プラン不明' : 'プラン不明';
+      return {
+        id: log.id,
+        userId: log.userId,
+        planId: log.planId,
+        planLabel,
+        amountYen: log.amountYen,
+        paidPoints: points.paid,
+        freePoints: points.free,
+        paymentMethod: log.paymentMethod ?? null,
+        createdAt: log.createdAt,
+      };
+    });
+
     return NextResponse.json({
       success: true,
       period,
@@ -375,6 +393,7 @@ export async function GET(request: NextRequest) {
       comparison,
       data: aggregatedData,
       plans: Array.from(planMap.values()),
+      recentLogs,
     });
   } catch (error) {
     console.error('購入履歴統計取得エラー:', error);

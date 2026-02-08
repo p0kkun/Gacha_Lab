@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import TabbedPage from '@/components/admin/TabbedPage';
 import dynamic from 'next/dynamic';
+import AdminIcon from '@/components/icons/AdminIcon';
 
 // 各タブコンテンツを動的インポート
 const ActionHistoryContent = dynamic(() => import('@/app/admin/action-history/page'), { ssr: false });
@@ -22,13 +23,13 @@ function SystemContent() {
         {
           id: 'action-history',
           label: '操作履歴',
-          icon: '📋',
+          icon: <AdminIcon name="list" className="h-5 w-5" title="操作履歴" />,
           content: <ActionHistoryContent />,
         },
         {
           id: 'cache',
           label: 'キャッシュ管理',
-          icon: '🗄️',
+          icon: <AdminIcon name="database" className="h-5 w-5" title="キャッシュ管理" />,
           content: <CacheManagementContent />,
         },
       ]}

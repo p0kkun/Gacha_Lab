@@ -454,7 +454,7 @@ export default function ReferralsPage() {
                                   {rh.pendingReferee.userId.substring(0, 10)}...
                                 </div>
                                 <div className="text-xs text-orange-600 font-medium">
-                                  🔗 リンクアクセス済み（LINE未追加）
+                                   リンクアクセス済み（LINE未追加）
                                 </div>
                                 {rh.pendingReferee.lastAccessedAt && (
                                   <div className="text-xs text-gray-400">
@@ -541,3 +541,4 @@ export default function ReferralsPage() {
     </div>
   );
 }
+

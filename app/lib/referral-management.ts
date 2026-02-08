@@ -576,12 +576,25 @@ export async function getReferralCount(referrerId: string): Promise<number> {
 /**
  * 紹介者の紹介履歴を取得
  */
-export async function getReferralHistory(referrerId: string) {
+export async function getReferralHistory(
+  referrerId: string,
+  page: number = 1,
+  limit: number = 50
+) {
+  const totalCount = await prisma.referralUser.count({
+    where: {
+      userId: referrerId,
+    },
+  });
+
+  const skip = (page - 1) * limit;
   const referralUsers = await prisma.referralUser.findMany({
     where: {
       userId: referrerId,
     },
     orderBy: { completedAt: "desc" },
+    skip,
+    take: limit,
   });
 
   // toUserの情報を取得
@@ -614,11 +627,16 @@ export async function getReferralHistory(referrerId: string) {
   );
 
   // 各referralUserにtoUserとactivityを追加
-  return referralUsers.map((ru) => ({
+  const items = referralUsers.map((ru) => ({
     ...ru,
     toUser: toUserMap.get(ru.toUserId) || null,
     refereeActivity: activityMap.get(ru.id) || null,
   }));
+
+  return {
+    items,
+    totalCount,
+  };
 }
 
 /**

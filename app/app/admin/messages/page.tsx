@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import TabbedPage from "@/components/admin/TabbedPage";
 import dynamic from "next/dynamic";
+import AdminIcon from "@/components/icons/AdminIcon";
 
 // 各タブコンテンツを動的インポート
 const MessagesSendContent = dynamic(
@@ -24,7 +25,7 @@ function MessagesContent() {
         {
           id: "send",
           label: "メッセージ配信",
-          icon: "💬",
+          icon: <AdminIcon name="message" className="h-5 w-5" title="メッセージ配信" />,
           content: <MessagesSendContent />,
         },
       ]}

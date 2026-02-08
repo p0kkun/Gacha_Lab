@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Button, Input, Select, Card, Alert } from "@/components/admin/ui";
 import ConfirmModal from "@/components/admin/ConfirmModal";
+import AdminIcon from "@/components/icons/AdminIcon";
+import { SpinnerIcon } from "@/components/icons/AppIcons";
 
 type FreeGachaSettings = {
   id: number;
@@ -301,7 +303,13 @@ export default function FreeGachaSettingsPage() {
               variant="primary"
               onClick={handleSave}
               disabled={saving}
-              leftIcon={saving ? "⏳" : "💾"}
+              leftIcon={
+                saving ? (
+                  <SpinnerIcon className="h-4 w-4" title="保存中" />
+                ) : (
+                  <AdminIcon name="save" className="h-4 w-4" title="保存" />
+                )
+              }
             >
               {saving ? "保存中..." : "保存"}
             </Button>

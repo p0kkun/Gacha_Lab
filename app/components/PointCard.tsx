@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import PointIcon from "./PointIcon";
-import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
+import { formatExpiryText, formatExpiryDate, formatPointAmount } from "@/lib/point-utils";
 
 type PointBalances = {
   paid: number;
@@ -48,19 +48,19 @@ export default function PointCard({
           <div className="text-xs text-amber-900/80">所持ポイント</div>
           <div className="text-4xl font-bold text-amber-900 flex items-center gap-2">
             <PointIcon size={32} className="h-8 w-8" active={true} />
-            {pointBalances.total.toLocaleString()}
+            {formatPointAmount(pointBalances.total)}
           </div>
           {variant === "mypage" && (
             <div className="mt-2 flex justify-center gap-4 text-xs text-amber-800/90">
               <span className="flex items-center gap-0.5">
                 有償:{" "}
                 <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
-                {pointBalances.paid.toLocaleString()}
+                {formatPointAmount(pointBalances.paid)}
               </span>
               <span className="flex items-center gap-0.5">
                 無償:{" "}
                 <PointIcon size={10} className="h-2.5 w-2.5" active={true} />
-                {pointBalances.free.toLocaleString()}
+                {formatPointAmount(pointBalances.free)}
               </span>
             </div>
           )}

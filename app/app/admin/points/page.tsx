@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import TabbedPage from "@/components/admin/TabbedPage";
 import dynamic from "next/dynamic";
+import AdminIcon from "@/components/icons/AdminIcon";
 
 // 各タブコンテンツを動的インポート（元のページをそのまま使用）
 const PointsManagementContent = dynamic(
@@ -28,13 +29,13 @@ function PointsContent() {
         {
           id: "points",
           label: "ポイント管理",
-          icon: "💰",
+          icon: <AdminIcon name="point" className="h-5 w-5" title="ポイント管理" />,
           content: <PointsManagementContent />,
         },
         {
           id: "point-plans",
           label: "ポイント購入プラン",
-          icon: "💳",
+          icon: <AdminIcon name="payment" className="h-5 w-5" title="ポイント購入プラン" />,
           content: <PointPlansContent />,
         },
       ]}

@@ -7,6 +7,7 @@ import TabbedPage from "@/components/admin/TabbedPage";
 import AdminUsersContent from "@/components/admin/AdminUsersContent";
 import AdminRolesContent from "@/components/admin/AdminRolesContent";
 import AdminExclusionLinksContent from "@/components/admin/AdminExclusionLinksContent";
+import AdminIcon from "@/components/icons/AdminIcon";
 
 type AdminMeResponse = {
   exclusionLinks?: string[];
@@ -50,21 +51,21 @@ function AdminManagementContent() {
       {
         id: "admin-users",
         label: "管理者管理",
-        icon: "🛡️",
+        icon: <AdminIcon name="shield" className="h-5 w-5" title="管理者管理" />,
         path: "/admin/admin-users",
         content: <AdminUsersContent />,
       },
       {
         id: "admin-roles",
         label: "管理者ロール",
-        icon: "🔐",
+        icon: <AdminIcon name="lock" className="h-5 w-5" title="管理者ロール" />,
         path: "/admin/admin-roles",
         content: <AdminRolesContent />,
       },
       {
         id: "admin-exclusion-links",
         label: "非表示リンク",
-        icon: "🙈",
+        icon: <AdminIcon name="eyeOff" className="h-5 w-5" title="非表示リンク" />,
         path: "/admin/admin-exclusion-links",
         content: <AdminExclusionLinksContent />,
       },

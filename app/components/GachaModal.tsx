@@ -14,6 +14,7 @@ export type GachaType = {
   description: string;
   iconImageUrl?: string | null;
   pointCost?: number;
+  mainPrizeLabel?: string | null;
 };
 
 export default function GachaModal({
@@ -146,7 +147,7 @@ export default function GachaModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex backdrop-blur-sm overflow-hidden" style={{ backgroundColor: 'rgba(233, 218, 203, 0.95)', touchAction: 'none' }}>
+    <div className="fixed inset-0 z-50 flex backdrop-blur-sm overflow-hidden" style={{ backgroundColor: 'rgba(233, 218, 203, 0.95)' }}>
       {/* 全画面オーバーレイ */}
       <div className="flex h-full w-full flex-col overflow-hidden">
         {/* 上部: ポイント表示とメニューボタン */}

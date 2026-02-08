@@ -45,6 +45,17 @@ type PurchaseHistoryStatistics = {
   } | null;
   data: PurchaseHistoryStat[];
   plans: Array<{ id: string; label: string; points: number; price: number }>;
+  recentLogs: Array<{
+    id: number;
+    userId: string;
+    planId: string | null;
+    planLabel: string;
+    amountYen: number;
+    paidPoints: number;
+    freePoints: number;
+    paymentMethod: string | null;
+    createdAt: string;
+  }>;
 };
 
 export default function PurchaseHistoryContent() {
@@ -55,6 +66,21 @@ export default function PurchaseHistoryContent() {
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month" | "plan">("day");
   const [planId, setPlanId] = useState<string>("");
 
+  const formatPaymentMethod = (value: string | null) => {
+    if (!value) {
+      return "不明";
+    }
+    switch (value) {
+      case "card":
+        return "クレジットカード";
+      case "paypay":
+        return "PayPay";
+      case "link":
+        return "Link";
+      default:
+        return value;
+    }
+  };
 
   useEffect(() => {
     const fetchStatistics = async () => {
@@ -373,6 +399,74 @@ export default function PurchaseHistoryContent() {
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 購入履歴（最新） */}
+      <div className="rounded-lg bg-white p-4 shadow">
+        <h3 className="mb-4 text-lg font-semibold">購入履歴（最新200件）</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  日時
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  ユーザーID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  プラン
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  金額
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  有償
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  無償
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  決済方法
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {statistics.recentLogs.map((log) => (
+                <tr key={log.id}>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                    {log.userId}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                    {log.planLabel || "プラン不明"}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                    ¥{log.amountYen.toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-blue-600">
+                    {log.paidPoints.toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-purple-600">
+                    {log.freePoints.toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                    {formatPaymentMethod(log.paymentMethod)}
+                  </td>
+                </tr>
+              ))}
+              {statistics.recentLogs.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-center text-sm text-gray-500" colSpan={7}>
+                    購入履歴がありません
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

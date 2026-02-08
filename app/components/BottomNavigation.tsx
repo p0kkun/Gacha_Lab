@@ -71,6 +71,11 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
     if (currentPage) {
       return currentPage === item.id || (item.activePattern?.includes(currentPage) ?? false);
     }
+
+    // ルート以外のページではデフォルトでアクティブにしない
+    if (pathname !== '/') {
+      return false;
+    }
     
     // ホームページの場合
     if (item.id === 'home') {

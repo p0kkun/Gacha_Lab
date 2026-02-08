@@ -107,6 +107,8 @@ export async function POST(request: NextRequest) {
           paymentIntent.metadata.bonusFreePoints || "0",
           10
         );
+        const paymentMethodType =
+          paymentIntent.payment_method_types?.[0] ?? null;
 
         console.log("Webhook: ポイント購入処理開始:", {
           userId,
@@ -153,6 +155,7 @@ export async function POST(request: NextRequest) {
                   providerPaymentIntentId: paymentIntent.id,
                   amountYen: paymentIntent.amount,
                   planId: paymentIntent.metadata.planId || null,
+                  paymentMethod: paymentMethodType,
                   status: "SUCCEEDED",
                   paymentSucceededAt,
                   raw: {
@@ -167,7 +170,7 @@ export async function POST(request: NextRequest) {
           if (existingLog?.id && !existingLog.paymentSucceededAt) {
             await prismaAny.pointPurchaseLog.update({
               where: { id: existingLog.id },
-              data: { paymentSucceededAt },
+              data: { paymentSucceededAt, paymentMethod: paymentMethodType },
             });
           }
 

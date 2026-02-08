@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import GachaMenu from "./GachaMenu";
 import GachaContent from "./GachaContent";
 import PointIcon from "./PointIcon";
 import { formatExpiryText } from "@/lib/point-utils";
 import { GachaType } from "./GachaModal";
+import { useErrorModal } from "./ErrorModalProvider";
 
 export default function GachaScreen({
   userId,
@@ -19,6 +21,8 @@ export default function GachaScreen({
   const [selectedGacha, setSelectedGacha] = useState<GachaType | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [redirectToMypage, setRedirectToMypage] = useState(false);
+  const [invalidRequestedGacha, setInvalidRequestedGacha] = useState(false);
   const [pointBalances, setPointBalances] = useState<{
     paid: number;
     free: number;
@@ -27,6 +31,9 @@ export default function GachaScreen({
     freeExpiresAt: string | null;
     lastUpdated: string | null;
   } | null>(null);
+  const router = useRouter();
+  const { showError } = useErrorModal();
+  const errorShownRef = useRef(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,18 +43,28 @@ export default function GachaScreen({
         const typesRes = await fetch("/api/gacha/types");
         if (typesRes.ok) {
           const typesData = await typesRes.json();
-          setGachaTypes(typesData.gachaTypes || []);
-          if (typesData.gachaTypes && typesData.gachaTypes.length > 0) {
-            // defaultGachaCodeが指定されている場合は、そのガチャを選択
+          const availableTypes: GachaType[] = typesData.gachaTypes || [];
+          setGachaTypes(availableTypes);
+          if (availableTypes.length > 0) {
             if (defaultGachaCode) {
-              const defaultGacha = typesData.gachaTypes.find(
+              const defaultGacha = availableTypes.find(
                 (g: GachaType) =>
                   g.id === defaultGachaCode || g.code === defaultGachaCode
               );
-              setSelectedGacha(defaultGacha || typesData.gachaTypes[0]);
+              if (defaultGacha) {
+                setSelectedGacha(defaultGacha);
+                setInvalidRequestedGacha(false);
+              } else {
+                setSelectedGacha(null);
+                setInvalidRequestedGacha(true);
+                setRedirectToMypage(false);
+              }
             } else {
-              setSelectedGacha(typesData.gachaTypes[0]);
+              setSelectedGacha(availableTypes[0]);
             }
+          } else {
+            setSelectedGacha(null);
+            setRedirectToMypage(true);
           }
         }
 
@@ -76,6 +93,31 @@ export default function GachaScreen({
     }
   }, [userId, defaultGachaCode]);
 
+  useEffect(() => {
+    if (!invalidRequestedGacha || errorShownRef.current) return;
+    errorShownRef.current = true;
+    showError("このガチャは現在開催しておりません。", {
+      title: "ガチャを開始できません",
+      confirmLabel: "OK",
+      redirectTo: null,
+      onConfirm: () => {
+        if (typeof window !== "undefined") {
+          window.location.reload();
+        }
+      },
+    });
+  }, [invalidRequestedGacha, showError]);
+
+  useEffect(() => {
+    if (!redirectToMypage || errorShownRef.current) return;
+    errorShownRef.current = true;
+    showError("利用可能なガチャがありません。", {
+      title: "ガチャを開始できません",
+      redirectTo: "/?action=mypage",
+      confirmLabel: "マイページへ",
+    });
+  }, [redirectToMypage, showError]);
+
   if (loading) {
     return (
       <div
@@ -89,6 +131,15 @@ export default function GachaScreen({
     );
   }
 
+  if (invalidRequestedGacha) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ backgroundColor: "rgba(233, 218, 203, 0.95)" }}
+      />
+    );
+  }
+
   if (!selectedGacha || gachaTypes.length === 0) {
     return (
       <div
@@ -98,11 +149,11 @@ export default function GachaScreen({
         <div className="text-center" style={{ color: "#4a3a2a" }}>
           <div className="mb-4 text-lg">利用可能なガチャがありません</div>
           <Link
-            href="/"
+            href="/?action=mypage"
             className="rounded-lg px-4 py-2 text-white transition-all hover:opacity-90"
             style={{ backgroundColor: "#8b6f47" }}
           >
-            ホームに戻る
+            マイページに戻る
           </Link>
         </div>
       </div>

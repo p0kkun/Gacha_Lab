@@ -127,6 +127,8 @@ export async function POST(request: NextRequest) {
       paymentIntent.metadata.bonusFreePoints || "0",
       10
     );
+    const paymentMethodType =
+      paymentIntent.payment_method_types?.[0] ?? null;
 
     if (points <= 0 || bonusFreePoints < 0) {
       await logError(
@@ -151,7 +153,7 @@ export async function POST(request: NextRequest) {
         create: (args: { data: any }) => Promise<{ id: number }>;
         update: (args: {
           where: { id: number };
-          data: { paymentSucceededAt: Date };
+          data: { paymentSucceededAt: Date; paymentMethod?: string | null };
         }) => Promise<{ id: number }>;
       };
       pointHistory: {
@@ -180,6 +182,7 @@ export async function POST(request: NextRequest) {
             providerPaymentIntentId: paymentIntentId,
             amountYen: paymentIntent.amount,
             planId: paymentIntent.metadata.planId || null,
+            paymentMethod: paymentMethodType,
             status: "SUCCEEDED",
             paymentSucceededAt,
             raw: {
@@ -193,7 +196,7 @@ export async function POST(request: NextRequest) {
     if (existingLog?.id && !existingLog.paymentSucceededAt) {
       await prismaAny.pointPurchaseLog.update({
         where: { id: existingLog.id },
-        data: { paymentSucceededAt },
+        data: { paymentSucceededAt, paymentMethod: paymentMethodType },
       });
     }
 

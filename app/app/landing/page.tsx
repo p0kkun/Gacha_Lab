@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import LegalFooterLinks from '@/components/LegalFooterLinks';
+import { GachaIcon, GiftIcon, PhoneIcon } from '@/components/icons/AppIcons';
 
 export default function LandingPage() {
   return (
@@ -39,21 +40,27 @@ export default function LandingPage() {
           <h3 className="mb-8 text-center text-3xl font-bold text-gray-800">サービス概要</h3>
           <div className="grid gap-6 md:grid-cols-3">
             <div className="rounded-lg bg-white p-6 shadow-md">
-              <div className="mb-4 text-4xl">🎰</div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center">
+                <GachaIcon className="h-10 w-10 text-yellow-500" title="ガチャ" />
+              </div>
               <h4 className="mb-2 text-xl font-semibold text-gray-700">ポーカー風ガチャ</h4>
               <p className="text-gray-600">
                 ホールデムポーカーの演出を楽しみながら、様々なアイテムやクーポンを獲得できます。
               </p>
             </div>
             <div className="rounded-lg bg-white p-6 shadow-md">
-              <div className="mb-4 text-4xl">🎁</div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center">
+                <GiftIcon className="h-10 w-10" title="レアリティ" />
+              </div>
               <h4 className="mb-2 text-xl font-semibold text-gray-700">レアリティシステム</h4>
               <p className="text-gray-600">
                 役の強さに応じて、エピック、レア、コモンの3段階のレアリティでアイテムが提供されます。
               </p>
             </div>
             <div className="rounded-lg bg-white p-6 shadow-md">
-              <div className="mb-4 text-4xl">📱</div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center">
+                <PhoneIcon className="h-10 w-10" title="LINE連携" />
+              </div>
               <h4 className="mb-2 text-xl font-semibold text-gray-700">LINE連携</h4>
               <p className="text-gray-600">
                 LINE公式アカウントから簡単にアクセスでき、LINEアカウントでログインできます。

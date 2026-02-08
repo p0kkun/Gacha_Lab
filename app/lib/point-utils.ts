@@ -66,6 +66,20 @@ export function formatExpiryDate(expiresAt: Date | string | null): string | null
   });
 }
 
+/**
+ * ポイント数の表示フォーマット
+ * - 8桁以上 (>= 10,000,000) は "9,999,999+" と表示
+ */
+export function formatPointAmount(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+  if (value >= 10_000_000) {
+    return "9,999,999+";
+  }
+  return Math.trunc(value).toLocaleString();
+}
+
 
 
 

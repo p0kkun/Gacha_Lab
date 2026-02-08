@@ -185,6 +185,7 @@ async function getGachaTypes() {
         description: true,
         pointCost: true,
         iconImageUrl: true,
+        createdAt: true,
         useDefaultVideos: true,
         commonVideoAssetIds: true,
         tierVideoAssetIds: true,
@@ -283,7 +284,7 @@ async function getGachaTypes() {
     );
 
     // 景品割当（GachaPrizeAssignment）が設定されているガチャタイプのみをフィルタリング
-    const prizeAssignments = await prisma.gachaPrizeAssignment.findMany({
+    const prizeAssignmentsSummary = await prisma.gachaPrizeAssignment.findMany({
       where: {
         gachaTypeId: { in: gachaTypesWithTiers.map((gt) => gt.id) },
         isActive: true,
@@ -294,19 +295,82 @@ async function getGachaTypes() {
       distinct: ['gachaTypeId'],
     });
 
-    const validGachaTypeIdsWithPrizes = new Set(prizeAssignments.map((pa) => pa.gachaTypeId));
+    const validGachaTypeIdsWithPrizes = new Set(prizeAssignmentsSummary.map((pa) => pa.gachaTypeId));
     const validGachaTypes = gachaTypesWithTiers.filter((gt) =>
       validGachaTypeIdsWithPrizes.has(gt.id)
     );
 
+    const appSettings = await prisma.appSettings.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { pickupGachaId: true },
+    });
+
+    const prizeAssignmentsDetailed = await prisma.gachaPrizeAssignment.findMany({
+      where: {
+        gachaTypeId: { in: validGachaTypes.map((gt) => gt.id) },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        gachaTypeId: true,
+        rewardType: true,
+        points: true,
+        weight: true,
+        item: { select: { name: true } },
+        tier: { select: { displayOrder: true, code: true, label: true } },
+      },
+    });
+
+    const bestAssignmentByGachaType = new Map<number, typeof prizeAssignmentsDetailed[number]>();
+    for (const assignment of prizeAssignmentsDetailed) {
+      const tierOrder =
+        assignment.tier?.displayOrder !== undefined ? assignment.tier.displayOrder : Number.MAX_SAFE_INTEGER;
+      const current = bestAssignmentByGachaType.get(assignment.gachaTypeId);
+      if (!current) {
+        bestAssignmentByGachaType.set(assignment.gachaTypeId, assignment);
+        continue;
+      }
+
+      const currentTierOrder =
+        current.tier?.displayOrder !== undefined ? current.tier.displayOrder : Number.MAX_SAFE_INTEGER;
+      if (tierOrder < currentTierOrder) {
+        bestAssignmentByGachaType.set(assignment.gachaTypeId, assignment);
+        continue;
+      }
+      if (tierOrder === currentTierOrder && assignment.weight > current.weight) {
+        bestAssignmentByGachaType.set(assignment.gachaTypeId, assignment);
+      }
+    }
+
+    const mainPrizeByGachaType = new Map<number, string | null>();
+    for (const [gachaTypeId, assignment] of bestAssignmentByGachaType.entries()) {
+      const label =
+        assignment.rewardType === "POINTS"
+          ? `${assignment.points.toLocaleString()}ポイント`
+          : assignment.item?.name ?? null;
+      mainPrizeByGachaType.set(gachaTypeId, label);
+    }
+
     // 必要な情報のみを返す
-    return validGachaTypes.slice(0, 10).map((gt) => ({
+    const sortedGachaTypes = [...validGachaTypes].sort((a, b) => {
+      const pickupId = appSettings?.pickupGachaId ?? null;
+      const aIsPickup = pickupId !== null && a.id === pickupId;
+      const bIsPickup = pickupId !== null && b.id === pickupId;
+      if (aIsPickup !== bIsPickup) return aIsPickup ? -1 : 1;
+      const aCost = a.pointCost ?? Number.MAX_SAFE_INTEGER;
+      const bCost = b.pointCost ?? Number.MAX_SAFE_INTEGER;
+      if (aCost !== bCost) return aCost - bCost;
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+
+    return sortedGachaTypes.slice(0, 10).map((gt) => ({
       id: gt.id,
       code: gt.code,
       name: gt.name,
       description: gt.description,
       pointCost: gt.pointCost,
       iconImageUrl: gt.iconImageUrl,
+      mainPrizeLabel: mainPrizeByGachaType.get(gt.id) ?? null,
     }));
   } catch (error) {
     console.error('ガチャタイプ取得エラー:', error);
@@ -326,7 +390,7 @@ async function sendGachaSelectionCard(
       await replyTextMessage(
         client,
         replyToken,
-        '🎰 現在開催中のガチャはありません。'
+        '現在開催中のガチャはありません。'
       );
       return;
     }
@@ -360,14 +424,19 @@ async function sendGachaSelectionCard(
       const descriptionText = gachaType.description
         ? stripMarkdownForLine(gachaType.description)
         : "";
+      const mainPrizeText = gachaType.mainPrizeLabel
+        ? `メイン景品: ${gachaType.mainPrizeLabel}`
+        : "メイン景品: -";
+      const costText = `消費ポイント: ${pointCostText}`;
       const combinedText = descriptionText
-        ? `${descriptionText}\n💰 ${pointCostText}`
-        : `💰 ${pointCostText}`;
+        ? `${mainPrizeText}\n${costText}\n\n${descriptionText}`
+        : `${mainPrizeText}\n${costText}`;
       const text = truncateLineText(combinedText, 60);
+      const title = truncateLineText(gachaType.name, 40);
 
       return {
         thumbnailImageUrl: getFullImageUrl(gachaType.iconImageUrl),
-        title: gachaType.name,
+        title,
         text,
         actions: [
           {
@@ -401,7 +470,7 @@ async function sendGachaSelectionCard(
     await replyTextMessage(
       client,
       replyToken,
-      '🎰 ガチャ一覧の取得に失敗しました。しばらくしてから再度お試しください。'
+      'ガチャ一覧の取得に失敗しました。しばらくしてから再度お試しください。'
     );
   }
 }
@@ -455,7 +524,7 @@ async function handleWebhookEvent(
     });
 
     // ガチャ選択のキーワードをチェック（メッセージアクション用）
-    const gachaKeywords = ['ガチャ', 'gacha', '🎰', 'ガチャを引く', 'ガチャを選ぶ'];
+    const gachaKeywords = ['ガチャ', 'gacha', 'ガチャを引く', 'ガチャを選ぶ'];
     const isGachaKeyword = gachaKeywords.some(keyword => 
       text.trim().toLowerCase().includes(keyword.toLowerCase())
     );
@@ -470,7 +539,7 @@ async function handleWebhookEvent(
     if (isAdminKeyword(text)) {
       console.log('管理者用キーワードが一致しました');
       const adminUrl = getAdminUrl();
-      const replyText = `🔐 管理画面へのアクセスURL:\n\n${adminUrl}\n\n⚠️ このURLは管理者専用です。`;
+      const replyText = `管理画面へのアクセスURL:\n\n${adminUrl}\n\nこのURLは管理者専用です。`;
       
       await replyTextMessage(client, messageEvent.replyToken, replyText);
       console.log(`管理者用URLを返信しました: ${adminUrl}`);
@@ -532,7 +601,7 @@ async function handleWebhookEvent(
       await processReferralOnFollow(userId, client);
 
       // ウェルカムメッセージを送信
-      const welcomeMessage = `ようこそ！🎉\n\nガチャアプリへようこそ！\n\n🎰 ガチャを引いて景品をゲットしよう！\n💰 ポイントを購入してガチャを楽しもう！`;
+      const welcomeMessage = `ようこそ！\n\nガチャアプリへようこそ！\n\nガチャを引いて景品をゲットしよう！\nポイントを購入してガチャを楽しもう！`;
       await replyTextMessage(client, followEvent.replyToken, welcomeMessage);
     } catch (error) {
       console.error('友だち追加処理エラー:', error);
@@ -714,11 +783,11 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     try {
       await client.pushMessage(referral.userId, {
         type: 'text',
-        text: '🎉 友だち紹介が成立しました！\n\n紹介特典を付与しました。\n\n引き続きガチャをお楽しみください！',
+        text: '友だち紹介が成立しました！\n\n紹介特典を付与しました。\n\n引き続きガチャをお楽しみください！',
       });
       await client.pushMessage(refereeId, {
         type: 'text',
-        text: '🎉 友だち紹介が成立しました！\n\n紹介特典を付与しました。\n\n引き続きガチャをお楽しみください！',
+        text: '友だち紹介が成立しました！\n\n紹介特典を付与しました。\n\n引き続きガチャをお楽しみください！',
       });
     } catch (error) {
       console.error('紹介成立通知送信エラー:', error);

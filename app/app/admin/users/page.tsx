@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import TabbedPage from '@/components/admin/TabbedPage';
 import dynamic from 'next/dynamic';
+import AdminIcon from '@/components/icons/AdminIcon';
 
 // 各タブコンテンツを動的インポート
 const UsersManagementContent = dynamic(() => import('@/app/admin/users/users-management'), { ssr: false });
@@ -23,19 +24,19 @@ function UsersContent() {
         {
           id: 'users',
           label: 'ユーザー管理',
-          icon: '👥',
+          icon: <AdminIcon name="users" className="h-5 w-5" title="ユーザー管理" />,
           content: <UsersManagementContent />,
         },
         {
           id: 'tags',
           label: 'タグ管理',
-          icon: '🏷️',
+          icon: <AdminIcon name="tag" className="h-5 w-5" title="タグ管理" />,
           content: <TagsManagementContent />,
         },
         {
           id: 'referrals',
           label: '友だち紹介履歴',
-          icon: '👥',
+          icon: <AdminIcon name="link" className="h-5 w-5" title="友だち紹介履歴" />,
           content: <ReferralsContent />,
         },
       ]}

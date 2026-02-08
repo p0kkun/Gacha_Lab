@@ -8,6 +8,7 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import { SpinnerIcon, LightbulbIcon, CreditCardIcon } from "@/components/icons/AppIcons";
 
 const getStripeKey = () => {
   const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -79,7 +80,9 @@ export default function StripePayment({
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center text-white">
-          <div className="mb-2 animate-spin text-2xl">🎰</div>
+          <div className="mb-2 flex justify-center">
+            <SpinnerIcon className="h-6 w-6" title="準備中" />
+          </div>
           <div>決済を準備中...</div>
         </div>
       </div>
@@ -111,7 +114,7 @@ export default function StripePayment({
     return (
       <div className="rounded-lg bg-red-50 border border-red-200 p-4">
         <p className="text-sm text-red-600 mb-4">
-          ⚠️ Stripe公開可能キーが設定されていません。
+          注意: Stripe公開可能キーが設定されていません。
           <br />
           .env.localファイルにNEXT_PUBLIC_STRIPE_PUBLISHABLE_KEYを設定してください。
         </p>
@@ -228,8 +231,10 @@ function CheckoutForm({
         {isLine && (
           <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-3">
             <p className="text-xs text-yellow-800">
-              💡 Google
-              Payを使用する場合は、外部ブラウザ（Chrome）で開く必要があります。
+              <span className="inline-flex items-center gap-2">
+                <LightbulbIcon className="h-4 w-4" title="注意" />
+                Google Payを使用する場合は、外部ブラウザ（Chrome）で開く必要があります。
+              </span>
               <br />
               <button
                 type="button"
@@ -290,8 +295,11 @@ function CheckoutForm({
       {/* テストモードの説明 */}
       <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
         <p className="text-xs text-blue-700">
-          💳 テストモード: 実際の決済は発生しません。テストカード番号: 4242 4242
-          4242 4242
+          <span className="inline-flex items-center gap-2">
+            <CreditCardIcon className="h-4 w-4" title="テストモード" />
+            テストモード: 実際の決済は発生しません。テストカード番号: 4242 4242
+            4242 4242
+          </span>
         </p>
       </div>
     </form>

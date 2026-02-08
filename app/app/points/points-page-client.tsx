@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
-import { formatExpiryText, formatExpiryDate } from "@/lib/point-utils";
+import { formatExpiryText, formatExpiryDate, formatPointAmount } from "@/lib/point-utils";
 import type { PointPlan } from "@/lib/point-plan-types";
 import PointIcon from "@/components/PointIcon";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -48,6 +48,7 @@ function CheckoutSection({
   onSuccess,
   onCancel,
   onPointsUpdated,
+  onHistoryUpdated,
   agreed,
   onAgreedChange,
 }: {
@@ -56,6 +57,7 @@ function CheckoutSection({
   onSuccess: () => void;
   onCancel: () => void;
   onPointsUpdated?: (newPoints: number) => void;
+  onHistoryUpdated?: () => void;
   agreed: boolean;
   onAgreedChange: (next: boolean) => void;
 }) {
@@ -159,6 +161,7 @@ function CheckoutSection({
           onSuccess={onSuccess}
           onCancel={onCancel}
           onPointsUpdated={onPointsUpdated}
+          onHistoryUpdated={onHistoryUpdated}
           agreed={agreed}
           onAgreedChange={onAgreedChange}
         />
@@ -174,6 +177,7 @@ function CheckoutForm({
   onSuccess,
   onCancel,
   onPointsUpdated,
+  onHistoryUpdated,
   agreed,
   onAgreedChange,
 }: {
@@ -183,6 +187,7 @@ function CheckoutForm({
   onSuccess: () => void;
   onCancel?: () => void;
   onPointsUpdated?: (newPoints: number) => void;
+  onHistoryUpdated?: () => void;
   agreed: boolean;
   onAgreedChange: (next: boolean) => void;
 }) {
@@ -245,9 +250,13 @@ function CheckoutForm({
                   onPointsUpdated(currentPoints);
                 }
                 pointsUpdated = true;
+                // 購入履歴を再取得
+                if (onHistoryUpdated) {
+                  onHistoryUpdated();
+                }
                 onSuccess();
                 showSuccess(
-                  `ポイント購入が完了しました！\n現在のポイント: ${currentPoints.toLocaleString()}ポイント`,
+                  `購入後のポイント: ${formatPointAmount(currentPoints)}ポイント`,
                   { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 break;
@@ -280,15 +289,27 @@ function CheckoutForm({
               const confirmData = await confirmRes.json();
               if (confirmData.success && onPointsUpdated) {
                 onPointsUpdated(confirmData.points);
+                // 購入履歴を再取得
+                if (onHistoryUpdated) {
+                  onHistoryUpdated();
+                }
                 onSuccess();
                 showSuccess(
-                  `ポイント購入が完了しました！\n現在のポイント: ${confirmData.points.toLocaleString()}ポイント`,
+                  `購入後のポイント: ${formatPointAmount(confirmData.points)}ポイント`,
                   { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                 );
               } else {
+                // 購入履歴を再取得
+                if (onHistoryUpdated) {
+                  onHistoryUpdated();
+                }
                 onSuccess();
               }
             } else {
+              // 購入履歴を再取得
+              if (onHistoryUpdated) {
+                onHistoryUpdated();
+              }
               onSuccess();
             }
           } catch (confirmError) {
@@ -430,6 +451,7 @@ function PointsPageContent() {
   const [historyPage, setHistoryPage] = useState(1);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const { showError, showSuccess } = useErrorModal();
+  const historyLoaderRef = useRef<HTMLDivElement | null>(null);
 
   // 購入プランを取得（公開API）
   useEffect(() => {
@@ -474,20 +496,25 @@ function PointsPageContent() {
   };
 
   // 購入履歴を取得するヘルパー関数
-  const fetchPurchaseHistory = async (userId: string, page: number = 1) => {
+  const fetchPurchaseHistory = async (
+    userId: string,
+    page: number = 1,
+    reset: boolean = false
+  ) => {
     setHistoryLoading(true);
     try {
       const res = await fetch(
-        `/api/points/purchase-history?userId=${userId}&page=${page}&limit=29`
+        `/api/points/purchase-history?userId=${userId}&page=${page}&limit=50`
       );
       if (res.ok) {
         const data = await res.json();
-        if (page === 1) {
+        if (page === 1 || reset) {
           setPurchaseHistory(data.history || []);
         } else {
           setPurchaseHistory((prev) => [...prev, ...(data.history || [])]);
         }
         setHasMoreHistory(data.pagination?.hasMore || false);
+        setHistoryPage(page);
       }
     } catch (e) {
       console.error("購入履歴取得エラー:", e);
@@ -518,7 +545,7 @@ function PointsPageContent() {
         // ポイント残高を取得
         await updatePointBalances(userProfile.userId);
         // 購入履歴を取得（初回は1ページ目）
-        await fetchPurchaseHistory(userProfile.userId, 1);
+        await fetchPurchaseHistory(userProfile.userId, 1, true);
       } catch (err) {
         console.error("初期化エラー:", err);
       } finally {
@@ -528,6 +555,25 @@ function PointsPageContent() {
 
     initialize();
   }, []);
+
+  useEffect(() => {
+    const target = historyLoaderRef.current;
+    if (!target) return;
+    if (!profile) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        if (historyLoading || !hasMoreHistory) return;
+        const nextPage = historyPage + 1;
+        fetchPurchaseHistory(profile.userId, nextPage);
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [historyHasMore, historyLoading, historyPage, profile]);
 
   useEffect(() => {
     // 決済成功時の処理（PayPayなどのリダイレクト型決済の場合）
@@ -657,9 +703,11 @@ function PointsPageContent() {
                   // ポイントが増加していたら、決済が成功したと判断
                   if (data.points > previousPoints) {
                     await updatePointBalances(profile.userId);
+                    // 購入履歴を再取得
+                    await fetchPurchaseHistory(profile.userId, 1);
                     setSelectedPlan(null);
                     showSuccess(
-                      `ポイント購入が完了しました！\n${points}ポイント → ${data.points}ポイント`,
+                      `購入後のポイント: ${formatPointAmount(data.points)}ポイント`,
                       { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                     );
                     pointsUpdated = true;
@@ -698,11 +746,11 @@ function PointsPageContent() {
                     const confirmData = await confirmRes.json();
                     if (confirmData.success) {
                       await updatePointBalances(profile.userId);
+                      // 購入履歴を再取得
+                      await fetchPurchaseHistory(profile.userId, 1);
                       setSelectedPlan(null);
                       showSuccess(
-                        `ポイント購入が完了しました！\n${
-                          points || 0
-                        }ポイント → ${confirmData.points}ポイント`,
+                        `購入後のポイント: ${formatPointAmount(confirmData.points)}ポイント`,
                         { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                       );
 
@@ -761,9 +809,11 @@ function PointsPageContent() {
 
                 if (data.points > previousPoints) {
                   await updatePointBalances(profile.userId);
+                  // 購入履歴を再取得
+                  await fetchPurchaseHistory(profile.userId, 1);
                   setSelectedPlan(null);
                   showSuccess(
-                    `ポイント購入が完了しました！\n${previousPoints}ポイント → ${data.points}ポイント`,
+                    `購入後のポイント: ${formatPointAmount(data.points)}ポイント`,
                     { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
                   );
                   pointsUpdated = true;
@@ -841,7 +891,7 @@ function PointsPageContent() {
               style={{ color: "#8b6f47" }}
             >
               <PointIcon size={32} className="h-8 w-8" active={true} />
-              {points !== null ? points.toLocaleString() : "-"}
+              {points !== null ? formatPointAmount(points) : "-"}
             </div>
 
             {/* 有償/無償ポイントの詳細 */}
@@ -851,7 +901,7 @@ function PointsPageContent() {
                   <span className="text-gray-600">有償ポイント</span>
                   <span className="font-semibold text-gray-800 flex items-center gap-1">
                     <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
-                    {pointBalances.paid.toLocaleString()}
+                    {formatPointAmount(pointBalances.paid)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -861,7 +911,7 @@ function PointsPageContent() {
                     style={{ color: "#5a4a3a" }}
                   >
                     <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
-                    {pointBalances.free.toLocaleString()}
+                    {formatPointAmount(pointBalances.free)}
                   </span>
                 </div>
                 {/* 有効期限（有償と無償で同じなので一つだけ表示） */}
@@ -983,6 +1033,12 @@ function PointsPageContent() {
                 }
               }
             }}
+            onHistoryUpdated={() => {
+              // 購入履歴を再取得
+              if (profile) {
+                fetchPurchaseHistory(profile.userId, 1, true);
+              }
+            }}
             agreed={agreed}
             onAgreedChange={setAgreed}
           />
@@ -991,7 +1047,7 @@ function PointsPageContent() {
         {/* 購入履歴 */}
         <div className="mb-6">
           <h2 className="mb-4 text-lg font-semibold text-gray-800">決済履歴</h2>
-          {historyLoading ? (
+          {historyLoading && purchaseHistory.length === 0 ? (
             <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow">
               読み込み中...
             </div>
@@ -1045,40 +1101,10 @@ function PointsPageContent() {
                 ))}
               </div>
 
-              {/* もっと見る */}
-              {hasMoreHistory && (
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={() => {
-                      const nextPage = historyPage + 1;
-                      setHistoryPage(nextPage);
-                      if (profile) {
-                        fetchPurchaseHistory(profile.userId, nextPage);
-                      }
-                    }}
-                    disabled={historyLoading}
-                    className="rounded-lg px-6 py-3 font-semibold text-white transition-colors"
-                    style={{
-                      background: historyLoading
-                        ? "linear-gradient(to right, #8b7a6a, #7a6a5a)"
-                        : "linear-gradient(to right, #b89f7a, #a68f6a)",
-                      opacity: historyLoading ? 0.5 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!historyLoading) {
-                        e.currentTarget.style.background =
-                          "linear-gradient(to right, #c8af8a, #b89f7a)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!historyLoading) {
-                        e.currentTarget.style.background =
-                          "linear-gradient(to right, #b89f7a, #a68f6a)";
-                      }
-                    }}
-                  >
-                    {historyLoading ? "読み込み中..." : "もっと見る"}
-                  </button>
+              <div ref={historyLoaderRef} />
+              {historyLoading && purchaseHistory.length > 0 && (
+                <div className="mt-4 text-center text-sm" style={{ color: "#6b5a4a" }}>
+                  読み込み中...
                 </div>
               )}
             </>

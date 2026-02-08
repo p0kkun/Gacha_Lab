@@ -8,6 +8,75 @@ import PointCard from "./PointCard";
 import PointIcon from "./PointIcon";
 import LegalFooterLinks from "./LegalFooterLinks";
 
+const SuitIcon = ({
+  suit,
+  className,
+}: {
+  suit: "heart" | "spade" | "diamond" | "club";
+  className?: string;
+}) => {
+  const common = "h-5 w-5";
+  if (suit === "heart") {
+    return (
+      <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M12 20.5C7 16.2 4 13.4 4 10.2 4 7.9 5.8 6 8.1 6c1.3 0 2.5.6 3.3 1.6C12.2 6.6 13.4 6 14.7 6 17 6 18.8 7.9 18.8 10.2c0 3.2-3 6-6.8 10.3z"
+        />
+      </svg>
+    );
+  }
+  if (suit === "spade") {
+    return (
+      <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M12 3c4.3 3.7 7 6.6 7 9.7 0 2.2-1.8 4-4 4-1.4 0-2.7-.7-3.4-1.9-.2.9-.2 1.9.1 2.7.3.7.7 1.3 1.2 1.7H9.1c.5-.4.9-1 1.2-1.7.3-.8.4-1.8.1-2.7-.7 1.2-2 1.9-3.4 1.9-2.2 0-4-1.8-4-4C2.9 9.6 7.7 5.6 12 3z"
+        />
+      </svg>
+    );
+  }
+  if (suit === "diamond") {
+    return (
+      <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M12 3.5 19.5 12 12 20.5 4.5 12 12 3.5z" />
+      </svg>
+    );
+  }
+  return (
+    <svg className={className ?? common} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 4c2 0 3.7 1.2 4.5 2.9 2.2.2 4 2.1 4 4.4 0 2.5-2 4.5-4.5 4.5h-1.2c.3 1.2 1.1 2.2 2.2 2.9H7c1.1-.7 1.9-1.7 2.2-2.9H8c-2.5 0-4.5-2-4.5-4.5 0-2.3 1.8-4.2 4-4.4C8.3 5.2 10 4 12 4z"
+      />
+    </svg>
+  );
+};
+
+const CardIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5"} viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+    <path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const HelpIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5"} viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+    <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1.5 1.1-1.5 2.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+    <circle cx="12" cy="17" r="1.2" fill="currentColor" />
+  </svg>
+);
+
+const UsersIcon = ({ className }: { className?: string }) => (
+  <svg className={className ?? "h-5 w-5"} viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="9" cy="8" r="3" fill="currentColor" />
+    <circle cx="17" cy="9" r="2.5" fill="currentColor" />
+    <path d="M4 20c0-3 2.5-5 5-5s5 2 5 5" fill="none" stroke="currentColor" strokeWidth="2" />
+    <path d="M14 20c.3-2 2-3.5 4-3.5 1.3 0 2.5.6 3 1.5" fill="none" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
 type GachaType = {
   id: string;
   code: string;
@@ -15,6 +84,7 @@ type GachaType = {
   description: string | null;
   iconImageUrl: string | null;
   pointCost: number;
+  mainPrizeLabel?: string | null;
 };
 
 type UserStats = {
@@ -125,10 +195,18 @@ export default function HomePageContent({
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
             <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-10 left-10 text-6xl">🂡</div>
-              <div className="absolute top-20 right-10 text-5xl">🂮</div>
-              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
-              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+              <div className="absolute top-10 left-10 text-[#8b6f47]">
+                <CardIcon className="h-16 w-16" />
+              </div>
+              <div className="absolute top-20 right-10 text-[#5a4a3a]">
+                <SuitIcon suit="spade" className="h-12 w-12" />
+              </div>
+              <div className="absolute bottom-10 left-20 text-[#8b6f47]">
+                <SuitIcon suit="club" className="h-10 w-10" />
+              </div>
+              <div className="absolute bottom-20 right-20 text-[#b86c6c]">
+                <SuitIcon suit="diamond" className="h-12 w-12" />
+              </div>
             </div>
             
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
@@ -193,7 +271,7 @@ export default function HomePageContent({
                     }}
                   />
                   <span>ガチャを引く</span>
-                  <span className="text-2xl">🂡</span>
+                  <CardIcon className="h-6 w-6 text-white" />
                 </span>
               </button>
 
@@ -229,7 +307,6 @@ export default function HomePageContent({
                       }
                     }}
                   />
-                  <span className="hidden">💰</span>
                   <span>ポイントを購入</span>
                 </span>
               </Link>
@@ -381,12 +458,7 @@ export default function HomePageContent({
                           <h3 className="mb-1 font-bold text-gray-800">
                             {gacha.name}
                           </h3>
-                          {gacha.description && (
-                            <p className="mb-2 text-xs text-gray-600 line-clamp-2">
-                              {renderDescription(gacha.description)}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2">
+                          <div className="mb-1 flex items-center gap-2">
                             <span
                               className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white shadow-md"
                               style={{
@@ -403,6 +475,16 @@ export default function HomePageContent({
                               )}
                             </span>
                           </div>
+                          {gacha.mainPrizeLabel && (
+                            <div className="mb-1 text-xs font-semibold text-gray-700">
+                              メイン景品: {gacha.mainPrizeLabel}
+                            </div>
+                          )}
+                          {gacha.description && (
+                            <p className="mb-2 text-xs text-gray-600 line-clamp-2">
+                              {renderDescription(gacha.description)}
+                            </p>
+                          )}
                         </div>
                         <div className="transition-transform group-hover:translate-x-1" style={{ color: '#8b6f47' }}>
                           <svg
@@ -460,7 +542,7 @@ export default function HomePageContent({
                         }
                       }}
                     />
-                    <div className="text-xl hidden">❓</div>
+                      <HelpIcon className="h-5 w-5 hidden text-[#8b6f47]" />
                     <span className="text-sm font-medium">
                       ヘルプ・お知らせ
                     </span>
@@ -508,7 +590,7 @@ export default function HomePageContent({
                         }
                       }}
                     />
-                    <div className="text-xl hidden">👥</div>
+                      <UsersIcon className="h-5 w-5 hidden text-[#8b6f47]" />
                     <span className="text-sm font-medium">友だち紹介</span>
                   </div>
                   <svg

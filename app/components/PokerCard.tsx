@@ -1,5 +1,7 @@
 'use client';
 
+import { CardBackIcon, SuitIcon } from '@/components/icons/AppIcons';
+
 type CardProps = {
   isFlipped: boolean;
   cardValue?: {
@@ -12,23 +14,15 @@ type CardProps = {
 };
 
 export default function PokerCard({ isFlipped, cardValue, size = 'normal' }: CardProps) {
-  const getSuitSymbol = (suit?: string) => {
-    switch (suit) {
-      case 'spade':
-        return '♠';
-      case 'heart':
-        return '♥';
-      case 'diamond':
-        return '♦';
-      case 'club':
-        return '♣';
-      default:
-        return '🂠';
-    }
-  };
+  type Suit = NonNullable<CardProps['cardValue']>['suit'];
 
   const getSuitColor = (suit?: string) => {
     return suit === 'heart' || suit === 'diamond' ? 'text-red-600' : 'text-black';
+  };
+
+  const renderSuit = (suit: Suit, className: string) => {
+    if (!suit) return null;
+    return <SuitIcon suit={suit as 'spade' | 'heart' | 'diamond' | 'club'} className={className} />;
   };
 
   const cardSize = size === 'large' 
@@ -69,7 +63,7 @@ export default function PokerCard({ isFlipped, cardValue, size = 'normal' }: Car
           </div>
           {/* 中央のシンボル */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-4xl sm:text-5xl md:text-6xl opacity-30">🂠</div>
+            <CardBackIcon className="h-12 w-12 text-white opacity-30 sm:h-14 sm:w-14 md:h-16 md:w-16" />
           </div>
         </div>
 
@@ -104,7 +98,7 @@ export default function PokerCard({ isFlipped, cardValue, size = 'normal' }: Car
                     {cardValue.rank}
                   </div>
                   <div className={`text-lg sm:text-xl md:text-2xl leading-none ${size === 'large' ? 'text-2xl sm:text-3xl md:text-4xl' : ''}`}>
-                    {getSuitSymbol(cardValue.suit)}
+                    {renderSuit(cardValue.suit, 'h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7')}
                   </div>
                 </div>
 
@@ -114,14 +108,19 @@ export default function PokerCard({ isFlipped, cardValue, size = 'normal' }: Car
                     {cardValue.rank}
                   </div>
                   <div className={`text-lg sm:text-xl md:text-2xl leading-none ${size === 'large' ? 'text-2xl sm:text-3xl md:text-4xl' : ''}`}>
-                    {getSuitSymbol(cardValue.suit)}
+                    {renderSuit(cardValue.suit, 'h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7')}
                   </div>
                 </div>
 
                 {/* 中央の大きなスーツシンボル */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className={`text-4xl sm:text-5xl md:text-6xl ${getSuitColor(cardValue.suit)} ${size === 'large' ? 'text-6xl sm:text-7xl md:text-8xl' : ''} opacity-80`}>
-                    {getSuitSymbol(cardValue.suit)}
+                  <div className={`${getSuitColor(cardValue.suit)} ${size === 'large' ? 'opacity-80' : 'opacity-80'}`}>
+                    {renderSuit(
+                      cardValue.suit,
+                      size === 'large'
+                        ? 'h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16'
+                        : 'h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11'
+                    )}
                   </div>
                 </div>
 
@@ -135,4 +134,3 @@ export default function PokerCard({ isFlipped, cardValue, size = 'normal' }: Car
     </div>
   );
 }
-

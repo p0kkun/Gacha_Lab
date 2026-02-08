@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import BottomNavigation from "./BottomNavigation";
 import { useErrorModal } from "./ErrorModalProvider";
 import LegalFooterLinks from "./LegalFooterLinks";
+import { CardBackIcon, PinIcon } from "@/components/icons/AppIcons";
 
 type ReferralHistory = {
   id: number;
@@ -29,9 +30,12 @@ export default function Referral({ userId }: { userId: string }) {
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState<number>(0);
   const [referralHistory, setReferralHistory] = useState<ReferralHistory[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { showError } = useErrorModal();
+  const historyLoaderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchReferralData();
@@ -62,23 +66,62 @@ export default function Referral({ userId }: { userId: string }) {
     try {
       await loadCurrentReferralLink();
 
-      // 紹介履歴を取得
-      const historyRes = await fetch(`/api/referral/history?userId=${userId}`);
-      if (historyRes.ok) {
-        const historyData = await historyRes.json();
-        setReferralCount(historyData.count);
-        setReferralHistory(historyData.history);
-      }
+      await fetchReferralHistory(1, true);
     } catch (error) {
       console.error("紹介履歴取得エラー:", error);
     }
   };
 
+  const fetchReferralHistory = async (page: number, reset: boolean = false) => {
+    setHistoryLoading(true);
+    try {
+      const historyRes = await fetch(
+        `/api/referral/history?userId=${userId}&page=${page}&limit=50`
+      );
+      if (historyRes.ok) {
+        const historyData = await historyRes.json();
+        setReferralCount(historyData.count);
+        if (reset) {
+          setReferralHistory(historyData.history || []);
+          setHistoryPage(1);
+        } else {
+          setReferralHistory((prev) => [
+            ...prev,
+            ...(historyData.history || []),
+          ]);
+        }
+        setHistoryHasMore(historyData.pagination?.hasMore || false);
+      }
+    } catch (error) {
+      console.error("紹介履歴取得エラー:", error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const target = historyLoaderRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        if (historyLoading || !historyHasMore) return;
+        const nextPage = historyPage + 1;
+        setHistoryPage(nextPage);
+        fetchReferralHistory(nextPage);
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [historyHasMore, historyLoading, historyPage, userId]);
+
   const requestReferralLink = async (showLoading: boolean) => {
     if (showLoading) {
       setLoading(true);
     }
-    setError(null);
 
     try {
       const res = await fetch("/api/referral/generate", {
@@ -113,7 +156,6 @@ export default function Referral({ userId }: { userId: string }) {
       setQrCodeUrl(qrCode);
     } catch (err: any) {
       const errorMsg = err.message || "紹介リンクの生成に失敗しました";
-      setError(errorMsg);
       showError(
         errorMsg.includes("データベース") 
           ? `${errorMsg}\n\nデータベース接続に問題がある可能性があります。しばらくしてから再度お試しください。`
@@ -187,10 +229,18 @@ export default function Referral({ userId }: { userId: string }) {
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
             <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-10 left-10 text-6xl">🂡</div>
-              <div className="absolute top-20 right-10 text-5xl">🂮</div>
-              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
-              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+              <div className="absolute top-10 left-10 text-6xl">
+                <CardBackIcon className="h-16 w-16 text-[#b89f7a]" />
+              </div>
+              <div className="absolute top-20 right-10 text-5xl">
+                <CardBackIcon className="h-14 w-14 text-[#b89f7a]" />
+              </div>
+              <div className="absolute bottom-10 left-20 text-4xl">
+                <CardBackIcon className="h-12 w-12 text-[#b89f7a]" />
+              </div>
+              <div className="absolute bottom-20 right-20 text-5xl">
+                <CardBackIcon className="h-14 w-14 text-[#b89f7a]" />
+              </div>
             </div>
             
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
@@ -200,12 +250,6 @@ export default function Referral({ userId }: { userId: string }) {
           </div>
 
           <div className="px-4 py-4">
-            {error && (
-              <div className="mb-6 rounded-xl backdrop-blur-sm border p-4 text-sm shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: 'rgba(239, 68, 68, 0.5)', color: '#4a3a2a' }}>
-                {error}
-              </div>
-            )}
-
             {/* 紹介リンク生成 */}
             <div className="mb-6 rounded-xl backdrop-blur-sm p-6 shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
               <h3 className="mb-4 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
@@ -213,7 +257,10 @@ export default function Referral({ userId }: { userId: string }) {
               </h3>
 
               <div className="mb-4 rounded-lg backdrop-blur-sm border p-4 text-sm" style={{ backgroundColor: 'rgba(184, 159, 122, 0.2)', borderColor: 'rgba(184, 159, 122, 0.3)', color: '#5a4a3a' }}>
-                <p className="mb-2 font-semibold">📌 使い方</p>
+                <p className="mb-2 flex items-center gap-2 font-semibold">
+                  <PinIcon className="h-4 w-4" title="使い方" />
+                  使い方
+                </p>
                 <ol className="list-decimal list-inside space-y-1 text-xs">
                   <li>紹介リンクを生成してQRコードまたはリンクを共有</li>
                   <li>友だちがリンクを開いてアプリにアクセス</li>
@@ -353,7 +400,7 @@ export default function Referral({ userId }: { userId: string }) {
               {referralHistory.length > 0 ? (
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold" style={{ color: '#4a3a2a' }}>紹介履歴</h4>
-                  <div className="max-h-64 space-y-2 overflow-y-auto">
+                  <div className="space-y-2">
                     {referralHistory.map((history) => (
                       <div
                         key={history.id}
@@ -400,6 +447,12 @@ export default function Referral({ userId }: { userId: string }) {
                         </div>
                       </div>
                     ))}
+                    <div ref={historyLoaderRef} />
+                    {historyLoading && (
+                      <div className="rounded-lg px-3 py-2 text-center text-xs" style={{ color: '#6b5a4a' }}>
+                        読み込み中...
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

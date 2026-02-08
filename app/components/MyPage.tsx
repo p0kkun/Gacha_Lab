@@ -6,6 +6,7 @@ import type { LiffProfile } from "@/lib/liff";
 import BottomNavigation from "./BottomNavigation";
 import PointCard from "./PointCard";
 import LegalFooterLinks from "./LegalFooterLinks";
+import { CardBackIcon, GiftIcon, HelpIcon } from "@/components/icons/AppIcons";
 
 type MyPageProps = {
   profile: LiffProfile;
@@ -148,10 +149,18 @@ export default function MyPage({ profile }: MyPageProps) {
           <div className="relative overflow-hidden px-4 pt-8 pb-6">
             {/* 背景装飾 */}
             <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-10 left-10 text-6xl">🂡</div>
-              <div className="absolute top-20 right-10 text-5xl">🂮</div>
-              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
-              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+              <div className="absolute top-10 left-10">
+                <CardBackIcon className="h-14 w-14" />
+              </div>
+              <div className="absolute top-20 right-10">
+                <CardBackIcon className="h-12 w-12" />
+              </div>
+              <div className="absolute bottom-10 left-20">
+                <CardBackIcon className="h-10 w-10" />
+              </div>
+              <div className="absolute bottom-20 right-20">
+                <CardBackIcon className="h-12 w-12" />
+              </div>
             </div>
 
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
@@ -360,12 +369,12 @@ export default function MyPage({ profile }: MyPageProps) {
                         <div
                           className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getRarityColor(
                             item.item.rarity
-                          )} text-lg shadow-sm ${
+                        )} text-lg shadow-sm ${
                             item.item.imageUrl ? "hidden" : ""
                           }`}
                           style={{ color: "#4a3a2a" }}
                         >
-                          🎁
+                          <GiftIcon className="h-6 w-6" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="mb-1 font-semibold truncate" style={{ color: '#4a3a2a' }}>
@@ -427,7 +436,7 @@ export default function MyPage({ profile }: MyPageProps) {
                         }
                       }}
                     />
-                    <div className="text-xl hidden">❓</div>
+                    <HelpIcon className="h-5 w-5 text-[#8b6f47] hidden" />
                     <span className="text-sm font-medium">
                       ヘルプ・お知らせ
                     </span>

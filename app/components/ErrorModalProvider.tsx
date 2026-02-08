@@ -9,6 +9,7 @@ type ModalOptions = {
   redirectTo?: string | null;
   confirmLabel?: string;
   title?: string;
+  onConfirm?: () => void;
 };
 
 type ErrorModalState = {
@@ -17,6 +18,7 @@ type ErrorModalState = {
   redirectTo: string | null;
   confirmLabel?: string;
   title?: string;
+  onConfirm?: () => void;
 };
 
 type InfoModalState = {
@@ -40,7 +42,7 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
   const [errorState, setErrorState] = useState<ErrorModalState>({
     isOpen: false,
     message: "",
-    redirectTo: "/",
+    redirectTo: null,
   });
   const [infoState, setInfoState] = useState<InfoModalState>({
     isOpen: false,
@@ -55,9 +57,11 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
       setErrorState({
         isOpen: true,
         message,
-        redirectTo: options?.redirectTo ?? "/",
+        // undefined only -> default to home. null explicitly disables redirect.
+        redirectTo: options?.redirectTo === undefined ? "/" : options.redirectTo,
         confirmLabel: options?.confirmLabel,
         title: options?.title,
+        onConfirm: options?.onConfirm,
       });
     },
     []
@@ -78,12 +82,17 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
   );
 
   const handleErrorConfirm = useCallback(() => {
-    const redirectTo = errorState.redirectTo ?? "/";
+    const redirectTo = errorState.redirectTo;
+    const onConfirm = errorState.onConfirm;
     setErrorState((prev) => ({ ...prev, isOpen: false }));
+    if (onConfirm) {
+      onConfirm();
+      return;
+    }
     if (redirectTo) {
       router.push(redirectTo);
     }
-  }, [router, errorState.redirectTo]);
+  }, [router, errorState.redirectTo, errorState.onConfirm]);
 
   const handleInfoConfirm = useCallback(() => {
     const redirectTo = infoState.redirectTo;
@@ -102,7 +111,10 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
         isOpen={errorState.isOpen}
         title={errorState.title}
         message={errorState.message}
-        confirmLabel={errorState.confirmLabel ?? (errorState.redirectTo === "/" ? "ホームへ" : "移動する")}
+        confirmLabel={
+          errorState.confirmLabel ??
+          (errorState.redirectTo === "/" ? "ホームへ" : errorState.redirectTo ? "移動する" : "閉じる")
+        }
         onConfirm={handleErrorConfirm}
       />
       <InfoModal

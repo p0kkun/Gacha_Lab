@@ -256,6 +256,7 @@ model PointPurchaseLog {
   providerPaymentIntentId String          @unique
   amountYen               Int
   planId                  String?
+  paymentMethod           String?
   status                  PaymentStatus   @default(SUCCEEDED)
   paymentSucceededAt      DateTime?
   errorMessage            String?

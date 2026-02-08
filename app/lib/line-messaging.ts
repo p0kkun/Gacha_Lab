@@ -151,13 +151,13 @@ export async function sendGachaResultMessage(
     });
 
     const rarityData = tier
-      ? { emoji: "🎁", label: tier.label }
-      : { emoji: "🎁", label: rarity };
+      ? { emoji: "", label: tier.label }
+      : { emoji: "", label: rarity };
 
     // ポイント付与メッセージ（付与がある場合のみ）
     const grantedPointsMessage =
       grantedPoints && grantedPoints > 0
-      ? `💰 無償ポイント {grantedPoints}ポイントが付与されました！`
+      ? `無償ポイント {grantedPoints}ポイントが付与されました！`
         : "";
 
     // LINE Messaging APIの文字数制限に合わせてテキストを切り詰め
@@ -218,10 +218,10 @@ export async function sendGachaResultMessage(
       return singleLineText.substring(0, maxLength - 3) + "...";
     };
 
-    const title = "🎰 ガチャ結果"; // 40文字以内なのでそのまま
+    const title = "ガチャ結果"; // 40文字以内なのでそのまま
     const text = truncateTextForLine(messageText, MAX_TEXT_LENGTH); // 管理画面のテンプレートから生成し、120文字以内に収める
     const altText = truncateText(
-      `🎰 ガチャ結果\n\n${rarityData.emoji} ${itemName}\nレアリティ: ${rarityData.label}\nガチャタイプ: ${gachaTypeName}`,
+      `ガチャ結果\n\n${rarityData.emoji} ${itemName}\nレアリティ: ${rarityData.label}\nガチャタイプ: ${gachaTypeName}`,
       MAX_ALT_TEXT_LENGTH
     );
 

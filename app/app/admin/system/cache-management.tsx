@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { CacheKeys } from "@/lib/cache-keys";
+import AdminIcon from "@/components/icons/AdminIcon";
 
 type CacheKeyInfo = {
   key: string;
@@ -196,7 +197,7 @@ export default function CacheManagementContent() {
   };
 
   const deleteAllCache = async () => {
-    if (!confirm("⚠️ 全てのキャッシュを削除しますか？\nこの操作は取り消せません。")) {
+    if (!confirm("注意: 全てのキャッシュを削除しますか？\nこの操作は取り消せません。")) {
       return;
     }
 
@@ -240,10 +241,16 @@ export default function CacheManagementContent() {
 
       {/* 使い方説明 */}
       <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 shadow">
-        <h2 className="mb-3 text-lg font-semibold text-blue-800">📖 使い方</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-blue-800">
+          <AdminIcon name="info" className="h-5 w-5" title="使い方" />
+          使い方
+        </h2>
         <div className="space-y-3 text-sm text-blue-900">
           <div>
-            <h3 className="font-semibold mb-1">🔑 キーとは？</h3>
+            <h3 className="flex items-center gap-2 font-semibold mb-1">
+              <AdminIcon name="key" className="h-4 w-4" title="キー" />
+              キーとは？
+            </h3>
             <p className="ml-4">
               <strong>特定の1つのキャッシュ</strong>を指定するときに使います。<br />
               例: <code className="bg-blue-100 px-1 rounded">point-balance:U1234567890abcdef</code><br />
@@ -251,7 +258,10 @@ export default function CacheManagementContent() {
             </p>
           </div>
           <div>
-            <h3 className="font-semibold mb-1">🔀 パターンとは？</h3>
+            <h3 className="flex items-center gap-2 font-semibold mb-1">
+              <AdminIcon name="list" className="h-4 w-4" title="パターン" />
+              パターンとは？
+            </h3>
             <p className="ml-4">
               <strong>複数のキャッシュを一括で指定</strong>するときに使います。ワイルドカード（<code className="bg-blue-100 px-1 rounded">*</code>）を使用します。<br />
               例: <code className="bg-blue-100 px-1 rounded">point-balance:*</code><br />
@@ -278,7 +288,10 @@ export default function CacheManagementContent() {
                   <div className="font-mono text-sm text-gray-700">{info.key}</div>
                   {hasUserIdPlaceholder && (
                     <div className="mt-1 text-xs text-gray-500">
-                      📝 使用例: <code className="bg-gray-100 px-1 rounded">{exampleKey}</code>
+                      <span className="inline-flex items-center gap-2">
+                        <AdminIcon name="note" className="h-4 w-4" title="使用例" />
+                        使用例: <code className="bg-gray-100 px-1 rounded">{exampleKey}</code>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -331,7 +344,10 @@ export default function CacheManagementContent() {
             className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
             disabled={loading}
           >
-            👤 ユーザー検索
+            <span className="inline-flex items-center gap-2">
+              <AdminIcon name="users" className="h-4 w-4" title="ユーザー検索" />
+              ユーザー検索
+            </span>
           </button>
         </div>
         <p className="mb-3 text-sm text-gray-600">
@@ -407,7 +423,10 @@ export default function CacheManagementContent() {
                       <li>キーが間違っている可能性があります</li>
                     </ul>
                     <div className="mt-3 pt-2 border-t border-red-200">
-                      <p className="font-semibold mb-1">📝 補足:</p>
+                      <p className="flex items-center gap-2 font-semibold mb-1">
+                        <AdminIcon name="note" className="h-4 w-4" title="補足" />
+                        補足:
+                      </p>
                       <p>
                         <code className="bg-red-50 px-1 rounded">point-balance</code>キャッシュは、<code className="bg-red-50 px-1 rounded">/api/points/balance</code>でポイント残高を取得した際に自動的に作成されます（TTL: 60秒）。
                       </p>
@@ -452,7 +471,7 @@ export default function CacheManagementContent() {
           className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
           disabled={loading}
         >
-          ⚠️ 全てのキャッシュを削除
+          全てのキャッシュを削除
         </button>
         <p className="mt-2 text-xs text-red-600">
           この操作は全てのキャッシュを削除します。注意して使用してください。

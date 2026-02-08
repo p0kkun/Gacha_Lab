@@ -11,6 +11,8 @@ export type AssignmentRow = {
   item: PrizeItemRow | null;
 };
 
+export type AssignmentsByTier = Record<string, AssignmentRow[]>;
+
 export type PrismaClientForGachaDraw = {
   gachaTierWeight: {
     findMany(args: {
@@ -102,7 +104,49 @@ export function selectAssignment(assignments: AssignmentRow[]): AssignmentRow {
       weight:
         typeof a.weight === "number" && Number.isFinite(a.weight)
           ? a.weight
-          : 1,
+      : 1,
     }))
   );
+}
+
+export class GachaDrawError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const ERROR_TIER_WEIGHTS_EMPTY =
+  "ガチャの確率（等級×重み）が未設定です（管理画面で設定してください）";
+const ERROR_ASSIGNMENTS_EMPTY =
+  "該当する景品が見つかりません（管理画面で景品割当（ガチャ別）を設定してください）";
+const ERROR_ITEM_INVALID = "景品アイテムが無効です（管理画面で確認してください）";
+
+export async function drawTierAndAssignment(
+  tierWeights: TierWeightRow[],
+  getAssignments: (tierCode: string) => Promise<AssignmentRow[]>
+): Promise<{ tierCode: string; assignment: AssignmentRow }> {
+  if (!Array.isArray(tierWeights) || tierWeights.length === 0) {
+    throw new GachaDrawError(ERROR_TIER_WEIGHTS_EMPTY, 400);
+  }
+
+  const tierCode = selectTierCode(tierWeights);
+  const assignments = await getAssignments(tierCode);
+
+  if (!Array.isArray(assignments) || assignments.length === 0) {
+    throw new GachaDrawError(ERROR_ASSIGNMENTS_EMPTY, 404);
+  }
+
+  const assignment = selectAssignment(assignments);
+
+  if (
+    assignment.rewardType !== "POINTS" &&
+    (!assignment.item || !assignment.item.isActive)
+  ) {
+    throw new GachaDrawError(ERROR_ITEM_INVALID, 404);
+  }
+
+  return { tierCode, assignment };
 }

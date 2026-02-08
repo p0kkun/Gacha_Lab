@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/admin/ConfirmModal';
 import { useErrorModal } from '@/components/ErrorModalProvider';
+import { CardBackIcon, PhoneIcon } from '@/components/icons/AppIcons';
 
 type UserItem = {
   id: number;
@@ -220,10 +221,18 @@ export default function ItemDetail({
           <div className="relative overflow-hidden px-4 pt-4 pb-6">
             {/* 背景装飾 */}
             <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-10 left-10 text-6xl">🂡</div>
-              <div className="absolute top-20 right-10 text-5xl">🂮</div>
-              <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
-              <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+              <div className="absolute top-10 left-10">
+                <CardBackIcon className="h-14 w-14" />
+              </div>
+              <div className="absolute top-20 right-10">
+                <CardBackIcon className="h-12 w-12" />
+              </div>
+              <div className="absolute bottom-10 left-20">
+                <CardBackIcon className="h-10 w-10" />
+              </div>
+              <div className="absolute bottom-20 right-20">
+                <CardBackIcon className="h-12 w-12" />
+              </div>
             </div>
             
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
@@ -289,27 +298,15 @@ export default function ItemDetail({
                   <>
                     {/* 画像がない場合: 必須情報のみ表示 */}
                     <div className="space-y-3 rounded-xl p-4" style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}>
-                      {/* クーポン名 */}
+                      {/* アイテム名 */}
                       <div>
                         <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          クーポン名
+                          アイテム名
                         </div>
                         <div className="text-lg font-bold" style={{ color: "#4a3a2a" }}>
                           {userItem.item.name}
                         </div>
                       </div>
-
-                      {/* 割引内容（説明文から抽出） */}
-                      {userItem.item.description && (
-                        <div>
-                          <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                            割引内容
-                          </div>
-                          <div className="text-sm" style={{ color: "#5a4a3a" }}>
-                            {userItem.item.description}
-                          </div>
-                        </div>
-                      )}
 
                       {/* 有効期限 */}
                       <div>
@@ -348,10 +345,10 @@ export default function ItemDetail({
                         </div>
                       </div>
 
-                      {/* 識別子（クーポンID） */}
+                      {/* 識別子（アイテムID） */}
                       <div>
                         <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          クーポンID
+                          アイテムID
                         </div>
                         <div
                           className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold"
@@ -367,7 +364,9 @@ export default function ItemDetail({
             ) : (
               <>
                 <div className="mb-6 rounded-xl backdrop-blur-sm border p-6 text-center" style={{ backgroundColor: 'rgba(184, 159, 122, 0.2)', borderColor: '#b89f7a' }}>
-                  <div className="mb-4 text-4xl">📱</div>
+                  <div className="mb-4 flex justify-center">
+                    <PhoneIcon className="h-10 w-10" />
+                  </div>
                   <div className="mb-2 text-lg font-semibold" style={{ color: '#4a3a2a' }}>
                     店員にこの画面を見せてください
                   </div>
@@ -421,10 +420,18 @@ export default function ItemDetail({
         <div className="relative overflow-hidden px-4 pt-4 pb-6">
           {/* 背景装飾 */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 text-6xl">🂡</div>
-            <div className="absolute top-20 right-10 text-5xl">🂮</div>
-            <div className="absolute bottom-10 left-20 text-4xl">🃏</div>
-            <div className="absolute bottom-20 right-20 text-5xl">🃎</div>
+            <div className="absolute top-10 left-10">
+              <CardBackIcon className="h-14 w-14" />
+            </div>
+            <div className="absolute top-20 right-10">
+              <CardBackIcon className="h-12 w-12" />
+            </div>
+            <div className="absolute bottom-10 left-20">
+              <CardBackIcon className="h-10 w-10" />
+            </div>
+            <div className="absolute bottom-20 right-20">
+              <CardBackIcon className="h-12 w-12" />
+            </div>
           </div>
           
           <div className="relative z-10 text-center" style={{ color: "#4a3a2a" }}>
