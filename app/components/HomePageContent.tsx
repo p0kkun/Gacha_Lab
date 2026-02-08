@@ -210,7 +210,7 @@ export default function HomePageContent({
             </div>
             
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
-              <h1 className="tre-box-title mb-2 text-3xl drop-shadow-md">
+              <h1 className="tre-box-title mb-4 text-3xl drop-shadow-md">
                 TRE BOX
               </h1>
 
