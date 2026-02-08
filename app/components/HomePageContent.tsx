@@ -210,8 +210,8 @@ export default function HomePageContent({
             </div>
             
             <div className="relative z-10 text-center" style={{ color: '#4a3a2a' }}>
-              <h1 className="mb-2 text-3xl font-bold drop-shadow-md">
-                Gacha Lab
+              <h1 className="tre-box-title mb-2 text-3xl drop-shadow-md">
+                TRE BOX
               </h1>
               <p className="mb-6 text-sm" style={{ color: '#6b5a4a' }}>
                 ポーカー風ガチャでアイテムを獲得しよう！

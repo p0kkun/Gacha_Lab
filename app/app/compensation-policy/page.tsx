@@ -8,7 +8,7 @@ export default function CompensationPolicyPage() {
 
         <div className="rounded-lg bg-white p-6 shadow-md">
           <p className="mb-8 text-gray-600">
-            本ポリシーは、ガチャアプリ「Gacha Lab」（以下「本サービス」）における課金関連の不具合・トラブルが発生した場合の対応方針を定めるものです。
+            本ポリシーは、ガチャアプリ「TRE BOX」（以下「本サービス」）における課金関連の不具合・トラブルが発生した場合の対応方針を定めるものです。
           </p>
 
           <div className="space-y-6 text-gray-600">

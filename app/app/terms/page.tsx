@@ -8,7 +8,7 @@ export default function TermsPage() {
 
         <div className="rounded-lg bg-white p-6 shadow-md">
           <p className="mb-8 text-gray-600">
-            本規約は、株式会社Az-Story（以下「当社」）が提供するガチャアプリ「Gacha Lab」
+            本規約は、株式会社Az-Story（以下「当社」）が提供するガチャアプリ「TRE BOX」
             （以下「本サービス」）の利用条件を定めるものです。ユーザーは本規約に同意の上、本サービスを利用するものとします。
           </p>
 

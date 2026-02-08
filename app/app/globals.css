@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-tre-display);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +24,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.tre-box-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(
+    180deg,
+    #fff4c9 0%,
+    #f9de8b 30%,
+    #e1b458 55%,
+    #b67b26 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow:
+    0 1px 0 rgba(255, 248, 219, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 10px 20px rgba(182, 123, 38, 0.35);
 }
 
 /* カスタムスクロールバーのスタイル */

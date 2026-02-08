@@ -8,7 +8,7 @@ export default function LandingPage() {
       {/* ヘッダー */}
       <header className="border-b bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-800">Gacha Lab</h1>
+          <h1 className="tre-box-title text-2xl">TRE BOX</h1>
         </div>
       </header>
 
@@ -74,10 +74,10 @@ export default function LandingPage() {
           <h3 className="mb-6 text-center text-3xl font-bold text-gray-800">運営企業情報</h3>
           <div className="mx-auto max-w-2xl space-y-4 text-gray-600">
             <div>
-              <strong className="text-gray-700">企業名:</strong> Gacha Lab
+              <strong className="text-gray-700">企業名:</strong> TRE BOX
             </div>
             <div>
-              <strong className="text-gray-700">サービス名:</strong> Gacha Lab
+              <strong className="text-gray-700">サービス名:</strong> TRE BOX
             </div>
             <div>
               <strong className="text-gray-700">サービス内容:</strong> ポーカー風ガチャプラットフォーム
@@ -101,7 +101,7 @@ export default function LandingPage() {
             </div>
             <LegalFooterLinks />
             <p className="text-center text-sm text-gray-500">
-              © 2025 Gacha Lab. All rights reserved.
+              © 2025 TRE BOX. All rights reserved.
             </p>
           </div>
         </footer>

@@ -232,7 +232,7 @@ export default function AdminLayout({
             管理画面
           </h2>
           <p className="mt-1.5 text-sm font-medium text-blue-100 opacity-95">
-            Gacha Lab Admin
+            TRE BOX Admin
           </p>
         </div>
 

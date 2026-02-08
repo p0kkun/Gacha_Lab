@@ -8,7 +8,7 @@ export default function PrivacyPage() {
 
         <div className="rounded-lg bg-white p-6 shadow-md">
           <p className="mb-8 text-gray-600">
-            株式会社Az-Story（以下「当社」）は、当社が提供するガチャアプリ「Gacha Lab」
+            株式会社Az-Story（以下「当社」）は、当社が提供するガチャアプリ「TRE BOX」
             （以下「本サービス」）におけるユーザーの個人情報について、以下のとおり取り扱います。
           </p>
 

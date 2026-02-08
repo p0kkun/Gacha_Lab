@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cinzel, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ErrorModalProvider } from "@/components/ErrorModalProvider";
 
@@ -13,8 +13,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const treDisplay = Cinzel({
+  variable: "--font-tre-display",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+
 export const metadata: Metadata = {
-  title: "Gacha Lab - ガチャアプリ",
+  title: "TRE BOX - ガチャアプリ",
   description: "LINE上で動作するガチャアプリ",
 };
 
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${treDisplay.variable} antialiased`}
       >
         <ErrorModalProvider>{children}</ErrorModalProvider>
       </body>

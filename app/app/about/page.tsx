@@ -6,7 +6,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-8 text-center text-3xl font-bold text-gray-800">
-          Gacha Lab について
+          TRE BOX について
         </h1>
 
         <div className="space-y-6">
@@ -14,7 +14,7 @@ export default function AboutPage() {
           <section className="rounded-lg bg-white p-6 shadow-md">
             <h2 className="mb-4 text-2xl font-semibold text-gray-700">サービス概要</h2>
             <p className="mb-4 leading-relaxed text-gray-600">
-              Gacha Labは、LINE公式アカウント上で動作するポーカー風ガチャプラットフォームです。
+              TRE BOXは、LINE公式アカウント上で動作するポーカー風ガチャプラットフォームです。
               ホールデムポーカーの演出を楽しみながら、様々なアイテムやクーポンを獲得できます。
             </p>
             <p className="leading-relaxed text-gray-600">
@@ -27,8 +27,8 @@ export default function AboutPage() {
           <section className="rounded-lg bg-white p-6 shadow-md">
             <h2 className="mb-4 text-2xl font-semibold text-gray-700">運営企業</h2>
             <div className="space-y-2 text-gray-600">
-              <p><strong className="text-gray-700">企業名:</strong> Gacha Lab</p>
-              <p><strong className="text-gray-700">サービス名:</strong> Gacha Lab</p>
+              <p><strong className="text-gray-700">企業名:</strong> TRE BOX</p>
+              <p><strong className="text-gray-700">サービス名:</strong> TRE BOX</p>
               <p><strong className="text-gray-700">サービス内容:</strong> ポーカー風ガチャプラットフォーム</p>
             </div>
           </section>

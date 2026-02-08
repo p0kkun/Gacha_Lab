@@ -223,7 +223,7 @@ function CheckoutForm({
               googlePay: "auto", // Google Payを有効化（Androidでも表示される）
             },
             business: {
-              name: "Gacha Lab",
+              name: "TRE BOX",
             },
           }}
         />

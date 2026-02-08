@@ -1,4 +1,4 @@
-# Gacha Lab - LINE ミニアプリ
+# TRE BOX - LINE ミニアプリ
 
 LINE 上で動作するガチャアプリケーションです。
 
