@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
               create: (args: { data: any }) => Promise<{ id: number }>;
               update: (args: {
                 where: { id: number };
-                data: { paymentSucceededAt: Date };
+                data: { paymentSucceededAt: Date; paymentMethod?: string | null };
               }) => Promise<{ id: number }>;
             };
           };
