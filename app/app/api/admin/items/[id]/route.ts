@@ -87,6 +87,7 @@ export async function PUT(
     const body = await request.json();
     const {
       name,
+      description,
       imageUrl,
       usageType,
       isActive,
@@ -121,6 +122,7 @@ export async function PUT(
       where: { id },
       data: {
         name,
+        description: description ?? null,
         imageUrl: imageUrl || null,
         usageType: usageType || 'IMAGE',
         isActive: isActive ?? true,

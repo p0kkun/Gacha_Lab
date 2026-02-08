@@ -222,9 +222,25 @@ export default function GachaContent({
           response.status === 403 &&
           errorMessage.includes("ポイントが不足")
         ) {
-          showError("ポイントが不足しています。ポイント購入ページへ移動します。", {
+          showError("ポイントが不足しています。ポイント購入ページへ遷移します。", {
             redirectTo: "/points",
             confirmLabel: "ポイント購入へ",
+          });
+          onVideoStateChange?.(false);
+          return;
+        }
+
+        // 無効 or 期間外の場合
+        if (
+          errorMessage.includes("無効") ||
+          errorMessage.includes("まだ開始") ||
+          errorMessage.includes("終了しました") ||
+          errorMessage.includes("開催")
+        ) {
+          showError("このガチャは現在開催しておりません。", {
+            redirectTo: null,
+            confirmLabel: "OK",
+            onConfirm: () => window.location.reload(),
           });
           onVideoStateChange?.(false);
           return;
@@ -307,7 +323,8 @@ export default function GachaContent({
     } catch (error) {
       console.error("ガチャエラー:", error);
       showError(
-        error instanceof Error ? error.message : "ガチャ抽選に失敗しました"
+        "ガチャ実行に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
+        { redirectTo: null, confirmLabel: "閉じる" }
       );
       setIsDrawing(false);
       setVideoUrlsToPlay([]);
@@ -416,7 +433,9 @@ export default function GachaContent({
 
   return (
     <div
-      className={`relative flex min-h-full flex-col ${result ? "overflow-y-auto" : "overflow-hidden"}`}
+      className={`relative flex h-full min-h-0 flex-col ${
+        result ? "overflow-y-auto" : "overflow-hidden"
+      }`}
       style={result ? { WebkitOverflowScrolling: "touch" } : undefined}
     >
       {/* ヘッダー - ポーカーテーブル風 */}
@@ -507,10 +526,7 @@ export default function GachaContent({
       )}
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
-      <div
-        className="flex-1"
-        style={{ backgroundColor: "#e9dacb" }}
-      >
+      <div className="flex-1" style={{ backgroundColor: "#e9dacb" }}>
         {!result && (
           <div className="flex min-h-full flex-col">
             {/* アイコン画像またはデフォルト画像 - 横幅いっぱい */}
@@ -571,9 +587,9 @@ export default function GachaContent({
 
         {/* 結果表示 - ポーカー風 */}
         {result && !showVideo && (
-          <div className="px-4 pb-6">
+          <div className="px-5 pb-10">
             <div
-              className="mx-auto mt-4 w-full max-w-md rounded-2xl border-2 p-8 shadow-2xl"
+              className="mx-auto mt-6 w-full max-w-md rounded-2xl border-2 px-7 py-9 shadow-2xl"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.6)",
                 borderColor: "#b89f7a",

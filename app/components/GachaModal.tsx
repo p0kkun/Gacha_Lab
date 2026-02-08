@@ -5,7 +5,7 @@ import Link from "next/link";
 import GachaMenu from "./GachaMenu";
 import GachaContent from "./GachaContent";
 import PointIcon from "./PointIcon";
-import { formatExpiryText } from "@/lib/point-utils";
+import { formatExpiryText, formatPointAmount } from "@/lib/point-utils";
 
 export type GachaType = {
   id: string;
@@ -183,17 +183,17 @@ export default function GachaModal({
                         active={true}
                       />
                       <span className="text-lg font-bold text-yellow-800 truncate">
-                        {pointBalances.total.toLocaleString()}
+                        {formatPointAmount(pointBalances.total)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] font-medium text-yellow-600 flex items-center gap-0.5">
                         <PointIcon size={10} className="h-2.5 w-2.5" />
-                        有償: {pointBalances.paid.toLocaleString()}
+                        有償: {formatPointAmount(pointBalances.paid)}
                       </span>
                       <span className="text-[10px] font-medium text-green-600 flex items-center gap-0.5">
                         <PointIcon size={10} className="h-2.5 w-2.5" />
-                        無償: {pointBalances.free.toLocaleString()}
+                        無償: {formatPointAmount(pointBalances.free)}
                       </span>
                     </div>
                     {/* 有効期限（有償と無償で同じなので一つだけ表示） */}

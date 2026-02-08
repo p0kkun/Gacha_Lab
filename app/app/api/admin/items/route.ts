@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name,
+      description,
       imageUrl,
       usageType,
       isActive,
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
     const item = await prisma.gachaItem.create({
       data: {
         name,
+        description: description ?? null,
         imageUrl: imageUrl || null,
         usageType: usageType || 'IMAGE',
         isActive: isActive ?? true,

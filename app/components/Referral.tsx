@@ -155,11 +155,8 @@ export default function Referral({ userId }: { userId: string }) {
       });
       setQrCodeUrl(qrCode);
     } catch (err: any) {
-      const errorMsg = err.message || "紹介リンクの生成に失敗しました";
       showError(
-        errorMsg.includes("データベース") 
-          ? `${errorMsg}\n\nデータベース接続に問題がある可能性があります。しばらくしてから再度お試しください。`
-          : errorMsg,
+        "通信エラーが発生しました。\nお手数ですが、時間をおいて再度お試しください。",
         { redirectTo: null, confirmLabel: "閉じる" }
       );
     } finally {

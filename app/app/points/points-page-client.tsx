@@ -193,9 +193,8 @@ function CheckoutForm({
 }) {
   const stripe = useStripe();
   const elements = useElements();
-  const { showError, showSuccess } = useErrorModal();
+  const { showError, showSuccess, showInfo } = useErrorModal();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,7 +202,6 @@ function CheckoutForm({
     if (!stripe || !elements || !agreed) return;
 
     setLoading(true);
-    setError(null);
 
     try {
       // clientSecretはElementsコンポーネントから自動的に取得される
@@ -217,13 +215,31 @@ function CheckoutForm({
         });
 
       if (confirmError) {
-        setError(confirmError.message || "決済に失敗しました");
+        showError(
+          "決済処理に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
+          { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
+        );
         setLoading(false);
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
         // カード決済が成功した場合、Webhookの処理を待つ
         console.log("決済成功を確認。Webhookの処理を待機中...", {
           paymentIntentId: paymentIntent.id,
           status: paymentIntent.status,
+        });
+        const markSuccessShown = () => {
+          if (typeof window === "undefined") return;
+          sessionStorage.setItem(`payment_intent_success_shown:${paymentIntent.id}`, "1");
+        };
+        const shouldShowSuccess = () => {
+          if (typeof window === "undefined") return true;
+          return (
+            sessionStorage.getItem(`payment_intent_success_shown:${paymentIntent.id}`) !== "1"
+          );
+        };
+        showInfo("決済処理中です。ポイント反映をお待ちください。", {
+          title: "ポイント購入",
+          redirectTo: null,
+          confirmLabel: "閉じる",
         });
 
         // ポイント残高をポーリングして更新
@@ -255,10 +271,13 @@ function CheckoutForm({
                   onHistoryUpdated();
                 }
                 onSuccess();
-                showSuccess(
-                  `購入後のポイント: ${formatPointAmount(currentPoints)}ポイント`,
-                  { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
-                );
+                if (shouldShowSuccess()) {
+                  showSuccess(
+                    `購入後のポイント: ${formatPointAmount(currentPoints)}ポイント`,
+                    { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
+                  );
+                  markSuccessShown();
+                }
                 break;
               }
             }
@@ -268,54 +287,11 @@ function CheckoutForm({
         }
 
         if (!pointsUpdated) {
-          // Webhookが処理されていない可能性があるため、フォールバック処理を実行
-          console.warn(
-            "Webhookの処理が完了していない可能性があります。フォールバック処理を実行します。"
+          console.warn("Webhookの処理が完了していない可能性があります。");
+          showInfo(
+            "決済は完了していますが、ポイント反映に時間がかかっています。\nしばらくしてから再度ご確認ください。",
+            { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
           );
-
-          try {
-            const confirmRes = await fetch("/api/points/confirm", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                paymentIntentId: paymentIntent.id,
-                userId: userId,
-              }),
-            });
-
-            if (confirmRes.ok) {
-              const confirmData = await confirmRes.json();
-              if (confirmData.success && onPointsUpdated) {
-                onPointsUpdated(confirmData.points);
-                // 購入履歴を再取得
-                if (onHistoryUpdated) {
-                  onHistoryUpdated();
-                }
-                onSuccess();
-                showSuccess(
-                  `購入後のポイント: ${formatPointAmount(confirmData.points)}ポイント`,
-                  { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
-                );
-              } else {
-                // 購入履歴を再取得
-                if (onHistoryUpdated) {
-                  onHistoryUpdated();
-                }
-                onSuccess();
-              }
-            } else {
-              // 購入履歴を再取得
-              if (onHistoryUpdated) {
-                onHistoryUpdated();
-              }
-              onSuccess();
-            }
-          } catch (confirmError) {
-            console.error("フォールバック処理エラー:", confirmError);
-            onSuccess();
-          }
         }
       } else {
         // リダイレクトが必要な場合（PayPayなど）
@@ -323,18 +299,16 @@ function CheckoutForm({
       }
     } catch (err) {
       console.error("決済エラー:", err);
-      setError(err instanceof Error ? err.message : "決済に失敗しました");
+      showError(
+        "決済処理に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
+        { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
+      );
       setLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="rounded-lg bg-red-100 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
       <PaymentElement
         options={{
           wallets: {
@@ -450,7 +424,7 @@ function PointsPageContent() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const { showError, showSuccess } = useErrorModal();
+  const { showError, showSuccess, showInfo } = useErrorModal();
   const historyLoaderRef = useRef<HTMLDivElement | null>(null);
 
   // 購入プランを取得（公開API）
@@ -584,6 +558,17 @@ function PointsPageContent() {
     const success = searchParams.get("success");
 
     if ((success === "true" || paymentIntentId) && profile && stripePromise) {
+      const successShownKey = paymentIntentId
+        ? `payment_intent_success_shown:${paymentIntentId}`
+        : "payment_intent_success_shown:success_param";
+      const shouldShowSuccess = () => {
+        if (typeof window === "undefined") return true;
+        return sessionStorage.getItem(successShownKey) !== "1";
+      };
+      const markSuccessShown = () => {
+        if (typeof window === "undefined") return;
+        sessionStorage.setItem(successShownKey, "1");
+      };
       // PayPay決済の場合、リダイレクト後に決済状態を確認
       const checkPaymentStatus = async () => {
         try {
@@ -678,6 +663,11 @@ function PointsPageContent() {
 
             if (finalPaymentIntent.status === "succeeded") {
               console.log("決済成功を確認。Webhookの処理を待機中...");
+              showInfo("決済処理中です。ポイント反映をお待ちください。", {
+                title: "ポイント購入",
+                redirectTo: null,
+                confirmLabel: "閉じる",
+              });
 
               // 決済成功 - Webhookの処理を待つため、ポーリングでポイント残高を確認
               // PayPayなどのリダイレクト型決済では、Webhookが呼び出されるまでに時間がかかる場合がある
@@ -706,10 +696,13 @@ function PointsPageContent() {
                     // 購入履歴を再取得
                     await fetchPurchaseHistory(profile.userId, 1);
                     setSelectedPlan(null);
-                    showSuccess(
-                      `購入後のポイント: ${formatPointAmount(data.points)}ポイント`,
-                      { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
-                    );
+                    if (shouldShowSuccess()) {
+                      showSuccess(
+                        `購入後のポイント: ${formatPointAmount(data.points)}ポイント`,
+                        { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
+                      );
+                      markSuccessShown();
+                    }
                     pointsUpdated = true;
 
                     // URLパラメータをクリア
@@ -724,53 +717,10 @@ function PointsPageContent() {
               }
 
               if (!pointsUpdated) {
-                // Webhookが処理されていない可能性がある
-                console.warn(
-                  "Webhookの処理が完了していない可能性があります。フォールバック処理を実行します。"
-                );
-
-                // フォールバック: 直接ポイントを付与
-                try {
-                  const confirmRes = await fetch("/api/points/confirm", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      paymentIntentId: finalPaymentIntent.id,
-                      userId: profile.userId,
-                    }),
-                  });
-
-                  if (confirmRes.ok) {
-                    const confirmData = await confirmRes.json();
-                    if (confirmData.success) {
-                      await updatePointBalances(profile.userId);
-                      // 購入履歴を再取得
-                      await fetchPurchaseHistory(profile.userId, 1);
-                      setSelectedPlan(null);
-                      showSuccess(
-                        `購入後のポイント: ${formatPointAmount(confirmData.points)}ポイント`,
-                        { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
-                      );
-
-                      // URLパラメータをクリア
-                      const url = new URL(window.location.href);
-                      url.searchParams.delete("success");
-                      url.searchParams.delete("payment_intent");
-                      url.searchParams.delete("payment_intent_client_secret");
-                      window.history.replaceState({}, "", url.toString());
-                      return;
-                    }
-                  }
-                } catch (confirmError) {
-                  console.error("フォールバック処理エラー:", confirmError);
-                }
-
-                // フォールバック処理も失敗した場合
+                console.warn("Webhookの処理が完了していない可能性があります。");
                 await updatePointBalances(profile.userId);
-                showError(
-                  "決済は成功しましたが、ポイントの反映に時間がかかっています。\nしばらくしてからページを更新してください。",
+                showInfo(
+                  "決済は完了していますが、ポイント反映に時間がかかっています。\nしばらくしてから再度ご確認ください。",
                   { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
                 );
                 setSelectedPlan(null);
@@ -787,6 +737,11 @@ function PointsPageContent() {
           } else if (success === "true") {
             // successパラメータのみの場合、ポイント残高を再取得
             console.log("successパラメータを確認。Webhookの処理を待機中...");
+            showInfo("決済処理中です。ポイント反映をお待ちください。", {
+              title: "ポイント購入",
+              redirectTo: null,
+              confirmLabel: "閉じる",
+            });
 
             const maxAttempts = 10; // 最大10回（10秒間）
             let pointsUpdated = false;
@@ -812,10 +767,13 @@ function PointsPageContent() {
                   // 購入履歴を再取得
                   await fetchPurchaseHistory(profile.userId, 1);
                   setSelectedPlan(null);
-                  showSuccess(
-                    `購入後のポイント: ${formatPointAmount(data.points)}ポイント`,
-                    { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
-                  );
+                  if (shouldShowSuccess()) {
+                    showSuccess(
+                      `購入後のポイント: ${formatPointAmount(data.points)}ポイント`,
+                      { title: "ポイント購入完了", redirectTo: null, confirmLabel: "閉じる" }
+                    );
+                    markSuccessShown();
+                  }
                   pointsUpdated = true;
 
                   const url = new URL(window.location.href);
@@ -831,8 +789,8 @@ function PointsPageContent() {
               // successパラメータのみの場合は、PaymentIntent IDが取得できないため、
               // ユーザーにページを更新してもらう
               await updatePointBalances(profile.userId);
-              showError(
-                "決済は成功しましたが、ポイントの反映に時間がかかっています。\nページを更新してください。",
+              showInfo(
+                "決済は完了していますが、ポイント反映に時間がかかっています。\nしばらくしてから再度ご確認ください。",
                 { title: "ポイント購入", redirectTo: null, confirmLabel: "閉じる" }
               );
               setSelectedPlan(null);

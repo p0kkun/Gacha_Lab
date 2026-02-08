@@ -10,7 +10,6 @@ type GachaItem = {
   description: string | null;
   imageUrl: string | null;
   usageType: string;
-  grantFreePoints: number;
   isActive: boolean;
   useStartAt: string | null;
   useEndAt: string | null;
@@ -41,7 +40,6 @@ export default function ItemsPage() {
     description: null,
     imageUrl: null,
     usageType: "IMAGE",
-    grantFreePoints: 0,
     isActive: true,
     useStartAt: null,
     useEndAt: null,

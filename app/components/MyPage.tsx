@@ -12,11 +12,6 @@ type MyPageProps = {
   profile: LiffProfile;
 };
 
-type UserStats = {
-  totalGachaCount: number;
-  rarityStats: Record<string, number>;
-};
-
 type PrizeTier = {
   code: string;
   label: string;
@@ -47,8 +42,8 @@ type RecentItem = {
 };
 
 export default function MyPage({ profile }: MyPageProps) {
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [referralCount, setReferralCount] = useState(0);
+  const [loadingReferral, setLoadingReferral] = useState(true);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const [pointBalances, setPointBalances] = useState<PointBalances | null>(
     null
@@ -59,7 +54,7 @@ export default function MyPage({ profile }: MyPageProps) {
 
   useEffect(() => {
     fetchPrizeTiers();
-    fetchUserStats();
+    fetchReferralCount();
     fetchPointBalances();
     fetchRecentItems();
   }, [profile.userId]);
@@ -82,17 +77,19 @@ export default function MyPage({ profile }: MyPageProps) {
     }
   };
 
-  const fetchUserStats = async () => {
+  const fetchReferralCount = async () => {
     try {
-      const res = await fetch(`/api/users/${profile.userId}/stats`);
+      const res = await fetch(
+        `/api/referral/history?userId=${profile.userId}&page=1&limit=1`
+      );
       if (res.ok) {
         const data = await res.json();
-        setStats(data);
+        setReferralCount(typeof data.count === "number" ? data.count : 0);
       }
     } catch (error) {
-      console.error("統計情報取得エラー:", error);
+      console.error("紹介人数取得エラー:", error);
     } finally {
-      setLoading(false);
+      setLoadingReferral(false);
     }
   };
 
@@ -120,7 +117,7 @@ export default function MyPage({ profile }: MyPageProps) {
   const fetchRecentItems = async () => {
     try {
       const res = await fetch(
-        `/api/users/${profile.userId}/items?page=1&limit=5`
+        `/api/users/${profile.userId}/items?page=1&limit=3`
       );
       if (res.ok) {
         const data = await res.json();
@@ -279,47 +276,16 @@ export default function MyPage({ profile }: MyPageProps) {
               <h2 className="mb-4 text-lg font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
                 統計情報
               </h2>
-              {loading ? (
+              {loadingReferral ? (
                 <div className="text-center" style={{ color: '#6b5a4a' }}>読み込み中...</div>
-              ) : stats ? (
-                <div className="space-y-4">
-                  <div className="rounded-lg p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}>
-                    <div className="mb-1 text-xs" style={{ color: '#6b5a4a' }}>
-                      ガチャ実行回数
-                    </div>
-                    <div className="text-3xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
-                      {stats.totalGachaCount.toLocaleString()} 回
-                    </div>
-                  </div>
-                  {Object.keys(stats.rarityStats).length > 0 && (
-                    <div>
-                      <div className="mb-3 text-sm font-semibold" style={{ color: '#4a3a2a' }}>
-                        レアリティ別獲得数
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        {Object.entries(stats.rarityStats)
-                          .sort(([, a], [, b]) => b - a)
-                          .map(([rarity, count]) => (
-                            <div
-                              key={rarity}
-                              className="rounded-lg p-3 shadow-md"
-                              style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}
-                            >
-                              <div className="mb-1 text-xs font-medium" style={{ color: '#6b5a4a' }}>
-                                {getRarityLabel(rarity)}
-                              </div>
-                              <div className="text-xl font-bold" style={{ color: '#4a3a2a' }}>
-                                {count.toLocaleString()}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
               ) : (
-                <div className="text-center" style={{ color: "#6b5a4a" }}>
-                  統計情報がありません
+                <div className="rounded-lg p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(255, 255, 255, 0.4)' }}>
+                  <div className="mb-1 text-xs" style={{ color: '#6b5a4a' }}>
+                    友だち紹介数
+                  </div>
+                  <div className="text-3xl font-bold drop-shadow-md" style={{ color: '#4a3a2a' }}>
+                    {referralCount.toLocaleString()} 人
+                  </div>
                 </div>
               )}
             </div>

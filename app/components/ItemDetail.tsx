@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/admin/ConfirmModal';
+import BottomNavigation from './BottomNavigation';
+import LegalFooterLinks from './LegalFooterLinks';
 import { useErrorModal } from '@/components/ErrorModalProvider';
 import { CardBackIcon, PhoneIcon } from '@/components/icons/AppIcons';
 
@@ -114,7 +116,27 @@ export default function ItemDetail({
       parts.push(text.substring(lastIndex));
     }
 
-    return <p className={className}>{parts.length > 0 ? parts : text}</p>;
+    // 改行(\n)を <br /> に変換
+    const withLineBreaks: React.ReactNode[] = [];
+    parts.forEach((part, index) => {
+      if (typeof part === 'string') {
+        const lines = part.split('\n');
+        lines.forEach((line, lineIndex) => {
+          if (lineIndex > 0) {
+            withLineBreaks.push(
+              <br key={`br-${index}-${lineIndex}`} />
+            );
+          }
+          if (line.length > 0) {
+            withLineBreaks.push(line);
+          }
+        });
+      } else {
+        withLineBreaks.push(part);
+      }
+    });
+
+    return <p className={className}>{withLineBreaks.length > 0 ? withLineBreaks : text}</p>;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -153,7 +175,19 @@ export default function ItemDetail({
 
       if (!res.ok) {
         const error = await res.json();
-        showError(error.error || 'アイテムの使用に失敗しました');
+        const errorMessage = error.error || "アイテムの使用に失敗しました";
+        if (errorMessage.includes("使用期限")) {
+          showError("アイテム使用期間が終了しました。", {
+            redirectTo: null,
+            confirmLabel: "OK",
+            onConfirm: () => window.location.reload(),
+          });
+          return;
+        }
+        showError(
+          "紹介リンクの生成に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
+          { redirectTo: null, confirmLabel: "閉じる" }
+        );
         return;
       }
 
@@ -161,7 +195,10 @@ export default function ItemDetail({
       onUse(); // 親コンポーネントに通知
     } catch (error) {
       console.error('アイテム使用エラー:', error);
-      showError('アイテムの使用に失敗しました');
+      showError(
+        "紹介リンクの生成に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
+        { redirectTo: null, confirmLabel: "閉じる" }
+      );
     } finally {
       setIsUsing(false);
     }
@@ -202,7 +239,7 @@ export default function ItemDetail({
 
     return (
       <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
-        <div className="mx-auto max-w-md">
+          <div className="mx-auto max-w-md">
           {/* 戻るボタン */}
           <div className="px-4 pt-4">
             <button
@@ -255,6 +292,7 @@ export default function ItemDetail({
                   <div style={{ color: '#5a4a3a' }}>{getItemDescription(userItem.item.name, userItem.item.rarity)}</div>
                 )}
               </div>
+            </div>
             </div>
 
             {/* IMAGEタイプ: 画像を表示、SHOW_TO_STAFFタイプ: 見せて使用画面 */}
@@ -335,28 +373,7 @@ export default function ItemDetail({
                         </div>
                       </div>
 
-                      {/* 提示方法 */}
-                      <div>
-                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          提示方法
-                        </div>
-                        <div className="text-sm" style={{ color: "#5a4a3a" }}>
-                          {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
-                        </div>
-                      </div>
-
-                      {/* 識別子（アイテムID） */}
-                      <div>
-                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          アイテムID
-                        </div>
-                        <div
-                          className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold"
-                          style={{ backgroundColor: "rgba(184, 159, 122, 0.3)", color: "#4a3a2a" }}
-                        >
-                          {String(userItem.id).padStart(8, '0')}
-                        </div>
-                      </div>
+                      {/* 提示方法・アイテムIDは非表示 */}
                     </div>
                   </>
                 )}
@@ -394,16 +411,20 @@ export default function ItemDetail({
                 </div>
               </>
             )}
-            </div>
           </div>
         </div>
+        <div className="mx-auto max-w-md px-4 pb-6">
+          <LegalFooterLinks />
+        </div>
+        <BottomNavigation currentPage="items" />
       </div>
     );
   }
 
   // アイテム詳細画面
   return (
-    <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
+    <>
+      <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
       <div className="mx-auto max-w-md">
         {/* 戻るボタン */}
         <div className="px-4 pt-4">
@@ -457,6 +478,7 @@ export default function ItemDetail({
               獲得日: {new Date(userItem.createdAt).toLocaleDateString('ja-JP')}
             </span>
           </div>
+          </div>
 
           <div className="mb-4">
             <h2 className="mb-2 text-xl font-bold" style={{ color: "#4a3a2a" }}>
@@ -478,6 +500,17 @@ export default function ItemDetail({
                   minute: '2-digit',
                 })}
               </div>
+              {userItem.item.useEndAt && (
+                <div className="mt-1 text-xs" style={{ color: "#5a4a3a" }}>
+                  使用終了日時: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -559,24 +592,18 @@ export default function ItemDetail({
                   opacity: isUsing ? 0.7 : 1,
                   border: "1px solid #b89f7a",
                 }}
-                onMouseEnter={(e) => {
-                  if (!isUsing) {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isUsing) {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
-                  }
-                }}
               >
                 {isUsing ? '処理中...' : '使用する'}
               </button>
             </div>
           )}
         </div>
+        <div className="px-4 pb-6">
+          <LegalFooterLinks />
+        </div>
       </div>
-    </div>
+        <BottomNavigation currentPage="items" />
+      </div>
 
       {/* 確認モーダル */}
       <ConfirmModal
@@ -596,6 +623,6 @@ export default function ItemDetail({
         onConfirm={handleUseConfirm}
         onCancel={() => setShowConfirmModal(false)}
       />
-    </div>
+    </>
   );
 }

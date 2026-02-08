@@ -11,7 +11,6 @@ type GachaItem = {
   description: string | null;
   imageUrl: string | null;
   usageType: string;
-  grantFreePoints: number;
   isActive: boolean;
   useStartAt: string | null;
   useEndAt: string | null;
@@ -369,27 +368,6 @@ export default function ItemEditPage() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                当選時付与無償ポイント
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={formData.grantFreePoints ?? 0}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    grantFreePoints: parseInt(e.target.value) || 0 })
-                }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
-                placeholder="0"
-              />
-              <p className="mt-1 text-xs text-black">
-                ガチャでこのアイテムが当選した際に付与する無償ポイント数（0の場合は付与しない）
-              </p>
             </div>
             {formData.usageType === "IMAGE" && (
               <div>

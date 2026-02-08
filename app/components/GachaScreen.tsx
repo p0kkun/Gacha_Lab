@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import GachaMenu from "./GachaMenu";
 import GachaContent from "./GachaContent";
 import PointIcon from "./PointIcon";
-import { formatExpiryText } from "@/lib/point-utils";
+import { formatExpiryText, formatPointAmount } from "@/lib/point-utils";
 import { GachaType } from "./GachaModal";
 import { useErrorModal } from "./ErrorModalProvider";
 
@@ -98,13 +98,8 @@ export default function GachaScreen({
     errorShownRef.current = true;
     showError("このガチャは現在開催しておりません。", {
       title: "ガチャを開始できません",
-      confirmLabel: "OK",
-      redirectTo: null,
-      onConfirm: () => {
-        if (typeof window !== "undefined") {
-          window.location.reload();
-        }
-      },
+      confirmLabel: "マイページへ",
+      redirectTo: "/?action=mypage",
     });
   }, [invalidRequestedGacha, showError]);
 
@@ -168,7 +163,7 @@ export default function GachaScreen({
   return (
     <div
       className="flex min-h-screen flex-col overflow-hidden"
-      style={{ backgroundColor: "rgba(233, 218, 203, 0.95)", touchAction: "none" }}
+      style={{ backgroundColor: "rgba(233, 218, 203, 0.95)", touchAction: "pan-y" }}
     >
       {/* 上部: ポイント表示とメニューボタン */}
       {pointBalances && (
@@ -202,17 +197,17 @@ export default function GachaScreen({
                   <div className="flex items-baseline gap-1.5">
                     <PointIcon size={14} className="h-3.5 w-3.5" active={true} />
                     <span className="text-lg font-bold text-yellow-800 truncate">
-                      {pointBalances.total.toLocaleString()}
+                      {formatPointAmount(pointBalances.total)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] font-medium text-yellow-600 flex items-center gap-0.5">
                       <PointIcon size={10} className="h-2.5 w-2.5" />
-                      有償: {pointBalances.paid.toLocaleString()}
+                      有償: {formatPointAmount(pointBalances.paid)}
                     </span>
                     <span className="text-[10px] font-medium text-green-600 flex items-center gap-0.5">
                       <PointIcon size={10} className="h-2.5 w-2.5" />
-                      無償: {pointBalances.free.toLocaleString()}
+                      無償: {formatPointAmount(pointBalances.free)}
                     </span>
                   </div>
                   {pointBalances.total > 0 &&
@@ -268,7 +263,7 @@ export default function GachaScreen({
       )}
 
       {/* メインコンテンツ */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <GachaContent
           selectedGacha={selectedGacha}
           userId={userId}

@@ -179,36 +179,63 @@ export default function PrizeListModal({
                   <div className="mb-4 text-sm font-semibold" style={{ color: '#4a3a2a' }}>
                     ■ {data.gachaTypeName}（販売期間：{formatPeriod(data.startAt, data.endAt)}）
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-gray-700">
-                      <thead>
-                        <tr className="border-b" style={{ borderColor: '#b89f7a' }}>
-                          <th className="py-2">賞品名</th>
-                          <th className="py-2">内容</th>
-                          <th className="py-2 text-right">提供割合</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y" style={{ borderColor: '#e0d1bd' }}>
-                        {data.tiers.map((tier) => (
-                          <tr key={tier.tierCode}>
-                            <td className="py-2 font-medium">{tier.tierLabel}</td>
-                            <td className="py-2">{getTierContent(tier)}</td>
-                            <td className="py-2 text-right font-semibold" style={{ color: '#8b6f47' }}>
-                              {formatProbability(tier.tierProbability)}
-                            </td>
-                          </tr>
-                        ))}
-                        <tr>
-                          <td className="py-2 font-semibold">合計</td>
-                          <td className="py-2"> </td>
-                          <td className="py-2 text-right font-semibold" style={{ color: '#8b6f47' }}>
-                            {formatProbability(
-                              data.tiers.reduce((sum, tier) => sum + tier.tierProbability, 0)
-                            )}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div className="space-y-5">
+                    {data.tiers.map((tier) => (
+                      <div
+                        key={tier.tierCode}
+                        className="overflow-hidden rounded-lg border"
+                        style={{ borderColor: "#d6c3a9", backgroundColor: "rgba(255,255,255,0.75)" }}
+                      >
+                        <div
+                          className="flex items-center justify-between px-3 py-2 text-sm font-semibold"
+                          style={{ backgroundColor: "rgba(214,195,169,0.55)", color: "#4a3a2a" }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold">{tier.tierLabel}</span>
+                            <span className="text-xs" style={{ color: "#6b5a4a" }}>
+                              等級確率: {formatProbability(tier.tierProbability)}
+                            </span>
+                          </div>
+                          <div className="text-xs" style={{ color: "#6b5a4a" }}>
+                            提供割合
+                          </div>
+                        </div>
+
+                        <div className="divide-y" style={{ borderColor: "#e4d6c4" }}>
+                          {tier.prizes.map((prize) => (
+                            <div
+                              key={`${tier.tierCode}-${prize.itemId}`}
+                              className="grid grid-cols-[1fr_auto] gap-3 px-3 py-3"
+                              style={{ backgroundColor: "rgba(255,255,255,0.7)" }}
+                            >
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-gray-800">
+                                  {prize.rewardType === "POINTS"
+                                    ? `ポイント付与: ${Number.isFinite(prize.points) ? prize.points.toLocaleString() : "0"}ポイント`
+                                    : prize.itemName}
+                                </div>
+                                {prize.itemDescription && (
+                                  <div className="mt-0.5 text-xs text-gray-600">
+                                    {prize.itemDescription}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right text-sm font-semibold" style={{ color: "#8b6f47" }}>
+                                {formatProbability(prize.probability)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: "#d6c3a9", backgroundColor: "rgba(255,255,255,0.7)", color: "#4a3a2a" }}>
+                      <span>合計</span>
+                      <span style={{ color: "#8b6f47" }}>
+                        {formatProbability(
+                          data.tiers.reduce((sum, tier) => sum + tier.tierProbability, 0)
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

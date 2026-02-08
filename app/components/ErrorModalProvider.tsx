@@ -33,6 +33,7 @@ type InfoModalState = {
 type ErrorModalContextValue = {
   showError: (message: string, options?: ModalOptions) => void;
   showSuccess: (message: string, options?: ModalOptions) => void;
+  showInfo: (message: string, options?: ModalOptions) => void;
 };
 
 const ErrorModalContext = createContext<ErrorModalContextValue | null>(null);
@@ -54,11 +55,18 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
 
   const showError = useCallback(
     (message: string, options?: ModalOptions) => {
+      const shouldRedirectToMypage =
+        options?.redirectTo === undefined &&
+        (message.includes("サーバーエラー") || message.includes("通信エラー"));
       setErrorState({
         isOpen: true,
         message,
         // undefined only -> default to home. null explicitly disables redirect.
-        redirectTo: options?.redirectTo === undefined ? "/" : options.redirectTo,
+        redirectTo: shouldRedirectToMypage
+          ? "/?action=mypage"
+          : options?.redirectTo === undefined
+          ? "/"
+          : options.redirectTo,
         confirmLabel: options?.confirmLabel,
         title: options?.title,
         onConfirm: options?.onConfirm,
@@ -75,6 +83,20 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
         title: options?.title ?? "完了",
         confirmLabel: options?.confirmLabel,
         variant: "success",
+        redirectTo: options?.redirectTo ?? null,
+      });
+    },
+    []
+  );
+
+  const showInfo = useCallback(
+    (message: string, options?: ModalOptions) => {
+      setInfoState({
+        isOpen: true,
+        message,
+        title: options?.title ?? "お知らせ",
+        confirmLabel: options?.confirmLabel,
+        variant: "info",
         redirectTo: options?.redirectTo ?? null,
       });
     },
@@ -102,7 +124,10 @@ export function ErrorModalProvider({ children }: { children: React.ReactNode }) 
     }
   }, [router, infoState.redirectTo]);
 
-  const value = useMemo(() => ({ showError, showSuccess }), [showError, showSuccess]);
+  const value = useMemo(
+    () => ({ showError, showSuccess, showInfo }),
+    [showError, showSuccess, showInfo]
+  );
 
   return (
     <ErrorModalContext.Provider value={value}>
