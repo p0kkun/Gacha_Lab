@@ -72,19 +72,19 @@ export default function PrizeListModal({
     }
   };
 
-  const formatDate = (value?: string | null): string => {
+  const formatDateTime = (value?: string | null): string => {
     if (!value) return '';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
     const pad = (num: number) => num.toString().padStart(2, '0');
     return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(
       date.getDate()
-    )}`;
+    )} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
   const formatPeriod = (start?: string | null, end?: string | null): string => {
-    const startText = formatDate(start);
-    const endText = formatDate(end);
+    const startText = formatDateTime(start);
+    const endText = formatDateTime(end);
     if (startText && endText) return `${startText}〜${endText}`;
     if (startText) return `${startText}〜`;
     if (endText) return `〜${endText}`;
@@ -177,7 +177,10 @@ export default function PrizeListModal({
 
                 <div className="rounded-lg border-2 p-4" style={{ borderColor: '#b89f7a', backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
                   <div className="mb-4 text-sm font-semibold" style={{ color: '#4a3a2a' }}>
-                    ■ {data.gachaTypeName}（販売期間：{formatPeriod(data.startAt, data.endAt)}）
+                    <div>■ {data.gachaTypeName}</div>
+                    <div className="mt-1 text-xs" style={{ color: '#6b5a4a' }}>
+                      {formatPeriod(data.startAt, data.endAt)}
+                    </div>
                   </div>
                   <div className="space-y-5">
                     {data.tiers.map((tier) => (
