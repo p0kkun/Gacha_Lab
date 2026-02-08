@@ -37,7 +37,7 @@ export default function MyItems({ userId }: MyItemsProps) {
   const [items, setItems] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<UserItem | null>(null);
-  const [showAll, setShowAll] = useState(true);
+  const [showAll, setShowAll] = useState(false);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -368,7 +368,12 @@ export default function MyItems({ userId }: MyItemsProps) {
               </div>
             ) : availableItems.length === 0 && !showAll ? (
               <div className="rounded-xl backdrop-blur-sm p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
-                <div style={{ color: '#5a4a3a' }}>表示するアイテムがありません</div>
+                <div style={{ color: '#5a4a3a' }}>使用可能なアイテムがありません。</div>
+                {notStartedItems.length > 0 && (
+                  <div className="mt-2 text-sm" style={{ color: '#6b5a4a' }}>
+                    開始前のアイテムがあります。すべて表示でご確認ください。
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -440,7 +445,7 @@ export default function MyItems({ userId }: MyItemsProps) {
           </div>
         </div>
       </div>
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4" style={{ backgroundColor: "#e9dacb" }}>
         <div
           className="rounded-xl px-3 py-2 text-xs shadow"
           style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}

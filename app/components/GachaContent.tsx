@@ -696,13 +696,13 @@ export default function GachaContent({
       {/* フッター（ガチャを引くボタン） - ポーカー風 */}
       {!showVideo && (
         <div
-          className="border-t px-6 py-4 pb-24 shadow-lg"
+          className="border-t px-6 py-4 pb-24"
           style={{ backgroundColor: "#e9dacb", borderColor: "#b89f7a" }}
         >
           <button
             onClick={handleDrawGachaClick}
             disabled={isDrawing}
-            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 hover:shadow-yellow-500/50 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
+            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-500 px-6 py-4 text-lg font-bold text-white transition-all duration-300 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-600 disabled:from-gray-600 disabled:via-gray-700 disabled:to-gray-600 disabled:opacity-50"
           >
             {/* 光るエフェクト */}
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>

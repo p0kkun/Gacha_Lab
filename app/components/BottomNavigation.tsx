@@ -60,9 +60,10 @@ type BottomNavigationProps = {
   currentPage?: string;
   hideSpacer?: boolean; // スペーサーを非表示にするか
   transparent?: boolean; // 背景を透明にするか（ガチャ画面用）
+  onNavigate?: (href: string) => boolean | void; // 遷移前フック（戻れない画面など）
 };
 
-export default function BottomNavigation({ currentPage, hideSpacer = false, transparent = false }: BottomNavigationProps) {
+export default function BottomNavigation({ currentPage, hideSpacer = false, transparent = false, onNavigate }: BottomNavigationProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const action = searchParams.get('action');
@@ -125,6 +126,13 @@ export default function BottomNavigation({ currentPage, hideSpacer = false, tran
                 onMouseLeave={(e) => {
                   if (!transparent && !active) {
                     e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+                onClick={(e) => {
+                  if (!onNavigate) return;
+                  const result = onNavigate(item.href);
+                  if (result === false) {
+                    e.preventDefault();
                   }
                 }}
                 aria-label={item.label}

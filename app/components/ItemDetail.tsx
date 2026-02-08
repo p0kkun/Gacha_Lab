@@ -45,6 +45,12 @@ export default function ItemDetail({
   const [isUsing, setIsUsing] = useState(false);
   const [showUsageScreen, setShowUsageScreen] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [leaveTarget, setLeaveTarget] = useState<
+    | { type: "back" }
+    | { type: "link"; href: string }
+    | null
+  >(null);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const { showError } = useErrorModal();
 
@@ -204,6 +210,24 @@ export default function ItemDetail({
     }
   };
 
+  const requestLeave = (target: { type: "back" } | { type: "link"; href: string }) => {
+    setLeaveTarget(target);
+    setShowLeaveConfirm(true);
+  };
+
+  const handleLeaveConfirm = () => {
+    setShowLeaveConfirm(false);
+    if (!leaveTarget) return;
+    if (leaveTarget.type === "back") {
+      setShowUsageScreen(false);
+      onBack();
+      return;
+    }
+    if (leaveTarget.type === "link") {
+      window.location.href = leaveTarget.href;
+    }
+  };
+
   // アイテムの状態を判定
   const getItemStatus = (): 'available' | 'used' | 'expired' | 'notStarted' => {
     if (userItem.usedAt) {
@@ -243,10 +267,7 @@ export default function ItemDetail({
           {/* 戻るボタン */}
           <div className="px-4 pt-4">
             <button
-              onClick={() => {
-                setShowUsageScreen(false);
-                onBack();
-              }}
+              onClick={() => requestLeave({ type: "back" })}
               className="transition-colors hover:opacity-80"
               style={{ color: '#6b5a4a' }}
             >
@@ -414,9 +435,23 @@ export default function ItemDetail({
           </div>
         </div>
         <div className="mx-auto max-w-md px-4 pb-6">
-          <LegalFooterLinks />
+          <div
+            className="rounded-xl px-3 py-2 text-xs shadow"
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+          >
+            <LegalFooterLinks
+              className="flex flex-wrap justify-center gap-3"
+              linkClassName="text-[#8b6f47] hover:underline"
+            />
+          </div>
         </div>
-        <BottomNavigation currentPage="items" />
+        <BottomNavigation
+          currentPage="items"
+          onNavigate={(href) => {
+            requestLeave({ type: "link", href });
+            return false;
+          }}
+        />
       </div>
     );
   }
@@ -599,7 +634,15 @@ export default function ItemDetail({
           )}
         </div>
         <div className="px-4 pb-6">
-          <LegalFooterLinks />
+          <div
+            className="rounded-xl px-3 py-2 text-xs shadow"
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+          >
+            <LegalFooterLinks
+              className="flex flex-wrap justify-center gap-3"
+              linkClassName="text-[#8b6f47] hover:underline"
+            />
+          </div>
         </div>
       </div>
         <BottomNavigation currentPage="items" />
@@ -622,6 +665,21 @@ export default function ItemDetail({
         variant="warning"
         onConfirm={handleUseConfirm}
         onCancel={() => setShowConfirmModal(false)}
+      />
+      <ConfirmModal
+        isOpen={showLeaveConfirm}
+        title="画面を離れますか？"
+        message={
+          <div>
+            <p className="mb-2">この画面を離れると、再度表示できません。</p>
+            <p className="text-sm text-gray-600">本当に離れますか？</p>
+          </div>
+        }
+        confirmText="離れる"
+        cancelText="キャンセル"
+        variant="warning"
+        onConfirm={handleLeaveConfirm}
+        onCancel={() => setShowLeaveConfirm(false)}
       />
     </>
   );
