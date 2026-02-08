@@ -77,6 +77,26 @@ function HomeContent() {
   }, [searchParams, profile]);
 
   useEffect(() => {
+    const fetchPointBalances = async (userId: string) => {
+      try {
+        const res = await fetch(`/api/points/balance?userId=${userId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPoints(data.points);
+          setPointBalances({
+            paid: data.paid || 0,
+            free: data.free || 0,
+            total: data.total || 0,
+            paidExpiresAt: data.paidExpiresAt,
+            freeExpiresAt: data.freeExpiresAt,
+            lastUpdated: data.lastUpdated,
+          });
+        }
+      } catch (error) {
+        console.error("ポイント残高取得エラー:", error);
+      }
+    };
+
     const initialize = async () => {
       try {
         // LIFF IDは環境変数から取得（後で設定）
@@ -151,25 +171,7 @@ function HomeContent() {
         }
 
         // ポイント残高を取得
-        try {
-          const res = await fetch(
-            `/api/points/balance?userId=${userProfile.userId}`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            setPoints(data.points);
-            setPointBalances({
-              paid: data.paid || 0,
-              free: data.free || 0,
-              total: data.total || 0,
-              paidExpiresAt: data.paidExpiresAt,
-              freeExpiresAt: data.freeExpiresAt,
-              lastUpdated: data.lastUpdated,
-            });
-          }
-        } catch (error) {
-          console.error("ポイント残高取得エラー:", error);
-        }
+        await fetchPointBalances(userProfile.userId);
       } catch (err) {
         setError(err instanceof Error ? err.message : "エラーが発生しました");
       } finally {
@@ -179,6 +181,31 @@ function HomeContent() {
 
     initialize();
   }, []);
+
+  useEffect(() => {
+    if (!profile?.userId) return;
+    if (activePage !== "home") return;
+    const fetchPointBalances = async () => {
+      try {
+        const res = await fetch(`/api/points/balance?userId=${profile.userId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPoints(data.points);
+          setPointBalances({
+            paid: data.paid || 0,
+            free: data.free || 0,
+            total: data.total || 0,
+            paidExpiresAt: data.paidExpiresAt,
+            freeExpiresAt: data.freeExpiresAt,
+            lastUpdated: data.lastUpdated,
+          });
+        }
+      } catch (error) {
+        console.error("ポイント残高取得エラー:", error);
+      }
+    };
+    fetchPointBalances();
+  }, [activePage, profile?.userId]);
 
   useEffect(() => {
     const checkPendingMessages = async () => {

@@ -35,38 +35,41 @@ export default function GachaScreen({
   const { showError } = useErrorModal();
   const errorShownRef = useRef(false);
 
+  const fetchGachaTypes = async () => {
+    const typesRes = await fetch("/api/gacha/types");
+    if (typesRes.ok) {
+      const typesData = await typesRes.json();
+      const availableTypes: GachaType[] = typesData.gachaTypes || [];
+      setGachaTypes(availableTypes);
+      if (availableTypes.length > 0) {
+        if (defaultGachaCode) {
+          const defaultGacha = availableTypes.find(
+            (g: GachaType) =>
+              g.id === defaultGachaCode || g.code === defaultGachaCode
+          );
+          if (defaultGacha) {
+            setSelectedGacha(defaultGacha);
+            setInvalidRequestedGacha(false);
+          } else {
+            setSelectedGacha(null);
+            setInvalidRequestedGacha(true);
+            setRedirectToMypage(false);
+          }
+        } else {
+          setSelectedGacha(availableTypes[0]);
+        }
+      } else {
+        setSelectedGacha(null);
+        setRedirectToMypage(true);
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // ガチャタイプ一覧を取得
-        const typesRes = await fetch("/api/gacha/types");
-        if (typesRes.ok) {
-          const typesData = await typesRes.json();
-          const availableTypes: GachaType[] = typesData.gachaTypes || [];
-          setGachaTypes(availableTypes);
-          if (availableTypes.length > 0) {
-            if (defaultGachaCode) {
-              const defaultGacha = availableTypes.find(
-                (g: GachaType) =>
-                  g.id === defaultGachaCode || g.code === defaultGachaCode
-              );
-              if (defaultGacha) {
-                setSelectedGacha(defaultGacha);
-                setInvalidRequestedGacha(false);
-              } else {
-                setSelectedGacha(null);
-                setInvalidRequestedGacha(true);
-                setRedirectToMypage(false);
-              }
-            } else {
-              setSelectedGacha(availableTypes[0]);
-            }
-          } else {
-            setSelectedGacha(null);
-            setRedirectToMypage(true);
-          }
-        }
+        await fetchGachaTypes();
 
         // ポイント残高を取得
         const pointsRes = await fetch(`/api/points/balance?userId=${userId}`);
@@ -92,6 +95,16 @@ export default function GachaScreen({
       fetchData();
     }
   }, [userId, defaultGachaCode]);
+
+  const handleOpenMenu = async () => {
+    try {
+      await fetchGachaTypes();
+    } catch (error) {
+      console.error("ガチャ一覧の再取得に失敗しました:", error);
+    } finally {
+      setIsMenuOpen(true);
+    }
+  };
 
   useEffect(() => {
     if (!invalidRequestedGacha || errorShownRef.current) return;
@@ -239,7 +252,7 @@ export default function GachaScreen({
             </Link>
             {/* ガチャ選択ボタン */}
             <button
-              onClick={() => setIsMenuOpen(true)}
+              onClick={handleOpenMenu}
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
               style={{
                 background: "linear-gradient(to right, #b89f7a, #a68f6a)",
