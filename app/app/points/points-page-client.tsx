@@ -573,7 +573,7 @@ function PointsPageContent() {
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [historyHasMore, historyLoading, historyPage, profile]);
+  }, [hasMoreHistory, historyLoading, historyPage, profile]);
 
   useEffect(() => {
     // 決済成功時の処理（PayPayなどのリダイレクト型決済の場合）
