@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import {
   initLiff,
@@ -10,17 +10,21 @@ import {
   type LiffProfile,
 } from "@/lib/liff";
 import GachaScreen from "@/components/GachaScreen";
+import { useErrorModal } from "@/components/ErrorModalProvider";
 
 function PickupContent() {
   const [profile, setProfile] = useState<LiffProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noPickup, setNoPickup] = useState(false);
   const [pickupGacha, setPickupGacha] = useState<{
     gachaId: string;
     code: string;
     name: string;
   } | null>(null);
   const router = useRouter();
+  const { showError } = useErrorModal();
+  const errorShownRef = useRef(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -71,18 +75,16 @@ function PickupContent() {
           const data = await res.json();
 
           if (data.gachaId === null) {
-            // ピックアップ未設定または無効な場合、一覧へ誘導
+            // ピックアップ未設定または無効な場合
             console.log("ピックアップガチャが設定されていません。理由:", data.reason);
-            // ホーム画面（ガチャ一覧）へリダイレクト
-            router.push("/");
+            setNoPickup(true);
             return;
           }
 
           setPickupGacha(data);
         } catch (error) {
           console.error("ピックアップガチャ取得エラー:", error);
-          // エラー時も一覧へ誘導
-          router.push("/");
+          setNoPickup(true);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "エラーが発生しました");
@@ -93,6 +95,16 @@ function PickupContent() {
 
     initialize();
   }, [router]);
+
+  useEffect(() => {
+    if (!noPickup || errorShownRef.current) return;
+    errorShownRef.current = true;
+    showError("利用可能なガチャがありません。", {
+      title: "ガチャを開始できません",
+      confirmLabel: "マイページへ",
+      redirectTo: "/?action=mypage",
+    });
+  }, [noPickup, showError]);
 
   if (loading) {
     return (
@@ -118,6 +130,15 @@ function PickupContent() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  if (noPickup) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ backgroundColor: "rgba(233, 218, 203, 0.95)" }}
+      />
     );
   }
 

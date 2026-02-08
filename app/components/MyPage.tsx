@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { LiffProfile } from "@/lib/liff";
 import BottomNavigation from "./BottomNavigation";
@@ -51,6 +51,9 @@ export default function MyPage({ profile }: MyPageProps) {
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [loadingPoints, setLoadingPoints] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [idCopied, setIdCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetchPrizeTiers();
@@ -138,6 +141,46 @@ export default function MyPage({ profile }: MyPageProps) {
     return "from-amber-100 to-amber-200";
   };
 
+  const clearCopyTimer = () => {
+    if (copyTimerRef.current) {
+      clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = null;
+    }
+  };
+
+  const handleCopyUserId = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(profile.userId);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = profile.userId;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setIdCopied(true);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setIdCopied(false), 1200);
+    } catch {
+      // noop: コピー失敗時は何もしない
+    }
+  };
+
+  const handleCopyPressStart = () => {
+    clearCopyTimer();
+    copyTimerRef.current = setTimeout(() => {
+      handleCopyUserId();
+    }, 600);
+  };
+
+  const handleCopyPressEnd = () => {
+    clearCopyTimer();
+  };
+
   return (
     <>
       <div className="min-h-screen" style={{ backgroundColor: '#e9dacb' }}>
@@ -180,8 +223,24 @@ export default function MyPage({ profile }: MyPageProps) {
                     <div className="mb-1 text-xl font-bold" style={{ color: '#4a3a2a' }}>
                       {profile.displayName || "ユーザー"}
                     </div>
-                    <div className="text-xs" style={{ color: '#6b5a4a' }}>
-                      ID: {profile.userId.substring(0, 8)}...
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className="text-xs break-all select-none"
+                        style={{ color: '#6b5a4a' }}
+                        onPointerDown={handleCopyPressStart}
+                        onPointerUp={handleCopyPressEnd}
+                        onPointerLeave={handleCopyPressEnd}
+                        onContextMenu={(e) => e.preventDefault()}
+                        role="button"
+                        aria-label="ユーザーIDを長押しでコピー"
+                      >
+                        ID: {profile.userId}
+                      </div>
+                      {idCopied && (
+                        <div className="text-[10px]" style={{ color: '#6b5a4a' }}>
+                          コピーしました
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

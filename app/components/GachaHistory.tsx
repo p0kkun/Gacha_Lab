@@ -5,6 +5,7 @@ import Link from 'next/link';
 import BottomNavigation from './BottomNavigation';
 import LegalFooterLinks from './LegalFooterLinks';
 import { CardBackIcon } from '@/components/icons/AppIcons';
+import PointIcon from './PointIcon';
 
 type GachaHistoryItem = {
   id: number;
@@ -209,8 +210,9 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                               {formatHistoryDateTime(history.createdAt)}
                             </span>
                             {history.pointsUsed > 0 && (
-                              <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-800">
-                                ${history.pointsUsed.toLocaleString()}
+                              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-800">
+                                <PointIcon size={12} className="h-3 w-3" />
+                                {history.pointsUsed.toLocaleString()}
                               </span>
                             )}
                           </div>
