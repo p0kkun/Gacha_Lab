@@ -432,12 +432,7 @@ export default function GachaContent({
   };
 
   return (
-    <div
-      className={`relative flex h-full min-h-0 flex-col ${
-        result ? "overflow-y-auto" : "overflow-hidden"
-      }`}
-      style={result ? { WebkitOverflowScrolling: "touch" } : undefined}
-    >
+    <div className="relative flex min-h-screen flex-col">
       {/* ヘッダー - ポーカーテーブル風 */}
       {!showVideo && (
         <div
@@ -742,7 +737,7 @@ export default function GachaContent({
           </div>
           <BottomNavigation
             currentPage="gacha"
-            hideSpacer={true}
+            hideSpacer={false}
             transparent={false}
           />
         </>
