@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // 期間の開始日と終了日を計算
     const now = new Date();
     let startDate: Date;
-    let endDate: Date = new Date(now);
+    const endDate: Date = new Date(now);
 
     if (period === 'day') {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       pointPurchaseLog: {
         findMany: (args: {
           where: any;
+          orderBy?: any;
           select?: any;
         }) => Promise<any[]>;
         groupBy?: any;
