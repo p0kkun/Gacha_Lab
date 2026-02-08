@@ -239,7 +239,6 @@ model PointHistory {
   description     String?
   historyTable    String?
   historyTableId  Int?
-  paymentMethod   String?
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 

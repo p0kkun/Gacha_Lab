@@ -45,6 +45,25 @@ const resolveStripeSucceededAt = async (
   return new Date(createdMs);
 };
 
+const resolveStripePaymentMethodType = async (
+  stripe: Stripe,
+  paymentIntent: Stripe.PaymentIntent
+): Promise<string | null> => {
+  const latestCharge = paymentIntent.latest_charge;
+  const chargeId =
+    typeof latestCharge === "string" ? latestCharge : latestCharge?.id;
+  if (chargeId) {
+    try {
+      const charge = await stripe.charges.retrieve(chargeId);
+      const type = charge?.payment_method_details?.type;
+      if (type) return type;
+    } catch (error) {
+      console.error("ポイント付与確認: 決済手段取得エラー:", error);
+    }
+  }
+  return paymentIntent.payment_method_types?.[0] ?? null;
+};
+
 /**
  * 決済成功時のポイント付与（Webhookのフォールバック）
  * POST /api/points/confirm
@@ -128,7 +147,7 @@ export async function POST(request: NextRequest) {
       10
     );
     const paymentMethodType =
-      paymentIntent.payment_method_types?.[0] ?? null;
+      await resolveStripePaymentMethodType(stripe, paymentIntent);
 
     if (points <= 0 || bonusFreePoints < 0) {
       await logError(

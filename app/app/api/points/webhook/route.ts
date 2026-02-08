@@ -37,6 +37,24 @@ const resolveStripeSucceededAt = async (
   return new Date(createdMs);
 };
 
+const resolveStripePaymentMethodType = async (
+  paymentIntent: Stripe.PaymentIntent
+): Promise<string | null> => {
+  const latestCharge = paymentIntent.latest_charge;
+  const chargeId =
+    typeof latestCharge === "string" ? latestCharge : latestCharge?.id;
+  if (chargeId) {
+    try {
+      const charge = await stripe.charges.retrieve(chargeId);
+      const type = charge?.payment_method_details?.type;
+      if (type) return type;
+    } catch (error) {
+      console.error("Webhook: 決済手段取得エラー:", error);
+    }
+  }
+  return paymentIntent.payment_method_types?.[0] ?? null;
+};
+
 /**
  * Stripe Webhook: ポイント購入の決済完了を処理
  * POST /api/points/webhook
@@ -108,7 +126,7 @@ export async function POST(request: NextRequest) {
           10
         );
         const paymentMethodType =
-          paymentIntent.payment_method_types?.[0] ?? null;
+          await resolveStripePaymentMethodType(paymentIntent);
 
         console.log("Webhook: ポイント購入処理開始:", {
           userId,

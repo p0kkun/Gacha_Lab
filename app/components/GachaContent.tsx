@@ -729,7 +729,7 @@ export default function GachaContent({
       {/* ボトムナビゲーション - 動画再生中は非表示 */}
       {!showVideo && (
         <>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-8">
             <div
               className="rounded-xl px-3 py-2 text-xs shadow"
               style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
