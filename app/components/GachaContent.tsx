@@ -152,9 +152,21 @@ export default function GachaContent({
     let lastIndex = 0;
     let match;
 
+    const pushWithLineBreaks = (value: string) => {
+      const lines = value.split(/\r\n|\n|\r/);
+      lines.forEach((line, index) => {
+        if (index > 0) {
+          parts.push(<br key={`br-${lastIndex}-${index}`} />);
+        }
+        if (line) {
+          parts.push(line);
+        }
+      });
+    };
+
     while ((match = linkRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
+        pushWithLineBreaks(text.substring(lastIndex, match.index));
       }
       parts.push(
         <a
@@ -171,7 +183,7 @@ export default function GachaContent({
     }
 
     if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
+      pushWithLineBreaks(text.substring(lastIndex));
     }
 
     return (
@@ -187,6 +199,16 @@ export default function GachaContent({
   const handleDrawGachaClick = () => {
     // 確認モーダルを表示
     setShowConfirmModal(true);
+  };
+
+  const formatDateTime = (value?: string | null): string => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (num: number) => num.toString().padStart(2, "0");
+    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(
+      date.getDate()
+    )} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
   const handleConfirmGacha = async () => {
@@ -566,6 +588,11 @@ export default function GachaContent({
               {selectedGacha.description && (
                 <div className="mb-4 w-full max-w-2xl">
                   {renderDescription(selectedGacha.description)}
+                </div>
+              )}
+              {(selectedGacha.startAt || selectedGacha.endAt) && (
+                <div className="mb-4 text-sm" style={{ color: "#6b5a4a" }}>
+                  {formatDateTime(selectedGacha.startAt)}〜{formatDateTime(selectedGacha.endAt)}
                 </div>
               )}
 

@@ -15,6 +15,8 @@ export type GachaType = {
   iconImageUrl?: string | null;
   pointCost?: number;
   mainPrizeLabel?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
 };
 
 export default function GachaModal({
