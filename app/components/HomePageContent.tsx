@@ -213,9 +213,6 @@ export default function HomePageContent({
               <h1 className="tre-box-title mb-2 text-3xl drop-shadow-md">
                 TRE BOX
               </h1>
-              <p className="mb-6 text-sm" style={{ color: '#6b5a4a' }}>
-                ポーカー風ガチャでアイテムを獲得しよう！
-              </p>
 
               {referralNotice && (
                 <div
