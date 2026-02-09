@@ -319,7 +319,7 @@ export default function AdminPage() {
               友だち紹介システムの特典ポイントを設定できます
             </p>
             <Link
-              href="/admin/free-gacha-settings"
+              href="/admin/gacha?tab=free-gacha-settings"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               紹介特典設定へ
@@ -337,7 +337,7 @@ export default function AdminPage() {
               ガチャ結果メッセージのテンプレートを管理できます
             </p>
             <Link
-              href="/admin/result-message-templates"
+              href="/admin/gacha?tab=result-message-templates"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               テンプレート管理へ
@@ -373,7 +373,7 @@ export default function AdminPage() {
               ガチャの等級（1等、2等など）を追加・編集できます
             </p>
             <Link
-              href="/admin/prize-tiers"
+              href="/admin/gacha?tab=prize-tiers"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               等級マスタ管理へ
@@ -409,7 +409,7 @@ export default function AdminPage() {
               ガチャアイテムの追加・編集ができます
             </p>
             <Link
-              href="/admin/items"
+              href="/admin/gacha?tab=items"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               アイテム設定へ
@@ -426,12 +426,12 @@ export default function AdminPage() {
             <p className="mb-4 text-xs text-gray-600 lg:text-sm">
               ガチャ演出動画のアップロード・管理ができます
             </p>
-            <a
+            <Link
               href="/admin/videos"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               動画管理へ
-            </a>
+            </Link>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">

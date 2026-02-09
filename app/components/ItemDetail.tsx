@@ -160,7 +160,29 @@ export default function ItemDetail({
 
       if (!res.ok) {
         const error = await res.json();
-        showError(error.error || 'アイテムの使用に失敗しました');
+        const errorMessage = error.error || 'アイテムの使用に失敗しました';
+        
+        // 使用期限切れの判定
+        if (
+          errorMessage.includes('使用期限') ||
+          errorMessage.includes('使用期間') ||
+          errorMessage.includes('期限が切れ') ||
+          errorMessage.includes('期間が終了')
+        ) {
+          showError('アイテム使用期間が終了しました。', {
+            redirectTo: null,
+            confirmLabel: 'OK',
+            onConfirm: () => {
+              window.location.reload();
+            },
+          });
+        } else {
+          // その他の使用処理失敗
+          showError('使用処理に失敗しました。\nお手数ですが、時間をおいて再度お試しください。', {
+            redirectTo: null,
+            confirmLabel: '閉じる',
+          });
+        }
         return;
       }
 
@@ -168,7 +190,10 @@ export default function ItemDetail({
       onUse(); // 親コンポーネントに通知
     } catch (error) {
       console.error('アイテム使用エラー:', error);
-      showError('アイテムの使用に失敗しました');
+      showError('使用処理に失敗しました。\nお手数ですが、時間をおいて再度お試しください。', {
+        redirectTo: null,
+        confirmLabel: '閉じる',
+      });
     } finally {
       setIsUsing(false);
     }

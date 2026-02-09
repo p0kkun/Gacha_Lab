@@ -190,7 +190,28 @@ export default function SimulatorPage() {
             <input
               type="number"
               value={iterations}
-              onChange={(e) => setIterations(parseInt(e.target.value) || 10000)}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 0;
+                const min = 100;
+                const max = 1000000;
+                if (value < min) {
+                  setIterations(min);
+                } else if (value > max) {
+                  setIterations(max);
+                } else {
+                  setIterations(value);
+                }
+              }}
+              onBlur={(e) => {
+                const value = parseInt(e.target.value) || 0;
+                const min = 100;
+                const max = 1000000;
+                if (value < min) {
+                  setIterations(min);
+                } else if (value > max) {
+                  setIterations(max);
+                }
+              }}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               min="100"
               max="1000000"
