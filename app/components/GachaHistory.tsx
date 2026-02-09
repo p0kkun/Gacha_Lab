@@ -162,7 +162,7 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
               <div className="rounded-xl backdrop-blur-sm p-8 text-center shadow-md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
                 <div className="mb-4" style={{ color: '#4a3a2a' }}>ガチャ履歴がありません</div>
                 <Link
-                  href="/?action=home"
+                  href="/?action=gacha"
                   className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold shadow-lg transition-all hover:shadow-xl"
                   style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                 >
