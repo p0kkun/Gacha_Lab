@@ -257,7 +257,7 @@ export default function GachaModal({
         )}
 
         {/* メインコンテンツ */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           <GachaContent
             selectedGacha={selectedGacha}
             userId={userId}

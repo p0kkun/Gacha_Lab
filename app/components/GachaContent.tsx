@@ -584,7 +584,7 @@ export default function GachaContent({
             </div>
 
             {/* 説明文 */}
-            <div className="flex flex-1 flex-col items-center justify-center px-4 py-4 sm:py-6">
+            <div className="flex flex-1 flex-col items-center px-4 py-4 sm:py-6">
               {selectedGacha.description && (
                 <div className="mb-4 w-full max-w-2xl">
                   {renderDescription(selectedGacha.description)}
@@ -592,7 +592,7 @@ export default function GachaContent({
               )}
               {(selectedGacha.startAt || selectedGacha.endAt) && (
                 <div className="mb-4 text-sm" style={{ color: "#6b5a4a" }}>
-                  {formatDateTime(selectedGacha.startAt)}〜{formatDateTime(selectedGacha.endAt)}
+                  開催期間: {formatDateTime(selectedGacha.startAt)} 〜 {formatDateTime(selectedGacha.endAt)}
                 </div>
               )}
 
