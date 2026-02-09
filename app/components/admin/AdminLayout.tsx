@@ -93,6 +93,7 @@ export default function AdminLayout({
   const isActiveItem = useMemo(() => {
     return (itemHref: string) => {
       if (pathname === itemHref) return true;
+      if (itemHref === "/admin") return false;
       if (pathname?.startsWith(itemHref + "/")) return true;
 
       // グループページの判定
