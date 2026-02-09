@@ -1049,7 +1049,7 @@ export default function VideosPage() {
             deleteConfirm.usageInfo &&
             (deleteConfirm.usageInfo.inDefaultSettings ||
               deleteConfirm.usageInfo.inGachaTypes.length > 0)
-              ? `この動画を削除しますか？\n\n⚠️ 警告：この動画は以下の設定で使用されています：\n${
+              ? `この動画を削除しますか？\n\n警告：この動画は以下の設定で使用されています：\n${
                   deleteConfirm.usageInfo.inDefaultSettings
                     ? "・デフォルト設定\n"
                     : ""

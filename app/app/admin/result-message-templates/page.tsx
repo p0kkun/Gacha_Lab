@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
+import { WarningIcon } from "@/components/admin/icons/AdminIcons";
 
 type Template = {
   id: number;
@@ -263,7 +264,10 @@ export default function ResultMessageTemplatesPage() {
                     {newRow.template.length <= 120 && ` (残り ${120 - newRow.template.length} 文字)`}
                   </p>
                   {newRow.template.length > 120 && (
-                    <span className="text-xs text-red-600">⚠️ 変数展開後は120文字以内に収まるようにしてください</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-red-600">
+                      <WarningIcon className="h-3 w-3" />
+                      <span>変数展開後は120文字以内に収まるようにしてください</span>
+                    </span>
                   )}
                 </div>
               </div>
@@ -404,7 +408,10 @@ export default function ResultMessageTemplatesPage() {
                               {(editRow.template ?? view.template ?? "").length <= 120 && ` (残り ${120 - (editRow.template ?? view.template ?? "").length} 文字)`}
                             </p>
                             {(editRow.template ?? view.template ?? "").length > 120 && (
-                              <p className="mt-1 text-xs text-red-600">⚠️ 変数展開後は120文字以内に収まるようにしてください</p>
+                              <p className="mt-1 inline-flex items-center gap-1 text-xs text-red-600">
+                                <WarningIcon className="h-3 w-3" />
+                                <span>変数展開後は120文字以内に収まるようにしてください</span>
+                              </p>
                             )}
                           </div>
                         )}

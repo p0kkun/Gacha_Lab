@@ -21,7 +21,7 @@ const variables = [
   {
     name: "{rarityEmoji}",
     description: "等級の絵文字",
-    example: "例: 「🏆」「🥈」",
+    example: "例: 「トロフィー」「銀メダル」",
   },
   {
     name: "{gachaTypeName}",
@@ -43,7 +43,7 @@ const variables = [
     name: "{grantedPointsMessage}",
     description:
       "ポイント付与メッセージ（ポイント付与がある場合のみ表示される文字列）",
-    example: "例: 「💰 無償ポイント 100ポイントが付与されました！」",
+    example: "例: 「無償ポイント 100ポイントが付与されました！」",
   },
 ];
 

@@ -3,6 +3,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
+import {
+  HelpIcon,
+  UsersIcon,
+  TagIcon,
+  MessagesIcon,
+  PointsIcon,
+  GachaIcon,
+  GiftIcon,
+  EditIcon,
+  SettingsIcon,
+  StarIcon,
+  PackageIcon,
+  VideoIcon,
+  StatsIcon,
+  TargetIcon,
+  ListIcon,
+} from "@/components/admin/icons/AdminIcons";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -152,7 +169,7 @@ export default function AdminPage() {
             href="/admin/help"
             className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
           >
-            <span>❓</span>
+            <HelpIcon className="h-4 w-4" />
             <span>ヘルプを見る</span>
           </Link>
         </div>
@@ -160,7 +177,7 @@ export default function AdminPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">👥</span>
+              <UsersIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 ユーザー管理
               </h2>
@@ -178,7 +195,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">🏷️</span>
+              <TagIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 タグ管理
               </h2>
@@ -196,7 +213,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">💬</span>
+              <MessagesIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 メッセージ配信
               </h2>
@@ -214,7 +231,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">💰</span>
+              <PointsIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 ポイント管理
               </h2>
@@ -232,7 +249,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">💳</span>
+              <PointsIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 ポイント購入プラン
               </h2>
@@ -250,7 +267,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">🎰</span>
+              <GachaIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 ガチャ設定
               </h2>
@@ -268,7 +285,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">🎁</span>
+              <GiftIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 紹介特典設定
               </h2>
@@ -286,7 +303,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">📝</span>
+              <EditIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 結果メッセージテンプレート
               </h2>
@@ -304,7 +321,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">⚙️</span>
+              <SettingsIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 システム
               </h2>
@@ -322,7 +339,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">⭐</span>
+              <StarIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 等級マスタ管理
               </h2>
@@ -340,7 +357,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">🎁</span>
+              <GiftIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 景品割当（ガチャ別）
               </h2>
@@ -358,7 +375,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">📦</span>
+              <PackageIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 アイテム設定
               </h2>
@@ -376,7 +393,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">🎬</span>
+              <VideoIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 動画管理
               </h2>
@@ -394,7 +411,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">📈</span>
+              <StatsIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 統計
               </h2>
@@ -412,7 +429,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">🎯</span>
+              <TargetIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 ガチャシミュレータ
               </h2>
@@ -430,7 +447,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">👥</span>
+              <UsersIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 友だち紹介履歴
               </h2>
@@ -448,7 +465,7 @@ export default function AdminPage() {
 
           <div className="rounded-lg bg-white p-4 shadow lg:p-6">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xl">📋</span>
+              <ListIcon className="h-5 w-5 text-gray-700" />
               <h2 className="text-base font-semibold text-gray-800 lg:text-lg">
                 操作履歴
               </h2>

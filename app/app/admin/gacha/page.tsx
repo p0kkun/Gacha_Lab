@@ -5,6 +5,14 @@ import { Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import TabbedPage from "@/components/admin/TabbedPage";
 import dynamic from "next/dynamic";
+import {
+  GachaIcon,
+  StarIcon,
+  GiftIcon,
+  EditIcon,
+  PackageIcon,
+  TargetIcon,
+} from "@/components/admin/icons/AdminIcons";
 
 // 各タブコンテンツを動的インポート（元のページをそのまま使用）
 const GachaTypesContent = dynamic(
@@ -50,49 +58,49 @@ function GachaContent() {
         {
           id: "gacha-types",
           label: "ガチャ設定",
-          icon: "🎰",
+          icon: <GachaIcon className="h-4 w-4" />,
           content: <GachaTypesContent />,
         },
         {
           id: "pickup",
           label: "ピックアップ設定",
-          icon: "⭐",
+          icon: <StarIcon className="h-4 w-4" />,
           content: <PickupSettingsContent />,
         },
         {
           id: "free-gacha-settings",
           label: "紹介特典設定",
-          icon: "🎁",
+          icon: <GiftIcon className="h-4 w-4" />,
           content: <FreeGachaSettingsContent />,
         },
         {
           id: "result-message-templates",
           label: "結果メッセージテンプレート",
-          icon: "📝",
+          icon: <EditIcon className="h-4 w-4" />,
           content: <ResultMessageTemplatesContent />,
         },
         {
           id: "prize-tiers",
           label: "等級マスタ管理",
-          icon: "⭐",
+          icon: <StarIcon className="h-4 w-4" />,
           content: <PrizeTiersContent />,
         },
         {
           id: "prize-assignments",
           label: "景品割当（ガチャ別）",
-          icon: "🎁",
+          icon: <GiftIcon className="h-4 w-4" />,
           content: <PrizeAssignmentsContent />,
         },
         {
           id: "items",
           label: "アイテム設定",
-          icon: "📦",
+          icon: <PackageIcon className="h-4 w-4" />,
           content: <ItemsContent />,
         },
         {
           id: "simulator",
           label: "ガチャシミュレータ",
-          icon: "🎯",
+          icon: <TargetIcon className="h-4 w-4" />,
           content: <SimulatorContent />,
         },
       ]}

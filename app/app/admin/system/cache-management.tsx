@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { CacheKeys } from "@/lib/cache-keys";
 import AdminIcon from "@/components/icons/AdminIcon";
+import { CheckIcon, CloseIcon } from "@/components/admin/icons/AdminIcons";
 
 type CacheKeyInfo = {
   key: string;
@@ -386,14 +387,14 @@ export default function CacheManagementContent() {
               <div className="mb-3 flex items-center gap-2">
                 {cacheValue.exists ? (
                   <>
-                    <span className="text-lg">✓</span>
+                    <CheckIcon className="h-5 w-5 text-green-700" />
                     <span className="text-sm font-semibold text-green-800">
                       キャッシュが見つかりました
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="text-lg">✗</span>
+                    <CloseIcon className="h-5 w-5 text-red-700" />
                     <span className="text-sm font-semibold text-red-800">
                       キャッシュが見つかりませんでした
                     </span>

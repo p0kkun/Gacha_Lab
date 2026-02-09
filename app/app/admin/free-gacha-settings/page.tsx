@@ -5,6 +5,7 @@ import { Button, Input, Select, Card, Alert } from "@/components/admin/ui";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import AdminIcon from "@/components/icons/AdminIcon";
 import { SpinnerIcon } from "@/components/icons/AppIcons";
+import { InfoIcon } from "@/components/admin/icons/AdminIcons";
 
 type FreeGachaSettings = {
   id: number;
@@ -200,7 +201,7 @@ export default function FreeGachaSettingsPage() {
       <Card className="mb-6 bg-blue-50 border-blue-200">
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-            <span>ℹ️</span>
+            <InfoIcon className="h-5 w-5" />
             これを設定した場合
           </h3>
           <div className="space-y-2 text-sm text-blue-800">

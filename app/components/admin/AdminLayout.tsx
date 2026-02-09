@@ -3,6 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
+import {
+  DashboardIcon,
+  GachaIcon,
+  VideoIcon,
+  PointsIcon,
+  UsersIcon,
+  MessagesIcon,
+  StatsIcon,
+  ShieldIcon,
+  SettingsIcon,
+  HelpIcon,
+} from "@/components/admin/icons/AdminIcons";
 
 export default function AdminLayout({
   children,
@@ -15,16 +27,56 @@ export default function AdminLayout({
   const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   const menuItems = [
-    { href: "/admin", label: "ダッシュボード", icon: "📊" },
-    { href: "/admin/gacha", label: "ガチャ管理", icon: "🎰" },
-    { href: "/admin/videos", label: "動画管理", icon: "🎬" },
-    { href: "/admin/points", label: "ポイント管理", icon: "💰" },
-    { href: "/admin/users", label: "ユーザー管理", icon: "👥" },
-    { href: "/admin/messages", label: "メッセージ配信", icon: "💬" },
-    { href: "/admin/statistics", label: "統計", icon: "📈" },
-    { href: "/admin/admin-management", label: "管理者管理", icon: "🛡️" },
-    { href: "/admin/system", label: "システム", icon: "⚙️" },
-    { href: "/admin/help", label: "ヘルプ", icon: "❓" },
+    {
+      href: "/admin",
+      label: "ダッシュボード",
+      icon: <DashboardIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/gacha",
+      label: "ガチャ管理",
+      icon: <GachaIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/videos",
+      label: "動画管理",
+      icon: <VideoIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/points",
+      label: "ポイント管理",
+      icon: <PointsIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/users",
+      label: "ユーザー管理",
+      icon: <UsersIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/messages",
+      label: "メッセージ配信",
+      icon: <MessagesIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/statistics",
+      label: "統計",
+      icon: <StatsIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/admin-management",
+      label: "管理者管理",
+      icon: <ShieldIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/system",
+      label: "システム",
+      icon: <SettingsIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/help",
+      label: "ヘルプ",
+      icon: <HelpIcon className="h-5 w-5" />,
+    },
   ];
 
   const isExcluded = (path: string) => {

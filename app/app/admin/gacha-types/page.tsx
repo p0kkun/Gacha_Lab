@@ -12,6 +12,7 @@ import {
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import Modal from "@/components/admin/ui/Modal";
 import MultiVideoPlayer from "@/components/MultiVideoPlayer";
+import { CheckIcon, WarningIcon } from "@/components/admin/icons/AdminIcons";
 
 type HandRank =
   | "ROYAL_FLUSH"
@@ -161,15 +162,15 @@ export default function GachaTypesPage() {
   const [linkData, setLinkData] = useState({ text: "", url: "" });
 
   // デフォルトメッセージテンプレート（未設定時の表示用）
-  const DEFAULT_MESSAGE_TEMPLATE = `🎰 ガチャ結果
+  const DEFAULT_MESSAGE_TEMPLATE = `ガチャ結果
 
 {rarityEmoji} {itemName}
 レアリティ: {rarity}
 ガチャタイプ: {gachaTypeName}
 
-🃏 ポーカーハンド: {handName}
+ポーカーハンド: {handName}
 
-おめでとうございます！🎉`;
+おめでとうございます！`;
 
   const toDatetimeLocalValue = (iso: string | null | undefined): string => {
     if (!iso) return "";
@@ -1361,8 +1362,9 @@ export default function GachaTypesPage() {
                             }}
                           />
                           <div className="flex-1">
-                            <div className="text-xs font-medium text-green-700">
-                              ✓ アイコン設定済み
+                            <div className="flex items-center gap-1 text-xs font-medium text-green-700">
+                              <CheckIcon className="h-4 w-4" />
+                              <span>アイコン設定済み</span>
                             </div>
                             <div className="mt-1 text-xs text-gray-500 break-all">
                               {gachaType.iconImageUrl}
@@ -1371,7 +1373,7 @@ export default function GachaTypesPage() {
                         </>
                       ) : (
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className="text-red-600">⚠️</span>
+                          <WarningIcon className="h-4 w-4 text-red-600" />
                           <span>アイコン未設定</span>
                         </div>
                       )}
@@ -1388,8 +1390,9 @@ export default function GachaTypesPage() {
                     <div className="space-y-1 text-xs text-gray-600">
                       {gachaType.useDefaultVideos !== false ? (
                         <div className="space-y-1">
-                          <div className="font-medium text-blue-700">
-                            ✓ デフォルト設定を使用
+                          <div className="flex items-center gap-1 font-medium text-blue-700">
+                            <CheckIcon className="h-4 w-4" />
+                            <span>デフォルト設定を使用</span>
                           </div>
                           {/* <div className="text-gray-500">
                             共通動画: デフォルト設定から取得
@@ -1419,9 +1422,11 @@ export default function GachaTypesPage() {
                           {(!gachaType.rarityVideoIds ||
                             Object.keys(gachaType.rarityVideoIds).length ===
                               0) && (
-                            <div className="mt-2 text-xs text-red-600">
-                              ⚠️
-                              動画が設定されていないため、ガチャを有効にできません
+                            <div className="mt-2 flex items-start gap-1 text-xs text-red-600">
+                              <WarningIcon className="mt-0.5 h-4 w-4" />
+                              <span>
+                                動画が設定されていないため、ガチャを有効にできません
+                              </span>
                             </div>
                           )}
                         </>
