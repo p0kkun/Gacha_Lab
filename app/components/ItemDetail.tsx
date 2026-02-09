@@ -313,13 +313,36 @@ export default function ItemDetail({
                       </div>
                     </div>
                     <div className="text-center text-sm" style={{ color: "#5a4a3a" }}>
-                      使用期限: {expirationDate.toLocaleString('ja-JP', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}まで
+                      {userItem.item.useStartAt && userItem.item.useEndAt ? (
+                        <>
+                          有効期限: {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })} から {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })} まで
+                        </>
+                      ) : (
+                        <>
+                          使用期限: {expirationDate.toLocaleString('ja-JP', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })}まで
+                        </>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -332,24 +355,54 @@ export default function ItemDetail({
                           有効期限
                         </div>
                         <div className="text-sm" style={{ color: "#5a4a3a" }}>
-                          {userItem.item.useStartAt ? (
+                          {userItem.item.useStartAt && userItem.item.useEndAt ? (
                             <>
                               {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
                                 year: 'numeric',
-                                month: 'short',
+                                month: 'long',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit',
-                              })} 〜
+                                second: '2-digit',
+                              })} から {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                              })} まで
                             </>
-                          ) : null}
-                          {expirationDate.toLocaleString('ja-JP', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          ) : userItem.item.useStartAt ? (
+                            <>
+                              {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                              })} から {expirationDate.toLocaleString('ja-JP', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                              })} まで
+                            </>
+                          ) : (
+                            <>
+                              {expirationDate.toLocaleString('ja-JP', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                              })}まで
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -379,13 +432,36 @@ export default function ItemDetail({
                   </div>
                 </div>
                 <div className="text-center text-sm" style={{ color: '#5a4a3a' }}>
-                  使用期限: {expirationDate.toLocaleString('ja-JP', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}まで
+                  {userItem.item.useStartAt && userItem.item.useEndAt ? (
+                    <>
+                      有効期限: {new Date(userItem.item.useStartAt).toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })} から {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })} まで
+                    </>
+                  ) : (
+                    <>
+                      使用期限: {expirationDate.toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}まで
+                    </>
+                  )}
                 </div>
               </>
             )}
