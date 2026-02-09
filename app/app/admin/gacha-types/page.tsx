@@ -10,6 +10,7 @@ import {
   PageHeader,
   Input } from "@/components/admin/ui";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
+import Modal from "@/components/admin/ui/Modal";
 import MultiVideoPlayer from "@/components/MultiVideoPlayer";
 
 type HandRank =
@@ -887,7 +888,7 @@ export default function GachaTypesPage() {
     }
   };
 
-  const calculateTotalWeight = (gachaType: GachaType): number => {
+  const calculateTotalWeight = (gachaType: Partial<GachaType>): number => {
     // 動的等級システム（prizeWeights）を優先
     if (
       gachaType.prizeWeights &&
@@ -1027,165 +1028,170 @@ export default function GachaTypesPage() {
         <div className="space-y-6">
           {/* 新規作成フォーム - 編集フォームと同じ構造を使用 */}
           {editingCode === "__NEW__" && (
-            <Card
+            <Modal
+              isOpen={editingCode === "__NEW__"}
               title="新規ガチャタイプ"
-              scrollable
-              maxHeight="calc(100vh - 300px)"
-              actions={
-                <div className="flex gap-2">
-                  <Button
-                    variant="success"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? "保存中..." : "保存"}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleCancel}>
-                    キャンセル
-                  </Button>
-                </div>
-              }
+              onClose={handleCancel}
             >
-              {/* 新規作成時の編集フォーム - 編集時と同じ構造 */}
-              {(() => {
-                const isEditing = true;
-                const displayData = formData;
-                return (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        ガチャの識別名 <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={displayData.code || ""}
-                        onChange={(e) =>
-                          setFormData({ ...formData, code: e.target.value })
-                        }
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                        placeholder="例: normal, premium"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        このガチャをシステム内で区別するための名前です。半角英数字とハイフン（-）、アンダースコア（_）のみ使用できます（例:
-                        normal-gacha）。一度設定すると後から変更できません。
-                      </p>
-                    </div>
+              <Card
+                title="新規ガチャタイプ"
+                scrollable
+                maxHeight="calc(100vh - 300px)"
+                actions={
+                  <div className="flex gap-2">
+                    <Button
+                      variant="success"
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? "保存中..." : "保存"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleCancel}>
+                      キャンセル
+                    </Button>
+                  </div>
+                }
+              >
+                {/* 新規作成時の編集フォーム - 編集時と同じ構造 */}
+                {(() => {
+                  const isEditing = true;
+                  const displayData = formData;
+                  return (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          ガチャの識別名 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={displayData.code || ""}
+                          onChange={(e) =>
+                            setFormData({ ...formData, code: e.target.value })
+                          }
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                          placeholder="例: normal, premium"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          このガチャをシステム内で区別するための名前です。半角英数字とハイフン（-）、アンダースコア（_）のみ使用できます（例:
+                          normal-gacha）。一度設定すると後から変更できません。
+                        </p>
+                      </div>
 
-                    {/* 以下、編集フォームと同じ構造をコピー */}
-                    {(() => {
-                      // 編集フォームと同じ内容を新規作成時にも表示
-                      const editFormContent = (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              名前
-                            </label>
-                            <input
-                              type="text"
-                              value={displayData.name || ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  name: e.target.value })
-                              }
-                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              説明
-                            </label>
-                            <div className="mt-1 flex gap-2">
-                              <textarea
-                                ref={(el) => setDescriptionTextareaRef(el)}
-                                value={displayData.description || ""}
+                      {/* 以下、編集フォームと同じ構造をコピー */}
+                      {(() => {
+                        // 編集フォームと同じ内容を新規作成時にも表示
+                        const editFormContent = (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                名前
+                              </label>
+                              <input
+                                type="text"
+                                value={displayData.name || ""}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
-                                    description: e.target.value })
+                                    name: e.target.value })
                                 }
-                                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                                rows={2}
+                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                               />
-                              <button
-                                type="button"
-                                onClick={() => setShowLinkModal(true)}
-                                className="h-fit rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                              >
-                                リンク挿入
-                              </button>
                             </div>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Markdown形式のリンク: [テキスト](URL)
-                            </p>
-                          </div>
 
-                          {/* アイコン画像アップロード */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                              アイコン画像
-                            </label>
-                            <div className="mt-2 space-y-2">
-                              {imagePreview && (
-                                <div className="relative inline-block">
-                                  <img
-                                    src={imagePreview}
-                                    alt="アイコン画像プレビュー"
-                                    className="h-24 w-24 rounded object-cover border border-gray-300"
-                                    onError={(e) => {
-                                      (
-                                        e.target as HTMLImageElement
-                                      ).style.display = "none";
-                                    }}
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      setFormData({
-                                        ...formData,
-                                        iconImageUrl: null });
-                                      setImagePreview(null);
-                                    }}
-                                    className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                    type="button"
-                                  >
-                                    <svg
-                                      className="h-4 w-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
-                              )}
-                              <div>
-                                <input
-                                  type="file"
-                                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      handleImageUpload(file);
-                                    }
-                                  }}
-                                  disabled={uploadingImage}
-                                  className="block w-full text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                説明
+                              </label>
+                              <div className="mt-1 flex gap-2">
+                                <textarea
+                                  ref={(el) => setDescriptionTextareaRef(el)}
+                                  value={displayData.description || ""}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      description: e.target.value })
+                                  }
+                                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                                  rows={2}
                                 />
-                                {uploadingImage && (
-                                  <p className="mt-1 text-sm text-gray-500">
-                                    アップロード中...
-                                  </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowLinkModal(true)}
+                                  className="h-fit rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                                >
+                                  リンク挿入
+                                </button>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Markdown形式のリンク: [テキスト](URL)
+                              </p>
+                            </div>
+
+                            {/* アイコン画像アップロード */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700">
+                                アイコン画像
+                              </label>
+                              <div className="mt-2 space-y-2">
+                                {imagePreview && (
+                                  <div className="relative inline-block">
+                                    <img
+                                      src={imagePreview}
+                                      alt="アイコン画像プレビュー"
+                                      className="h-24 w-24 rounded object-cover border border-gray-300"
+                                      onError={(e) => {
+                                        (
+                                          e.target as HTMLImageElement
+                                        ).style.display = "none";
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        setFormData({
+                                          ...formData,
+                                          iconImageUrl: null });
+                                        setImagePreview(null);
+                                      }}
+                                      className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                      type="button"
+                                    >
+                                      <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
                                 )}
+                                <div>
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        handleImageUpload(file);
+                                      }
+                                    }}
+                                    disabled={uploadingImage}
+                                    className="block w-full text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                                  />
+                                  {uploadingImage && (
+                                    <p className="mt-1 text-sm text-gray-500">
+                                      アップロード中...
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
                           <div>
                             <label className="flex items-center gap-2">
@@ -1277,13 +1283,18 @@ export default function GachaTypesPage() {
                 );
               })()}
             </Card>
+          </Modal>
           )}
           {gachaTypes.map((gachaType) => {
             const isEditing = editingCode === gachaType.code;
             const totalWeight = calculateTotalWeight(gachaType);
             const displayData = isEditing ? formData : gachaType;
 
-            return (
+            if (editingCode && !isEditing) {
+              return null;
+            }
+
+            const cardContent = (
               <Card
                 key={gachaType.id}
                 title={gachaType.name}
@@ -2165,6 +2176,17 @@ export default function GachaTypesPage() {
                         const otherWeights = getPrizeConfigs(displayData)
                           .filter((_, i) => i !== index)
                           .reduce((sum, c) => sum + (c.weight || 0), 0);
+                        const totalWeightAll = calculateTotalWeight(displayData);
+                        const safeTotalWeight =
+                          !Number.isFinite(totalWeightAll) || totalWeightAll <= 0
+                            ? 0
+                            : totalWeightAll;
+                        const currentWeight =
+                          typeof config.weight === "number" ? config.weight : 0;
+                        const currentRate =
+                          safeTotalWeight > 0
+                            ? (currentWeight / safeTotalWeight) * 100
+                            : 0;
 
                         return (
                           <div
@@ -2222,6 +2244,9 @@ export default function GachaTypesPage() {
                                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                                 min="0"
                               />
+                              <p className="text-xs text-gray-600">
+                                現在の確率: {currentRate.toFixed(1)}%
+                              </p>
                               <p className="text-xs text-gray-500">
                                 他の重みの合計: {otherWeights.toLocaleString()}
                               </p>
@@ -2336,6 +2361,21 @@ export default function GachaTypesPage() {
                   </div>
                 )}
               </Card>
+            );
+
+            if (!isEditing) {
+              return cardContent;
+            }
+
+            return (
+              <Modal
+                key={`edit-${gachaType.id}`}
+                isOpen={isEditing}
+                title={`ガチャ編集: ${gachaType.name}`}
+                onClose={handleCancel}
+              >
+                {cardContent}
+              </Modal>
             );
           })}
         </div>
