@@ -707,11 +707,11 @@ export default function GachaContent({
             {/* 光るエフェクト */}
             <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent opacity-20"></div>
 
-            <span className="relative z-10 flex items-center justify-center gap-2 flex-nowrap">
+            <span className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap">
               {isDrawing ? (
                 <>
-                  <SpinnerIcon className="h-5 w-5 text-white" />
-                  <span className="whitespace-nowrap">抽選中...</span>
+                  <SpinnerIcon className="h-5 w-5 text-white flex-shrink-0" />
+                  <span>抽選中...</span>
                 </>
               ) : (
                 <>
@@ -723,11 +723,10 @@ export default function GachaContent({
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
-                  <span className="whitespace-nowrap flex items-center gap-1 flex-nowrap">
+                  <span className="flex items-center gap-1">
                     ガチャを引く
                     {(selectedGacha.pointCost ?? 0) > 0 ? (
-                      <span className="hidden sm:inline flex items-center gap-0.5">
-                        {" "}
+                      <span className="hidden sm:inline-flex items-center gap-0.5">
                         (
                         <PointIcon
                           size={12}
