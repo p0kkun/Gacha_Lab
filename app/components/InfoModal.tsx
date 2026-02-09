@@ -23,7 +23,7 @@ export default function InfoModal({
   const getBorderColor = () => {
     switch (variant) {
       case "success":
-        return "#4ade80"; // green-400
+        return "#b89f7a"; // 他のモーダルと統一
       case "error":
         return "#f87171"; // red-400
       default:
@@ -34,7 +34,7 @@ export default function InfoModal({
   const getTitleColor = () => {
     switch (variant) {
       case "success":
-        return "#16a34a"; // green-600
+        return "#4a3a2a"; // 他のモーダルと統一
       case "error":
         return "#dc2626"; // red-600
       default:
@@ -58,11 +58,9 @@ export default function InfoModal({
           onClick={onConfirm}
           className="w-full rounded-lg px-6 py-3 font-semibold text-white shadow-lg transition-all"
           style={{
-            background: variant === "success" 
-              ? "linear-gradient(to right, #4ade80, #22c55e)"
-              : variant === "error"
+            background: variant === "error"
               ? "linear-gradient(to right, #f87171, #ef4444)"
-              : "linear-gradient(to right, #b89f7a, #a68f6a)",
+              : "linear-gradient(to right, #b89f7a, #a68f6a)", // successとinfoは同じスタイル
           }}
         >
           {confirmLabel}
