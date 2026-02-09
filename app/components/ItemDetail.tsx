@@ -621,6 +621,7 @@ export default function ItemDetail({
         </div>
       </div>
       </div>
+    </div>
       <BottomNavigation currentPage="items" />
 
       {/* 確認モーダル */}
