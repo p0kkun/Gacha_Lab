@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/components/admin/ConfirmModal';
 import { useErrorModal } from '@/components/ErrorModalProvider';
 import { CardBackIcon, PhoneIcon } from '@/components/icons/AppIcons';
+import BottomNavigation from '@/components/BottomNavigation';
+import LegalFooterLinks from '@/components/LegalFooterLinks';
 
 type UserItem = {
   id: number;
@@ -43,8 +46,12 @@ export default function ItemDetail({
   const [isUsing, setIsUsing] = useState(false);
   const [showUsageScreen, setShowUsageScreen] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+  const [pendingExitHref, setPendingExitHref] = useState<string | null>(null);
+  const [pendingExitAction, setPendingExitAction] = useState<'back' | 'nav' | null>(null);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const { showError } = useErrorModal();
+  const router = useRouter();
 
   useEffect(() => {
     fetchPrizeTiers();
@@ -189,6 +196,30 @@ export default function ItemDetail({
 
   const itemStatus = getItemStatus();
 
+  const requestExitConfirmation = (action: 'back' | 'nav', href?: string) => {
+    setPendingExitAction(action);
+    setPendingExitHref(href ?? null);
+    setShowExitConfirmModal(true);
+  };
+
+  const handleExitConfirm = () => {
+    setShowExitConfirmModal(false);
+    if (pendingExitAction === 'back') {
+      setShowUsageScreen(false);
+      onBack();
+      return;
+    }
+    if (pendingExitHref) {
+      router.push(pendingExitHref);
+    }
+  };
+
+  const handleExitCancel = () => {
+    setShowExitConfirmModal(false);
+    setPendingExitAction(null);
+    setPendingExitHref(null);
+  };
+
   // アイテム使用画面を表示
   if (showUsageScreen) {
     const expirationDate = userItem.item.useEndAt
@@ -206,10 +237,7 @@ export default function ItemDetail({
           {/* 戻るボタン */}
           <div className="px-4 pt-4">
             <button
-              onClick={() => {
-                setShowUsageScreen(false);
-                onBack();
-              }}
+              onClick={() => requestExitConfirmation('back')}
               className="transition-colors hover:opacity-80"
               style={{ color: '#6b5a4a' }}
             >
@@ -298,16 +326,6 @@ export default function ItemDetail({
                   <>
                     {/* 画像がない場合: 必須情報のみ表示 */}
                     <div className="space-y-3 rounded-xl p-4" style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}>
-                      {/* アイテム名 */}
-                      <div>
-                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          アイテム名
-                        </div>
-                        <div className="text-lg font-bold" style={{ color: "#4a3a2a" }}>
-                          {userItem.item.name}
-                        </div>
-                      </div>
-
                       {/* 有効期限 */}
                       <div>
                         <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
@@ -335,28 +353,6 @@ export default function ItemDetail({
                         </div>
                       </div>
 
-                      {/* 提示方法 */}
-                      <div>
-                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          提示方法
-                        </div>
-                        <div className="text-sm" style={{ color: "#5a4a3a" }}>
-                          {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
-                        </div>
-                      </div>
-
-                      {/* 識別子（アイテムID） */}
-                      <div>
-                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
-                          アイテムID
-                        </div>
-                        <div
-                          className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold"
-                          style={{ backgroundColor: "rgba(184, 159, 122, 0.3)", color: "#4a3a2a" }}
-                        >
-                          {String(userItem.id).padStart(8, '0')}
-                        </div>
-                      </div>
                     </div>
                   </>
                 )}
@@ -379,7 +375,6 @@ export default function ItemDetail({
                     アイテム情報
                   </div>
                   <div className="text-sm" style={{ color: '#5a4a3a' }}>
-                    <div>アイテム名: {userItem.item.name}</div>
                     <div>獲得日: {new Date(userItem.createdAt).toLocaleDateString('ja-JP')}</div>
                   </div>
                 </div>
@@ -395,16 +390,54 @@ export default function ItemDetail({
               </>
             )}
             </div>
+        </div>
+        <div className="px-4 pb-4" style={{ backgroundColor: '#e9dacb' }}>
+          <div
+            className="rounded-xl px-3 py-2 text-xs shadow"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
+          >
+            <LegalFooterLinks
+              className="flex flex-wrap justify-center gap-3"
+              linkClassName="text-[#8b6f47] hover:underline"
+              onLinkClick={(href) => {
+                requestExitConfirmation('nav', href);
+                return false;
+              }}
+            />
           </div>
         </div>
       </div>
-    );
+      <BottomNavigation
+        currentPage="items"
+        onNavigate={(href) => {
+          requestExitConfirmation('nav', href);
+          return false;
+        }}
+      />
+      <ConfirmModal
+        isOpen={showExitConfirmModal}
+        title="この画面を離れますか？"
+        message={
+          <div>
+            <p className="mb-2">この画面を離れると、戻ることはできません。</p>
+            <p className="text-sm text-gray-600">よろしいですか？</p>
+          </div>
+        }
+        confirmText="移動する"
+        cancelText="キャンセル"
+        variant="warning"
+        onConfirm={handleExitConfirm}
+        onCancel={handleExitCancel}
+      />
+    </div>
+  );
   }
 
   // アイテム詳細画面
   return (
-    <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
-      <div className="mx-auto max-w-md">
+    <>
+      <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
+        <div className="mx-auto max-w-md">
         {/* 戻るボタン */}
         <div className="px-4 pt-4">
           <button
@@ -576,7 +609,19 @@ export default function ItemDetail({
           )}
         </div>
       </div>
-    </div>
+      <div className="px-4 pb-4" style={{ backgroundColor: '#e9dacb' }}>
+        <div
+          className="rounded-xl px-3 py-2 text-xs shadow"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
+        >
+          <LegalFooterLinks
+            className="flex flex-wrap justify-center gap-3"
+            linkClassName="text-[#8b6f47] hover:underline"
+          />
+        </div>
+      </div>
+      </div>
+      <BottomNavigation currentPage="items" />
 
       {/* 確認モーダル */}
       <ConfirmModal
@@ -596,6 +641,6 @@ export default function ItemDetail({
         onConfirm={handleUseConfirm}
         onCancel={() => setShowConfirmModal(false)}
       />
-    </div>
+    </>
   );
 }
