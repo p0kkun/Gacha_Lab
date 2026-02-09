@@ -161,8 +161,8 @@ export async function sendGachaResultMessage(
         : "";
 
     // LINE Messaging APIの文字数制限に合わせてテキストを切り詰め
-    // title: 最大40文字、text: 最大120文字（改行を含む）、altText: 最大400文字
-    const MAX_TEXT_LENGTH = 120;
+    // title: 最大40文字、text: 最大140文字（改行を含む）、altText: 最大400文字
+    const MAX_TEXT_LENGTH = 140;
     const MAX_ALT_TEXT_LENGTH = 400;
 
     // デフォルトメッセージテンプレート（120文字以内に収まる短縮版）
@@ -262,6 +262,16 @@ export async function sendGachaResultMessage(
     return { success: true };
   } catch (error: unknown) {
     console.error("ガチャ結果メッセージ送信エラー:", error);
+    if (error && typeof error === "object" && "response" in error) {
+      try {
+        const response = (error as { response?: { data?: unknown } }).response;
+        if (response?.data) {
+          console.error("LINE API error details:", response.data);
+        }
+      } catch {
+        // no-op
+      }
+    }
 
     // エラーの種類に応じて処理
     if (error && typeof error === "object" && "statusCode" in error) {
