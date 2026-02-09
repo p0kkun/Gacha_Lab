@@ -22,8 +22,16 @@ import {
 } from "@/components/admin/icons/AdminIcons";
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // sessionStorageに認証情報がある場合は初期値をtrueに設定（ちらつき防止）
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("admin_authenticated") === "true" &&
+        sessionStorage.getItem("admin_token") !== null;
+    }
+    return false;
+  });
   const [mounted, setMounted] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,11 +40,21 @@ export default function AdminPage() {
   useEffect(() => {
     const initialize = async () => {
       setMounted(true);
+      setIsChecking(true);
       try {
+        const token = sessionStorage.getItem("admin_token");
+        if (!token) {
+          sessionStorage.removeItem("admin_authenticated");
+          sessionStorage.removeItem("admin_user_id");
+          sessionStorage.removeItem("admin_name");
+          setIsAuthenticated(false);
+          setIsChecking(false);
+          return;
+        }
         const res = await fetch("/api/admin/auth/me", {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("admin_token") ?? ""}`,
+            Authorization: `Bearer ${token}`,
           },
         });
         if (res.ok) {
@@ -47,15 +65,22 @@ export default function AdminPage() {
             sessionStorage.setItem("admin_name", data.adminUser.name ?? "");
           }
           setIsAuthenticated(true);
-          return;
+        } else {
+          sessionStorage.removeItem("admin_authenticated");
+          sessionStorage.removeItem("admin_user_id");
+          sessionStorage.removeItem("admin_name");
+          sessionStorage.removeItem("admin_token");
+          setIsAuthenticated(false);
         }
       } catch {
         // ignore
+        sessionStorage.removeItem("admin_authenticated");
+        sessionStorage.removeItem("admin_user_id");
+        sessionStorage.removeItem("admin_name");
+        setIsAuthenticated(false);
+      } finally {
+        setIsChecking(false);
       }
-      sessionStorage.removeItem("admin_authenticated");
-      sessionStorage.removeItem("admin_user_id");
-      sessionStorage.removeItem("admin_name");
-      setIsAuthenticated(false);
     };
 
     const timeoutId = setTimeout(() => {
@@ -90,8 +115,8 @@ export default function AdminPage() {
     }
   };
 
-  // マウント前はローディング状態を表示（ハイドレーションエラー回避）
-  if (!mounted) {
+  // マウント前または認証チェック中はローディング状態を表示（ハイドレーションエラー回避）
+  if (!mounted || isChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100">
         <div className="text-gray-500">読み込み中...</div>
