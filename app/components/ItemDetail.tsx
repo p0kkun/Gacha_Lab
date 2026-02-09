@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/admin/ConfirmModal';
-import BottomNavigation from './BottomNavigation';
-import LegalFooterLinks from './LegalFooterLinks';
 import { useErrorModal } from '@/components/ErrorModalProvider';
 import { CardBackIcon, PhoneIcon } from '@/components/icons/AppIcons';
 
@@ -45,12 +43,6 @@ export default function ItemDetail({
   const [isUsing, setIsUsing] = useState(false);
   const [showUsageScreen, setShowUsageScreen] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [leaveTarget, setLeaveTarget] = useState<
-    | { type: "back" }
-    | { type: "link"; href: string }
-    | null
-  >(null);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const { showError } = useErrorModal();
 
@@ -122,27 +114,7 @@ export default function ItemDetail({
       parts.push(text.substring(lastIndex));
     }
 
-    // 改行(\n)を <br /> に変換
-    const withLineBreaks: React.ReactNode[] = [];
-    parts.forEach((part, index) => {
-      if (typeof part === 'string') {
-        const lines = part.split('\n');
-        lines.forEach((line, lineIndex) => {
-          if (lineIndex > 0) {
-            withLineBreaks.push(
-              <br key={`br-${index}-${lineIndex}`} />
-            );
-          }
-          if (line.length > 0) {
-            withLineBreaks.push(line);
-          }
-        });
-      } else {
-        withLineBreaks.push(part);
-      }
-    });
-
-    return <p className={className}>{withLineBreaks.length > 0 ? withLineBreaks : text}</p>;
+    return <p className={className}>{parts.length > 0 ? parts : text}</p>;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -181,19 +153,7 @@ export default function ItemDetail({
 
       if (!res.ok) {
         const error = await res.json();
-        const errorMessage = error.error || "アイテムの使用に失敗しました";
-        if (errorMessage.includes("使用期限")) {
-          showError("アイテム使用期間が終了しました。", {
-            redirectTo: null,
-            confirmLabel: "OK",
-            onConfirm: () => window.location.reload(),
-          });
-          return;
-        }
-        showError(
-          "紹介リンクの生成に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
-          { redirectTo: null, confirmLabel: "閉じる" }
-        );
+        showError(error.error || 'アイテムの使用に失敗しました');
         return;
       }
 
@@ -201,30 +161,9 @@ export default function ItemDetail({
       onUse(); // 親コンポーネントに通知
     } catch (error) {
       console.error('アイテム使用エラー:', error);
-      showError(
-        "紹介リンクの生成に失敗しました。\nお手数ですが、時間をおいて再度お試しください。",
-        { redirectTo: null, confirmLabel: "閉じる" }
-      );
+      showError('アイテムの使用に失敗しました');
     } finally {
       setIsUsing(false);
-    }
-  };
-
-  const requestLeave = (target: { type: "back" } | { type: "link"; href: string }) => {
-    setLeaveTarget(target);
-    setShowLeaveConfirm(true);
-  };
-
-  const handleLeaveConfirm = () => {
-    setShowLeaveConfirm(false);
-    if (!leaveTarget) return;
-    if (leaveTarget.type === "back") {
-      setShowUsageScreen(false);
-      onBack();
-      return;
-    }
-    if (leaveTarget.type === "link") {
-      window.location.href = leaveTarget.href;
     }
   };
 
@@ -263,11 +202,14 @@ export default function ItemDetail({
 
     return (
       <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
-          <div className="mx-auto max-w-md">
+        <div className="mx-auto max-w-md">
           {/* 戻るボタン */}
           <div className="px-4 pt-4">
             <button
-              onClick={() => requestLeave({ type: "back" })}
+              onClick={() => {
+                setShowUsageScreen(false);
+                onBack();
+              }}
               className="transition-colors hover:opacity-80"
               style={{ color: '#6b5a4a' }}
             >
@@ -313,7 +255,6 @@ export default function ItemDetail({
                   <div style={{ color: '#5a4a3a' }}>{getItemDescription(userItem.item.name, userItem.item.rarity)}</div>
                 )}
               </div>
-            </div>
             </div>
 
             {/* IMAGEタイプ: 画像を表示、SHOW_TO_STAFFタイプ: 見せて使用画面 */}
@@ -394,7 +335,28 @@ export default function ItemDetail({
                         </div>
                       </div>
 
-                      {/* 提示方法・アイテムIDは非表示 */}
+                      {/* 提示方法 */}
+                      <div>
+                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                          提示方法
+                        </div>
+                        <div className="text-sm" style={{ color: "#5a4a3a" }}>
+                          {userItem.item.usageType === 'IMAGE' ? '画像を提示' : '店員に画面を見せる'}
+                        </div>
+                      </div>
+
+                      {/* 識別子（アイテムID） */}
+                      <div>
+                        <div className="mb-1 text-xs font-semibold" style={{ color: "#6b5a4a" }}>
+                          アイテムID
+                        </div>
+                        <div
+                          className="rounded-lg px-3 py-2 text-center font-mono text-sm font-bold"
+                          style={{ backgroundColor: "rgba(184, 159, 122, 0.3)", color: "#4a3a2a" }}
+                        >
+                          {String(userItem.id).padStart(8, '0')}
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}
@@ -432,34 +394,16 @@ export default function ItemDetail({
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
-        <div className="mx-auto max-w-md px-4 pb-6">
-          <div
-            className="rounded-xl px-3 py-2 text-xs shadow"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
-          >
-            <LegalFooterLinks
-              className="flex flex-wrap justify-center gap-3"
-              linkClassName="text-[#8b6f47] hover:underline"
-            />
-          </div>
-        </div>
-        <BottomNavigation
-          currentPage="items"
-          onNavigate={(href) => {
-            requestLeave({ type: "link", href });
-            return false;
-          }}
-        />
       </div>
     );
   }
 
   // アイテム詳細画面
   return (
-    <>
-      <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: "#e9dacb" }}>
       <div className="mx-auto max-w-md">
         {/* 戻るボタン */}
         <div className="px-4 pt-4">
@@ -513,7 +457,6 @@ export default function ItemDetail({
               獲得日: {new Date(userItem.createdAt).toLocaleDateString('ja-JP')}
             </span>
           </div>
-          </div>
 
           <div className="mb-4">
             <h2 className="mb-2 text-xl font-bold" style={{ color: "#4a3a2a" }}>
@@ -535,17 +478,6 @@ export default function ItemDetail({
                   minute: '2-digit',
                 })}
               </div>
-              {userItem.item.useEndAt && (
-                <div className="mt-1 text-xs" style={{ color: "#5a4a3a" }}>
-                  使用終了日時: {new Date(userItem.item.useEndAt).toLocaleString('ja-JP', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </div>
-              )}
             </div>
           )}
 
@@ -627,26 +559,24 @@ export default function ItemDetail({
                   opacity: isUsing ? 0.7 : 1,
                   border: "1px solid #b89f7a",
                 }}
+                onMouseEnter={(e) => {
+                  if (!isUsing) {
+                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isUsing) {
+                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
+                  }
+                }}
               >
                 {isUsing ? '処理中...' : '使用する'}
               </button>
             </div>
           )}
         </div>
-        <div className="px-4 pb-6">
-          <div
-            className="rounded-xl px-3 py-2 text-xs shadow"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
-          >
-            <LegalFooterLinks
-              className="flex flex-wrap justify-center gap-3"
-              linkClassName="text-[#8b6f47] hover:underline"
-            />
-          </div>
-        </div>
       </div>
-        <BottomNavigation currentPage="items" />
-      </div>
+    </div>
 
       {/* 確認モーダル */}
       <ConfirmModal
@@ -666,21 +596,6 @@ export default function ItemDetail({
         onConfirm={handleUseConfirm}
         onCancel={() => setShowConfirmModal(false)}
       />
-      <ConfirmModal
-        isOpen={showLeaveConfirm}
-        title="画面を離れますか？"
-        message={
-          <div>
-            <p className="mb-2">この画面を離れると、再度表示できません。</p>
-            <p className="text-sm text-gray-600">本当に離れますか？</p>
-          </div>
-        }
-        confirmText="離れる"
-        cancelText="キャンセル"
-        variant="warning"
-        onConfirm={handleLeaveConfirm}
-        onCancel={() => setShowLeaveConfirm(false)}
-      />
-    </>
+    </div>
   );
 }
