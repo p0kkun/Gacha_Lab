@@ -42,6 +42,7 @@ export const AdminActionType = {
   GACHA_PRIZE_ASSIGNMENT_CREATE: 'GACHA_PRIZE_ASSIGNMENT_CREATE',
   GACHA_PRIZE_ASSIGNMENT_UPDATE: 'GACHA_PRIZE_ASSIGNMENT_UPDATE',
   GACHA_PRIZE_ASSIGNMENT_DELETE: 'GACHA_PRIZE_ASSIGNMENT_DELETE',
+  PICKUP_GACHA_UPDATE: 'PICKUP_GACHA_UPDATE',
   FREE_GACHA_SETTINGS_UPDATE: 'FREE_GACHA_SETTINGS_UPDATE',
 
   // 動画関連
@@ -116,6 +117,7 @@ export const AdminActionTypeLabels: Record<AdminActionType, string> = {
   GACHA_PRIZE_ASSIGNMENT_CREATE: '景品割当作成',
   GACHA_PRIZE_ASSIGNMENT_UPDATE: '景品割当更新',
   GACHA_PRIZE_ASSIGNMENT_DELETE: '景品割当削除',
+  PICKUP_GACHA_UPDATE: 'ピックアップガチャ設定更新',
   FREE_GACHA_SETTINGS_UPDATE: '無料ガチャ設定更新',
   VIDEO_UPLOAD: '動画アップロード',
   VIDEO_UPDATE: '動画更新',
@@ -137,4 +139,3 @@ export const AdminActionTypeLabels: Record<AdminActionType, string> = {
   PRIZE_TIER_DELETE: '等級マスタ削除',
   OTHER: 'その他',
 };
-

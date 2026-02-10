@@ -260,11 +260,10 @@ export default function ItemDetail({
     const isImage = userItem.item.usageType === 'IMAGE';
 
     return (
-      <>
       <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
-        <div className="mx-auto max-w-md">
-          {/* 戻るボタン */}
-          <div className="px-4 pt-4">
+         <div className="mx-auto max-w-md">
+           {/* 戻るボタン */}
+           <div className="px-4 pt-4">
             <button
               onClick={() => requestExitConfirmation('back')}
               className="transition-colors hover:opacity-80"
@@ -496,46 +495,45 @@ export default function ItemDetail({
             )}
             </div>
         </div>
-        <div className="px-4 pb-4" style={{ backgroundColor: '#e9dacb' }}>
-          <div
-            className="rounded-xl px-3 py-2 text-xs shadow"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
-          >
-            <LegalFooterLinks
-              className="flex flex-wrap justify-center gap-3"
-              linkClassName="text-[#8b6f47] hover:underline"
-              onLinkClick={(href) => {
-                requestExitConfirmation('nav', href);
-                return false;
-              }}
-            />
-          </div>
-        </div>
+         <div className="px-4 pb-4" style={{ backgroundColor: '#e9dacb' }}>
+           <div
+             className="rounded-xl px-3 py-2 text-xs shadow"
+             style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
+           >
+             <LegalFooterLinks
+               className="flex flex-wrap justify-center gap-3"
+               linkClassName="text-[#8b6f47] hover:underline"
+               onLinkClick={(href) => {
+                 requestExitConfirmation('nav', href);
+                 return false;
+               }}
+             />
+           </div>
+         </div>
+        <BottomNavigation
+          currentPage="items"
+          onNavigate={(href) => {
+            requestExitConfirmation('nav', href);
+            return false;
+          }}
+        />
+        <ConfirmModal
+          isOpen={showExitConfirmModal}
+          title="この画面を離れますか？"
+          message={
+            <div>
+              <p className="mb-2">この画面を離れると、戻ることはできません。</p>
+              <p className="text-sm text-gray-600">よろしいですか？</p>
+            </div>
+          }
+          confirmText="移動する"
+          cancelText="キャンセル"
+          variant="warning"
+          onConfirm={handleExitConfirm}
+          onCancel={handleExitCancel}
+        />
       </div>
-      <BottomNavigation
-        currentPage="items"
-        onNavigate={(href) => {
-          requestExitConfirmation('nav', href);
-          return false;
-        }}
-      />
-      <ConfirmModal
-        isOpen={showExitConfirmModal}
-        title="この画面を離れますか？"
-        message={
-          <div>
-            <p className="mb-2">この画面を離れると、戻ることはできません。</p>
-            <p className="text-sm text-gray-600">よろしいですか？</p>
-          </div>
-        }
-        confirmText="移動する"
-        cancelText="キャンセル"
-        variant="warning"
-        onConfirm={handleExitConfirm}
-        onCancel={handleExitCancel}
-      />
-      </>
-  );
+    );
   }
 
   // アイテム詳細画面

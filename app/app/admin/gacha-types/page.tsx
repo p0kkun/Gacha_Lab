@@ -1803,7 +1803,7 @@ export default function GachaTypesPage() {
                       <p className="text-sm text-gray-600">
                         {formData.useDefaultVideos !== false
                           ? "デフォルト動画を使用します。個別設定する場合は「デフォルト動画を使用」のチェックを外してください。"
-                          : "各レアリティの当たり判定動画を設定してください。設定されていない場合はガチャを有効にできません。"}
+                          : "各レアリティの動画を設定してください。設定されていない場合はガチャを有効にできません。"}
                       </p>
 
                       {/* 共通動画選択（共通動画は使用しないためコメントアウト） */}
@@ -1878,7 +1878,7 @@ export default function GachaTypesPage() {
                       {formData.useDefaultVideos === false && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            等級別動画（後半部分・当たり判定）
+                            等級別動画
                             <span className="text-red-500">*</span>
                           </label>
                           <p className="mb-2 text-xs text-gray-500">
