@@ -34,7 +34,7 @@ export default function Referral({ userId }: { userId: string }) {
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { showError } = useErrorModal();
+  const { showError, showSuccess } = useErrorModal();
   const historyLoaderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -189,7 +189,11 @@ export default function Referral({ userId }: { userId: string }) {
 
     try {
       await navigator.clipboard.writeText(referralLink);
-      alert("紹介リンクをコピーしました！");
+      showSuccess("紹介リンクをコピーしました！", {
+        title: "コピー完了",
+        redirectTo: null,
+        confirmLabel: "閉じる",
+      });
     } catch (error) {
       console.error("コピーエラー:", error);
       showError("コピーに失敗しました", { redirectTo: null, confirmLabel: "OK" });

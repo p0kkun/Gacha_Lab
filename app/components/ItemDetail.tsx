@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ConfirmModal from '@/components/admin/ConfirmModal';
 import { useErrorModal } from '@/components/ErrorModalProvider';
@@ -52,6 +52,7 @@ export default function ItemDetail({
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
   const { showError } = useErrorModal();
   const router = useRouter();
+  const useButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     fetchPrizeTiers();
@@ -682,6 +683,7 @@ export default function ItemDetail({
           ) : (
             <div className="mt-4">
               <button
+                ref={useButtonRef}
                 onClick={handleUseClick}
                 disabled={isUsing}
                 className="w-full rounded-xl px-4 py-3 font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
@@ -741,7 +743,13 @@ export default function ItemDetail({
         cancelText="キャンセル"
         variant="warning"
         onConfirm={handleUseConfirm}
-        onCancel={() => setShowConfirmModal(false)}
+        onCancel={() => {
+          setShowConfirmModal(false);
+          // ボタンのフォーカスを解除
+          if (useButtonRef.current) {
+            useButtonRef.current.blur();
+          }
+        }}
       />
     </>
   );
