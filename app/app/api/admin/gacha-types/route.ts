@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
       tierWeights,
       tierOrder,
       useDefaultVideos,
+      rarityVideoIds,
     } = body;
 
     // バリデーション
@@ -181,6 +182,15 @@ export async function POST(request: NextRequest) {
         : tierOrder
       : null;
 
+    // rarityVideoIdsをパース（tierVideoAssetIdsとして保存）
+    // useDefaultVideosがtrueの場合はnull、falseの場合はrarityVideoIdsを使用
+    const parsedRarityVideoIds: Record<string, number[]> | null = 
+      useDefaultVideos === false && rarityVideoIds
+        ? typeof rarityVideoIds === "string"
+          ? JSON.parse(rarityVideoIds)
+          : rarityVideoIds
+        : null;
+
     // ガチャタイプを作成または更新 + tierWeights を同期（GachaTierWeightを正にする）
     const gachaType = await prisma.$transaction(async (tx) => {
       const saved = await tx.gachaType.upsert({
@@ -211,6 +221,7 @@ export async function POST(request: NextRequest) {
             : null,
           resultMessageTemplateId: normalizedTemplateId,
           useDefaultVideos: useDefaultVideos ?? true,
+          tierVideoAssetIds: parsedRarityVideoIds || null,
         },
         create: {
           code,
@@ -238,6 +249,7 @@ export async function POST(request: NextRequest) {
             : null,
           resultMessageTemplateId: normalizedTemplateId,
           useDefaultVideos: useDefaultVideos ?? true,
+          tierVideoAssetIds: parsedRarityVideoIds || null,
         },
       });
 

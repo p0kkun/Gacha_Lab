@@ -575,6 +575,18 @@ function PointsPageContent() {
       return;
     }
 
+    // 既に処理完了済みかどうかを確認
+    const processedKey = paymentIntentId
+      ? `payment_intent_processed:${paymentIntentId}`
+      : success === "true"
+      ? "payment_intent_processed:success_param"
+      : null;
+    
+    if (processedKey && typeof window !== "undefined" && sessionStorage.getItem(processedKey) === "1") {
+      // 既に処理完了済みの場合はスキップ
+      return;
+    }
+
     if ((success === "true" || paymentIntentId) && profile && stripePromise) {
       // 処理開始フラグを設定
       paymentCheckInProgressRef.current = true;
@@ -715,6 +727,11 @@ function PointsPageContent() {
                       setSelectedPlan(null);
                       setWaitingForWebhook(false); // Webhook待機モーダルを閉じる
                       
+                      // 処理完了を記録
+                      if (paymentIntentId && typeof window !== "undefined") {
+                        sessionStorage.setItem(`payment_intent_processed:${paymentIntentId}`, "1");
+                      }
+                      
                       // ポイント残高を取得して表示
                       const balanceRes = await fetch(
                         `/api/points/balance?userId=${profile.userId}`
@@ -812,6 +829,11 @@ function PointsPageContent() {
                     await fetchPurchaseHistory(profile.userId, 1);
                     setSelectedPlan(null);
                     setWaitingForWebhook(false); // Webhook待機モーダルを閉じる
+                    
+                    // 処理完了を記録
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("payment_intent_processed:success_param", "1");
+                    }
                     
                     // ポイント残高を取得して表示
                     const balanceRes = await fetch(

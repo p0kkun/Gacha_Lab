@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 
 type Prize = {
@@ -95,6 +95,52 @@ export default function PrizeListModal({
     if (!Number.isFinite(value)) return '0%';
     const digits = value < 1 ? 1 : 1;
     return `${value.toFixed(digits)}%`;
+  };
+
+  // MarkdownリンクをHTMLに変換
+  const renderDescription = (text: string | null): ReactNode => {
+    if (!text) return null;
+
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    const pushWithLineBreaks = (value: string) => {
+      const lines = value.split(/\r\n|\n|\r/);
+      lines.forEach((line, index) => {
+        if (index > 0) {
+          parts.push(<br key={`br-${lastIndex}-${index}`} />);
+        }
+        if (line) {
+          parts.push(line);
+        }
+      });
+    };
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        pushWithLineBreaks(text.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#b08a4a] underline hover:text-[#9a7538]"
+        >
+          {match[1]}
+        </a>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      pushWithLineBreaks(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
   };
 
   const getTierContent = (tier: TierInfo): string => {
@@ -219,7 +265,7 @@ export default function PrizeListModal({
                                 </div>
                                 {prize.itemDescription && (
                                   <div className="mt-0.5 text-xs text-gray-600">
-                                    {prize.itemDescription}
+                                    {renderDescription(prize.itemDescription)}
                                   </div>
                                 )}
                               </div>
