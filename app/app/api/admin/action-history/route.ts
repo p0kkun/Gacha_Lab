@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdminAuth } from '@/lib/admin-auth';
 import { AdminActionType } from '@/lib/admin-action-types';
+import type { Prisma } from '@prisma/client';
 
 /**
  * 管理画面操作履歴を取得
@@ -29,18 +30,11 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // フィルタ条件を構築
-    const where: {
-      actionType?: AdminActionType;
-      adminUserId?: number;
-      actionTargetId?: string;
-      createdAt?: {
-        gte?: Date;
-        lte?: Date;
-      };
-    } = {};
+    const where: Prisma.AdminAuditLogWhereInput = {};
 
     if (actionType && (Object.values(AdminActionType) as string[]).includes(actionType)) {
-      where.actionType = actionType as AdminActionType;
+      // Keep UI filters restricted to known action types, while the DB column is free-form.
+      where.actionType = actionType;
     }
 
     if (adminUserId) {

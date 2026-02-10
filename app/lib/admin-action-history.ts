@@ -6,7 +6,9 @@ import { AdminActionType } from './admin-action-types';
  * 管理画面操作履歴を記録
  */
 export async function recordAdminAction(params: {
-  actionType: AdminActionType;
+  // Accept free-form strings to match DB column (TEXT) and avoid redeploying/migrating
+  // for every new action type.
+  actionType: string;
   adminUserId: string;
   adminName: string;
   targetUserId?: string;
