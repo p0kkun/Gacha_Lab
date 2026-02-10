@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { logError } from '@/lib/error-logger';
 import { recordAdminAction } from '@/lib/admin-action-history';
 import { AdminActionType } from '@/lib/admin-action-types';
-import { verifyAdminAuth } from '@/lib/admin-auth';
+import { getAdminAuthContext, verifyAdminAuth } from '@/lib/admin-auth';
 import type { Prisma } from '@prisma/client';
 
 /**
@@ -57,12 +57,18 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
+    const authContext = await getAdminAuthContext(request);
+    if (!authContext) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: authContext.adminUserId },
+      select: { id: true, name: true, email: true },
+    });
+
     const body = await request.json();
     const { pickupGachaId } = body;
-
-    // 管理者認証チェック（簡易実装）
-    const adminUserId = request.headers.get('x-admin-user-id') || 'admin';
-    const adminName = request.headers.get('x-admin-name') || '管理者';
 
     // ガチャタイプの存在確認
     if (pickupGachaId !== null) {
@@ -157,9 +163,9 @@ export async function PUT(request: NextRequest) {
 
     // 操作履歴を記録
     await recordAdminAction({
-      actionType: AdminActionType.GACHA_TYPE_UPDATE,
-      adminUserId,
-      adminName,
+      actionType: AdminActionType.PICKUP_GACHA_UPDATE,
+      adminUserId: String(adminUser?.id ?? authContext.adminUserId),
+      adminName: adminUser?.name ?? adminUser?.email ?? String(authContext.adminUserId),
       description: `ピックアップガチャを${pickupGachaId ? `設定: ${appSettings.pickupGacha?.name || ''}` : '解除'}しました`,
       metadata: {
         pickupGachaId,
