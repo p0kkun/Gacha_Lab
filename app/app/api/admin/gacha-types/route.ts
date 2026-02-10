@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
             : null,
           resultMessageTemplateId: normalizedTemplateId,
           useDefaultVideos: useDefaultVideos ?? true,
-          tierVideoAssetIds: parsedRarityVideoIds || null,
+          tierVideoAssetIds: parsedRarityVideoIds as any,
         },
         create: {
           code,
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
             : null,
           resultMessageTemplateId: normalizedTemplateId,
           useDefaultVideos: useDefaultVideos ?? true,
-          tierVideoAssetIds: parsedRarityVideoIds || null,
+          tierVideoAssetIds: parsedRarityVideoIds as any,
         },
       });
 
