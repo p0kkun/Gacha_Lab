@@ -93,22 +93,10 @@ function replaceMessageTemplate(
 function truncateTextForLineButtonsText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
 
-  // Keep newlines if possible; if not, collapse to a single line and truncate.
-  const lines = text.split("\n");
-  let result = "";
-  for (const line of lines) {
-    const next = result ? `${result}\n${line}` : line;
-    if (next.length <= maxLength) {
-      result = next;
-      continue;
-    }
-
-    const singleLine = result ? `${result} ${line}` : line;
-    if (singleLine.length <= maxLength) return singleLine;
-    return singleLine.substring(0, Math.max(0, maxLength - 3)) + "...";
-  }
-
-  return result.substring(0, Math.max(0, maxLength - 3)) + "...";
+  // 改行を含む場合でも確実に制限内に収める
+  // 改行を保持しつつ、文字列全体を切り詰める
+  // 改行文字も1文字としてカウントされるため、単純に切り詰める
+  return text.substring(0, Math.max(0, maxLength - 3)) + "...";
 }
 
 function truncateTextSingleLine(text: string, maxLength: number): string {
@@ -232,12 +220,12 @@ export async function sendGachaResultMessage(
         : "";
 
     // LINE Messaging APIの文字数制限に合わせてテキストを切り詰め
-    // title: 最大40文字、text: 最大120文字（改行を含む）、altText: 最大400文字
-    // 安全マージンを考慮して110文字に設定
-    const MAX_TEXT_LENGTH = 110;
+    // title: 最大40文字、text: 最大60文字（改行を含む）、altText: 最大400文字
+    // 安全マージンを考慮して55文字に設定
+    const MAX_TEXT_LENGTH = 55;
     const MAX_ALT_TEXT_LENGTH = 400;
 
-    // デフォルトメッセージテンプレート（120文字以内に収まる短縮版）
+    // デフォルトメッセージテンプレート（60文字以内に収まる短縮版）
     const DEFAULT_MESSAGE_TEMPLATE = `{rarityEmoji} {itemName}
 レアリティ: {rarity}
 {grantedPointsMessage}`;
