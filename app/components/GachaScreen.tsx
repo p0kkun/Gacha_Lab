@@ -34,29 +34,60 @@ export default function GachaScreen({
   const router = useRouter();
   const { showError } = useErrorModal();
   const errorShownRef = useRef(false);
+  const hasManualSelectionRef = useRef(false);
+  const lastDefaultCodeRef = useRef<string | undefined>(defaultGachaCode);
 
-  const fetchGachaTypes = async () => {
+  // When defaultGachaCode changes (URL navigation), treat it as a new "requested" selection.
+  // Otherwise, keep user's manual selection even if we refetch the gacha list.
+  if (lastDefaultCodeRef.current !== defaultGachaCode) {
+    lastDefaultCodeRef.current = defaultGachaCode;
+    hasManualSelectionRef.current = false;
+  }
+  const effectiveRequestedGachaCode = hasManualSelectionRef.current
+    ? undefined
+    : defaultGachaCode;
+
+  const fetchGachaTypes = async (options?: { preserveSelected?: boolean }) => {
     const typesRes = await fetch("/api/gacha/types");
     if (typesRes.ok) {
       const typesData = await typesRes.json();
       const availableTypes: GachaType[] = typesData.gachaTypes || [];
       setGachaTypes(availableTypes);
       if (availableTypes.length > 0) {
-        if (defaultGachaCode) {
+        if (effectiveRequestedGachaCode) {
           const defaultGacha = availableTypes.find(
             (g: GachaType) =>
-              g.id === defaultGachaCode || g.code === defaultGachaCode
+              g.id === effectiveRequestedGachaCode ||
+              g.code === effectiveRequestedGachaCode
           );
           if (defaultGacha) {
             setSelectedGacha(defaultGacha);
             setInvalidRequestedGacha(false);
+            setRedirectToMypage(false);
           } else {
             setSelectedGacha(null);
             setInvalidRequestedGacha(true);
             setRedirectToMypage(false);
           }
         } else {
+          // When just refreshing the list (e.g. opening the menu), keep the current selection
+          // if it still exists to avoid "behind-the-menu" gacha switching.
+          if (options?.preserveSelected && selectedGacha) {
+            const stillSelected = availableTypes.find(
+              (g: GachaType) =>
+                g.id === selectedGacha.id || g.code === selectedGacha.code
+            );
+            if (stillSelected) {
+              setSelectedGacha(stillSelected);
+              setInvalidRequestedGacha(false);
+              setRedirectToMypage(false);
+              return;
+            }
+          }
+
           setSelectedGacha(availableTypes[0]);
+          setInvalidRequestedGacha(false);
+          setRedirectToMypage(false);
         }
       } else {
         setSelectedGacha(null);
@@ -98,7 +129,7 @@ export default function GachaScreen({
 
   const handleOpenMenu = async () => {
     try {
-      await fetchGachaTypes();
+      await fetchGachaTypes({ preserveSelected: true });
     } catch (error) {
       console.error("ガチャ一覧の再取得に失敗しました:", error);
     } finally {
@@ -169,6 +200,7 @@ export default function GachaScreen({
   }
 
   const handleGachaSelect = (gacha: GachaType) => {
+    hasManualSelectionRef.current = true;
     setSelectedGacha(gacha);
     setIsMenuOpen(false); // 選択したらメニューを閉じる
   };
