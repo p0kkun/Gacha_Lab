@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       orderBy = { createdAt: sortOrder === "asc" ? "asc" : "desc" };
     }
 
-    const gachaTypes = await prisma.gachaType.findMany({
+    const gachaTypesRaw = await prisma.gachaType.findMany({
       where,
       orderBy,
       include: {
@@ -79,6 +79,13 @@ export async function GET(request: NextRequest) {
         },
       },
     } as any);
+
+    // admin UI compatibility: this page historically used `rarityVideoIds`
+    // but the DB/prisma field name is `tierVideoAssetIds`.
+    const gachaTypes = gachaTypesRaw.map((gt) => ({
+      ...gt,
+      rarityVideoIds: (gt as any).tierVideoAssetIds ?? null,
+    }));
 
     return NextResponse.json({ gachaTypes });
   } catch (error) {

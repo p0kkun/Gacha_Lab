@@ -140,7 +140,9 @@ export default function ItemDetail({
     return name;
   };
 
-  const handleUseClick = () => {
+  const handleUseClick = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // LIFF/Safari だと focus/hover が残って「押下済み」っぽく見えることがあるので外す
+    e?.currentTarget.blur();
     // 確認モーダルを表示
     setShowConfirmModal(true);
   };
@@ -258,6 +260,7 @@ export default function ItemDetail({
     const isImage = userItem.item.usageType === 'IMAGE';
 
     return (
+      <>
       <div className="min-h-screen pb-20" style={{ backgroundColor: '#e9dacb' }}>
         <div className="mx-auto max-w-md">
           {/* 戻るボタン */}
@@ -531,7 +534,7 @@ export default function ItemDetail({
         onConfirm={handleExitConfirm}
         onCancel={handleExitCancel}
       />
-    </div>
+      </>
   );
   }
 
@@ -694,16 +697,6 @@ export default function ItemDetail({
                   color: "#4a3a2a",
                   opacity: isUsing ? 0.7 : 1,
                   border: "1px solid #b89f7a",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isUsing) {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #c8af8a, #b89f7a)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isUsing) {
-                    e.currentTarget.style.background = 'linear-gradient(to right, #b89f7a, #a68f6a)';
-                  }
                 }}
               >
                 {isUsing ? '処理中...' : '使用する'}

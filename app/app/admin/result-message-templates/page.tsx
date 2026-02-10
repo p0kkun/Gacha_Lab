@@ -258,15 +258,18 @@ export default function ResultMessageTemplatesPage() {
                   </svg>
                 </button>
                 </div>
+                <p className="text-xs text-gray-500">
+                  ※ 変数置換後の文字数が60文字以内である必要があります（LINE Messaging APIの制限）
+                </p>
                 <div className="flex items-center gap-2">
-                  <p className={`text-xs ${newRow.template.length > 120 ? 'text-red-600 font-semibold' : newRow.template.length > 100 ? 'text-orange-600' : 'text-gray-600'}`}>
-                    テンプレート文字数: {newRow.template.length} / 120
-                    {newRow.template.length <= 120 && ` (残り ${120 - newRow.template.length} 文字)`}
+                  <p className={`text-xs ${newRow.template.length > 60 ? 'text-red-600 font-semibold' : newRow.template.length > 50 ? 'text-orange-600' : 'text-gray-600'}`}>
+                    テンプレート文字数: {newRow.template.length} / 60
+                    {newRow.template.length <= 60 && ` (残り ${60 - newRow.template.length} 文字)`}
                   </p>
-                  {newRow.template.length > 120 && (
+                  {newRow.template.length > 60 && (
                     <span className="inline-flex items-center gap-1 text-xs text-red-600">
                       <WarningIcon className="h-3 w-3" />
-                      <span>変数展開後は120文字以内に収まるようにしてください</span>
+                      <span>変数置換後の文字数が60文字以内である必要があります</span>
                     </span>
                   )}
                 </div>
@@ -402,15 +405,18 @@ export default function ResultMessageTemplatesPage() {
                           rows={8}
                         />
                         {isEditing && (
-                          <div className="mt-2">
-                            <p className={`text-xs ${(editRow.template ?? view.template ?? "").length > 120 ? 'text-red-600 font-semibold' : (editRow.template ?? view.template ?? "").length > 100 ? 'text-orange-600' : 'text-gray-600'}`}>
-                              テンプレート文字数: {(editRow.template ?? view.template ?? "").length} / 120
-                              {(editRow.template ?? view.template ?? "").length <= 120 && ` (残り ${120 - (editRow.template ?? view.template ?? "").length} 文字)`}
+                          <div className="mt-2 space-y-1">
+                            <p className="text-xs text-gray-500">
+                              ※ 変数置換後の文字数が60文字以内である必要があります（LINE Messaging APIの制限）
                             </p>
-                            {(editRow.template ?? view.template ?? "").length > 120 && (
+                            <p className={`text-xs ${(editRow.template ?? view.template ?? "").length > 60 ? 'text-red-600 font-semibold' : (editRow.template ?? view.template ?? "").length > 50 ? 'text-orange-600' : 'text-gray-600'}`}>
+                              テンプレート文字数: {(editRow.template ?? view.template ?? "").length} / 60
+                              {(editRow.template ?? view.template ?? "").length <= 60 && ` (残り ${60 - (editRow.template ?? view.template ?? "").length} 文字)`}
+                            </p>
+                            {(editRow.template ?? view.template ?? "").length > 60 && (
                               <p className="mt-1 inline-flex items-center gap-1 text-xs text-red-600">
                                 <WarningIcon className="h-3 w-3" />
-                                <span>変数展開後は120文字以内に収まるようにしてください</span>
+                                <span>変数置換後の文字数が60文字以内である必要があります</span>
                               </p>
                             )}
                           </div>

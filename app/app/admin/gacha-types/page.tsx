@@ -471,18 +471,25 @@ export default function GachaTypesPage() {
       }
 
       const data = await res.json();
-      // rarityVideoIdsがJSON文字列の場合はパース
+      // rarityVideoIds / tierVideoAssetIds がJSON文字列の場合はパース
       const processedGachaTypes = data.gachaTypes.map(
         (
-          gt: GachaType & { rarityVideoIds?: string | Record<string, number[]> }
+          gt: GachaType & {
+            rarityVideoIds?: string | Record<string, number[]> | null;
+            tierVideoAssetIds?: string | Record<string, number[]> | null;
+          }
         ) => ({
           ...gt,
           // commonVideoIds: gt.commonVideoIds || [], // 共通動画は使用しないためコメントアウト
-          rarityVideoIds: gt.rarityVideoIds
-            ? typeof gt.rarityVideoIds === "string"
-              ? JSON.parse(gt.rarityVideoIds)
-              : gt.rarityVideoIds
-            : {},
+          rarityVideoIds: (() => {
+            const raw =
+              gt.rarityVideoIds ??
+              // back-compat: DB/prisma field name
+              (gt as any).tierVideoAssetIds ??
+              null;
+            if (!raw) return {};
+            return typeof raw === "string" ? JSON.parse(raw) : raw;
+          })(),
           prizeWeights: gt.prizeWeights
             ? typeof gt.prizeWeights === "string"
               ? JSON.parse(gt.prizeWeights)
