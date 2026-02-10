@@ -1,5 +1,13 @@
 import { Client, TextMessage, TemplateMessage } from "@line/bot-sdk";
 
+type LineApiErrorResponseData = {
+  message?: string;
+  details?: Array<{
+    message?: string;
+    property?: string;
+  }>;
+};
+
 /**
  * LINE Messaging APIクライアントを取得
  */
@@ -82,6 +90,69 @@ function replaceMessageTemplate(
   return message;
 }
 
+function truncateTextForLineButtonsText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+
+  // Keep newlines if possible; if not, collapse to a single line and truncate.
+  const lines = text.split("\n");
+  let result = "";
+  for (const line of lines) {
+    const next = result ? `${result}\n${line}` : line;
+    if (next.length <= maxLength) {
+      result = next;
+      continue;
+    }
+
+    const singleLine = result ? `${result} ${line}` : line;
+    if (singleLine.length <= maxLength) return singleLine;
+    return singleLine.substring(0, Math.max(0, maxLength - 3)) + "...";
+  }
+
+  return result.substring(0, Math.max(0, maxLength - 3)) + "...";
+}
+
+function truncateTextSingleLine(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const singleLineText = text.replace(/\n/g, " ");
+  return singleLineText.substring(0, Math.max(0, maxLength - 3)) + "...";
+}
+
+function getLineErrorData(error: unknown): LineApiErrorResponseData | null {
+  if (!error || typeof error !== "object") return null;
+
+  // line-bot-sdk throws HTTPError which contains originalError (AxiosError).
+  const anyErr = error as {
+    originalError?: { response?: { data?: unknown } };
+    response?: { data?: unknown };
+    data?: unknown;
+  };
+  const data =
+    anyErr.originalError?.response?.data ?? anyErr.response?.data ?? anyErr.data;
+
+  if (!data) return null;
+  if (typeof data === "string") return { message: data };
+  return data as LineApiErrorResponseData;
+}
+
+function summarizeLineButtonsPayload(payload: {
+  to: string;
+  title: string;
+  text: string;
+  altText: string;
+  thumbnailImageUrl?: string;
+  actionUri: string;
+}): Record<string, unknown> {
+  return {
+    toPrefix: payload.to?.substring(0, 10) + "...",
+    titleLength: payload.title.length,
+    textLength: payload.text.length,
+    altTextLength: payload.altText.length,
+    hasThumbnailImageUrl: Boolean(payload.thumbnailImageUrl),
+    thumbnailImageUrl: payload.thumbnailImageUrl,
+    actionUri: payload.actionUri,
+  };
+}
+
 /**
  * 画像URLをフルURLに変換
  */
@@ -161,8 +232,9 @@ export async function sendGachaResultMessage(
         : "";
 
     // LINE Messaging APIの文字数制限に合わせてテキストを切り詰め
-    // title: 最大40文字、text: 最大140文字（改行を含む）、altText: 最大400文字
-    const MAX_TEXT_LENGTH = 140;
+    // title: 最大40文字、text: 最大120文字（改行を含む）、altText: 最大400文字
+    // 安全マージンを考慮して110文字に設定
+    const MAX_TEXT_LENGTH = 110;
     const MAX_ALT_TEXT_LENGTH = 400;
 
     // デフォルトメッセージテンプレート（120文字以内に収まる短縮版）
@@ -187,72 +259,67 @@ export async function sendGachaResultMessage(
       grantedPointsMessage,
     });
 
-    // テキストを120文字以内に収める関数
-    const truncateTextForLine = (text: string, maxLength: number): string => {
-      // 改行を含めた実際の文字数でカウント
-      if (text.length <= maxLength) return text;
-
-      // 改行で分割して、各行を確認しながら切り詰め
-      const lines = text.split("\n");
-      let result = "";
-      for (const line of lines) {
-        const newResult = result ? `${result}\n${line}` : line;
-        if (newResult.length <= maxLength) {
-          result = newResult;
-        } else {
-          // 追加すると超過する場合は、改行をスペースに変換してから切り詰め
-          const singleLine = result ? `${result} ${line}` : line;
-          if (singleLine.length > maxLength) {
-            return singleLine.substring(0, maxLength - 3) + "...";
-          }
-          result = singleLine;
-        }
-      }
-      return result;
-    };
-
-    // altText用の関数（400文字制限）
-    const truncateText = (text: string, maxLength: number): string => {
-      if (text.length <= maxLength) return text;
-      const singleLineText = text.replace(/\n/g, " ");
-      return singleLineText.substring(0, maxLength - 3) + "...";
-    };
-
     const title = "ガチャ結果"; // 40文字以内なのでそのまま
-    const text = truncateTextForLine(messageText, MAX_TEXT_LENGTH); // 管理画面のテンプレートから生成し、120文字以内に収める
-    const altText = truncateText(
+    const text = truncateTextForLineButtonsText(messageText, MAX_TEXT_LENGTH).trimEnd(); // テンプレ置換後に制限を適用
+    const altText = truncateTextSingleLine(
       `ガチャ結果\n\n${rarityData.emoji} ${itemName}\nレアリティ: ${rarityData.label}\nガチャタイプ: ${gachaTypeName}`,
       MAX_ALT_TEXT_LENGTH
     );
 
-    // 画像URLを取得（登録画像があればそれを使用、なければデフォルト画像）
+    const actionUri = getLiffUrl({
+      action: "gacha",
+      gacha: gachaTypeCode || "",
+    });
+
+    // 画像URL（Buttonsのthumbnailは制約が厳しく400になりやすいので、失敗時は自動で外して再試行する）
     const thumbnailImageUrl = getFullImageUrl(gachaTypeIconImageUrl);
 
-    // Buttonsテンプレートメッセージを作成
-    const buttonsTemplate = {
-      type: "buttons" as const,
-      thumbnailImageUrl: thumbnailImageUrl,
-      title: title,
-      text: text,
-      actions: [
-        {
-          type: "uri" as const,
-          label: "このガチャを引く",
-          uri: getLiffUrl({
-            action: "gacha",
-            gacha: gachaTypeCode || "",
-          }),
-        },
-      ],
+    const buildTemplateMessage = (includeThumbnail: boolean): TemplateMessage => {
+      const buttonsTemplate = {
+        type: "buttons" as const,
+        ...(includeThumbnail ? { thumbnailImageUrl } : {}),
+        title,
+        text: text.length > 0 ? text : "ガチャ結果",
+        actions: [
+          {
+            type: "uri" as const,
+            label: "このガチャを引く",
+            uri: actionUri,
+          },
+        ],
+      };
+
+      return {
+        type: "template",
+        altText,
+        template: buttonsTemplate,
+      };
     };
 
-    const templateMessage: TemplateMessage = {
-      type: "template",
-      altText: altText,
-      template: buttonsTemplate,
-    };
+    const payloadSummary = summarizeLineButtonsPayload({
+      to: userId,
+      title,
+      text,
+      altText,
+      thumbnailImageUrl,
+      actionUri,
+    });
 
-    await client.pushMessage(userId, [templateMessage]);
+    try {
+      await client.pushMessage(userId, [buildTemplateMessage(true)]);
+    } catch (error: unknown) {
+      const lineData = getLineErrorData(error);
+      console.error("LINE push 失敗（1回目/thumbnailあり）:", {
+        ...payloadSummary,
+        lineMessage: lineData?.message,
+        lineDetails: lineData?.details,
+      });
+
+      // thumbnailImageUrl が原因の400が多いので、thumbnail無しで1回だけ再試行
+      await client.pushMessage(userId, [buildTemplateMessage(false)]);
+      console.warn("LINE push を thumbnail無しで再試行して成功:", payloadSummary);
+    }
+
     console.log("ガチャ結果メッセージ送信成功:", {
       userId: userId.substring(0, 10) + "...",
       itemName,
@@ -262,15 +329,10 @@ export async function sendGachaResultMessage(
     return { success: true };
   } catch (error: unknown) {
     console.error("ガチャ結果メッセージ送信エラー:", error);
-    if (error && typeof error === "object" && "response" in error) {
-      try {
-        const response = (error as { response?: { data?: unknown } }).response;
-        if (response?.data) {
-          console.error("LINE API error details:", response.data);
-        }
-      } catch {
-        // no-op
-      }
+
+    const lineData = getLineErrorData(error);
+    if (lineData) {
+      console.error("LINE API error details:", JSON.stringify(lineData));
     }
 
     // エラーの種類に応じて処理
