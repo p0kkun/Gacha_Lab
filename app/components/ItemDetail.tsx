@@ -494,8 +494,9 @@ export default function ItemDetail({
               </>
             )}
             </div>
+          </div>
         </div>
-         <div className="px-4 pb-4" style={{ backgroundColor: '#e9dacb' }}>
+        <div className="px-4 pb-4" style={{ backgroundColor: '#e9dacb' }}>
            <div
              className="rounded-xl px-3 py-2 text-xs shadow"
              style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)' }}
