@@ -29,16 +29,14 @@ export async function GET(
       );
     }
 
-    const item = await prisma.gachaItem.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            gachaHistories: true,
-          },
-        },
-      },
-    });
+    const [item, gachaHistoriesCount] = await Promise.all([
+      prisma.gachaItem.findUnique({
+        where: { id },
+      }),
+      prisma.gachaHistory.count({
+        where: { itemId: id },
+      }),
+    ]);
 
     if (!item) {
       return NextResponse.json(
@@ -47,7 +45,14 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ item });
+    return NextResponse.json({
+      item: {
+        ...item,
+        _count: {
+          gachaHistories: gachaHistoriesCount,
+        },
+      },
+    });
   } catch (error) {
     console.error('アイテム詳細取得エラー:', error);
     return NextResponse.json(
