@@ -7,6 +7,7 @@ import BottomNavigation from "./BottomNavigation";
 import { useErrorModal } from "./ErrorModalProvider";
 import LegalFooterLinks from "./LegalFooterLinks";
 import { CardBackIcon, PinIcon } from "@/components/icons/AppIcons";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 type ReferralHistory = {
   id: number;
@@ -18,10 +19,13 @@ type ReferralHistory = {
     createdAt: Date;
   } | null;
   completedAt: Date | null;
-  refereeTotalSpent: number;
-  refereeGachaCount: number;
   refereeLastActiveAt: Date | null;
   additionalRewardGranted: boolean;
+  additionalReward: {
+    points: number | null;
+    description: string | null;
+    grantedAt: Date | null;
+  } | null;
 };
 
 export default function Referral({ userId }: { userId: string }) {
@@ -34,6 +38,7 @@ export default function Referral({ userId }: { userId: string }) {
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const { showError, showSuccess } = useErrorModal();
   const historyLoaderRef = useRef<HTMLDivElement | null>(null);
 
@@ -118,13 +123,18 @@ export default function Referral({ userId }: { userId: string }) {
     return () => observer.disconnect();
   }, [historyHasMore, historyLoading, historyPage, userId]);
 
-  const requestReferralLink = async (showLoading: boolean) => {
+  const requestReferralLink = async (
+    showLoading: boolean,
+    mode: "generate" | "regenerate"
+  ) => {
     if (showLoading) {
       setLoading(true);
     }
 
     try {
-      const res = await fetch("/api/referral/generate", {
+      const endpoint =
+        mode === "regenerate" ? "/api/referral/regenerate" : "/api/referral/generate";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -167,7 +177,28 @@ export default function Referral({ userId }: { userId: string }) {
   };
 
   const handleGenerateLink = async () => {
-    await requestReferralLink(true);
+    await requestReferralLink(true, "generate");
+  };
+
+  const runRegenerate = async () => {
+    await requestReferralLink(true, "regenerate");
+  };
+
+  const handleRegenerateClick = async () => {
+    if (!referralLink) {
+      await runRegenerate();
+      return;
+    }
+
+    const isNotExpired =
+      expiresAt ? new Date(expiresAt).getTime() >= Date.now() : false;
+
+    if (isNotExpired) {
+      setShowRegenerateConfirm(true);
+      return;
+    }
+
+    await runRegenerate();
   };
 
   const formatExpiryDateTime = (value: string | null) => {
@@ -311,7 +342,7 @@ export default function Referral({ userId }: { userId: string }) {
                     </div>
                   )}
                   <button
-                    onClick={handleGenerateLink}
+                    onClick={handleRegenerateClick}
                     disabled={loading}
                     className="w-full rounded-xl px-6 py-4 text-sm font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
@@ -374,10 +405,18 @@ export default function Referral({ userId }: { userId: string }) {
                   <div className="flex gap-2">
                     <button
                       onClick={handleShare}
-                      className="w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
+                      className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
                       style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                     >
                       シェア
+                    </button>
+                    <button
+                      onClick={handleRegenerateClick}
+                      disabled={loading}
+                      className="rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
+                    >
+                      再生成
                     </button>
                   </div>
                 </div>
@@ -433,15 +472,15 @@ export default function Referral({ userId }: { userId: string }) {
                             </div>
                           </div>
                           <div className="text-right text-sm flex-shrink-0">
-                            <div className="text-gray-700 font-medium">
-                              課金: ¥{history.refereeTotalSpent.toLocaleString()}
-                            </div>
-                            <div className="text-gray-600">
-                              ガチャ: {history.refereeGachaCount}回
-                            </div>
                             {history.additionalRewardGranted && (
                               <div className="mt-1 text-xs text-green-600 font-semibold">
                                 ✓ 追加報酬付与済み
+                                {history.additionalReward?.description
+                                  ? `（${history.additionalReward.description}）`
+                                  : history.additionalReward?.points !== null &&
+                                      history.additionalReward?.points !== undefined
+                                    ? `（無償ポイント${history.additionalReward.points.toLocaleString()}pt）`
+                                    : ""}
                               </div>
                             )}
                           </div>
@@ -477,6 +516,20 @@ export default function Referral({ userId }: { userId: string }) {
         </div>
       </div>
       <BottomNavigation currentPage="referral" />
+      <ConfirmModal
+        isOpen={showRegenerateConfirm}
+        title="紹介リンクを再生成しますか？"
+        message="以前のリンクでは友だち紹介が成立しなくなります。よろしいですか。"
+        confirmText={loading ? "再生成中..." : "再生成する"}
+        cancelText="キャンセル"
+        variant="warning"
+        isConfirmDisabled={loading}
+        onCancel={() => setShowRegenerateConfirm(false)}
+        onConfirm={async () => {
+          setShowRegenerateConfirm(false);
+          await runRegenerate();
+        }}
+      />
     </>
   );
 }

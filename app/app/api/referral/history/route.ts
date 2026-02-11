@@ -31,10 +31,15 @@ export async function GET(request: NextRequest) {
         refereeId: h.toUserId,
         referee: h.toUser,
         completedAt: h.completedAt,
-        refereeTotalSpent: h.refereeActivity?.totalSpent || 0,
-        refereeGachaCount: h.refereeActivity?.gachaCount || 0,
         refereeLastActiveAt: null, // UserActivityモデルにlastActiveAtフィールドは存在しない
         additionalRewardGranted: h.additionalRewardGranted,
+        additionalReward: h.additionalReward
+          ? {
+              points: h.additionalReward.points,
+              description: h.additionalReward.description,
+              grantedAt: h.additionalReward.grantedAt,
+            }
+          : null,
       })),
       pagination: {
         page,
@@ -52,8 +57,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-
 
 
 

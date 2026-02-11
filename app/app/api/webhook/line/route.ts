@@ -638,7 +638,14 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     });
 
     let referralLinkId: string | null = null;
-    let referral: { id: number; userId: string; referralLinkId: string; expiresAt: Date | null } | null = null;
+    let referral: {
+      id: number;
+      userId: string;
+      referralLinkId: string;
+      status: ReferralStatus;
+      createdAt: Date;
+      expiresAt: Date | null;
+    } | null = null;
 
     // 方法1: User.lastAccessedReferralLinkIdから取得（友だち追加前にLIFFアプリにアクセスした場合）
     if (user?.lastAccessedReferralLinkId) {
@@ -674,7 +681,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
         // Referralテーブルから紹介情報を取得
         const referralData = await prisma.referral.findUnique({
           where: { id: recentHistory.referralId },
-          select: { id: true, userId: true, referralLinkId: true, expiresAt: true },
+          select: { id: true, userId: true, referralLinkId: true, status: true, createdAt: true, expiresAt: true },
         });
         if (referralData) {
           referral = referralData;
@@ -692,7 +699,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     if (!referral) {
       referral = await prisma.referral.findUnique({
         where: { referralLinkId },
-        select: { id: true, userId: true, referralLinkId: true, expiresAt: true },
+        select: { id: true, userId: true, referralLinkId: true, status: true, createdAt: true, expiresAt: true },
       });
     }
 
@@ -700,7 +707,15 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
       console.log('紹介リンクが見つかりません:', referralLinkId);
       return;
     }
-    if (referral.expiresAt && referral.expiresAt.getTime() < Date.now()) {
+
+    if (referral.status !== ReferralStatus.PENDING) {
+      console.log('紹介リンクが無効です（ステータス）:', referralLinkId, referral.status);
+      return;
+    }
+
+    const computedExpiresAt =
+      referral.expiresAt ?? new Date(referral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    if (computedExpiresAt.getTime() < Date.now()) {
       console.log('紹介リンクの有効期限切れ:', referralLinkId);
       return;
     }
