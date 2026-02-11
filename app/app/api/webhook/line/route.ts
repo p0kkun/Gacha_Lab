@@ -708,7 +708,10 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
       return;
     }
 
-    if (referral.status !== ReferralStatus.PENDING) {
+    if (
+      referral.status === ReferralStatus.INVALID ||
+      referral.status === ReferralStatus.FRAUD
+    ) {
       console.log('紹介リンクが無効です（ステータス）:', referralLinkId, referral.status);
       return;
     }
@@ -722,13 +725,6 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
 
     // 自己紹介チェック
     if (referral.userId === refereeId) {
-      await prisma.referral.update({
-        where: { id: referral.id },
-        data: {
-          status: ReferralStatus.FRAUD,
-        },
-      });
-
       // ReferralHistoryの最新履歴を更新
       const latestHistory = await prisma.referralHistory.findFirst({
         where: {
@@ -741,6 +737,8 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
         await prisma.referralHistory.update({
           where: { id: latestHistory.id },
           data: {
+            referrerUserId: referral.userId,
+            refereeUserId: refereeId,
             status: ReferralStatus.FRAUD,
             isFraudDetected: true,
             fraudReason: '自己紹介が検出されました',
@@ -761,13 +759,6 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
 
     if (existingReferralUser) {
       // 既に他の紹介者から紹介されている
-      await prisma.referral.update({
-        where: { id: referral.id },
-        data: {
-          status: ReferralStatus.INVALID,
-        },
-      });
-
       // ReferralHistoryの最新履歴を更新
       const latestHistory = await prisma.referralHistory.findFirst({
         where: {
@@ -780,6 +771,8 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
         await prisma.referralHistory.update({
           where: { id: latestHistory.id },
           data: {
+            referrerUserId: referral.userId,
+            refereeUserId: refereeId,
             status: ReferralStatus.INVALID,
             fraudReason: '既に他の紹介者から紹介されています',
           },

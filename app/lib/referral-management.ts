@@ -6,9 +6,9 @@ import { CacheKeys } from "./cache-keys";
 
 /**
  * 紹介リンクを生成
- * - 有効なリンク（PENDINGかつ未期限切れ）があればそれを返す
+ * - 有効なリンク（INVALID/FRAUD以外かつ未期限切れ）があればそれを返す
  * - 無ければ新しいリンクを作成する
- *   (過去リンクを復活させない。古いリンクからの紹介成立を防ぐため)
+ *   (過去リンクを復活させない)
  */
 export async function generateReferralLink(userId: string): Promise<{
   referralLinkId: string;
@@ -39,12 +39,19 @@ export async function generateReferralLink(userId: string): Promise<{
   }
 
   if (existingReferral) {
+    const liffUrl = process.env.NEXT_PUBLIC_LIFF_URL || "";
+    if (!liffUrl) {
+      throw new Error("NEXT_PUBLIC_LIFF_URLが設定されていません");
+    }
+
     const currentExpiresAt =
       existingReferral.expiresAt ??
       new Date(existingReferral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
     const isExpired = currentExpiresAt.getTime() < Date.now();
     const isActive =
-      !isExpired && existingReferral.status === ReferralStatus.PENDING;
+      !isExpired &&
+      existingReferral.status !== ReferralStatus.INVALID &&
+      existingReferral.status !== ReferralStatus.FRAUD;
 
     if (isActive) {
       // Ensure expiresAt is present for consistency.
@@ -58,6 +65,31 @@ export async function generateReferralLink(userId: string): Promise<{
         referralLinkId: existingReferral.referralLinkId,
         referralLink: existingReferral.referralLink,
         expiresAt: currentExpiresAt,
+      };
+    }
+
+    // 期限切れの場合は既存レコードを上書きして再利用する
+    if (isExpired) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const referralLinkId = crypto.randomUUID();
+      const referralLink = `${liffUrl}?ref=${referralLinkId}`;
+
+      await prisma.referral.update({
+        where: { id: existingReferral.id },
+        data: {
+          referralLinkId,
+          referralLink,
+          status: ReferralStatus.PENDING,
+          expiresAt,
+        },
+      });
+
+      return {
+        referralLinkId,
+        referralLink,
+        expiresAt,
       };
     }
   }
@@ -90,7 +122,10 @@ export async function getActiveReferralLink(userId: string): Promise<{
     return null;
   }
 
-  if (existingReferral.status !== ReferralStatus.PENDING) {
+  if (
+    existingReferral.status === ReferralStatus.INVALID ||
+    existingReferral.status === ReferralStatus.FRAUD
+  ) {
     return null;
   }
 
@@ -203,8 +238,11 @@ export async function verifyReferralLink(
     };
   }
 
-  // ステータスチェック
-  if (referral.status !== ReferralStatus.PENDING) {
+  // ステータスチェック（INVALID/FRAUDは無効）
+  if (
+    referral.status === ReferralStatus.INVALID ||
+    referral.status === ReferralStatus.FRAUD
+  ) {
     return {
       isValid: false,
       reason: "この紹介リンクは既に使用済みです",
@@ -216,6 +254,8 @@ export async function verifyReferralLink(
     data: {
       referralId: referral.id,
       referralLinkId: referral.referralLinkId,
+      referrerUserId: referral.userId,
+      refereeUserId: userId ?? null,
       ipAddress: ipAddress || null,
       deviceInfo: deviceInfo || null,
       status: ReferralStatus.PENDING,
@@ -320,6 +360,8 @@ export async function detectFraud(
         await prisma.referralHistory.update({
           where: { id: latestHistory.id },
           data: {
+            referrerUserId: referral.userId,
+            refereeUserId: refereeId,
             isFraudDetected: true,
             fraudReason: "同一IPアドレスからの異常な紹介が検出されました",
             status: ReferralStatus.FRAUD,
@@ -358,8 +400,15 @@ export async function completeReferral(
       where: { id: referralId },
     });
 
-    if (!referral || referral.status !== ReferralStatus.PENDING) {
-      throw new Error("紹介履歴が見つからないか、既に処理済みです");
+    if (!referral) {
+      throw new Error("紹介履歴が見つかりません");
+    }
+
+    if (
+      referral.status === ReferralStatus.INVALID ||
+      referral.status === ReferralStatus.FRAUD
+    ) {
+      throw new Error("この紹介リンクは無効です");
     }
 
     // 既に同じ被紹介者で成立済みの紹介がないかチェック
@@ -377,13 +426,6 @@ export async function completeReferral(
     // 不正検知
     const fraudCheck = await detectFraud(referralId, refereeId);
     if (fraudCheck.isFraud) {
-      await tx.referral.update({
-        where: { id: referralId },
-        data: {
-          status: ReferralStatus.FRAUD,
-        },
-      });
-
       // ReferralHistoryの最新履歴を更新
       const latestHistory = await tx.referralHistory.findFirst({
         where: {
@@ -396,6 +438,8 @@ export async function completeReferral(
         await tx.referralHistory.update({
           where: { id: latestHistory.id },
           data: {
+            referrerUserId: referral.userId,
+            refereeUserId: refereeId,
             isFraudDetected: true,
             fraudReason: fraudCheck.reason,
             status: ReferralStatus.FRAUD,
@@ -426,14 +470,6 @@ export async function completeReferral(
       },
     });
 
-    // Referralのステータスを更新
-    await tx.referral.update({
-      where: { id: referral.id },
-      data: {
-        status: ReferralStatus.COMPLETED,
-      },
-    });
-
     // ReferralHistoryの最新履歴を更新
     const latestHistory = await tx.referralHistory.findFirst({
       where: {
@@ -446,6 +482,8 @@ export async function completeReferral(
       await tx.referralHistory.update({
         where: { id: latestHistory.id },
         data: {
+          referrerUserId: referral.userId,
+          refereeUserId: refereeId,
           status: ReferralStatus.COMPLETED,
         },
       });
@@ -614,35 +652,33 @@ export async function getReferralHistory(
     userActivities.map((ua) => [ua.referralUserId, ua])
   );
 
-  // 追加報酬の付与内容（point_histories）を取得
+  // 紹介者特典の付与内容（point_histories）を取得
   const rewardEntries = await Promise.all(
-    referralUsers
-      .filter((ru) => ru.additionalRewardGranted)
-      .map(async (ru) => {
-        const grantedAt = ru.additionalRewardGrantedAt ?? ru.updatedAt;
-        const windowStart = new Date(grantedAt.getTime() - 5 * 60 * 1000);
-        const windowEnd = new Date(grantedAt.getTime() + 5 * 60 * 1000);
+    referralUsers.map(async (ru) => {
+      const grantedAt = ru.completedAt ?? ru.createdAt;
+      const windowStart = new Date(grantedAt.getTime() - 10 * 60 * 1000);
+      const windowEnd = new Date(grantedAt.getTime() + 10 * 60 * 1000);
 
-        const rewardHistory = await prisma.pointHistory.findFirst({
-          where: {
-            userId: ru.userId,
-            transactionType: PointTransactionType.REFERRAL_REWARD,
-            description: { contains: "追加報酬" },
-            createdAt: {
-              gte: windowStart,
-              lte: windowEnd,
-            },
+      const rewardHistory = await prisma.pointHistory.findFirst({
+        where: {
+          userId: ru.userId,
+          transactionType: PointTransactionType.REFERRAL_REWARD,
+          description: { contains: "友だち紹介特典（紹介者）" },
+          createdAt: {
+            gte: windowStart,
+            lte: windowEnd,
           },
-          orderBy: { createdAt: "desc" },
-          select: {
-            amount: true,
-            description: true,
-            createdAt: true,
-          },
-        });
+        },
+        orderBy: { createdAt: "desc" },
+        select: {
+          amount: true,
+          description: true,
+          createdAt: true,
+        },
+      });
 
-        return [ru.id, rewardHistory] as const;
-      })
+      return [ru.id, rewardHistory] as const;
+    })
   );
   const rewardMap = new Map(rewardEntries);
 
@@ -651,18 +687,12 @@ export async function getReferralHistory(
     ...ru,
     toUser: toUserMap.get(ru.toUserId) || null,
     refereeActivity: activityMap.get(ru.id) || null,
-    additionalReward: ru.additionalRewardGranted
-      ? rewardMap.get(ru.id)
-        ? {
-            points: rewardMap.get(ru.id)!.amount,
-            description: rewardMap.get(ru.id)!.description,
-            grantedAt: rewardMap.get(ru.id)!.createdAt,
-          }
-        : {
-            points: null,
-            description: null,
-            grantedAt: ru.additionalRewardGrantedAt,
-          }
+    additionalReward: rewardMap.get(ru.id)
+      ? {
+          points: rewardMap.get(ru.id)!.amount,
+          description: rewardMap.get(ru.id)!.description,
+          grantedAt: rewardMap.get(ru.id)!.createdAt,
+        }
       : null,
   }));
 

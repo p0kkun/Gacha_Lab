@@ -32,10 +32,8 @@ model GachaItem {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  gachaHistories   GachaHistory[]
   prizeAssignments GachaPrizeAssignment[]
   userItems        UserItem[]
-  usageLogs        ItemUsageLog[]
 
   @@index([isActive])
   @@index([useStartAt])
@@ -66,7 +64,6 @@ model GachaType {
 
   resultMessageTemplateId Int?
 
-  gachaHistories            GachaHistory[]
   prizeAssignments          GachaPrizeAssignment[]
   tierWeights               GachaTierWeight[]
   resultMessageTemplate     ResultMessageTemplate? @relation(fields: [resultMessageTemplateId], references: [id])
@@ -87,9 +84,6 @@ model GachaHistory {
   tierCode    String?
   createdAt   DateTime   @default(now())
   pointsUsed  Int        @default(0)
-  gachaType   GachaType? @relation(fields: [gachaTypeId], references: [id])
-  item        GachaItem? @relation(fields: [itemId], references: [id])
-  tier        PrizeTier? @relation(fields: [tierCode], references: [code])
   userItems   UserItem[]
 
   @@index([userId, createdAt])
@@ -107,9 +101,6 @@ model ItemUsageLog {
   userItemId Int?    @unique
   usedAt    DateTime @default(now())
   createdAt DateTime @default(now())
-
-  item GachaItem? @relation(fields: [itemId], references: [id])
-  userItem UserItem? @relation(fields: [userItemId], references: [id])
 
   @@index([userId, usedAt])
   @@index([itemId])
@@ -129,7 +120,6 @@ model UserItem {
 
   item GachaItem? @relation(fields: [itemId], references: [id])
   gachaHistory GachaHistory? @relation(fields: [gachaHistoryId], references: [id])
-  usageLog ItemUsageLog?
 
   @@index([userId, status])
   @@index([userId, itemId])
@@ -177,6 +167,8 @@ model ReferralHistory {
   id                 Int            @id @default(autoincrement())
   referralId         Int
   referralLinkId     String
+  referrerUserId     String?
+  refereeUserId      String?
   ipAddress          String?
   deviceInfo         String?
   status             ReferralStatus @default(PENDING)
@@ -191,6 +183,8 @@ model ReferralHistory {
 
   @@index([referralId, referredAt])
   @@index([referralLinkId])
+  @@index([referrerUserId, referredAt])
+  @@index([refereeUserId, referredAt])
   @@index([ipAddress, referredAt])
   @@index([status])
   @@index([isBotDetected])
@@ -408,7 +402,6 @@ model PrizeTier {
   updatedAt    DateTime @updatedAt
 
   prizeAssignments GachaPrizeAssignment[]
-  gachaHistories   GachaHistory[]
   tierWeights      GachaTierWeight[]
 
   @@index([isActive, displayOrder])

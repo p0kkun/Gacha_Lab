@@ -121,18 +121,13 @@ export default function Referral({ userId }: { userId: string }) {
     return () => observer.disconnect();
   }, [historyHasMore, historyLoading, historyPage, userId]);
 
-  const requestReferralLink = async (
-    showLoading: boolean,
-    mode: "generate" | "regenerate"
-  ) => {
+  const requestReferralLink = async (showLoading: boolean) => {
     if (showLoading) {
       setLoading(true);
     }
 
     try {
-      const endpoint =
-        mode === "regenerate" ? "/api/referral/regenerate" : "/api/referral/generate";
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/referral/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -175,15 +170,7 @@ export default function Referral({ userId }: { userId: string }) {
   };
 
   const handleGenerateLink = async () => {
-    await requestReferralLink(true, "generate");
-  };
-
-  const runRegenerate = async () => {
-    await requestReferralLink(true, "regenerate");
-  };
-
-  const handleRegenerateClick = async () => {
-    await runRegenerate();
+    await requestReferralLink(true);
   };
 
   const formatExpiryDateTime = (value: string | null) => {
@@ -237,6 +224,7 @@ export default function Referral({ userId }: { userId: string }) {
 
   const isExpired =
     expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
+  const hasUsableReferralLink = !!referralLink && !isExpired;
 
   return (
     <>
@@ -286,7 +274,7 @@ export default function Referral({ userId }: { userId: string }) {
                 </ol>
               </div>
 
-              {!referralLink ? (
+              {!hasUsableReferralLink ? (
                 <button
                   onClick={handleGenerateLink}
                   disabled={loading}
@@ -309,36 +297,6 @@ export default function Referral({ userId }: { userId: string }) {
                 >
                   {loading ? "生成中..." : "紹介リンクを生成"}
                 </button>
-              ) : isExpired ? (
-                <div className="space-y-4">
-                  <div
-                    className="rounded-lg border px-4 py-3 text-sm text-center"
-                    style={{
-                      backgroundColor: "rgba(239, 68, 68, 0.12)",
-                      borderColor: "rgba(239, 68, 68, 0.35)",
-                      color: "#7f1d1d",
-                    }}
-                  >
-                    有効期限が切れています。再生成してください。
-                  </div>
-                  {expiresAt && (
-                    <div className="text-center text-xs" style={{ color: "#6b5a4a" }}>
-                      期限: {formatExpiryDateTime(expiresAt)}
-                    </div>
-                  )}
-                  <button
-                    onClick={handleRegenerateClick}
-                    disabled={loading}
-                    className="w-full rounded-xl px-6 py-4 text-sm font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.7)",
-                      color: "#4a3a2a",
-                      border: "1px solid #b89f7a",
-                    }}
-                  >
-                    {loading ? "再生成中..." : "再生成する"}
-                  </button>
-                </div>
               ) : (
                 <div className="space-y-4">
                   {/* QRコード表示 */}
@@ -390,18 +348,10 @@ export default function Referral({ userId }: { userId: string }) {
                   <div className="flex gap-2">
                     <button
                       onClick={handleShare}
-                      className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
+                      className="w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95"
                       style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
                     >
                       シェア
-                    </button>
-                    <button
-                      onClick={handleRegenerateClick}
-                      disabled={loading}
-                      className="rounded-xl px-4 py-3 text-sm font-semibold shadow-lg transition-all hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: "rgba(255, 255, 255, 0.7)", color: "#4a3a2a", border: "1px solid #b89f7a" }}
-                    >
-                      再生成
                     </button>
                   </div>
                 </div>

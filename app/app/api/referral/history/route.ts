@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         referee: h.toUser,
         completedAt: h.completedAt,
         refereeLastActiveAt: null, // UserActivityモデルにlastActiveAtフィールドは存在しない
-        additionalRewardGranted: h.additionalRewardGranted,
+        additionalRewardGranted: !!h.additionalReward,
         additionalReward: h.additionalReward
           ? {
               points: h.additionalReward.points,
@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 
 
 
