@@ -28,12 +28,6 @@ export async function GET(
           tierCode: true,
           createdAt: true,
           pointsUsed: true,
-          gachaType: {
-            select: { id: true, name: true },
-          },
-          item: {
-            select: { id: true, name: true },
-          },
         },
       }),
       prisma.gachaHistory.count({
@@ -41,8 +35,22 @@ export async function GET(
       }),
     ]);
 
+    const gachaTypeIds = [...new Set(histories.map((h) => h.gachaTypeId))];
+    const itemIds = [...new Set(histories.filter((h) => h.itemId !== null).map((h) => h.itemId as number))];
+    const [gachaTypes, items] = await Promise.all([
+      prisma.gachaType.findMany({
+        where: { id: { in: gachaTypeIds } },
+        select: { id: true, name: true },
+      }),
+      prisma.gachaItem.findMany({
+        where: { id: { in: itemIds } },
+        select: { id: true, name: true },
+      }),
+    ]);
+    const gachaTypeMap = new Map(gachaTypes.map((gt) => [gt.id, gt]));
+    const itemMap = new Map(items.map((it) => [it.id, it]));
+
     // ItemUsageLogから使用日時を取得
-    const historyIds = histories.map((h) => h.id);
     const usageLogs = await prisma.itemUsageLog.findMany({
       where: {
         userId,
@@ -59,15 +67,21 @@ export async function GET(
       usageLogs.map((log) => [log.itemId, log.usedAt])
     );
 
-    const mapped = histories.map((h) => ({
-      ...h,
-      // 新方式: gacha_histories.tierCode を等級として返す
-      item: {
-        ...h.item,
-        rarity: h.tierCode ?? 'UNKNOWN',
-      },
-      usedAt: h.itemId ? usageLogMap.get(h.itemId)?.toISOString() ?? null : null,
-    }));
+    const mapped = histories.map((h) => {
+      const item = h.itemId ? itemMap.get(h.itemId) ?? null : null;
+      return {
+        ...h,
+        gachaType: gachaTypeMap.get(h.gachaTypeId) ?? null,
+        // 新方式: gacha_histories.tierCode を等級として返す
+        item: item
+          ? {
+              ...item,
+              rarity: h.tierCode ?? 'UNKNOWN',
+            }
+          : null,
+        usedAt: h.itemId ? usageLogMap.get(h.itemId)?.toISOString() ?? null : null,
+      };
+    });
 
     return NextResponse.json({
       histories: mapped,
@@ -86,5 +100,3 @@ export async function GET(
     );
   }
 }
-
-

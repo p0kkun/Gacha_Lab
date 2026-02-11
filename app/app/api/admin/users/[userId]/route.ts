@@ -34,26 +34,44 @@ export async function GET(
       );
     }
 
-    // ガチャ履歴を取得
-    const gachaHistories = await prisma.gachaHistory.findMany({
+    // ガチャ履歴を取得（リレーションを使わずIDベースで取得）
+    const rawGachaHistories = await prisma.gachaHistory.findMany({
       where: { userId },
       take: 50, // 最新50件
       orderBy: { createdAt: 'desc' },
-      include: {
-        gachaType: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        item: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      select: {
+        id: true,
+        userId: true,
+        gachaTypeId: true,
+        itemId: true,
+        tierCode: true,
+        createdAt: true,
+        pointsUsed: true,
       },
     });
+
+    const gachaTypeIds = [...new Set(rawGachaHistories.map((h) => h.gachaTypeId))];
+    const itemIds = [...new Set(rawGachaHistories.filter((h) => h.itemId !== null).map((h) => h.itemId as number))];
+
+    const [gachaTypes, items] = await Promise.all([
+      prisma.gachaType.findMany({
+        where: { id: { in: gachaTypeIds } },
+        select: { id: true, name: true },
+      }),
+      prisma.gachaItem.findMany({
+        where: { id: { in: itemIds } },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    const gachaTypeMap = new Map(gachaTypes.map((gt) => [gt.id, gt]));
+    const itemMap = new Map(items.map((it) => [it.id, it]));
+
+    const gachaHistories = rawGachaHistories.map((h) => ({
+      ...h,
+      gachaType: gachaTypeMap.get(h.gachaTypeId) ?? null,
+      item: h.itemId ? itemMap.get(h.itemId) ?? null : null,
+    }));
 
     // カウントを取得
     const [gachaHistoriesCount, referralUsersAsReferrerCount, referralUsersAsRefereeCount] = await Promise.all([
