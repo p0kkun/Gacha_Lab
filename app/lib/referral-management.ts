@@ -102,8 +102,8 @@ export async function getActiveReferralLink(userId: string): Promise<{
 }
 
 /**
- * 紹介リンクを再生成（新しいリンクIDを発行し、既存のPENDINGリンクを無効化）
- * - 旧リンクでアプリに来ても紹介が成立しないようにする
+ * 紹介リンクを再生成（新しいリンクIDを発行）
+ * - 旧リンクは無効化しない（過去リンクでも紹介成立できる仕様）
  */
 export async function regenerateReferralLink(
   userId: string,
@@ -125,24 +125,14 @@ export async function regenerateReferralLink(
   const referralLink = `${liffUrl}?ref=${referralLinkId}`;
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.referral.updateMany({
-        where: { userId, status: ReferralStatus.PENDING },
-        data: {
-          status: ReferralStatus.INVALID,
-          expiresAt: new Date(),
-        },
-      });
-
-      await tx.referral.create({
-        data: {
-          userId,
-          referralLinkId,
-          referralLink,
-          status: ReferralStatus.PENDING,
-          expiresAt,
-        },
-      });
+    await prisma.referral.create({
+      data: {
+        userId,
+        referralLinkId,
+        referralLink,
+        status: ReferralStatus.PENDING,
+        expiresAt,
+      },
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

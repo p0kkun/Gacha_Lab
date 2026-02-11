@@ -7,7 +7,6 @@ import BottomNavigation from "./BottomNavigation";
 import { useErrorModal } from "./ErrorModalProvider";
 import LegalFooterLinks from "./LegalFooterLinks";
 import { CardBackIcon, PinIcon } from "@/components/icons/AppIcons";
-import ConfirmModal from "@/components/admin/ConfirmModal";
 
 type ReferralHistory = {
   id: number;
@@ -38,7 +37,6 @@ export default function Referral({ userId }: { userId: string }) {
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const { showError, showSuccess } = useErrorModal();
   const historyLoaderRef = useRef<HTMLDivElement | null>(null);
 
@@ -185,19 +183,6 @@ export default function Referral({ userId }: { userId: string }) {
   };
 
   const handleRegenerateClick = async () => {
-    if (!referralLink) {
-      await runRegenerate();
-      return;
-    }
-
-    const isNotExpired =
-      expiresAt ? new Date(expiresAt).getTime() >= Date.now() : false;
-
-    if (isNotExpired) {
-      setShowRegenerateConfirm(true);
-      return;
-    }
-
     await runRegenerate();
   };
 
@@ -446,43 +431,55 @@ export default function Referral({ userId }: { userId: string }) {
                         key={history.id}
                         className="rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-md"
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {history.referee?.pictureUrl && (
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            {history.referee?.pictureUrl ? (
                               <img
                                 src={history.referee.pictureUrl}
-                                alt={history.referee.displayName || ""}
-                                className="h-12 w-12 flex-shrink-0 rounded-full border-2 shadow-sm"
-                                style={{ borderColor: '#b89f7a' }}
+                                alt={history.referee.displayName || "プロフィール画像"}
+                                className="h-14 w-14 rounded-full border-2 shadow-sm"
+                                style={{ borderColor: "#b89f7a" }}
+                              />
+                            ) : (
+                              <div
+                                className="h-14 w-14 rounded-full border-2"
+                                style={{ borderColor: "#b89f7a", backgroundColor: "rgba(184, 159, 122, 0.2)" }}
                               />
                             )}
-                            <div className="flex-1 min-w-0">
-                              <div className="mb-1 font-semibold truncate" style={{ color: '#4a3a2a' }}>
-                                {history.referee?.displayName || "（表示名なし）"}
-                              </div>
-                              <div className="text-xs" style={{ color: '#6b5a4a' }}>
-                                {history.completedAt ? (
-                                  <>
-                                    成立日: {new Date(history.completedAt).toLocaleDateString("ja-JP")}
-                                  </>
-                                ) : (
-                                  "成立日: -"
-                                )}
+                          </div>
+                          <div className="flex-1 space-y-2 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <div style={{ color: "#6b5a4a" }}>紹介相手</div>
+                              <div className="max-w-[70%] truncate font-semibold text-right" style={{ color: "#4a3a2a" }}>
+                                {history.referee?.displayName || history.referee?.userId || history.refereeId || "（不明）"}
                               </div>
                             </div>
-                          </div>
-                          <div className="text-right text-sm flex-shrink-0">
-                            {history.additionalRewardGranted && (
-                              <div className="mt-1 text-xs text-green-600 font-semibold">
-                                ✓ 追加報酬付与済み
-                                {history.additionalReward?.description
-                                  ? `（${history.additionalReward.description}）`
-                                  : history.additionalReward?.points !== null &&
-                                      history.additionalReward?.points !== undefined
-                                    ? `（無償ポイント${history.additionalReward.points.toLocaleString()}pt）`
-                                    : ""}
+                            <div className="flex items-center justify-between gap-3">
+                              <div style={{ color: "#6b5a4a" }}>成立日</div>
+                              <div className="font-semibold" style={{ color: "#4a3a2a" }}>
+                                {history.completedAt
+                                  ? new Date(history.completedAt).toLocaleDateString("ja-JP")
+                                  : "-"}
                               </div>
-                            )}
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <div style={{ color: "#6b5a4a" }}>追加報酬</div>
+                              <div
+                                className={`font-semibold ${history.additionalRewardGranted ? "text-green-600" : "text-gray-500"}`}
+                              >
+                                {history.additionalRewardGranted ? "付与済み" : "未付与"}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <div style={{ color: "#6b5a4a" }}>付与ポイント</div>
+                              <div className="font-semibold" style={{ color: "#4a3a2a" }}>
+                                {history.additionalRewardGranted &&
+                                history.additionalReward?.points !== null &&
+                                history.additionalReward?.points !== undefined
+                                  ? `${history.additionalReward.points.toLocaleString()}pt`
+                                  : "-"}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -516,20 +513,6 @@ export default function Referral({ userId }: { userId: string }) {
         </div>
       </div>
       <BottomNavigation currentPage="referral" />
-      <ConfirmModal
-        isOpen={showRegenerateConfirm}
-        title="紹介リンクを再生成しますか？"
-        message="以前のリンクでは友だち紹介が成立しなくなります。よろしいですか。"
-        confirmText={loading ? "再生成中..." : "再生成する"}
-        cancelText="キャンセル"
-        variant="warning"
-        isConfirmDisabled={loading}
-        onCancel={() => setShowRegenerateConfirm(false)}
-        onConfirm={async () => {
-          setShowRegenerateConfirm(false);
-          await runRegenerate();
-        }}
-      />
     </>
   );
 }

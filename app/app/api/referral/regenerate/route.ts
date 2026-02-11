@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  * 紹介リンク再生成API
  * POST /api/referral/regenerate
  *
- * 既存のPENDINGリンクを無効化し、新しいリンクIDを発行する。
+ * 新しいリンクIDを発行する（既存リンクは無効化しない）。
  */
 export async function POST(request: NextRequest) {
   try {
@@ -61,4 +61,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
