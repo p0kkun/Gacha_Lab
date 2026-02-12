@@ -649,15 +649,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
 
     // 方法1: User.lastAccessedReferralLinkIdから取得（友だち追加前にLIFFアプリにアクセスした場合）
     if (user?.lastAccessedReferralLinkId) {
-      // アクセスから7日以内かチェック
-      if (user.lastAccessedReferralAt) {
-        const daysSinceAccess = (Date.now() - user.lastAccessedReferralAt.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceAccess <= 7) {
-          referralLinkId = user.lastAccessedReferralLinkId;
-        }
-      } else {
-        referralLinkId = user.lastAccessedReferralLinkId;
-      }
+      referralLinkId = user.lastAccessedReferralLinkId;
     }
 
     // 方法2: ReferralHistoryから最近のアクセス履歴を取得（友だち追加前にアクセスしたがuserIdが記録されていない場合）
@@ -665,9 +657,6 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
       const recentHistory = await prisma.referralHistory.findFirst({
         where: {
           status: ReferralStatus.PENDING,
-          referredAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7日以内
-          },
         },
         orderBy: { referredAt: 'desc' },
         select: {
@@ -713,13 +702,6 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
       referral.status === ReferralStatus.FRAUD
     ) {
       console.log('紹介リンクが無効です（ステータス）:', referralLinkId, referral.status);
-      return;
-    }
-
-    const computedExpiresAt =
-      referral.expiresAt ?? new Date(referral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
-    if (computedExpiresAt.getTime() < Date.now()) {
-      console.log('紹介リンクの有効期限切れ:', referralLinkId);
       return;
     }
 

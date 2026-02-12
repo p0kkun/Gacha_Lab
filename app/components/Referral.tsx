@@ -30,7 +30,6 @@ type ReferralHistory = {
 export default function Referral({ userId }: { userId: string }) {
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState<number>(0);
   const [referralHistory, setReferralHistory] = useState<ReferralHistory[]>([]);
   const [historyPage, setHistoryPage] = useState(1);
@@ -51,7 +50,6 @@ export default function Referral({ userId }: { userId: string }) {
     const currentData = await currentRes.json();
     if (currentData?.referralLink) {
       setReferralLink(currentData.referralLink);
-      setExpiresAt(currentData.expiresAt || null);
       const qrCode = await QRCode.toDataURL(currentData.referralLink, {
         width: 300,
         margin: 2,
@@ -62,7 +60,6 @@ export default function Referral({ userId }: { userId: string }) {
 
     setReferralLink(null);
     setQrCodeUrl(null);
-    setExpiresAt(null);
   };
 
   const fetchReferralData = async () => {
@@ -149,7 +146,6 @@ export default function Referral({ userId }: { userId: string }) {
       }
       
       setReferralLink(data.referralLink);
-      setExpiresAt(data.expiresAt || null);
 
       // QRコードを生成
       const qrCode = await QRCode.toDataURL(data.referralLink, {
@@ -171,20 +167,6 @@ export default function Referral({ userId }: { userId: string }) {
 
   const handleGenerateLink = async () => {
     await requestReferralLink(true);
-  };
-
-  const formatExpiryDateTime = (value: string | null) => {
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleString("ja-JP", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
   };
 
   const handleCopyLink = async () => {
@@ -222,9 +204,7 @@ export default function Referral({ userId }: { userId: string }) {
     }
   };
 
-  const isExpired =
-    expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
-  const hasUsableReferralLink = !!referralLink && !isExpired;
+  const hasUsableReferralLink = !!referralLink;
 
   return (
     <>
@@ -270,7 +250,6 @@ export default function Referral({ userId }: { userId: string }) {
                   <li>紹介リンクを生成してQRコードまたはリンクを共有</li>
                   <li>友だちがリンクを開いてアプリにアクセス</li>
                   <li>友だちが公式LINEアカウントを友だち追加すると紹介成立！</li>
-                  <li>紹介リンクの有効期限は生成から1週間です</li>
                 </ol>
               </div>
 
@@ -311,22 +290,11 @@ export default function Referral({ userId }: { userId: string }) {
                       </div>
                     </div>
                   )}
-                  {expiresAt && (
-                    <div className="text-center text-xs" style={{ color: "#6b5a4a" }}>
-                      有効期限: {formatExpiryDateTime(expiresAt)}
-                    </div>
-                  )}
-
                   {/* 紹介リンク表示 */}
                   <div>
                     <label className="mb-2 block text-sm font-semibold" style={{ color: "#4a3a2a" }}>
                       紹介リンク
                     </label>
-                    {expiresAt && (
-                      <div className="mb-2 text-xs" style={{ color: "#6b5a4a" }}>
-                        有効期限: {formatExpiryDateTime(expiresAt)}
-                      </div>
-                    )}
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -381,7 +349,7 @@ export default function Referral({ userId }: { userId: string }) {
                         key={history.id}
                         className="rounded-xl border-2 border-yellow-400/30 bg-gradient-to-r from-white/95 to-white/90 p-4 shadow-md"
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-center gap-3">
                           <div className="flex-shrink-0">
                             {history.referee?.pictureUrl ? (
                               <img

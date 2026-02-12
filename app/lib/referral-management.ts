@@ -6,14 +6,14 @@ import { CacheKeys } from "./cache-keys";
 
 /**
  * 紹介リンクを生成
- * - 有効なリンク（INVALID/FRAUD以外かつ未期限切れ）があればそれを返す
+ * - 1ユーザー1リンク固定
+ * - 既存リンクがあればそれを返す
  * - 無ければ新しいリンクを作成する
- *   (過去リンクを復活させない)
  */
 export async function generateReferralLink(userId: string): Promise<{
   referralLinkId: string;
   referralLink: string;
-  expiresAt: Date;
+  expiresAt: Date | null;
   qrCodeUrl?: string;
 }> {
   // データベース接続を確認
@@ -25,7 +25,7 @@ export async function generateReferralLink(userId: string): Promise<{
     throw new Error(`データベースに接続できません: ${errorMessage}`);
   }
 
-  // 既存の紹介リンクを検索（最新のものを取得）
+  // 既存の紹介リンクを検索（1ユーザー1リンク固定）
   let existingReferral;
   try {
     existingReferral = await prisma.referral.findFirst({
@@ -39,71 +39,41 @@ export async function generateReferralLink(userId: string): Promise<{
   }
 
   if (existingReferral) {
-    const liffUrl = process.env.NEXT_PUBLIC_LIFF_URL || "";
-    if (!liffUrl) {
-      throw new Error("NEXT_PUBLIC_LIFF_URLが設定されていません");
-    }
-
-    const currentExpiresAt =
-      existingReferral.expiresAt ??
-      new Date(existingReferral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const isExpired = currentExpiresAt.getTime() < Date.now();
-    const isActive =
-      !isExpired &&
-      existingReferral.status !== ReferralStatus.INVALID &&
-      existingReferral.status !== ReferralStatus.FRAUD;
-
-    if (isActive) {
-      // Ensure expiresAt is present for consistency.
-      if (!existingReferral.expiresAt) {
-        await prisma.referral.update({
-          where: { id: existingReferral.id },
-          data: { expiresAt: currentExpiresAt },
-        });
-      }
-      return {
-        referralLinkId: existingReferral.referralLinkId,
-        referralLink: existingReferral.referralLink,
-        expiresAt: currentExpiresAt,
-      };
-    }
-
-    // 期限切れの場合は既存レコードを上書きして再利用する
-    if (isExpired) {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-
-      const referralLinkId = crypto.randomUUID();
-      const referralLink = `${liffUrl}?ref=${referralLinkId}`;
-
-      await prisma.referral.update({
-        where: { id: existingReferral.id },
-        data: {
-          referralLinkId,
-          referralLink,
-          status: ReferralStatus.PENDING,
-          expiresAt,
-        },
-      });
-
-      return {
-        referralLinkId,
-        referralLink,
-        expiresAt,
-      };
-    }
+    return {
+      referralLinkId: existingReferral.referralLinkId,
+      referralLink: existingReferral.referralLink,
+      expiresAt: existingReferral.expiresAt ?? null,
+    };
   }
 
-  return await regenerateReferralLink(userId, { reason: "generate_no_active" });
+  const liffUrl = process.env.NEXT_PUBLIC_LIFF_URL || "";
+  if (!liffUrl) {
+    throw new Error("NEXT_PUBLIC_LIFF_URLが設定されていません");
+  }
+
+  const referralLinkId = crypto.randomUUID();
+  const referralLink = `${liffUrl}?ref=${referralLinkId}`;
+
+  await prisma.referral.create({
+    data: {
+      userId,
+      referralLinkId,
+      referralLink,
+      status: ReferralStatus.PENDING,
+      expiresAt: null,
+    },
+  });
+
+  return { referralLinkId, referralLink, expiresAt: null };
 }
 
 /**
- * 有効な紹介リンクを取得（期限切れは返さない）
+ * 有効な紹介リンクを取得
  */
 export async function getActiveReferralLink(userId: string): Promise<{
   referralLinkId: string;
   referralLink: string;
-  expiresAt: Date;
+  expiresAt: Date | null;
 } | null> {
   const existingReferral = await prisma.referral.findFirst({
     where: { userId },
@@ -111,14 +81,6 @@ export async function getActiveReferralLink(userId: string): Promise<{
   });
 
   if (!existingReferral) {
-    return null;
-  }
-
-  const expiresAt =
-    existingReferral.expiresAt ??
-    new Date(existingReferral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  if (expiresAt.getTime() < Date.now()) {
     return null;
   }
 
@@ -132,54 +94,8 @@ export async function getActiveReferralLink(userId: string): Promise<{
   return {
     referralLinkId: existingReferral.referralLinkId,
     referralLink: existingReferral.referralLink,
-    expiresAt,
+    expiresAt: existingReferral.expiresAt ?? null,
   };
-}
-
-/**
- * 紹介リンクを再生成（新しいリンクIDを発行）
- * - 旧リンクは無効化しない（過去リンクでも紹介成立できる仕様）
- */
-export async function regenerateReferralLink(
-  userId: string,
-  options?: { reason?: string }
-): Promise<{
-  referralLinkId: string;
-  referralLink: string;
-  expiresAt: Date;
-}> {
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
-
-  const referralLinkId = crypto.randomUUID();
-  const liffUrl = process.env.NEXT_PUBLIC_LIFF_URL || "";
-  if (!liffUrl) {
-    throw new Error("NEXT_PUBLIC_LIFF_URLが設定されていません");
-  }
-
-  const referralLink = `${liffUrl}?ref=${referralLinkId}`;
-
-  try {
-    await prisma.referral.create({
-      data: {
-        userId,
-        referralLinkId,
-        referralLink,
-        status: ReferralStatus.PENDING,
-        expiresAt,
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[regenerateReferralLink] 紹介リンク再生成エラー:", {
-      userId,
-      reason: options?.reason,
-      error: errorMessage,
-    });
-    throw new Error(`紹介リンクの再生成に失敗しました: ${errorMessage}`);
-  }
-
-  return { referralLinkId, referralLink, expiresAt };
 }
 
 /**
@@ -225,16 +141,6 @@ export async function verifyReferralLink(
     return {
       isValid: false,
       reason: "紹介リンクが見つかりません",
-    };
-  }
-
-  const expiresAt =
-    referral.expiresAt ??
-    new Date(referral.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
-  if (Date.now() > expiresAt.getTime()) {
-    return {
-      isValid: false,
-      reason: "この紹介リンクは有効期限切れです",
     };
   }
 
@@ -762,38 +668,6 @@ export async function updateRefereeActivity(refereeId: string) {
     });
   }
 
-  // 将来の追加報酬機能: 一定期間・一定金額使用したら追加報酬
-  // 例: 30日以内に1000円以上課金したら追加100ポイント
-  const daysSinceCompletion = referralUser.completedAt
-    ? Math.floor(
-        (Date.now() - referralUser.completedAt.getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
-    : 999;
-
-  if (
-    !referralUser.additionalRewardGranted &&
-    daysSinceCompletion <= 30 &&
-    totalSpent >= 1000 &&
-    gachaCount >= 1
-  ) {
-    const { grantFreePoints } = await import("@/lib/point-management");
-    const { PointTransactionType } = await import("@prisma/client");
-
-    await grantFreePoints(
-      referralUser.userId,
-      100,
-      null,
-      "友だち紹介追加報酬（被紹介者の課金特典）",
-      PointTransactionType.REFERRAL_REWARD
-    );
-
-    await prisma.referralUser.update({
-      where: { id: referralUser.id },
-      data: {
-        additionalRewardGranted: true,
-        additionalRewardGrantedAt: new Date(),
-      },
-    });
-  }
+  // 追加報酬（被紹介者の課金条件達成時）は廃止。
+  // 現在は行動集計の更新のみを行う。
 }
