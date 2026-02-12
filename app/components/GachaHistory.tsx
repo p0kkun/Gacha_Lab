@@ -13,12 +13,12 @@ type GachaHistoryItem = {
   gachaType: {
     id: string;
     name: string;
-  };
+  } | null;
   item: {
     id: number;
     name: string;
     rarity: string;
-  };
+  } | null;
   pointsUsed: number;
 };
 
@@ -104,6 +104,7 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
   };
 
   const getRarityLabel = (rarity: string): string => {
+    if (!rarity || rarity === "UNKNOWN") return "不明";
     return prizeTiers[rarity] || rarity;
   };
 
@@ -196,14 +197,14 @@ export default function GachaHistory({ userId }: GachaHistoryProps) {
                                 border: "1px solid #b89f7a",
                               }}
                             >
-                              {getRarityLabel(history.item.rarity)}
+                              {getRarityLabel(history.item?.rarity ?? "UNKNOWN")}
                             </span>
                           </div>
                           <div className="mb-1 font-bold text-gray-800 truncate">
-                            {history.item.name}
+                            {history.item?.name ?? "（アイテム情報なし）"}
                           </div>
                           <div className="mb-2 text-sm text-gray-600">
-                            {history.gachaType.name}
+                            {history.gachaType?.name ?? "（ガチャ情報なし）"}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <span>
