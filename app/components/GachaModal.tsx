@@ -15,6 +15,7 @@ export type GachaType = {
   iconImageUrl?: string | null;
   pointCost?: number;
   mainPrizeLabel?: string | null;
+  isPickup?: boolean;
   startAt?: string | null;
   endAt?: string | null;
 };

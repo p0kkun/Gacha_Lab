@@ -190,6 +190,7 @@ export async function GET(request: NextRequest) {
       isActive: gachaType.isActive,
       startAt: gachaType.startAt,
       endAt: gachaType.endAt,
+      isPickup: appSettings?.pickupGachaId !== null && appSettings?.pickupGachaId === gachaType.id,
       mainPrizeLabel: getMainPrizeLabel(gachaType.id),
     }));
 
@@ -202,4 +203,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

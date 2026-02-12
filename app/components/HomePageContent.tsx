@@ -85,6 +85,7 @@ type GachaType = {
   iconImageUrl: string | null;
   pointCost: number;
   mainPrizeLabel?: string | null;
+  isPickup?: boolean;
 };
 
 type UserStats = {
@@ -408,20 +409,29 @@ export default function HomePageContent({
                     <button
                       key={gacha.id}
                       onClick={() => onOpenGacha(gacha.code)}
-                      className="group w-full rounded-xl border-2 p-4 shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
+                      className={`group relative w-full overflow-hidden rounded-xl border-2 p-4 shadow-lg transition-all hover:shadow-xl active:scale-[0.98] ${
+                        gacha.isPickup ? "pickup-highlight-card pickup-highlight-card--home pt-7" : ""
+                      }`}
                       style={{ 
-                        borderColor: '#b89f7a',
+                        borderColor: gacha.isPickup ? '#c9ab78' : '#b89f7a',
                         backgroundColor: 'rgba(255, 255, 255, 0.9)'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#c8af8a';
-                        e.currentTarget.style.boxShadow = '0 10px 25px rgba(184, 159, 122, 0.3)';
+                        e.currentTarget.style.borderColor = gacha.isPickup ? '#d4b880' : '#c8af8a';
+                        e.currentTarget.style.boxShadow = gacha.isPickup
+                          ? '0 12px 30px rgba(170, 131, 75, 0.35)'
+                          : '0 10px 25px rgba(184, 159, 122, 0.3)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#b89f7a';
+                        e.currentTarget.style.borderColor = gacha.isPickup ? '#c9ab78' : '#b89f7a';
                         e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
                       }}
                     >
+                      {gacha.isPickup && (
+                        <span className="pickup-tag">
+                          PICKUP
+                        </span>
+                      )}
                       <div className="flex items-center gap-4">
                         <img
                           src={

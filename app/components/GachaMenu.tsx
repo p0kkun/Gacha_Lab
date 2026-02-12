@@ -99,16 +99,26 @@ export default function GachaMenu({
       {/* メニューリスト */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <ul className="space-y-2">
-          {gachaTypes.map((gacha) => (
+          {gachaTypes.map((gacha) => {
+            const isSelected = selectedGacha.id === gacha.id;
+            const isPickup = Boolean(gacha.isPickup);
+            return (
             <li key={gacha.id}>
               <button
                 onClick={() => onSelect(gacha)}
-                className={`group w-full rounded-xl p-4 text-left transition-all duration-200 ${
-                  selectedGacha.id === gacha.id
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
-                    : "bg-gray-50 text-gray-800 hover:bg-gray-100 hover:shadow-md active:scale-[0.98]"
+                className={`group relative w-full overflow-hidden rounded-xl p-4 text-left transition-all duration-200 ${
+                  isPickup
+                    ? `pickup-highlight-card pt-7 ${isSelected ? "pickup-highlight-card--selected scale-[1.02]" : "hover:shadow-md active:scale-[0.98]"}`
+                    : isSelected
+                      ? "bg-gradient-to-r from-[#8f7756] to-[#73573b] text-white shadow-lg shadow-[#8f7756]/35 scale-[1.02]"
+                      : "bg-gray-50 text-gray-800 hover:bg-gray-100 hover:shadow-md active:scale-[0.98]"
                 }`}
               >
+                {isPickup && (
+                  <span className="pickup-tag">
+                    PICKUP
+                  </span>
+                )}
                 <div className="flex items-center gap-3">
                   <img
                     src={
@@ -139,9 +149,11 @@ export default function GachaMenu({
                   <div className="flex-1 min-w-0">
                     <div
                       className={`mb-1 font-semibold leading-tight ${
-                        selectedGacha.id === gacha.id
+                        isSelected && !isPickup
                           ? "text-white"
-                          : "text-gray-900"
+                          : isPickup
+                            ? "text-[#3f2f20]"
+                            : "text-gray-900"
                       }`}
                     >
                       {gacha.name}
@@ -150,9 +162,11 @@ export default function GachaMenu({
                       <div
                         className="mb-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
                         style={
-                          selectedGacha.id === gacha.id
+                          isSelected && !isPickup
                             ? { backgroundColor: "rgba(255, 255, 255, 0.2)", color: "#fff" }
-                            : { backgroundColor: "rgba(184, 159, 122, 0.2)", color: "#5a4a3a" }
+                            : isPickup
+                              ? { backgroundColor: "rgba(121, 87, 48, 0.14)", color: "#5a3f21" }
+                              : { backgroundColor: "rgba(184, 159, 122, 0.2)", color: "#5a4a3a" }
                         }
                       >
                         {gacha.pointCost > 0 ? (
@@ -174,9 +188,11 @@ export default function GachaMenu({
                         className="text-xs font-semibold"
                         style={{
                           color:
-                            selectedGacha.id === gacha.id
+                            isSelected && !isPickup
                               ? "rgba(255, 255, 255, 0.9)"
-                              : "#6b5a4a",
+                              : isPickup
+                                ? "#5e4628"
+                                : "#6b5a4a",
                         }}
                       >
                         メイン景品: {gacha.mainPrizeLabel}
@@ -188,7 +204,13 @@ export default function GachaMenu({
                   <div
                     className="text-xs leading-relaxed break-words"
                     style={{
-                      color: selectedGacha.id === gacha.id ? 'rgba(255, 255, 255, 0.9)' : '#6b5a4a'
+                      color: isSelected
+                        ? isPickup
+                          ? '#6a522f'
+                          : 'rgba(255, 255, 255, 0.9)'
+                        : isPickup
+                          ? '#6a522f'
+                          : '#6b5a4a'
                     }}
                   >
                     {renderDescription(gacha.description)}
@@ -196,7 +218,8 @@ export default function GachaMenu({
                 )}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </div>
