@@ -129,7 +129,7 @@ body {
 .pickup-highlight-card {
   position: relative;
   isolation: isolate;
-  border-width: 4px;
+  border-width: 0;
   border-color: transparent;
   background:
     linear-gradient(
@@ -149,9 +149,7 @@ body {
     );
   background-size: 230% 230%, 100% 100%;
   animation: pickupBgFlow 6s ease-in-out infinite;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.62) inset,
-    0 10px 24px rgba(169, 132, 77, 0.26);
+  box-shadow: 0 10px 24px rgba(169, 132, 77, 0.26);
 }
 
 .pickup-highlight-card::after {
@@ -203,15 +201,11 @@ body {
 }
 
 .pickup-highlight-card--selected {
-  box-shadow:
-    0 0 0 2px rgba(255, 250, 239, 0.95) inset,
-    0 14px 34px rgba(159, 114, 53, 0.36);
+  box-shadow: 0 14px 34px rgba(159, 114, 53, 0.36);
 }
 
 .pickup-highlight-card--home {
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.68) inset,
-    0 12px 28px rgba(169, 132, 77, 0.26);
+  box-shadow: 0 12px 28px rgba(169, 132, 77, 0.26);
 }
 
 .pickup-tag {

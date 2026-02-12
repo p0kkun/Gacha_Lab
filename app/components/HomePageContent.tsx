@@ -409,8 +409,10 @@ export default function HomePageContent({
                     <button
                       key={gacha.id}
                       onClick={() => onOpenGacha(gacha.code)}
-                      className={`group relative w-full overflow-hidden rounded-xl border-2 p-4 shadow-lg transition-all hover:shadow-xl active:scale-[0.98] ${
-                        gacha.isPickup ? "pickup-highlight-card pickup-highlight-card--home pt-7" : ""
+                      className={`group relative w-full overflow-hidden rounded-xl p-4 shadow-lg transition-all hover:shadow-xl active:scale-[0.98] ${
+                        gacha.isPickup
+                          ? "pickup-highlight-card pickup-highlight-card--home border-0 pt-7"
+                          : "border-2"
                       }`}
                       style={{ 
                         borderColor: gacha.isPickup ? '#c9ab78' : '#b89f7a',
