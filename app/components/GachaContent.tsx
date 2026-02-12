@@ -454,12 +454,12 @@ export default function GachaContent({
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="pickup-surface-bg relative flex min-h-screen flex-col">
       {/* ヘッダー - ポーカーテーブル風 */}
       {!showVideo && (
         <div
           className="border-b px-6 py-4 shadow-lg"
-          style={{ backgroundColor: "#e9dacb", borderColor: "#b89f7a" }}
+          style={{ borderColor: "#b89f7a" }}
         >
           <div className="flex items-center gap-3">
             {selectedGacha.iconImageUrl ? (
@@ -543,7 +543,7 @@ export default function GachaContent({
       )}
 
       {/* メインコンテンツ - ポーカーテーブル風 */}
-      <div className="flex-1" style={{ backgroundColor: "#e9dacb" }}>
+      <div className="pickup-surface-bg flex-1">
         {!result && (
           <div className="flex min-h-full flex-col">
             {/* アイコン画像またはデフォルト画像 - 横幅いっぱい */}
@@ -697,7 +697,7 @@ export default function GachaContent({
       {!showVideo && (
         <div
           className="border-t px-6 py-4 pb-24"
-          style={{ backgroundColor: "#e9dacb", borderColor: "#b89f7a" }}
+          style={{ borderColor: "#b89f7a" }}
         >
           <button
             onClick={handleDrawGachaClick}
