@@ -105,12 +105,24 @@ body {
   }
 }
 
-@keyframes pickupBorderSpin {
+@keyframes pickupBorderFlow {
   0% {
-    transform: rotate(0deg);
+    background-position: 0% 50%;
   }
   100% {
-    transform: rotate(360deg);
+    background-position: 220% 50%;
+  }
+}
+
+@keyframes pickupBgFlow {
+  0% {
+    background-position: 0% 50%, 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 0%;
+  }
+  100% {
+    background-position: 0% 50%, 0% 0%;
   }
 }
 
@@ -120,6 +132,14 @@ body {
   border-width: 4px;
   border-color: transparent;
   background:
+    linear-gradient(
+      112deg,
+      rgba(255, 250, 238, 0.6) 0%,
+      rgba(229, 179, 73, 0.2) 22%,
+      rgba(248, 231, 206, 0.45) 45%,
+      rgba(212, 184, 128, 0.34) 68%,
+      rgba(255, 250, 238, 0.55) 100%
+    ),
     radial-gradient(
       120% 100% at 0% 0%,
       rgba(255, 248, 234, 0.92) 0%,
@@ -127,6 +147,8 @@ body {
       rgba(233, 218, 203, 0.9) 64%,
       rgba(221, 198, 168, 0.92) 100%
     );
+  background-size: 230% 230%, 100% 100%;
+  animation: pickupBgFlow 6s ease-in-out infinite;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.62) inset,
     0 10px 24px rgba(169, 132, 77, 0.26);
@@ -138,15 +160,16 @@ body {
   inset: -1px;
   border-radius: inherit;
   padding: 4px;
-  background: conic-gradient(
-    from 0deg,
-    #c9ab78 0deg,
-    #e5b349 72deg,
-    #d4b880 150deg,
-    #e5b349 240deg,
-    #c9ab78 360deg
+  background: linear-gradient(
+    110deg,
+    #c9ab78 0%,
+    #e5b349 22%,
+    #d4b880 45%,
+    #e5b349 68%,
+    #c9ab78 100%
   );
-  animation: pickupBorderSpin 4.2s linear infinite;
+  background-size: 220% 220%;
+  animation: pickupBorderFlow 2.8s linear infinite;
   pointer-events: none;
   z-index: 0;
   -webkit-mask:
