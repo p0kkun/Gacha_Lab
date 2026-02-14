@@ -93,9 +93,11 @@ export default function PrizeListModal({
 
   const formatProbability = (value: number): string => {
     if (!Number.isFinite(value)) return '0%';
-    const digits = value < 1 ? 1 : 1;
+    const digits = 2;
     return `${value.toFixed(digits)}%`;
   };
+
+  const formatTotalProbability = (): string => "100%";
 
   // MarkdownリンクをHTMLに変換
   const renderDescription = (text: string | null): ReactNode => {
@@ -280,9 +282,7 @@ export default function PrizeListModal({
                     <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: "#d6c3a9", backgroundColor: "rgba(255,255,255,0.7)", color: "#4a3a2a" }}>
                       <span>合計</span>
                       <span style={{ color: "#8b6f47" }}>
-                        {formatProbability(
-                          data.tiers.reduce((sum, tier) => sum + tier.tierProbability, 0)
-                        )}
+                        {formatTotalProbability()}
                       </span>
                     </div>
                   </div>
@@ -296,6 +296,11 @@ export default function PrizeListModal({
                     <li>抽選結果はシステムによりランダムに決定されます。</li>
                     <li>在庫状況やキャンペーンにより、提供割合が変更される場合があります。その場合は事前に表示内容を更新します。</li>
                   </ul>
+                  <div className="rounded-lg border px-3 py-2 text-xs leading-relaxed" style={{ borderColor: "#d6c3a9", backgroundColor: "rgba(255,255,255,0.55)" }}>
+                    <div>※提供割合は設定値に基づき算出しています。</div>
+                    <div>※小数点第3位を四捨五入し、小数点第2位まで表示しているため、表示上の合計が100%にならない場合があります。</div>
+                    <div>※各賞品は1回ごとに独立して抽選されます。</div>
+                  </div>
                 </div>
 
                 <div className="space-y-3 text-sm" style={{ color: '#6b5a4a' }}>
