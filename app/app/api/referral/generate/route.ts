@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
       success: true,
       referralLinkId: result.referralLinkId,
       referralLink: result.referralLink,
-      expiresAt: result.expiresAt,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

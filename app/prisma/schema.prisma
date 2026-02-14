@@ -155,7 +155,6 @@ model Referral {
   referralLinkId String         @unique
   referralLink   String
   status         ReferralStatus @default(PENDING)
-  expiresAt      DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -197,6 +196,7 @@ model ReferralUser {
   userId                    String
   toUserId                  String
   completedAt               DateTime  @default(now())
+  additionalRewardPoint     Int?
   additionalRewardGranted   Boolean   @default(false)
   additionalRewardGrantedAt DateTime?
   createdAt                 DateTime  @default(now())

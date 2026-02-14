@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       referralLinkId: current?.referralLinkId ?? null,
       referralLink: current?.referralLink ?? null,
-      expiresAt: current?.expiresAt ?? null,
     });
   } catch (error) {
     await logError(error, { route: "/api/referral/current" }, request);

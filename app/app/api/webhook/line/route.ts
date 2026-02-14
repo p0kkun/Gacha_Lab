@@ -644,7 +644,6 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
       referralLinkId: string;
       status: ReferralStatus;
       createdAt: Date;
-      expiresAt: Date | null;
     } | null = null;
 
     // 方法1: User.lastAccessedReferralLinkIdから取得（友だち追加前にLIFFアプリにアクセスした場合）
@@ -670,7 +669,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
         // Referralテーブルから紹介情報を取得
         const referralData = await prisma.referral.findUnique({
           where: { id: recentHistory.referralId },
-          select: { id: true, userId: true, referralLinkId: true, status: true, createdAt: true, expiresAt: true },
+          select: { id: true, userId: true, referralLinkId: true, status: true, createdAt: true },
         });
         if (referralData) {
           referral = referralData;
@@ -688,7 +687,7 @@ async function processReferralOnFollow(refereeId: string, client: Client) {
     if (!referral) {
       referral = await prisma.referral.findUnique({
         where: { referralLinkId },
-        select: { id: true, userId: true, referralLinkId: true, status: true, createdAt: true, expiresAt: true },
+        select: { id: true, userId: true, referralLinkId: true, status: true, createdAt: true },
       });
     }
 

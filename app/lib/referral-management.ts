@@ -1,4 +1,4 @@
-import { PointTransactionType, ReferralStatus } from "@prisma/client";
+import { ReferralStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { deleteCache, getCache, setCache } from "./cache";
@@ -13,7 +13,6 @@ import { CacheKeys } from "./cache-keys";
 export async function generateReferralLink(userId: string): Promise<{
   referralLinkId: string;
   referralLink: string;
-  expiresAt: Date | null;
   qrCodeUrl?: string;
 }> {
   // データベース接続を確認
@@ -42,7 +41,6 @@ export async function generateReferralLink(userId: string): Promise<{
     return {
       referralLinkId: existingReferral.referralLinkId,
       referralLink: existingReferral.referralLink,
-      expiresAt: existingReferral.expiresAt ?? null,
     };
   }
 
@@ -60,11 +58,10 @@ export async function generateReferralLink(userId: string): Promise<{
       referralLinkId,
       referralLink,
       status: ReferralStatus.PENDING,
-      expiresAt: null,
     },
   });
 
-  return { referralLinkId, referralLink, expiresAt: null };
+  return { referralLinkId, referralLink };
 }
 
 /**
@@ -73,7 +70,6 @@ export async function generateReferralLink(userId: string): Promise<{
 export async function getActiveReferralLink(userId: string): Promise<{
   referralLinkId: string;
   referralLink: string;
-  expiresAt: Date | null;
 } | null> {
   const existingReferral = await prisma.referral.findFirst({
     where: { userId },
@@ -94,7 +90,6 @@ export async function getActiveReferralLink(userId: string): Promise<{
   return {
     referralLinkId: existingReferral.referralLinkId,
     referralLink: existingReferral.referralLink,
-    expiresAt: existingReferral.expiresAt ?? null,
   };
 }
 
@@ -414,7 +409,24 @@ export async function completeReferral(
         `友だち紹介特典（紹介者）: ${referrerPoints}ポイント`,
         PointTransactionType.REFERRAL_REWARD
       );
+      await tx.referralUser.update({
+        where: { id: referralUser.id },
+        data: {
+          additionalRewardPoint: referrerPoints,
+          additionalRewardGranted: true,
+          additionalRewardGrantedAt: new Date(),
+        },
+      });
       // grantFreePoints内でキャッシュ削除されるが、念のためトランザクション完了後にも削除
+    } else {
+      await tx.referralUser.update({
+        where: { id: referralUser.id },
+        data: {
+          additionalRewardPoint: null,
+          additionalRewardGranted: false,
+          additionalRewardGrantedAt: null,
+        },
+      });
     }
 
     // 被紹介者への特典（設定されたポイント）
@@ -558,46 +570,18 @@ export async function getReferralHistory(
     userActivities.map((ua) => [ua.referralUserId, ua])
   );
 
-  // 紹介者特典の付与内容（point_histories）を取得
-  const rewardEntries = await Promise.all(
-    referralUsers.map(async (ru) => {
-      const grantedAt = ru.completedAt ?? ru.createdAt;
-      const windowStart = new Date(grantedAt.getTime() - 10 * 60 * 1000);
-      const windowEnd = new Date(grantedAt.getTime() + 10 * 60 * 1000);
-
-      const rewardHistory = await prisma.pointHistory.findFirst({
-        where: {
-          userId: ru.userId,
-          transactionType: PointTransactionType.REFERRAL_REWARD,
-          description: { contains: "友だち紹介特典（紹介者）" },
-          createdAt: {
-            gte: windowStart,
-            lte: windowEnd,
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        select: {
-          amount: true,
-          description: true,
-          createdAt: true,
-        },
-      });
-
-      return [ru.id, rewardHistory] as const;
-    })
-  );
-  const rewardMap = new Map(rewardEntries);
-
   // 各referralUserにtoUserとactivityを追加
   const items = referralUsers.map((ru) => ({
     ...ru,
     toUser: toUserMap.get(ru.toUserId) || null,
     refereeActivity: activityMap.get(ru.id) || null,
-    additionalReward: rewardMap.get(ru.id)
+    additionalReward: ru.additionalRewardGranted
       ? {
-          points: rewardMap.get(ru.id)!.amount,
-          description: rewardMap.get(ru.id)!.description,
-          grantedAt: rewardMap.get(ru.id)!.createdAt,
+          points: ru.additionalRewardPoint,
+          description: ru.additionalRewardPoint
+            ? `友だち紹介特典（紹介者）: ${ru.additionalRewardPoint}ポイント`
+            : null,
+          grantedAt: ru.additionalRewardGrantedAt,
         }
       : null,
   }));
