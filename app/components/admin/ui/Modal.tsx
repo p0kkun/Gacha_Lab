@@ -8,6 +8,7 @@ type ModalProps = {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  size?: 'small' | 'medium' | 'large';
 };
 
 export default function Modal({
@@ -16,18 +17,25 @@ export default function Modal({
   onClose,
   children,
   footer,
+  size = 'medium',
 }: ModalProps) {
   if (!isOpen) return null;
 
+  const sizeClasses = {
+    small: 'max-w-md',
+    medium: 'max-w-2xl',
+    large: 'max-w-4xl',
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 backdrop-blur-sm"
         style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
         onClick={onClose}
       />
       <div
-        className="relative z-10 w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl"
+        className={`relative z-10 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-white p-6 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

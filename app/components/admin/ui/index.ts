@@ -6,4 +6,5 @@ export { default as Badge } from './Badge';
 export { default as Alert } from './Alert';
 export { default as Table } from './Table';
 export { default as PageHeader } from './PageHeader';
+export { default as Tooltip } from './Tooltip';
 

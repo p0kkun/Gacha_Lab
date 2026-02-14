@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
+import Tooltip from "@/components/admin/ui/Tooltip";
+import WeightExplanationModal from "@/components/admin/WeightExplanationModal";
 
 type TierWeightLite = { tierCode: string; weight: number; isActive: boolean };
 type GachaTypeLite = {
@@ -44,6 +46,7 @@ export default function PrizeAssignmentsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showWeightExplanation, setShowWeightExplanation] = useState(false);
 
   const [newRow, setNewRow] = useState<{
     tierCode: string;
@@ -624,7 +627,41 @@ export default function PrizeAssignmentsPage() {
                     景品
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
-                    重み
+                    <div className="flex items-center gap-1">
+                      <span>重み</span>
+                      <Tooltip
+                        content={
+                          <div className="space-y-2">
+                            <p className="text-base font-semibold">重みによる抽選の仕組み</p>
+                            <p className="text-sm leading-relaxed">
+                              同じ等級内での景品の当たりやすさを表します。
+                            </p>
+                            <p className="text-sm leading-relaxed">
+                              重みの合計を100にする必要はありません。
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowWeightExplanation(true);
+                              }}
+                              className="mt-2 text-sm font-medium text-blue-300 underline hover:no-underline hover:text-blue-200"
+                            >
+                              詳細な図解を見る →
+                            </button>
+                          </div>
+                        }
+                        position="top"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setShowWeightExplanation(true)}
+                          className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600 hover:bg-blue-200"
+                          aria-label="重み設定の説明を見る"
+                        >
+                          ?
+                        </button>
+                      </Tooltip>
+                    </div>
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     等級内確率
@@ -831,6 +868,11 @@ export default function PrizeAssignmentsPage() {
           await fn();
         }}
         onCancel={closeConfirm}
+      />
+      <WeightExplanationModal
+        isOpen={showWeightExplanation}
+        onClose={() => setShowWeightExplanation(false)}
+        title="重みによる抽選の仕組み"
       />
     </div>
   );

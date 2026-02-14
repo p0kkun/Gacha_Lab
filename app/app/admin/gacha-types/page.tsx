@@ -11,6 +11,8 @@ import {
   Input } from "@/components/admin/ui";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import Modal from "@/components/admin/ui/Modal";
+import Tooltip from "@/components/admin/ui/Tooltip";
+import WeightExplanationModal from "@/components/admin/WeightExplanationModal";
 import MultiVideoPlayer from "@/components/MultiVideoPlayer";
 import { CheckIcon, WarningIcon } from "@/components/admin/icons/AdminIcons";
 
@@ -141,6 +143,7 @@ export default function GachaTypesPage() {
   const [showSimulation, setShowSimulation] = useState(false);
   const [simulationCount, setSimulationCount] = useState<number>(1000);
   const [showVariableInfo, setShowVariableInfo] = useState(false);
+  const [showWeightExplanation, setShowWeightExplanation] = useState(false);
   const [showHandSettings, setShowHandSettings] = useState(false);
   const [simulationResults, setSimulationResults] = useState<{
     results: Array<{
@@ -2184,6 +2187,61 @@ export default function GachaTypesPage() {
                         )}
                       </div>
 
+                      {/* 重み設定の説明 */}
+                      <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-2">
+                              <span className="text-sm font-semibold text-blue-800">
+                                重みによる抽選について
+                              </span>
+                              <Tooltip
+                                content={
+                                  <div className="space-y-2">
+                                    <p className="text-base font-semibold">重みによる抽選の仕組み</p>
+                                    <p className="text-sm leading-relaxed">
+                                      重みの合計を100にする必要はありません。
+                                    </p>
+                                    <p className="text-sm leading-relaxed">
+                                      重みの比率が確率を決定します。
+                                    </p>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowWeightExplanation(true);
+                                      }}
+                                      className="mt-2 text-sm font-medium text-blue-300 underline hover:no-underline hover:text-blue-200"
+                                    >
+                                      詳細な図解を見る →
+                                    </button>
+                                  </div>
+                                }
+                                position="top"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setShowWeightExplanation(true)}
+                                  className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-200 text-xs font-bold text-blue-700 hover:bg-blue-300"
+                                  aria-label="重み設定の説明を見る"
+                                >
+                                  ?
+                                </button>
+                              </Tooltip>
+                            </div>
+                            <p className="text-xs text-blue-700">
+                              重みは各等級の「当たりやすさ」を表す数値です。重みの合計を100にする必要はなく、重みの比率が確率を決定します。
+                              <button
+                                type="button"
+                                onClick={() => setShowWeightExplanation(true)}
+                                className="ml-1 underline hover:no-underline"
+                              >
+                                詳細な図解を見る
+                              </button>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       {getPrizeConfigs(displayData).map((config, index) => {
                         const otherWeights = getPrizeConfigs(displayData)
                           .filter((_, i) => i !== index)
@@ -2211,6 +2269,38 @@ export default function GachaTypesPage() {
                                   {getTierLabel(config.rarity)}
                                   の重み
                                 </label>
+                                <Tooltip
+                                  content={
+                                    <div className="space-y-2">
+                                      <p className="text-base font-semibold">重みによる抽選の仕組み</p>
+                                      <p className="text-sm leading-relaxed">
+                                        重みの合計を100にする必要はありません。
+                                      </p>
+                                      <p className="text-sm leading-relaxed">
+                                        重みの比率が確率を決定します。
+                                      </p>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setShowWeightExplanation(true);
+                                        }}
+                                        className="mt-2 text-sm font-medium text-blue-300 underline hover:no-underline hover:text-blue-200"
+                                      >
+                                        詳細な図解を見る →
+                                      </button>
+                                    </div>
+                                  }
+                                  position="top"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowWeightExplanation(true)}
+                                    className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600 hover:bg-blue-200"
+                                    aria-label="重み設定の説明を見る"
+                                  >
+                                    ?
+                                  </button>
+                                </Tooltip>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
@@ -2397,6 +2487,11 @@ export default function GachaTypesPage() {
       <VariableInfoModal
         isOpen={showVariableInfo}
         onClose={() => setShowVariableInfo(false)}
+      />
+      <WeightExplanationModal
+        isOpen={showWeightExplanation}
+        onClose={() => setShowWeightExplanation(false)}
+        title="重みによる抽選の仕組み"
       />
 
       {/* 削除確認モーダル */}
