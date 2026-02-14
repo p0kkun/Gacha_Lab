@@ -556,11 +556,11 @@ export default function GachaContent({
                     : "/images/gacha/default-icon.png"
                 }
                 alt={selectedGacha.name}
-                className="w-full object-cover"
+                className="w-full object-contain"
                 style={{
                   maxHeight: "40vh",
                   minHeight: "200px",
-                  objectFit: "cover",
+                  objectFit: "contain",
                   display: "block",
                 }}
                 onError={(e) => {
