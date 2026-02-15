@@ -87,6 +87,11 @@ export function GachaTypeEditor({
   mode: EditorMode;
   initialCode?: string;
 }) {
+  const POINT_COST_MIN = 0;
+  const POINT_COST_MAX = 1000000;
+  const TIER_WEIGHT_MIN = 0;
+  const TIER_WEIGHT_MAX = 1000000;
+
   const router = useRouter();
   const code = initialCode ?? "";
 
@@ -106,6 +111,7 @@ export function GachaTypeEditor({
   const [selectedImageName, setSelectedImageName] = useState<string>("");
   const [tiersToAdd, setTiersToAdd] = useState<string[]>([]);
   const iconInputRef = useRef<HTMLInputElement | null>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
   const activeTiers = useMemo(
     () =>
@@ -224,6 +230,26 @@ export function GachaTypeEditor({
       prizeHands: nextHands,
       rarityVideoIds: nextVideoIds,
     });
+  };
+
+  const insertMarkdownLink = () => {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+    const url = window.prompt("リンクURLを入力してください", "https://");
+    if (!url) return;
+    const selectedText =
+      textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || "リンクテキスト";
+    const markdownLink = `[${selectedText}](${url})`;
+    const nextValue =
+      textarea.value.slice(0, textarea.selectionStart) +
+      markdownLink +
+      textarea.value.slice(textarea.selectionEnd);
+    setFormData({ ...formData, description: nextValue });
+    setTimeout(() => {
+      const pos = (textarea.selectionStart || 0) + markdownLink.length;
+      textarea.focus();
+      textarea.setSelectionRange(pos, pos);
+    }, 0);
   };
 
   useEffect(() => {
@@ -488,13 +514,20 @@ export function GachaTypeEditor({
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="text-sm font-medium text-gray-700">説明</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">説明</label>
+                  <Button type="button" variant="secondary" size="sm" onClick={insertMarkdownLink}>
+                    リンク挿入
+                  </Button>
+                </div>
                 <textarea
+                  ref={descriptionRef}
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 />
+                <p className="mt-1 text-xs text-gray-500">Markdown形式のリンク: [テキスト](URL)</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">開始日時（任意）</label>
@@ -528,14 +561,23 @@ export function GachaTypeEditor({
                 <label className="text-sm font-medium text-gray-700">ポイントコスト</label>
                 <input
                   type="number"
-                  min={0}
-                  max={1000000}
+                  min={POINT_COST_MIN}
+                  max={POINT_COST_MAX}
                   value={formData.pointCost ?? 0}
                   onChange={(e) =>
-                    setFormData({ ...formData, pointCost: Math.max(0, Number(e.target.value || 0)) })
+                    setFormData({
+                      ...formData,
+                      pointCost: Math.min(
+                        POINT_COST_MAX,
+                        Math.max(POINT_COST_MIN, Number(e.target.value || 0))
+                      ),
+                    })
                   }
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  {POINT_COST_MIN.toLocaleString()}〜{POINT_COST_MAX.toLocaleString()}で入力してください
+                </p>
               </div>
               <div className="flex items-end gap-3">
                 <label className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2">
@@ -810,16 +852,22 @@ export function GachaTypeEditor({
                       <label className="text-xs text-gray-600">重み</label>
                       <input
                         type="number"
-                        min={0}
-                        max={1000000}
+                        min={TIER_WEIGHT_MIN}
+                        max={TIER_WEIGHT_MAX}
                         value={config.weight}
                         onChange={(e) =>
                           updatePrizeConfig(config.rarity, {
-                            weight: Math.max(0, Number(e.target.value || 0)),
+                            weight: Math.min(
+                              TIER_WEIGHT_MAX,
+                              Math.max(TIER_WEIGHT_MIN, Number(e.target.value || 0))
+                            ),
                           })
                         }
                         className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                       />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {TIER_WEIGHT_MIN.toLocaleString()}〜{TIER_WEIGHT_MAX.toLocaleString()}
+                      </p>
                     </div>
                     {showHandSettings && (
                       <div className="mt-2 max-h-32 space-y-1 overflow-auto rounded-md border border-gray-200 p-2">

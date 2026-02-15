@@ -108,6 +108,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const POINT_COST_MIN = 0;
+    const POINT_COST_MAX = 1000000;
+    const TIER_WEIGHT_MIN = 0;
+    const TIER_WEIGHT_MAX = 1000000;
+
     const authContext = await getAdminAuthContext(request);
     if (!authContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -142,6 +147,21 @@ export async function POST(request: NextRequest) {
     if (!code || !name) {
       return NextResponse.json(
         { error: "code と名前は必須です" },
+        { status: 400 }
+      );
+    }
+
+    const normalizedPointCost = Number(pointCost ?? 0);
+    if (
+      !Number.isFinite(normalizedPointCost) ||
+      !Number.isInteger(normalizedPointCost) ||
+      normalizedPointCost < POINT_COST_MIN ||
+      normalizedPointCost > POINT_COST_MAX
+    ) {
+      return NextResponse.json(
+        {
+          error: `ポイントコストは${POINT_COST_MIN.toLocaleString()}〜${POINT_COST_MAX.toLocaleString()}の整数で入力してください`,
+        },
         { status: 400 }
       );
     }
@@ -198,6 +218,25 @@ export async function POST(request: NextRequest) {
           : rarityVideoIds
         : null;
 
+    if (parsedTierWeights) {
+      for (const [tierCode, weight] of Object.entries(parsedTierWeights)) {
+        const numericWeight = Number(weight);
+        if (
+          !Number.isFinite(numericWeight) ||
+          !Number.isInteger(numericWeight) ||
+          numericWeight < TIER_WEIGHT_MIN ||
+          numericWeight > TIER_WEIGHT_MAX
+        ) {
+          return NextResponse.json(
+            {
+              error: `等級「${tierCode}」の重みは${TIER_WEIGHT_MIN.toLocaleString()}〜${TIER_WEIGHT_MAX.toLocaleString()}の整数で入力してください`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // ガチャタイプを作成または更新 + tierWeights を同期（GachaTierWeightを正にする）
     const gachaType = await prisma.$transaction(async (tx) => {
       const saved = await tx.gachaType.upsert({
@@ -210,7 +249,7 @@ export async function POST(request: NextRequest) {
           isActive: isActive ?? true,
           startAt: startAt ? new Date(startAt) : null,
           endAt: endAt ? new Date(endAt) : null,
-          pointCost: pointCost || 0,
+          pointCost: normalizedPointCost,
           prizeWeights: prizeWeights
             ? typeof prizeWeights === "string"
               ? JSON.parse(prizeWeights)
@@ -238,7 +277,7 @@ export async function POST(request: NextRequest) {
           isActive: isActive ?? true,
           startAt: startAt ? new Date(startAt) : null,
           endAt: endAt ? new Date(endAt) : null,
-          pointCost: pointCost || 0,
+          pointCost: normalizedPointCost,
           prizeWeights: prizeWeights
             ? typeof prizeWeights === "string"
               ? JSON.parse(prizeWeights)
