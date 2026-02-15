@@ -803,8 +803,11 @@ export default function GachaTypesPage() {
       //   return;
       // }
 
-      // 各レアリティの動画が設定されているか確認（PrizeTierテーブルから動的に取得）
-      const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive);
+      // このガチャで選択済み等級のみ、動画設定必須とする
+      const selectedRarityCodes = getPrizeConfigs(formData).map((config) => config.rarity);
+      const prizeTiersForValidation = prizeTiers
+        .filter((t) => t.isActive)
+        .filter((t) => selectedRarityCodes.includes(t.code));
       const missingRarities: string[] = [];
       for (const tier of prizeTiersForValidation) {
         const rarityVideos = rarityVideoIds[tier.code] || [];
@@ -813,25 +816,12 @@ export default function GachaTypesPage() {
         }
       }
 
-      if (missingRarities.length > 0) {
-        setError(
-          `以下のレアリティの動画が設定されていません: ${missingRarities.join(
-            "、"
-          )}`
-        );
-        return;
-      }
-
-      // 動画が設定されていない場合はガチャを無効にする（共通動画は使用しないためコメントアウト）
-      if (
-        formData.isActive &&
-        Object.keys(rarityVideoIds).length === 0
-      ) {
+      // 必須等級に未設定があり、有効化要求の場合は強制的に無効にする
+      if (formData.isActive && missingRarities.length > 0) {
         setFormData({ ...formData, isActive: false });
-        setError(
-          "動画が設定されていないため、ガチャを無効にしました。動画を設定してから有効にしてください。"
+        setSuccess(
+          `未設定の等級動画（${missingRarities.join("、")}）があるため、無効で保存します。`
         );
-        return;
       }
     }
 
@@ -919,8 +909,11 @@ export default function GachaTypesPage() {
         //   reasons.push("共通動画が設定されていません");
         // } // 共通動画は使用しないためコメントアウト
 
-        // PrizeTierテーブルから等級を動的に取得
-        const prizeTiersForValidation = prizeTiers.filter((t) => t.isActive);
+        // このガチャで選択済み等級のみチェック
+        const selectedRarityCodes = getPrizeConfigs(gachaType).map((config) => config.rarity);
+        const prizeTiersForValidation = prizeTiers
+          .filter((t) => t.isActive)
+          .filter((t) => selectedRarityCodes.includes(t.code));
         const missingRarities: string[] = [];
         for (const tier of prizeTiersForValidation) {
           const rarityVideos = (rarityVideoIds as Record<string, number[]>)[tier.code] || [];
@@ -1374,6 +1367,9 @@ export default function GachaTypesPage() {
                   ? []
                   : prizeTiers
                       .filter((t) => t.isActive)
+                      .filter((t) =>
+                        configs.map((config) => config.rarity).includes(t.code)
+                      )
                       .filter((t) => (rarityVideoIds[t.code] || []).length === 0)
                       .map((t) => t.label);
               const templateName =

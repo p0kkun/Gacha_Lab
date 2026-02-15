@@ -218,6 +218,26 @@ export async function POST(request: NextRequest) {
           : rarityVideoIds
         : null;
 
+    const selectedTierCodes: string[] = (() => {
+      if (Array.isArray(parsedTierOrder) && parsedTierOrder.length > 0) {
+        return parsedTierOrder;
+      }
+      if (parsedTierWeights && typeof parsedTierWeights === "object") {
+        return Object.keys(parsedTierWeights);
+      }
+      return [];
+    })();
+
+    // 動画を個別設定する場合、選択済み等級の動画が不足していれば強制的に無効化する
+    const hasMissingTierVideos =
+      useDefaultVideos === false &&
+      selectedTierCodes.some((tierCode) => {
+        const videoIds = (parsedRarityVideoIds?.[tierCode] ?? []) as number[];
+        return videoIds.length === 0;
+      });
+    const normalizedIsActive =
+      hasMissingTierVideos ? false : (isActive ?? true);
+
     if (parsedTierWeights) {
       for (const [tierCode, weight] of Object.entries(parsedTierWeights)) {
         const numericWeight = Number(weight);
@@ -246,7 +266,7 @@ export async function POST(request: NextRequest) {
           name,
           description: description || null,
           iconImageUrl: iconImageUrl || null,
-          isActive: isActive ?? true,
+          isActive: normalizedIsActive,
           startAt: startAt ? new Date(startAt) : null,
           endAt: endAt ? new Date(endAt) : null,
           pointCost: normalizedPointCost,
@@ -274,7 +294,7 @@ export async function POST(request: NextRequest) {
           name,
           description: description || null,
           iconImageUrl: iconImageUrl || null,
-          isActive: isActive ?? true,
+          isActive: normalizedIsActive,
           startAt: startAt ? new Date(startAt) : null,
           endAt: endAt ? new Date(endAt) : null,
           pointCost: normalizedPointCost,
@@ -364,6 +384,8 @@ export async function POST(request: NextRequest) {
         previousName: existing?.name ?? null,
         previousIsActive: existing?.isActive ?? null,
         isActive: gachaType.isActive,
+        forcedInactiveByMissingTierVideos: hasMissingTierVideos,
+        selectedTierCodes,
         startAt: gachaType.startAt,
         endAt: gachaType.endAt,
         pointCost: gachaType.pointCost,

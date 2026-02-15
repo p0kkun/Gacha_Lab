@@ -413,13 +413,13 @@ export function GachaTypeEditor({
     }
 
     const rarityVideoIds = (formData.rarityVideoIds as Record<string, number[]>) || {};
+    let forcedInactiveByMissingTierVideos = false;
     if (formData.useDefaultVideos === false) {
       const missing = selectedTiers
         .filter((t) => (rarityVideoIds[t.code] || []).length === 0)
         .map((t) => t.label);
-      if (missing.length > 0) {
-        setError(`以下の等級の動画が未設定です: ${missing.join("、")}`);
-        return;
+      if (missing.length > 0 && formData.isActive) {
+        forcedInactiveByMissingTierVideos = true;
       }
     }
 
@@ -430,6 +430,8 @@ export function GachaTypeEditor({
 
       const payload = {
         ...formData,
+        isActive:
+          forcedInactiveByMissingTierVideos ? false : (formData.isActive ?? true),
         rarityVideoIds:
           formData.useDefaultVideos === false
             ? (() => {
@@ -457,7 +459,11 @@ export function GachaTypeEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "保存に失敗しました");
-      setSuccess("保存しました");
+      setSuccess(
+        forcedInactiveByMissingTierVideos
+          ? "保存しました（未設定の等級動画があるため無効で保存しました）"
+          : "保存しました"
+      );
       if (mode === "create") {
         router.replace(`/admin/gacha-types/${formData.code}/edit`);
       }
