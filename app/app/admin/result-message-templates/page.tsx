@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import { WarningIcon } from "@/components/admin/icons/AdminIcons";
@@ -31,6 +31,7 @@ export default function ResultMessageTemplatesPage() {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<Partial<Template>>({});
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const [confirm, setConfirm] = useState<{
     isOpen: boolean;
@@ -43,6 +44,9 @@ export default function ResultMessageTemplatesPage() {
   } | null>(null);
 
   const [showVariableInfo, setShowVariableInfo] = useState(false);
+  const CODE_PATTERN = /^[A-Za-z0-9_-]+$/;
+  const sanitizeTemplateCode = (value: string) =>
+    value.replace(/[^A-Za-z0-9_-]/g, "");
 
   const closeConfirm = () => setConfirm(null);
 
@@ -85,12 +89,23 @@ export default function ResultMessageTemplatesPage() {
     setEditRow({});
   };
 
+  const truncateText = (value: string | null | undefined, max = 32) => {
+    if (!value) return "未設定";
+    if (value.length <= max) return value;
+    return `${value.slice(0, max)}...`;
+  };
+
   const createTemplate = async () => {
     setError(null);
     setSuccess(null);
     const code = newRow.code.trim();
     const template = newRow.template;
     if (!code) return setError("code は必須です");
+    if (!CODE_PATTERN.test(code)) {
+      return setError(
+        "テンプレート識別コードは英数字/ハイフン/アンダースコアのみ使用できます"
+      );
+    }
     if (!template.trim()) return setError("template は必須です");
 
     setConfirm({
@@ -137,6 +152,11 @@ export default function ResultMessageTemplatesPage() {
         typeof editRow.description === "string" ? editRow.description : before.description,
       isActive:
         typeof editRow.isActive === "boolean" ? editRow.isActive : before.isActive };
+    if (!next.code || !CODE_PATTERN.test(String(next.code))) {
+      return setError(
+        "テンプレート識別コードは英数字/ハイフン/アンダースコアのみ使用できます"
+      );
+    }
 
     const changes: Array<{ label: string; from: string; to: string }> = [];
     if (next.code !== before.code) changes.push({ label: "テンプレート識別コード", from: before.code, to: String(next.code) });
@@ -211,14 +231,27 @@ export default function ResultMessageTemplatesPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 テンプレート識別コード
-                <span className="ml-2 text-xs text-gray-500">（ガチャ設定で選択する際に使用）</span>
+                <span className="ml-2 text-sm font-medium text-gray-600">（ガチャ設定で選択する際に使用）</span>
               </label>
               <input
                 value={newRow.code}
-                onChange={(e) => setNewRow({ ...newRow, code: e.target.value })}
+                onChange={(e) =>
+                  setNewRow({
+                    ...newRow,
+                    code: sanitizeTemplateCode(e.target.value),
+                  })
+                }
                 className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 placeholder="例: default, premium-result"
+                inputMode="text"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={80}
               />
+              <p className="mt-2 text-sm font-medium text-gray-600">
+                英数字/ハイフン/アンダースコアのみ使用できます
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">説明</label>
@@ -242,21 +275,19 @@ export default function ResultMessageTemplatesPage() {
                 rows={8}
               />
               <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-600">
-                  使用可能な変数: {"{itemName}"} / {"{rarity}"} / {"{rarityEmoji}"} / {"{gachaTypeName}"} / {"{handName}"} / {"{grantedPoints}"} / {"{grantedPointsMessage}"}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowVariableInfo(true)}
-                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-                  aria-label="変数の詳細を見る"
-                  title="変数の詳細を見る"
-                >
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowVariableInfo(true)}
+                    className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 border-blue-500 bg-white text-blue-600 text-base font-bold leading-none shadow-sm transition-colors hover:bg-blue-50"
+                    aria-label="変数の詳細を見る"
+                    title="変数の詳細を見る"
+                  >
+                    ?
+                  </button>
+                  <p className="text-xs text-gray-600">
+                    使用可能な変数: {"{itemName}"} / {"{rarity}"} / {"{rarityEmoji}"} / {"{gachaTypeName}"} / {"{handName}"} / {"{grantedPoints}"} / {"{grantedPointsMessage}"}
+                  </p>
                 </div>
                 <p className="text-xs text-gray-500">
                   ※ 変数置換後の文字数が60文字以内である必要があります（LINE Messaging APIの制限）
@@ -308,25 +339,83 @@ export default function ResultMessageTemplatesPage() {
             <div className="space-y-4">
               {templates.map((t) => {
                 const isEditing = editingId === t.id;
+                const isExpanded = expandedId === t.id;
                 const view = isEditing ? (editRow as any) : t;
                 return (
                   <div key={t.id} className="rounded-md border border-gray-200 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-gray-800">
-                        {t.code}{" "}
-                        <span
-                          className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
-                            t.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {t.isActive ? "有効" : "無効"}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        {isEditing ? (
-                          <>
+                    {!isEditing ? (
+                      <>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(220px,1fr)_minmax(260px,1.2fr)_auto] md:items-center">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate font-semibold text-gray-900">
+                                {t.code}
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-xs ${
+                                  t.isActive
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-700"
+                                }`}
+                              >
+                                {t.isActive ? "有効" : "無効"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="min-w-0 text-sm text-gray-600">
+                            説明: {truncateText(t.description)}
+                          </div>
+                          <div className="flex items-center gap-2 md:justify-end">
+                            <button
+                              onClick={() =>
+                                setExpandedId(isExpanded ? null : t.id)
+                              }
+                              className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
+                            >
+                              詳細
+                            </button>
+                            <button
+                              onClick={() => startEdit(t)}
+                              className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-800"
+                            >
+                              編集
+                            </button>
+                            <button
+                              onClick={() => deleteTemplate(t).catch(() => {})}
+                              className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="mt-4 space-y-3 rounded-md bg-gray-50 p-3">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-600">
+                                説明
+                              </p>
+                              <p className="mt-1 text-sm text-gray-800">
+                                {t.description || "未設定"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-gray-600">
+                                本文
+                              </p>
+                              <pre className="mt-1 max-h-52 overflow-auto whitespace-pre-wrap rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-800">
+                                {t.template}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="font-semibold text-gray-800">
+                            {t.code} を編集中
+                          </div>
+                          <div className="flex gap-2">
                             <button
                               onClick={() =>
                                 saveEdit().catch((e) =>
@@ -343,97 +432,87 @@ export default function ResultMessageTemplatesPage() {
                             >
                               キャンセル
                             </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startEdit(t)}
-                              className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-800"
-                            >
-                              編集
-                            </button>
-                            <button
-                              onClick={() => deleteTemplate(t).catch(() => {})}
-                              className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
-                            >
-                              削除
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600">
-                          テンプレート識別コード
-                          <span className="ml-1 text-xs text-gray-400">（ガチャ設定で選択する際に使用）</span>
-                        </label>
-                        <input
-                          disabled={!isEditing}
-                          value={String(view.code ?? "")}
-                          onChange={(e) =>
-                            setEditRow({ ...editRow, code: e.target.value })
-                          }
-                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 disabled:bg-gray-50"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600">
-                          説明
-                        </label>
-                        <input
-                          disabled={!isEditing}
-                          value={String(view.description ?? "")}
-                          onChange={(e) =>
-                            setEditRow({ ...editRow, description: e.target.value })
-                          }
-                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 disabled:bg-gray-50"
-                        />
-                      </div>
-                      <div className="lg:col-span-2">
-                        <label className="block text-xs font-medium text-gray-600">
-                          本文
-                        </label>
-                        <textarea
-                          disabled={!isEditing}
-                          value={isEditing ? String(editRow.template ?? view.template ?? "") : String(view.template ?? "")}
-                          onChange={(e) =>
-                            setEditRow({ ...editRow, template: e.target.value })
-                          }
-                          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 font-mono disabled:bg-gray-50"
-                          rows={8}
-                        />
-                        {isEditing && (
-                          <div className="mt-2 space-y-1">
-                            <p className="text-xs text-gray-500">
-                              ※ 変数置換後の文字数が60文字以内である必要があります（LINE Messaging APIの制限）
-                            </p>
-                            <p className={`text-xs ${(editRow.template ?? view.template ?? "").length > 60 ? 'text-red-600 font-semibold' : (editRow.template ?? view.template ?? "").length > 50 ? 'text-orange-600' : 'text-gray-600'}`}>
-                              テンプレート文字数: {(editRow.template ?? view.template ?? "").length} / 60
-                              {(editRow.template ?? view.template ?? "").length <= 60 && ` (残り ${60 - (editRow.template ?? view.template ?? "").length} 文字)`}
-                            </p>
-                            {(editRow.template ?? view.template ?? "").length > 60 && (
-                              <p className="mt-1 inline-flex items-center gap-1 text-xs text-red-600">
-                                <WarningIcon className="h-3 w-3" />
-                                <span>変数置換後の文字数が60文字以内である必要があります</span>
-                              </p>
-                            )}
                           </div>
-                        )}
-                      </div>
-                      <label className="flex items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          disabled={!isEditing}
-                          checked={!!view.isActive}
-                          onChange={(e) =>
-                            setEditRow({ ...editRow, isActive: e.target.checked })
-                          }
-                        />
-                        有効
-                      </label>
-                    </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">
+                              テンプレート識別コード
+                              <span className="ml-1 text-sm font-medium text-gray-500">（ガチャ設定で選択する際に使用）</span>
+                            </label>
+                            <input
+                              value={String(view.code ?? "")}
+                              onChange={(e) =>
+                                setEditRow({
+                                  ...editRow,
+                                  code: sanitizeTemplateCode(e.target.value),
+                                })
+                              }
+                              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                              inputMode="text"
+                              autoCapitalize="off"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              maxLength={80}
+                            />
+                            <p className="mt-1 text-sm font-medium text-gray-600">
+                              英数字/ハイフン/アンダースコアのみ使用できます
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600">
+                              説明
+                            </label>
+                            <input
+                              value={String(view.description ?? "")}
+                              onChange={(e) =>
+                                setEditRow({ ...editRow, description: e.target.value })
+                              }
+                              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                            />
+                          </div>
+                          <div className="lg:col-span-2">
+                            <label className="block text-xs font-medium text-gray-600">
+                              本文
+                            </label>
+                            <textarea
+                              value={String(editRow.template ?? view.template ?? "")}
+                              onChange={(e) =>
+                                setEditRow({ ...editRow, template: e.target.value })
+                              }
+                              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 font-mono"
+                              rows={8}
+                            />
+                            <div className="mt-2 space-y-1">
+                              <p className="text-xs text-gray-500">
+                                ※ 変数置換後の文字数が60文字以内である必要があります（LINE Messaging APIの制限）
+                              </p>
+                              <p className={`text-xs ${(editRow.template ?? view.template ?? "").length > 60 ? 'text-red-600 font-semibold' : (editRow.template ?? view.template ?? "").length > 50 ? 'text-orange-600' : 'text-gray-600'}`}>
+                                テンプレート文字数: {(editRow.template ?? view.template ?? "").length} / 60
+                                {(editRow.template ?? view.template ?? "").length <= 60 && ` (残り ${60 - (editRow.template ?? view.template ?? "").length} 文字)`}
+                              </p>
+                              {(editRow.template ?? view.template ?? "").length > 60 && (
+                                <p className="mt-1 inline-flex items-center gap-1 text-xs text-red-600">
+                                  <WarningIcon className="h-3 w-3" />
+                                  <span>変数置換後の文字数が60文字以内である必要があります</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <label className="flex items-center gap-2 text-sm text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={!!view.isActive}
+                              onChange={(e) =>
+                                setEditRow({ ...editRow, isActive: e.target.checked })
+                              }
+                            />
+                            有効
+                          </label>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -469,7 +548,3 @@ export default function ResultMessageTemplatesPage() {
     </div>
   );
 }
-
-
-
-
