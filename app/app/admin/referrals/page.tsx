@@ -295,7 +295,7 @@ export default function ReferralsPage() {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex items-center gap-2">
-                            {ru.user.pictureUrl && (
+                            {ru.user?.pictureUrl && (
                               <img
                                 src={ru.user.pictureUrl}
                                 alt={ru.user.displayName || ""}
@@ -304,7 +304,7 @@ export default function ReferralsPage() {
                             )}
                             <div>
                               <div className="font-medium text-black">
-                                {ru.user.displayName || "（不明）"}
+                                {ru.user?.displayName || "（不明）"}
                               </div>
                               <div className="text-xs text-black">
                                 {ru.userId.substring(0, 10)}...
@@ -314,7 +314,7 @@ export default function ReferralsPage() {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex items-center gap-2">
-                            {ru.toUser.pictureUrl && (
+                            {ru.toUser?.pictureUrl && (
                               <img
                                 src={ru.toUser.pictureUrl}
                                 alt={ru.toUser.displayName || ""}
@@ -323,7 +323,7 @@ export default function ReferralsPage() {
                             )}
                             <div>
                               <div className="font-medium text-black">
-                                {ru.toUser.displayName || "（不明）"}
+                                {ru.toUser?.displayName || "（不明）"}
                               </div>
                               <div className="text-xs text-black">
                                 {ru.toUserId.substring(0, 10)}...
@@ -332,7 +332,7 @@ export default function ReferralsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          {getStatusBadge(ru.referral.status)}
+                          {getStatusBadge(ru.referral?.status || "COMPLETED")}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           {ru.freeGachaHistories.length > 0 ? (
@@ -419,7 +419,7 @@ export default function ReferralsPage() {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex items-center gap-2">
-                            {rh.referral.user.pictureUrl && (
+                            {rh.referral?.user?.pictureUrl && (
                               <img
                                 src={rh.referral.user.pictureUrl}
                                 alt={rh.referral.user.displayName || ""}
@@ -428,10 +428,11 @@ export default function ReferralsPage() {
                             )}
                             <div>
                               <div className="font-medium text-black">
-                                {rh.referral.user.displayName || "（不明）"}
+                                {rh.referral?.user?.displayName || "（不明）"}
                               </div>
                               <div className="text-xs text-black">
-                                {rh.referral.userId.substring(0, 10)}...
+                                {(rh.referral?.userId || "-").substring(0, 10)}
+                                ...
                               </div>
                             </div>
                           </div>

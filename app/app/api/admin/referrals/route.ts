@@ -108,7 +108,12 @@ export async function GET(request: NextRequest) {
       user: userMap.get(ru.userId) || null,
       toUser: toUserMap.get(ru.toUserId) || null,
       refereeActivity: activityMap.get(ru.id) || null,
-      referral: null, // TODO: 必要に応じて手動でjoin
+      referral: {
+        id: 0,
+        referralLinkId: "",
+        referralLink: "",
+        status: "COMPLETED",
+      },
       freeGachaHistories: [], // TODO: 必要に応じて手動でjoin
     }));
 
