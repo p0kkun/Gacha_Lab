@@ -70,6 +70,7 @@ type GachaVideo = {
   rarity: string | null;
   fileName: string;
   isActive: boolean;
+  categories?: string[];
 };
 
 type PrizeTier = {
@@ -641,9 +642,12 @@ export function GachaTypeEditor({
               {formData.useDefaultVideos === false && (
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                   {selectedTiers.map((tier) => {
-                    const tierVideos = videos.filter(
-                      (v) => v.isActive && v.videoType === "RARITY" && v.rarity === tier.code
-                    );
+                    const tierVideos = videos.filter((v) => {
+                      const isRarityVideo =
+                        v.videoType === "RARITY" ||
+                        (Array.isArray(v.categories) && v.categories.includes("TIER"));
+                      return v.isActive && isRarityVideo;
+                    });
                     const selected = ((formData.rarityVideoIds || {}) as Record<string, number[]>)[
                       tier.code
                     ] || [];
