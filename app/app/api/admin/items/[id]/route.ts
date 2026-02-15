@@ -147,6 +147,56 @@ export async function PUT(
 }
 
 /**
+ * アイテムの一部更新
+ * PATCH /api/admin/items/[id]
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!await verifyAdminAuth(request)) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: '無効なIDです' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { isActive } = body;
+
+    if (typeof isActive !== 'boolean') {
+      return NextResponse.json(
+        { error: 'isActive は boolean で指定してください' },
+        { status: 400 }
+      );
+    }
+
+    const item = await prisma.gachaItem.update({
+      where: { id },
+      data: { isActive },
+    });
+
+    return NextResponse.json({ item });
+  } catch (error) {
+    console.error('アイテム部分更新エラー:', error);
+    return NextResponse.json(
+      { error: 'アイテムの更新に失敗しました' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * アイテムを削除（論理削除）
  * DELETE /api/admin/items/[id]
  */

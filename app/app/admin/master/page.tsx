@@ -14,7 +14,7 @@ const PrizeAssignmentsContent = dynamic(
   () => import("@/app/admin/prize-assignments/page"),
   { ssr: false }
 );
-const ItemsContent = dynamic(() => import("@/app/admin/items/page"), {
+const ItemsContent = dynamic(() => import("@/components/admin/items/ItemsManagementContent"), {
   ssr: false,
 });
 

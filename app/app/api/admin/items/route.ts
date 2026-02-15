@@ -18,10 +18,17 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('isActive');
+    const name = searchParams.get('name');
 
     const where: any = {};
     if (isActive !== null) {
       where.isActive = isActive === 'true';
+    }
+    if (name && name.trim()) {
+      where.name = {
+        contains: name.trim(),
+        mode: 'insensitive',
+      };
     }
 
     const items = await prisma.gachaItem.findMany({

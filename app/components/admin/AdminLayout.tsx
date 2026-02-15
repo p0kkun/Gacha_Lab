@@ -40,6 +40,11 @@ export default function AdminLayout({
       icon: <GachaIcon className="h-5 w-5" />,
     },
     {
+      href: "/admin/items",
+      label: "アイテム管理",
+      icon: <PackageIcon className="h-5 w-5" />,
+    },
+    {
       href: "/admin/master",
       label: "マスタ管理",
       icon: <PackageIcon className="h-5 w-5" />,
@@ -116,7 +121,6 @@ export default function AdminLayout({
         "/admin/master": [
           "/admin/prize-tiers",
           "/admin/prize-assignments",
-          "/admin/items",
         ],
         "/admin/points": ["/admin/point-plans"],
         "/admin/users": ["/admin/tags", "/admin/referrals", "/admin/free-gacha-settings"],

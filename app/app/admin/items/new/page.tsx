@@ -30,6 +30,51 @@ export default function NewItemPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [descriptionTextareaRef, setDescriptionTextareaRef] =
+    useState<HTMLTextAreaElement | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkData, setLinkData] = useState({ text: "", url: "" });
+
+  const formatDate = (value: string) => {
+    if (!value) return "未設定";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "未設定";
+    return date.toLocaleString("ja-JP");
+  };
+
+  const handleInsertLink = () => {
+    if (!descriptionTextareaRef) return;
+
+    const textarea = descriptionTextareaRef;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentText = form.description || "";
+    const selectedText = currentText.substring(start, end);
+
+    const linkText = linkData.text || selectedText || "リンク";
+    const linkUrl = linkData.url || "";
+
+    if (!linkUrl) {
+      setError("URLを入力してください");
+      return;
+    }
+
+    const markdownLink = `[${linkText}](${linkUrl})`;
+    const newText =
+      currentText.substring(0, start) +
+      markdownLink +
+      currentText.substring(end);
+
+    setForm({ ...form, description: newText });
+    setShowLinkModal(false);
+    setLinkData({ text: "", url: "" });
+
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + markdownLink.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
 
   const handleCreate = async () => {
     if (!form.name.trim()) {
@@ -113,16 +158,11 @@ export default function NewItemPage() {
 
   return (
     <AdminLayout>
-      <div className="mx-auto w-full max-w-5xl p-4 lg:p-6">
+      <div className="mx-auto w-full max-w-6xl p-4 lg:p-6">
         <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">新規アイテム作成</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              管理者が必要な入力だけに絞って登録できます
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">新規アイテム作成</h1>
           <Link
-            href="/admin/master?tab=items"
+            href="/admin/items"
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
             一覧へ戻る
@@ -155,13 +195,26 @@ export default function NewItemPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">説明（任意）</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={4}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="ユーザー向けの説明文"
-                />
+                <div className="mt-1 flex gap-2">
+                  <textarea
+                    ref={(el) => setDescriptionTextareaRef(el)}
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    rows={4}
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    placeholder="ユーザー向けの説明文"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkModal(true)}
+                    className="h-fit rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    リンク挿入
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Markdown形式のリンク: [テキスト](URL)
+                </p>
               </div>
 
               <div>
@@ -194,9 +247,7 @@ export default function NewItemPage() {
 
               {form.usageType === "IMAGE" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    使用画像（任意）
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">使用画像（任意）</label>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
@@ -211,9 +262,7 @@ export default function NewItemPage() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    使用開始日時（任意）
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">使用開始日時（任意）</label>
                   <input
                     type="datetime-local"
                     value={form.useStartAt}
@@ -222,9 +271,7 @@ export default function NewItemPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    使用期限（任意）
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">使用期限（任意）</label>
                   <input
                     type="datetime-local"
                     value={form.useEndAt}
@@ -251,10 +298,15 @@ export default function NewItemPage() {
               <div>名前: {form.name || "未入力"}</div>
               <div>使用方法: {form.usageType === "IMAGE" ? "画像" : "見せて使用"}</div>
               <div>状態: {form.isActive ? "有効" : "無効"}</div>
+              <div>使用開始日時: {formatDate(form.useStartAt)}</div>
+              <div>使用期限: {formatDate(form.useEndAt)}</div>
               <div>画像: {imageFile ? "あり" : "なし"}</div>
-            </div>
-            <div className="mt-6 rounded-md bg-blue-50 p-3 text-xs text-blue-800">
-              等級（1等/2等…）は「景品割当（ガチャ別）」で設定します。
+              <div className="border-t pt-2">
+                <div className="mb-1 text-xs font-semibold text-gray-500">説明プレビュー</div>
+                <div className="max-h-32 overflow-auto whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs">
+                  {form.description || "未入力"}
+                </div>
+              </div>
             </div>
             <button
               onClick={handleCreate}
@@ -266,6 +318,61 @@ export default function NewItemPage() {
           </div>
         </div>
       </div>
+
+      {showLinkModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.4)" }}
+          onClick={() => setShowLinkModal(false)}
+        >
+          <div
+            className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-lg font-semibold text-gray-800">リンクを挿入</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">表示テキスト</label>
+                <input
+                  type="text"
+                  value={linkData.text}
+                  onChange={(e) => setLinkData({ ...linkData, text: e.target.value })}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  placeholder="例: 詳細はこちら"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">URL *</label>
+                <input
+                  type="url"
+                  value={linkData.url}
+                  onChange={(e) => setLinkData({ ...linkData, url: e.target.value })}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+                  placeholder="https://example.com"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowLinkModal(false);
+                  setLinkData({ text: "", url: "" });
+                }}
+                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleInsertLink}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                挿入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
