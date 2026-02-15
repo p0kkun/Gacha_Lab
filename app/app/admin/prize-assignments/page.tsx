@@ -481,112 +481,169 @@ export default function PrizeAssignmentsPage() {
             <label className="block text-sm font-medium text-gray-700">
               割当を追加
             </label>
-            <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-4">
-              <select
-                value={newRow.tierCode}
-                onChange={(e) =>
-                  setNewRow((p) => ({ ...p, tierCode: e.target.value }))
-                }
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
-              >
-                {sortedPrizeTiers.map((r) => (
-                  <option key={r.code} value={r.code}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={newRow.rewardType}
-                onChange={(e) =>
-                  setNewRow((p) => ({
-                    ...p,
-                    rewardType: e.target.value as "ITEM" | "POINTS",
-                    itemId: "",
-                    points: "" }))
-                }
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
-              >
-                <option value="ITEM">アイテム</option>
-                <option value="POINTS">ポイント</option>
-              </select>
-              <select
-                value={newRow.itemId}
-                onChange={(e) =>
-                  setNewRow((p) => ({ ...p, itemId: e.target.value }))
-                }
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 md:col-span-2"
-                disabled={newRow.rewardType === "POINTS"}
-              >
-                <option value="">
-                  {newRow.rewardType === "POINTS"
-                    ? "ポイント付与を選択中"
-                    : "景品（アイテム）を選択"}
-                </option>
-                {items.map((it) => (
-                  <option key={it.id} value={String(it.id)}>
-                    {it.name}（ID:{it.id}）
-                  </option>
-                ))}
-              </select>
-              {newRow.rewardType === "POINTS" ? (
-                <input
-                  type="number"
-                  min={1}
-                  value={newRow.points}
-                  onChange={(e) =>
-                    setNewRow((p) => ({ ...p, points: e.target.value }))
-                  }
-                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="ポイント"
-                />
-              ) : (
-                <input
-                  type="number"
-                  min={1}
-                  value={newRow.weight}
-                  onChange={(e) =>
-                    setNewRow((p) => ({ ...p, weight: e.target.value }))
-                  }
-                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="重み"
-                />
-              )}
-            </div>
-            {newRow.rewardType === "POINTS" && (
-              <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-4">
-                <div className="md:col-span-3 text-xs text-gray-500">
-                  ポイント付与を選択すると、アイテムレコードは作成されません。
+            <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    1. 等級
+                  </label>
+                  <select
+                    value={newRow.tierCode}
+                    onChange={(e) =>
+                      setNewRow((p) => ({ ...p, tierCode: e.target.value }))
+                    }
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                  >
+                    {sortedPrizeTiers.map((r) => (
+                      <option key={r.code} value={r.code}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <input
-                  type="number"
-                  min={1}
-                  value={newRow.weight}
-                  onChange={(e) =>
-                    setNewRow((p) => ({ ...p, weight: e.target.value }))
-                  }
-                  className="rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-                  placeholder="重み"
-                />
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    2. 報酬種別
+                  </label>
+                  <select
+                    value={newRow.rewardType}
+                    onChange={(e) =>
+                      setNewRow((p) => ({
+                        ...p,
+                        rewardType: e.target.value as "ITEM" | "POINTS",
+                        itemId: "",
+                        points: "" }))
+                    }
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                  >
+                    <option value="ITEM">アイテム</option>
+                    <option value="POINTS">ポイント</option>
+                  </select>
+                </div>
               </div>
-            )}
+
+              <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-[1.5fr_1fr_1fr]">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    3. 景品 / ポイント
+                  </label>
+                  {newRow.rewardType === "ITEM" ? (
+                    <select
+                      value={newRow.itemId}
+                      onChange={(e) =>
+                        setNewRow((p) => ({ ...p, itemId: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                    >
+                      <option value="">景品（アイテム）を選択</option>
+                      {items.map((it) => (
+                        <option key={it.id} value={String(it.id)}>
+                          {it.name}（ID:{it.id}）
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="number"
+                      min={1}
+                      value={newRow.points}
+                      onChange={(e) =>
+                        setNewRow((p) => ({ ...p, points: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                      placeholder="付与ポイント"
+                    />
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <span>4. 重み</span>
+                    <Tooltip
+                      content={
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold">同じ等級内での比率</p>
+                          <p className="text-xs">値が大きいほど当たりやすくなります。</p>
+                        </div>
+                      }
+                      position="top"
+                    >
+                      <button
+                        type="button"
+                        className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700"
+                        aria-label="重みの説明"
+                      >
+                        ?
+                      </button>
+                    </Tooltip>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={newRow.weight}
+                    onChange={(e) =>
+                      setNewRow((p) => ({ ...p, weight: e.target.value }))
+                    }
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                    placeholder="重み"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    5. 状態
+                  </label>
+                  <label className="flex h-[42px] items-center gap-2 rounded-md border border-gray-300 bg-white px-3">
+                    <input
+                      type="checkbox"
+                      checked={newRow.isActive}
+                      onChange={(e) =>
+                        setNewRow((p) => ({ ...p, isActive: e.target.checked }))
+                      }
+                    />
+                    <span className="text-sm text-gray-900">
+                      {newRow.isActive ? "有効" : "無効"}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {newRow.rewardType === "POINTS" && (
+                <p className="mb-2 text-xs text-gray-500">
+                  ポイント報酬を選択中です。アイテムレコードは割り当てません。
+                </p>
+              )}
+
+              <div className="mb-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                追加内容:
+                {" "}
+                <span className="font-semibold">{tierLabel(newRow.tierCode)}</span>
+                {" / "}
+                <span className="font-semibold">
+                  {newRow.rewardType === "POINTS"
+                    ? `ポイント ${newRow.points || "-"}pt`
+                    : newRow.itemId
+                    ? `${items.find((i) => String(i.id) === newRow.itemId)?.name || "アイテム"}`
+                    : "アイテム未選択"}
+                </span>
+                {" / 重み "}
+                <span className="font-semibold">{newRow.weight || "-"}</span>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={createAssignment}
+                  disabled={savingId === "__create__"}
+                  className="rounded-md bg-blue-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {savingId === "__create__" ? "追加中..." : "この内容で追加"}
+                </button>
+              </div>
+            </div>
             <div className="mt-2 flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-gray-900">
-                <input
-                  type="checkbox"
-                  checked={newRow.isActive}
-                  onChange={(e) =>
-                    setNewRow((p) => ({ ...p, isActive: e.target.checked }))
-                  }
-                />
-                有効
+                <span className="text-xs text-gray-500">
+                  追加後も一覧から編集・無効化できます
+                </span>
               </label>
-              <button
-                onClick={createAssignment}
-                disabled={savingId === "__create__"}
-                className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-              >
-                {savingId === "__create__" ? "追加中..." : "追加"}
-              </button>
             </div>
           </div>
         </div>

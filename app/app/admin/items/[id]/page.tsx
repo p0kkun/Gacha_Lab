@@ -180,7 +180,7 @@ export default function ItemEditPage() {
           </div>
           <div className="mt-4">
             <Link
-              href="/admin/gacha?tab=items"
+              href="/admin/master?tab=items"
               className="text-blue-600 hover:underline"
             >
               ← アイテム一覧に戻る
@@ -265,7 +265,7 @@ export default function ItemEditPage() {
       <div className="p-6">
         <div className="mb-4">
           <Link
-            href="/admin/gacha?tab=items"
+            href="/admin/master?tab=items"
             className="text-blue-600 hover:underline"
           >
             ← アイテム一覧に戻る
@@ -526,7 +526,7 @@ export default function ItemEditPage() {
                 保存
               </button>
               <Link
-                href="/admin/gacha?tab=items"
+                href="/admin/master?tab=items"
                 className="inline-block rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
               >
                 キャンセル

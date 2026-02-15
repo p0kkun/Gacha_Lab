@@ -6,10 +6,12 @@ import { useState, useMemo, useEffect } from "react";
 import {
   DashboardIcon,
   GachaIcon,
+  PackageIcon,
   VideoIcon,
   PointsIcon,
   UsersIcon,
   MessagesIcon,
+  TargetIcon,
   StatsIcon,
   ShieldIcon,
   SettingsIcon,
@@ -38,6 +40,11 @@ export default function AdminLayout({
       icon: <GachaIcon className="h-5 w-5" />,
     },
     {
+      href: "/admin/master",
+      label: "マスタ管理",
+      icon: <PackageIcon className="h-5 w-5" />,
+    },
+    {
       href: "/admin/videos",
       label: "動画管理",
       icon: <VideoIcon className="h-5 w-5" />,
@@ -56,6 +63,11 @@ export default function AdminLayout({
       href: "/admin/messages",
       label: "メッセージ配信",
       icon: <MessagesIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/admin/debug",
+      label: "デバッグ",
+      icon: <TargetIcon className="h-5 w-5" />,
     },
     {
       href: "/admin/statistics",
@@ -100,16 +112,18 @@ export default function AdminLayout({
       const groupMappings: Record<string, string[]> = {
         "/admin/gacha": [
           "/admin/gacha-types",
-          "/admin/free-gacha-settings",
-          "/admin/result-message-templates",
+        ],
+        "/admin/master": [
           "/admin/prize-tiers",
           "/admin/prize-assignments",
           "/admin/items",
-          "/admin/simulator",
         ],
         "/admin/points": ["/admin/point-plans"],
-        "/admin/users": ["/admin/tags", "/admin/referrals"],
-        "/admin/messages": [],
+        "/admin/users": ["/admin/tags", "/admin/referrals", "/admin/free-gacha-settings"],
+        "/admin/messages": ["/admin/result-message-templates"],
+        "/admin/debug": [
+          "/admin/simulator",
+        ],
         "/admin/statistics": [],
         "/admin/admin-management": [
           "/admin/admin-users",

@@ -76,28 +76,28 @@ const helpItems: HelpItem[] = [
   {
     title: 'ガチャの結果メッセージを変更したい',
     description: 'ガチャ結果をLINEで送信する際のメッセージテンプレートを管理できます',
-    href: '/admin/gacha?tab=result-message-templates',
+    href: '/admin/messages?tab=result-message-templates',
     icon: <EditIcon className="h-5 w-5" />,
     category: 'ガチャ設定',
   },
   {
     title: '等級（1等、2等など）を追加・変更したい',
     description: 'ガチャで使用する等級マスタを追加・編集できます。等級名も自由に変更可能です',
-    href: '/admin/gacha?tab=prize-tiers',
+    href: '/admin/master?tab=prize-tiers',
     icon: <StarIcon className="h-5 w-5" />,
     category: 'ガチャ設定',
   },
   {
     title: '同じアイテムを違うガチャの違う等級に割り当てたい',
     description: '例：カードスリーブを1000円ガチャでは3等、3000円ガチャでは5等にする場合など',
-    href: '/admin/gacha?tab=prize-assignments',
+    href: '/admin/master?tab=prize-assignments',
     icon: <GiftIcon className="h-5 w-5" />,
     category: 'ガチャ設定',
   },
   {
     title: 'ガチャの排出率を確認したい',
     description: '設定した確率で実際にどのような結果になるか、シミュレーションで確認できます',
-    href: '/admin/gacha?tab=simulator',
+    href: '/admin/debug?tab=simulator',
     icon: <TargetIcon className="h-5 w-5" />,
     category: 'ガチャ設定',
   },
@@ -106,7 +106,7 @@ const helpItems: HelpItem[] = [
   {
     title: 'ガチャアイテムを追加・編集したい',
     description: '新しい景品アイテムを追加したり、既存のアイテム情報を編集できます',
-    href: '/admin/gacha?tab=items',
+    href: '/admin/master?tab=items',
     icon: <PackageIcon className="h-5 w-5" />,
     category: 'アイテム管理',
   },
@@ -229,4 +229,3 @@ export default function HelpPage() {
     </AdminLayout>
   );
 }
-

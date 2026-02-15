@@ -5,6 +5,57 @@ import { recordAdminAction } from "@/lib/admin-action-history";
 import { AdminActionType } from "@/lib/admin-action-types";
 
 /**
+ * ガチャタイプ詳細を取得
+ * GET /api/admin/gacha-types/[code]
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  if (!await verifyAdminAuth(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { code } = await params;
+    const gachaTypeRaw = await prisma.gachaType.findUnique({
+      where: { code },
+      include: {
+        tierWeights: {
+          select: {
+            tierCode: true,
+            weight: true,
+            displayOrder: true,
+            isActive: true,
+          },
+          orderBy: [{ displayOrder: "asc" }, { tierCode: "asc" }],
+        },
+      },
+    } as any);
+
+    if (!gachaTypeRaw) {
+      return NextResponse.json(
+        { error: "ガチャタイプが見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    const gachaType = {
+      ...gachaTypeRaw,
+      rarityVideoIds: (gachaTypeRaw as any).tierVideoAssetIds ?? null,
+    };
+
+    return NextResponse.json({ gachaType });
+  } catch (error) {
+    console.error("ガチャタイプ詳細取得エラー:", error);
+    return NextResponse.json(
+      { error: "ガチャタイプ詳細の取得に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * ガチャタイプ削除（論理削除：isActiveをfalseに、使用中の場合は削除不可）
  * DELETE /api/admin/gacha-types/[code]
  */

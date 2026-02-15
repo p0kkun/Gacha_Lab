@@ -319,7 +319,7 @@ export default function AdminPage() {
               友だち紹介システムの特典ポイントを設定できます
             </p>
             <Link
-              href="/admin/gacha?tab=free-gacha-settings"
+              href="/admin/users?tab=free-gacha-settings"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               紹介特典設定へ
@@ -337,7 +337,7 @@ export default function AdminPage() {
               ガチャ結果メッセージのテンプレートを管理できます
             </p>
             <Link
-              href="/admin/gacha?tab=result-message-templates"
+              href="/admin/messages?tab=result-message-templates"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               テンプレート管理へ
@@ -373,7 +373,7 @@ export default function AdminPage() {
               ガチャの等級（1等、2等など）を追加・編集できます
             </p>
             <Link
-              href="/admin/gacha?tab=prize-tiers"
+              href="/admin/master?tab=prize-tiers"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               等級マスタ管理へ
@@ -391,7 +391,7 @@ export default function AdminPage() {
               ガチャタイプごとに景品の等級割当を設定できます
             </p>
             <Link
-              href="/admin/gacha?tab=prize-assignments"
+              href="/admin/master?tab=prize-assignments"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               景品割当へ
@@ -409,7 +409,7 @@ export default function AdminPage() {
               ガチャアイテムの追加・編集ができます
             </p>
             <Link
-              href="/admin/gacha?tab=items"
+              href="/admin/master?tab=items"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               アイテム設定へ
@@ -463,7 +463,7 @@ export default function AdminPage() {
               設定したガチャの排出率を確認できます
             </p>
             <Link
-              href="/admin/gacha?tab=simulator"
+              href="/admin/debug?tab=simulator"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               シミュレータへ

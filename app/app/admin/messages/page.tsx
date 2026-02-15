@@ -12,6 +12,10 @@ const MessagesSendContent = dynamic(
   () => import("@/app/admin/messages/messages-send"),
   { ssr: false }
 );
+const ResultMessageTemplatesContent = dynamic(
+  () => import("@/app/admin/result-message-templates/page"),
+  { ssr: false }
+);
 
 function MessagesContent() {
   const searchParams = useSearchParams();
@@ -27,6 +31,12 @@ function MessagesContent() {
           label: "メッセージ配信",
           icon: <AdminIcon name="message" className="h-5 w-5" title="メッセージ配信" />,
           content: <MessagesSendContent />,
+        },
+        {
+          id: "result-message-templates",
+          label: "結果メッセージテンプレート",
+          icon: <AdminIcon name="note" className="h-5 w-5" title="結果メッセージテンプレート" />,
+          content: <ResultMessageTemplatesContent />,
         },
       ]}
     />

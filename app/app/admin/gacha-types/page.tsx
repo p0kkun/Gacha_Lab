@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Button,
   Select,
   Card,
   Alert,
   Badge,
-  PageHeader,
   Input } from "@/components/admin/ui";
 import VariableInfoModal from "@/components/admin/VariableInfoModal";
 import Modal from "@/components/admin/ui/Modal";
@@ -107,6 +107,7 @@ type GachaVideo = {
 // RARITY_LABELSは削除し、PrizeTierテーブルから動的に取得する
 
 export default function GachaTypesPage() {
+  const router = useRouter();
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCode, setEditingCode] = useState<string | null>(null);
@@ -117,6 +118,8 @@ export default function GachaTypesPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [filterIsActive, setFilterIsActive] = useState<string>("");
   const [filterIsOngoing, setFilterIsOngoing] = useState<string>("");
+  const [filterName, setFilterName] = useState<string>("");
+  const [expandedCode, setExpandedCode] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"createdAt" | "name" | "pointCost">(
     "createdAt"
   );
@@ -602,26 +605,7 @@ export default function GachaTypesPage() {
   };
 
   const handleNewGachaType = () => {
-    setEditingCode("__NEW__");
-    setShowHandSettings(false);
-    setFormData({
-      code: "",
-      name: "",
-      description: "",
-      isActive: true,
-      pointCost: 0,
-      startAt: null,
-      endAt: null,
-      // commonVideoIds: [], // 共通動画は使用しないためコメントアウト
-      rarityVideoIds: {},
-      prizeWeights: {},
-      prizeHands: {},
-      prizeOrder: getDefaultPrizeOrder(),
-      resultMessageTemplateId: null,
-      useDefaultVideos: true });
-    setImagePreview(null);
-    setError(null);
-    setSuccess(null);
+    router.push("/admin/gacha-types/new");
   };
 
   const handleDelete = async (code: string) => {
@@ -969,51 +953,68 @@ export default function GachaTypesPage() {
       </div>
 
       {/* フィルターとソート */}
-      <Card className="mb-6" padding="md">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select
-            value={filterIsActive}
-            onChange={(e) => setFilterIsActive(e.target.value)}
-            options={[
-              { value: "", label: "すべての状態" },
-              { value: "true", label: "有効" },
-              { value: "false", label: "無効" },
-            ]}
-            fullWidth
-          />
-          <Select
-            value={filterIsOngoing}
-            onChange={(e) => setFilterIsOngoing(e.target.value)}
-            options={[
-              { value: "", label: "すべて" },
-              { value: "true", label: "開催中" },
-              { value: "false", label: "開催中以外" },
-            ]}
-            fullWidth
-          />
-          <Select
-            value={sortBy}
-            onChange={(e) =>
-              setSortBy(e.target.value as "createdAt" | "name" | "pointCost")
-            }
-            options={[
-              { value: "createdAt", label: "作成日時" },
-              { value: "name", label: "名前" },
-              { value: "pointCost", label: "ポイントコスト" },
-            ]}
-            fullWidth
-          />
-          <Button
-            variant="ghost"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            fullWidth
-            title={sortOrder === "asc" ? "昇順" : "降順"}
-            rightIcon={<span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
-          >
-            ソート: {sortOrder === "asc" ? "昇順" : "降順"}
-          </Button>
-        </div>
-      </Card>
+      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <Card padding="md">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            絞り込み
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Input
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              placeholder="名前で検索"
+              fullWidth
+            />
+            <Select
+              value={filterIsActive}
+              onChange={(e) => setFilterIsActive(e.target.value)}
+              options={[
+                { value: "", label: "すべての状態" },
+                { value: "true", label: "有効" },
+                { value: "false", label: "無効" },
+              ]}
+              fullWidth
+            />
+            <Select
+              value={filterIsOngoing}
+              onChange={(e) => setFilterIsOngoing(e.target.value)}
+              options={[
+                { value: "", label: "すべて" },
+                { value: "true", label: "開催中" },
+                { value: "false", label: "開催中以外" },
+              ]}
+              fullWidth
+            />
+          </div>
+        </Card>
+        <Card padding="md">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            並び替え
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+            <Select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "createdAt" | "name" | "pointCost")
+              }
+              options={[
+                { value: "createdAt", label: "作成日時" },
+                { value: "name", label: "名前" },
+                { value: "pointCost", label: "ポイントコスト" },
+              ]}
+              fullWidth
+            />
+            <Button
+              variant="secondary"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              title={sortOrder === "asc" ? "昇順" : "降順"}
+              rightIcon={<span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
+            >
+              {sortOrder === "asc" ? "昇順" : "降順"}
+            </Button>
+          </div>
+        </Card>
+      </div>
 
       {error && (
         <Alert variant="error" className="mb-6" onClose={() => setError(null)}>
@@ -1036,7 +1037,7 @@ export default function GachaTypesPage() {
           <div className="text-gray-500">読み込み中...</div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* 新規作成フォーム - 編集フォームと同じ構造を使用 */}
           {editingCode === "__NEW__" && (
             <Modal
@@ -1296,44 +1297,144 @@ export default function GachaTypesPage() {
             </Card>
           </Modal>
           )}
-          {gachaTypes.map((gachaType) => {
+          {(() => {
+            const normalizedName = filterName.trim().toLowerCase();
+            const visibleGachaTypes = normalizedName
+              ? gachaTypes.filter((g) =>
+                  g.name.toLowerCase().includes(normalizedName)
+                )
+              : gachaTypes;
+
+            return (
+              <>
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <div>
+                    表示件数: <span className="font-semibold text-gray-900">{visibleGachaTypes.length}</span>
+                  </div>
+                  <div>
+                    有効:{" "}
+                    <span className="font-semibold text-emerald-600">
+                      {visibleGachaTypes.filter((g) => g.isActive).length}
+                    </span>
+                    {" / "}無効:{" "}
+                    <span className="font-semibold text-gray-700">
+                      {visibleGachaTypes.filter((g) => !g.isActive).length}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+                  style={
+                    {
+                      ["--gacha-list-cols" as string]:
+                        "minmax(180px,1.4fr) minmax(260px,1.6fr) 120px 140px 170px",
+                    } as any
+                  }
+                >
+                  <div className="hidden gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid md:[grid-template-columns:var(--gacha-list-cols)] md:items-center">
+                    <div>ガチャ名</div>
+                    <div>開催期間</div>
+                    <div>コスト</div>
+                    <div>状態</div>
+                    <div className="text-right">操作</div>
+                  </div>
+                  <div className="divide-y divide-gray-200">
+                    {visibleGachaTypes.length === 0 && (
+                      <div className="px-4 py-6 text-center text-sm text-gray-500">
+                        条件に一致するガチャがありません
+                      </div>
+                    )}
+                    {visibleGachaTypes.map((gachaType) => {
             const isEditing = editingCode === gachaType.code;
-            const totalWeight = calculateTotalWeight(gachaType);
             const displayData = isEditing ? formData : gachaType;
+            const periodText =
+              gachaType.startAt || gachaType.endAt
+                ? `${gachaType.startAt ? new Date(gachaType.startAt).toLocaleString("ja-JP") : "未設定"} 〜 ${
+                    gachaType.endAt
+                      ? new Date(gachaType.endAt).toLocaleString("ja-JP")
+                      : "未設定"
+                  }`
+                : "期間制限なし";
 
             if (editingCode && !isEditing) {
               return null;
             }
 
-            const cardContent = (
-              <Card
-                key={gachaType.id}
-                title={gachaType.name}
-                scrollable={isEditing}
-                maxHeight={isEditing ? "calc(100vh - 300px)" : undefined}
-                actions={
-                  !isEditing ? (
-                    <div className="flex flex-wrap items-center gap-2">
+            if (!isEditing) {
+              const configs = getPrizeConfigs(gachaType);
+              const totalWeight = configs.reduce(
+                (sum, c) => sum + (Number(c.weight) || 0),
+                0
+              );
+              const rarityVideoIds =
+                (gachaType.rarityVideoIds as Record<string, number[]>) || {};
+              const missingVideoTierLabels =
+                gachaType.useDefaultVideos !== false
+                  ? []
+                  : prizeTiers
+                      .filter((t) => t.isActive)
+                      .filter((t) => (rarityVideoIds[t.code] || []).length === 0)
+                      .map((t) => t.label);
+              const templateName =
+                messageTemplates.find(
+                  (t) => t.id === gachaType.resultMessageTemplateId
+                )?.code || "default（デフォルト）";
+
+              return (
+                <div key={gachaType.id} className="px-4 py-3">
+                  <div className="grid grid-cols-1 gap-2 md:[grid-template-columns:var(--gacha-list-cols)] md:items-center md:gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-gray-900">
+                        {gachaType.name}
+                      </div>
+                    </div>
+                    <div className="min-w-0 text-xs text-gray-700 md:text-sm">
+                      {periodText}
+                    </div>
+                    <div className="text-xs text-gray-700 md:text-sm">
+                      {gachaType.pointCost > 0
+                        ? `${gachaType.pointCost.toLocaleString()}ポイント`
+                        : "無料"}
+                    </div>
+                    <div className="text-xs md:text-sm">
                       <Badge variant={gachaType.isActive ? "success" : "gray"}>
                         {gachaType.isActive ? "有効" : "無効"}
                       </Badge>
-                      {!gachaType.isActive && (
-                        <span className="text-xs text-red-600">
-                          {getInactiveReasons(gachaType).length > 0
-                            ? `（${getInactiveReasons(gachaType).join("、")}）`
-                            : "（手動で無効化されています）"}
-                        </span>
-                      )}
+                      {!gachaType.isActive &&
+                        getInactiveReasons(gachaType).length > 0 && (
+                          <div className="mt-1 text-xs text-red-600">
+                            {getInactiveReasons(gachaType).join("、")}
+                          </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 md:justify-end">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="whitespace-nowrap"
+                        onClick={() =>
+                          setExpandedCode((prev) =>
+                            prev === gachaType.code ? null : gachaType.code
+                          )
+                        }
+                      >
+                        {expandedCode === gachaType.code ? "詳細を閉じる" : "詳細"}
+                      </Button>
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => handleEdit(gachaType)}
+                        className="whitespace-nowrap"
+                        onClick={() =>
+                          router.push(`/admin/gacha-types/${gachaType.code}/edit`)
+                        }
                       >
                         編集
                       </Button>
                       <Button
                         variant="danger"
                         size="sm"
+                        className="whitespace-nowrap"
                         onClick={() => {
                           setConfirmDeleteModal({
                             isOpen: true,
@@ -1344,130 +1445,117 @@ export default function GachaTypesPage() {
                         削除
                       </Button>
                     </div>
-                  ) : undefined
+                  </div>
+                  {expandedCode === gachaType.code && (
+                    <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 p-4">
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div>
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            基本情報
+                          </div>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            <div>説明: {gachaType.description || "未設定"}</div>
+                            <div>テンプレート: {templateName}</div>
+                            <div>
+                              動画設定:{" "}
+                              {gachaType.useDefaultVideos !== false
+                                ? "デフォルト動画を使用"
+                                : "等級別動画を個別設定"}
+                            </div>
+                            {missingVideoTierLabels.length > 0 && (
+                              <div className="text-red-600">
+                                未設定の等級動画: {missingVideoTierLabels.join("、")}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            監視情報
+                          </div>
+                          <div className="space-y-1 text-sm text-gray-700">
+                            <div>
+                              作成日時:{" "}
+                              {new Date(gachaType.createdAt).toLocaleString("ja-JP")}
+                            </div>
+                            <div>
+                              更新日時:{" "}
+                              {new Date(gachaType.updatedAt).toLocaleString("ja-JP")}
+                            </div>
+                            <div>合計重み: {totalWeight.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          等級確率サマリ
+                        </div>
+                        {configs.length === 0 ? (
+                          <div className="text-sm text-gray-500">等級設定なし</div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                            {configs.map((config) => {
+                              const rate =
+                                totalWeight > 0
+                                  ? ((config.weight || 0) / totalWeight) * 100
+                                  : 0;
+                              return (
+                                <div
+                                  key={config.rarity}
+                                  className="rounded border border-gray-200 bg-white px-3 py-2"
+                                >
+                                  <div className="text-xs text-gray-500">
+                                    {getTierLabel(config.rarity)}
+                                  </div>
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {rate.toFixed(2)}%
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    重み: {config.weight}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const cardContent = (
+              <Card
+                key={gachaType.id}
+                title={gachaType.name}
+                scrollable={isEditing}
+                maxHeight={isEditing ? "calc(100vh - 300px)" : undefined}
+                actions={
+                  undefined
                 }
               >
-                {gachaType.description && (
-                  <p className="mb-4 text-sm text-gray-600">
-                    {gachaType.description}
-                  </p>
-                )}
-
-                {/* アイコン設定の表示 */}
                 {!isEditing && (
-                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="mb-2 text-sm font-medium text-gray-700">
-                      アイコン設定
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {gachaType.iconImageUrl ? (
-                        <>
-                          <img
-                            src={gachaType.iconImageUrl}
-                            alt={gachaType.name}
-                            className="h-16 w-16 rounded-lg object-cover border border-gray-300"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-1 text-xs font-medium text-green-700">
-                              <CheckIcon className="h-4 w-4" />
-                              <span>アイコン設定済み</span>
-                            </div>
-                            <div className="mt-1 text-xs text-gray-500 break-all">
-                              {gachaType.iconImageUrl}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <WarningIcon className="h-4 w-4 text-red-600" />
-                          <span>アイコン未設定</span>
-                        </div>
-                      )}
+                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="grid grid-cols-1 gap-2 text-sm text-gray-700 md:grid-cols-3">
+                      <div>
+                        <span className="font-medium text-gray-900">開催期間:</span>{" "}
+                        {periodText}
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">コスト:</span>{" "}
+                        {gachaType.pointCost > 0
+                          ? `${gachaType.pointCost.toLocaleString()}ポイント`
+                          : "無料"}
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">有効状態:</span>{" "}
+                        {gachaType.isActive ? "有効" : "無効"}
+                      </div>
                     </div>
                   </div>
                 )}
-
-                {/* 動画設定の表示 */}
-                {!isEditing && (
-                  <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="mb-2 text-sm font-medium text-gray-700">
-                      動画設定
-                    </div>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      {gachaType.useDefaultVideos !== false ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 font-medium text-blue-700">
-                            <CheckIcon className="h-4 w-4" />
-                            <span>デフォルト設定を使用</span>
-                          </div>
-                          {/* <div className="text-gray-500">
-                            共通動画: デフォルト設定から取得
-                          </div> */}{/* 共通動画は使用しないためコメントアウト */}
-                          <div className="text-gray-500">
-                            等級別動画: デフォルト設定から取得
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {/* <div>
-                            共通動画:{" "}
-                            {gachaType.commonVideoIds &&
-                            gachaType.commonVideoIds.length > 0
-                              ? `${gachaType.commonVideoIds.length}個設定済み`
-                              : "未設定"}
-                          </div> */}{/* 共通動画は使用しないためコメントアウト */}
-                          <div>
-                            等級別動画:{" "}
-                            {gachaType.rarityVideoIds &&
-                            Object.keys(gachaType.rarityVideoIds).length > 0
-                              ? `${
-                                  Object.keys(gachaType.rarityVideoIds).length
-                                }レアリティ設定済み`
-                              : "未設定"}
-                          </div>
-                          {(!gachaType.rarityVideoIds ||
-                            Object.keys(gachaType.rarityVideoIds).length ===
-                              0) && (
-                            <div className="mt-2 flex items-start gap-1 text-xs text-red-600">
-                              <WarningIcon className="mt-0.5 h-4 w-4" />
-                              <span>
-                                動画が設定されていないため、ガチャを有効にできません
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mb-4 grid grid-cols-1 gap-2 text-sm text-gray-600 md:grid-cols-2">
-                  {gachaType.startAt && (
-                    <div>
-                      <span className="font-medium">開始日時:</span>{" "}
-                      {new Date(gachaType.startAt).toLocaleString("ja-JP")}
-                    </div>
-                  )}
-                  {gachaType.endAt && (
-                    <div>
-                      <span className="font-medium">終了日時:</span>{" "}
-                      {new Date(gachaType.endAt).toLocaleString("ja-JP")}
-                    </div>
-                  )}
-                  {!gachaType.startAt && !gachaType.endAt && (
-                    <div className="text-gray-400">期間制限なし</div>
-                  )}
-                  <div>
-                    <span className="font-medium">ポイントコスト:</span>{" "}
-                    {gachaType.pointCost > 0
-                      ? `${gachaType.pointCost.toLocaleString()}ポイント`
-                      : "無料"}
-                  </div>
-                </div>
 
                 {isEditing ? (
                   <div className="space-y-4">
@@ -2410,64 +2498,9 @@ export default function GachaTypesPage() {
                       </Button>
                     </div>
                   </div>
-                ) : (
-                  <div>
-                    <div className="mb-4 text-sm text-gray-600">
-                      重みの合計: {isNaN(totalWeight) ? 0 : totalWeight}
-                    </div>
-                    {(() => {
-                      // 動的等級システムを使用
-                      const prizeConfigs = getPrizeConfigs(gachaType);
-                      const validTotalWeight =
-                        isNaN(totalWeight) || totalWeight === 0
-                          ? 1
-                          : totalWeight;
-
-                      return (
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {prizeConfigs.map((config) => {
-                            const weight =
-                              typeof config.weight === "number"
-                                ? config.weight
-                                : 0;
-                            const percentage = calculatePercentage(
-                              weight,
-                              validTotalWeight
-                            );
-
-                            return (
-                              <div
-                                key={config.rarity}
-                                className="rounded-md bg-gray-50 p-3 lg:p-4"
-                              >
-                                <div className="text-xs font-medium text-gray-700 lg:text-sm">
-                                  {getTierLabel(config.rarity)}
-                                </div>
-                                <div className="mt-1 text-base font-semibold text-gray-800 lg:text-lg">
-                                  {weight} ({percentage.toFixed(1)}%)
-                                </div>
-                                <div className="mt-2 text-xs text-gray-600 lg:text-sm">
-                                  役:{" "}
-                                  <span className="font-medium">
-                                    {config.hands && config.hands.length > 0
-                                      ? getHandNames(config.hands)
-                                      : "未設定"}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
+                ) : null}
               </Card>
             );
-
-            if (!isEditing) {
-              return cardContent;
-            }
 
             return (
               <Modal
@@ -2479,7 +2512,12 @@ export default function GachaTypesPage() {
                 {cardContent}
               </Modal>
             );
-          })}
+                    })}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
