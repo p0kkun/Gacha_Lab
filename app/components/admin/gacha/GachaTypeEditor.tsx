@@ -110,6 +110,10 @@ export function GachaTypeEditor({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedImageName, setSelectedImageName] = useState<string>("");
   const [tiersToAdd, setTiersToAdd] = useState<string[]>([]);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkDisplayText, setLinkDisplayText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkSelection, setLinkSelection] = useState<{ start: number; end: number } | null>(null);
   const iconInputRef = useRef<HTMLInputElement | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -235,18 +239,37 @@ export function GachaTypeEditor({
   const insertMarkdownLink = () => {
     const textarea = descriptionRef.current;
     if (!textarea) return;
-    const url = window.prompt("リンクURLを入力してください", "https://");
-    if (!url) return;
     const selectedText =
-      textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || "リンクテキスト";
-    const markdownLink = `[${selectedText}](${url})`;
+      textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) || "";
+    setLinkDisplayText(selectedText);
+    setLinkUrl("");
+    setLinkSelection({ start: textarea.selectionStart, end: textarea.selectionEnd });
+    setIsLinkModalOpen(true);
+  };
+
+  const applyMarkdownLink = () => {
+    const textarea = descriptionRef.current;
+    if (!textarea || !linkSelection) {
+      setIsLinkModalOpen(false);
+      return;
+    }
+    const trimmedUrl = linkUrl.trim();
+    const trimmedText = linkDisplayText.trim();
+    if (!trimmedUrl || !trimmedText) {
+      setError("表示テキストとURLを入力してください");
+      return;
+    }
+    const markdownLink = `[${trimmedText}](${trimmedUrl})`;
+    const currentValue = textarea.value;
     const nextValue =
-      textarea.value.slice(0, textarea.selectionStart) +
+      currentValue.slice(0, linkSelection.start) +
       markdownLink +
-      textarea.value.slice(textarea.selectionEnd);
+      currentValue.slice(linkSelection.end);
     setFormData({ ...formData, description: nextValue });
+    setIsLinkModalOpen(false);
+    setLinkSelection(null);
     setTimeout(() => {
-      const pos = (textarea.selectionStart || 0) + markdownLink.length;
+      const pos = linkSelection.start + markdownLink.length;
       textarea.focus();
       textarea.setSelectionRange(pos, pos);
     }, 0);
@@ -905,6 +928,52 @@ export function GachaTypeEditor({
         onClose={() => setShowWeightExplanation(false)}
         title="重みによる抽選の仕組み"
       />
+      {isLinkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">リンク挿入</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  表示テキスト
+                </label>
+                <input
+                  type="text"
+                  value={linkDisplayText}
+                  onChange={(e) => setLinkDisplayText(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400"
+                  placeholder="リンクテキスト"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">URL</label>
+                <input
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400"
+                  placeholder="https://example.com"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setIsLinkModalOpen(false);
+                  setLinkSelection(null);
+                }}
+              >
+                キャンセル
+              </Button>
+              <Button type="button" variant="primary" onClick={applyMarkdownLink}>
+                挿入
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
