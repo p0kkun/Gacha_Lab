@@ -1,4 +1,5 @@
 import { Client, TextMessage, TemplateMessage } from "@line/bot-sdk";
+import { buildLineThumbnailUrl } from "@/lib/line-thumbnail";
 
 type LineApiErrorResponseData = {
   message?: string;
@@ -260,7 +261,9 @@ export async function sendGachaResultMessage(
     });
 
     // 画像URL（Buttonsのthumbnailは制約が厳しく400になりやすいので、失敗時は自動で外して再試行する）
-    const thumbnailImageUrl = getFullImageUrl(gachaTypeIconImageUrl);
+    const originalImageUrl = getFullImageUrl(gachaTypeIconImageUrl);
+    const thumbnailImageUrl =
+      buildLineThumbnailUrl(originalImageUrl) || originalImageUrl;
 
     const buildTemplateMessage = (includeThumbnail: boolean): TemplateMessage => {
       const buttonsTemplate = {

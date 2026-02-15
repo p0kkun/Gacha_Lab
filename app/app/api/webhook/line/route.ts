@@ -3,6 +3,7 @@ import { Client, WebhookEvent, TextMessage, MessageEvent, TextEventMessage, Post
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { ReferralStatus } from '@prisma/client';
+import { buildLineThumbnailUrl } from '@/lib/line-thumbnail';
 
 // LINE Messaging APIの型定義（@line/bot-sdkに含まれていない型）
 type URIAction = {
@@ -434,8 +435,11 @@ async function sendGachaSelectionCard(
       const text = truncateLineText(combinedText, 60);
       const title = truncateLineText(gachaType.name, 40);
 
+      const originalImageUrl = getFullImageUrl(gachaType.iconImageUrl);
+      const thumbnailImageUrl =
+        buildLineThumbnailUrl(originalImageUrl) || originalImageUrl;
       return {
-        thumbnailImageUrl: getFullImageUrl(gachaType.iconImageUrl),
+        thumbnailImageUrl,
         title,
         text,
         actions: [
