@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Alert, Badge, Button, Card } from "@/components/admin/ui";
@@ -102,6 +102,9 @@ export function GachaTypeEditor({
   const [showWeightExplanation, setShowWeightExplanation] = useState(false);
   const [formData, setFormData] = useState<Partial<GachaType>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImageName, setSelectedImageName] = useState<string>("");
+  const [tiersToAdd, setTiersToAdd] = useState<string[]>([]);
+  const iconInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeTiers = useMemo(
     () =>
@@ -109,6 +112,21 @@ export function GachaTypeEditor({
         .filter((t) => t.isActive)
         .sort((a, b) => a.displayOrder - b.displayOrder),
     [prizeTiers]
+  );
+
+  const selectedTierCodes = useMemo(
+    () => formData.prizeOrder || [],
+    [formData.prizeOrder]
+  );
+
+  const selectedTiers = useMemo(
+    () => selectedTierCodes.map((code) => activeTiers.find((t) => t.code === code)).filter(Boolean) as PrizeTier[],
+    [selectedTierCodes, activeTiers]
+  );
+
+  const availableTiersForAdd = useMemo(
+    () => activeTiers.filter((tier) => !selectedTierCodes.includes(tier.code)),
+    [activeTiers, selectedTierCodes]
   );
 
   const getTierLabel = (tierCode: string) =>
@@ -132,7 +150,7 @@ export function GachaTypeEditor({
   };
 
   const getPrizeConfigs = (): Array<{ rarity: string; weight: number; hands: HandRank[] }> => {
-    const order = formData.prizeOrder || getDefaultPrizeOrder();
+    const order = selectedTierCodes;
     const weights = formData.prizeWeights || {};
     const hands = formData.prizeHands || {};
     return order.map((rarity) => ({
@@ -161,6 +179,50 @@ export function GachaTypeEditor({
     if (updates.weight !== undefined) nextWeights[rarity] = updates.weight;
     if (updates.hands !== undefined) nextHands[rarity] = updates.hands;
     setFormData({ ...formData, prizeWeights: nextWeights, prizeHands: nextHands });
+  };
+
+  const addTiersToGacha = (tierCodes: string[]) => {
+    const uniqueTargets = tierCodes.filter(
+      (tierCode, index) =>
+        !!tierCode &&
+        tierCodes.indexOf(tierCode) === index &&
+        !selectedTierCodes.includes(tierCode)
+    );
+    if (uniqueTargets.length === 0) return;
+    const nextOrder = [...selectedTierCodes, ...uniqueTargets];
+    const nextWeights = { ...(formData.prizeWeights || {}) };
+    const nextHands = { ...(formData.prizeHands || {}) };
+    for (const tierCode of uniqueTargets) {
+      if (nextWeights[tierCode] === undefined) nextWeights[tierCode] = 0;
+      if (nextHands[tierCode] === undefined) nextHands[tierCode] = [];
+    }
+    setFormData({
+      ...formData,
+      prizeOrder: nextOrder,
+      prizeWeights: nextWeights,
+      prizeHands: nextHands,
+    });
+    setTiersToAdd([]);
+  };
+
+  const removeTierFromGacha = (tierCode: string) => {
+    if (!selectedTierCodes.includes(tierCode)) return;
+    const nextOrder = selectedTierCodes.filter((code) => code !== tierCode);
+    const nextWeights = { ...(formData.prizeWeights || {}) };
+    const nextHands = { ...(formData.prizeHands || {}) };
+    const nextVideoIds = {
+      ...((formData.rarityVideoIds || {}) as Record<string, number[]>),
+    };
+    delete nextWeights[tierCode];
+    delete nextHands[tierCode];
+    delete nextVideoIds[tierCode];
+    setFormData({
+      ...formData,
+      prizeOrder: nextOrder,
+      prizeWeights: nextWeights,
+      prizeHands: nextHands,
+      rarityVideoIds: nextVideoIds,
+    });
   };
 
   useEffect(() => {
@@ -231,13 +293,9 @@ export function GachaTypeEditor({
           });
           setShowHandSettings(hasAnyHands(prizeHands));
           setImagePreview(gachaType.iconImageUrl || null);
+          setSelectedImageName("");
+          setTiersToAdd([]);
         } else {
-          const initialPrizeWeights: Record<string, number> = {};
-          const initialPrizeHands: Record<string, HandRank[]> = {};
-          for (const tier of defaultOrder) {
-            initialPrizeWeights[tier] = 0;
-            initialPrizeHands[tier] = [];
-          }
           setFormData({
             code: "",
             name: "",
@@ -247,14 +305,16 @@ export function GachaTypeEditor({
             startAt: null,
             endAt: null,
             rarityVideoIds: {},
-            prizeWeights: initialPrizeWeights,
-            prizeHands: initialPrizeHands,
-            prizeOrder: defaultOrder,
+            prizeWeights: {},
+            prizeHands: {},
+            prizeOrder: [],
             resultMessageTemplateId: null,
             useDefaultVideos: true,
           });
           setShowHandSettings(false);
           setImagePreview(null);
+          setSelectedImageName("");
+          setTiersToAdd([]);
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "データの取得に失敗しました");
@@ -283,6 +343,7 @@ export function GachaTypeEditor({
       if (!res.ok) throw new Error(data.error || "画像のアップロードに失敗しました");
       setFormData({ ...formData, iconImageUrl: data.imageUrl });
       setImagePreview(data.imageUrl);
+      setSelectedImageName(file.name);
     } catch (e) {
       setError(e instanceof Error ? e.message : "画像アップロードに失敗しました");
     } finally {
@@ -296,9 +357,14 @@ export function GachaTypeEditor({
       return;
     }
 
+    if (selectedTierCodes.length === 0) {
+      setError("このガチャで使用する等級を1つ以上追加してください");
+      return;
+    }
+
     const rarityVideoIds = (formData.rarityVideoIds as Record<string, number[]>) || {};
     if (formData.useDefaultVideos === false) {
-      const missing = activeTiers
+      const missing = selectedTiers
         .filter((t) => (rarityVideoIds[t.code] || []).length === 0)
         .map((t) => t.label);
       if (missing.length > 0) {
@@ -315,16 +381,21 @@ export function GachaTypeEditor({
       const payload = {
         ...formData,
         rarityVideoIds:
-          formData.useDefaultVideos === false &&
-          formData.rarityVideoIds &&
-          Object.keys(formData.rarityVideoIds as Record<string, number[]>).length > 0
-            ? formData.rarityVideoIds
+          formData.useDefaultVideos === false
+            ? (() => {
+                const filtered = Object.fromEntries(
+                  Object.entries(
+                    ((formData.rarityVideoIds || {}) as Record<string, number[]>)
+                  ).filter(([tierCode]) => selectedTierCodes.includes(tierCode))
+                );
+                return Object.keys(filtered).length > 0 ? filtered : null;
+              })()
             : null,
         prizeWeights: formData.prizeWeights || null,
         prizeHands: showHandSettings ? formData.prizeHands || null : null,
         prizeOrder: formData.prizeOrder || null,
-        tierWeights: formData.prizeWeights || null,
-        tierOrder: formData.prizeOrder || null,
+        tierWeights: (formData.prizeWeights || null),
+        tierOrder: (formData.prizeOrder || null),
         resultMessageTemplateId: formData.resultMessageTemplateId ?? null,
         useDefaultVideos: formData.useDefaultVideos ?? true,
       };
@@ -489,12 +560,33 @@ export function GachaTypeEditor({
                 <div className="text-sm text-gray-500">未設定</div>
               )}
               <input
+                ref={iconInputRef}
                 type="file"
                 accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
-                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  void handleImageUpload(file);
+                }}
                 disabled={uploadingImage}
-                className="block w-full text-sm text-gray-900"
+                className="hidden"
               />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => iconInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? "アップロード中..." : "画像を選択"}
+                </Button>
+                <span className="max-w-[320px] truncate text-sm text-gray-600">
+                  {selectedImageName || "ファイル未選択"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                対応形式: PNG / JPG / GIF / WEBP
+              </p>
               {uploadingImage && <div className="text-sm text-gray-500">アップロード中...</div>}
             </div>
           </Card>
@@ -548,7 +640,7 @@ export function GachaTypeEditor({
 
               {formData.useDefaultVideos === false && (
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  {activeTiers.map((tier) => {
+                  {selectedTiers.map((tier) => {
                     const tierVideos = videos.filter(
                       (v) => v.isActive && v.videoType === "RARITY" && v.rarity === tier.code
                     );
@@ -592,6 +684,11 @@ export function GachaTypeEditor({
                       </div>
                     );
                   })}
+                  {selectedTiers.length === 0 && (
+                    <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+                      先に「等級設定」でこのガチャに等級を追加してください。
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -599,6 +696,55 @@ export function GachaTypeEditor({
 
           <Card title="等級設定">
             <div className="space-y-3">
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                <label className="mb-2 block text-xs font-medium text-gray-700">
+                  このガチャで使用する等級
+                </label>
+                <div className="space-y-2">
+                  {availableTiersForAdd.length > 0 ? (
+                    <div className="max-h-28 space-y-1 overflow-auto rounded-md border border-gray-200 bg-white p-2">
+                      {availableTiersForAdd.map((tier) => (
+                        <label key={tier.code} className="flex items-center gap-2 text-sm text-gray-800">
+                          <input
+                            type="checkbox"
+                            checked={tiersToAdd.includes(tier.code)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setTiersToAdd((prev) => [...prev, tier.code]);
+                              } else {
+                                setTiersToAdd((prev) => prev.filter((code) => code !== tier.code));
+                              }
+                            }}
+                          />
+                          <span>{tier.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
+                      追加できる等級はありません
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={tiersToAdd.length === 0}
+                      onClick={() => addTiersToGacha(tiersToAdd)}
+                    >
+                      選択した等級を追加
+                    </Button>
+                    <span className="text-xs text-gray-500">
+                      {tiersToAdd.length} 件選択中
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  ここで追加した等級だけが、このガチャの抽選対象になります。
+                </p>
+              </div>
+
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-gray-700">重みの説明</span>
                 <Tooltip
@@ -640,11 +786,21 @@ export function GachaTypeEditor({
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {getPrizeConfigs().map((config) => (
                   <div key={config.rarity} className="rounded-md border border-gray-200 p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="font-medium text-gray-900">{getTierLabel(config.rarity)}</div>
-                      <div className="text-xs font-semibold text-gray-700">
-                        確率: {getWeightRate(config.weight).toFixed(2)}%
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium text-gray-900">{getTierLabel(config.rarity)}</div>
+                        <div className="text-xs font-semibold text-gray-700">
+                          確率: {getWeightRate(config.weight).toFixed(2)}%
+                        </div>
                       </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        onClick={() => removeTierFromGacha(config.rarity)}
+                      >
+                        このガチャから外す
+                      </Button>
                     </div>
                     <div>
                       <label className="text-xs text-gray-600">重み</label>
@@ -682,6 +838,11 @@ export function GachaTypeEditor({
                     )}
                   </div>
                 ))}
+                {getPrizeConfigs().length === 0 && (
+                  <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+                    等級が未設定です。「等級を追加」から抽選対象の等級を追加してください。
+                  </div>
+                )}
               </div>
             </div>
           </Card>

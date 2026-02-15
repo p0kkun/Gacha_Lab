@@ -260,16 +260,18 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (parsedTierWeights && Object.keys(parsedTierWeights).length > 0) {
+      if (parsedTierWeights) {
         const order =
           Array.isArray(parsedTierOrder) && parsedTierOrder.length > 0
-            ? parsedTierOrder
+            ? parsedTierOrder.filter((tierCode) => tierCode in parsedTierWeights)
             : Object.keys(parsedTierWeights);
 
+        const activatedTierCodes: string[] = [];
         for (let i = 0; i < order.length; i++) {
           const tierCode = order[i];
           const w = Number((parsedTierWeights as any)[tierCode] ?? 0);
           if (!Number.isFinite(w) || w < 0) continue;
+          activatedTierCodes.push(tierCode);
           await (tx as any).gachaTierWeight.upsert({
             where: {
               gachaTypeId_tierCode: { gachaTypeId: saved.id, tierCode },
@@ -286,6 +288,21 @@ export async function POST(request: NextRequest) {
               displayOrder: (i + 1) * 10,
               isActive: true,
             },
+          });
+        }
+
+        if (activatedTierCodes.length > 0) {
+          await (tx as any).gachaTierWeight.updateMany({
+            where: {
+              gachaTypeId: saved.id,
+              tierCode: { notIn: activatedTierCodes },
+            },
+            data: { isActive: false },
+          });
+        } else {
+          await (tx as any).gachaTierWeight.updateMany({
+            where: { gachaTypeId: saved.id },
+            data: { isActive: false },
           });
         }
       }
