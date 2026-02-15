@@ -247,7 +247,7 @@ export default function TagsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black">
                   作成日時
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-black">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-black">
                   操作
                 </th>
               </tr>
@@ -267,19 +267,21 @@ export default function TagsPage() {
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-black">
                     {new Date(tag.createdAt).toLocaleString("ja-JP")}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    <Link
-                      href={`/admin/tags/${tag.id}`}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      詳細
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteClick(tag.id)}
-                      className="ml-4 text-red-600 hover:text-red-900"
-                    >
-                      削除
-                    </button>
+                  <td className="whitespace-nowrap px-6 py-4 text-left text-sm font-medium">
+                    <div className="flex items-center gap-4">
+                      <Link
+                        href={`/admin/tags/${tag.id}`}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        詳細
+                      </Link>
+                      <button
+                        onClick={() => handleDeleteClick(tag.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        削除
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

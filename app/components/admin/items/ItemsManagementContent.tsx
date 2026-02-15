@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/admin/ui";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 type GachaItem = {
   id: number;
@@ -22,6 +24,10 @@ export default function ItemsManagementContent() {
   const [nameFilter, setNameFilter] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    itemId: number | null;
+  }>({ isOpen: false, itemId: null });
 
   useEffect(() => {
     void fetchItems();
@@ -90,6 +96,28 @@ export default function ItemsManagementContent() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteConfirm.itemId) return;
+    const id = deleteConfirm.itemId;
+    setDeleteConfirm({ isOpen: false, itemId: null });
+    try {
+      setError(null);
+      setSuccess(null);
+      const res = await fetch(`/api/admin/items/${id}`, { method: "DELETE" });
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "/admin";
+        return;
+      }
+      if (!res.ok) throw new Error("削除に失敗しました");
+      setSuccess("アイテムを削除しました");
+      await fetchItems();
+    } catch (e) {
+      console.error("削除エラー:", e);
+      setError("削除に失敗しました");
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:mb-6">
@@ -137,19 +165,19 @@ export default function ItemsManagementContent() {
           アイテムがありません
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <div className="hidden grid-cols-[90px_1.2fr_1fr_1fr_120px_160px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 lg:grid">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <div className="hidden grid-cols-[90px_1.2fr_1fr_1fr_120px_280px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 lg:grid">
             <div>ID</div>
             <div>名前</div>
             <div>使用可能期間</div>
             <div>使用方法</div>
             <div>状態</div>
-            <div className="text-right">操作</div>
+            <div>操作</div>
           </div>
           <div className="divide-y divide-gray-200">
             {items.map((item) => (
               <div key={item.id} className="px-4 py-3">
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-[90px_1.2fr_1fr_1fr_120px_160px] lg:items-center lg:gap-3">
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-[90px_1.2fr_1fr_1fr_120px_280px] lg:items-center lg:gap-3">
                   <div className="text-sm text-gray-700">{item.id}</div>
                   <div className="min-w-0 text-sm font-medium text-gray-900">{item.name}</div>
                   <div className="text-sm text-gray-700">
@@ -169,19 +197,31 @@ export default function ItemsManagementContent() {
                       {item.isActive ? "有効" : "無効"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 lg:justify-end">
+                  <div className="flex flex-nowrap items-center gap-2">
                     <Link
                       href={`/admin/items/${item.id}`}
-                      className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                      className="inline-flex whitespace-nowrap rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
                     >
                       編集
                     </Link>
-                    <button
+                    <Button
                       onClick={() => handleToggleActive(item)}
-                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      variant={item.isActive ? "warning" : "success"}
+                      size="sm"
                     >
                       {item.isActive ? "無効化" : "有効化"}
-                    </button>
+                    </Button>
+                    {item.isActive && (
+                      <Button
+                        onClick={() =>
+                          setDeleteConfirm({ isOpen: true, itemId: item.id })
+                        }
+                        variant="danger"
+                        size="sm"
+                      >
+                        削除
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -189,7 +229,17 @@ export default function ItemsManagementContent() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        title="アイテム削除"
+        message="このアイテムを削除しますか？（削除は論理削除です）"
+        confirmText="削除"
+        cancelText="キャンセル"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, itemId: null })}
+      />
     </div>
   );
 }
-

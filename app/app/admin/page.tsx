@@ -319,7 +319,7 @@ export default function AdminPage() {
               友だち紹介システムの特典ポイントを設定できます
             </p>
             <Link
-              href="/admin/users?tab=free-gacha-settings"
+              href="/admin/master?tab=free-gacha-settings"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               紹介特典設定へ

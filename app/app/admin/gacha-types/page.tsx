@@ -1330,7 +1330,7 @@ export default function GachaTypesPage() {
                     <div>開催期間</div>
                     <div>コスト</div>
                     <div>状態</div>
-                    <div className="text-right">操作</div>
+                    <div>操作</div>
                   </div>
                   <div className="divide-y divide-gray-200">
                     {visibleGachaTypes.length === 0 && (
@@ -1404,7 +1404,7 @@ export default function GachaTypesPage() {
                           </div>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 md:justify-end">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="secondary"
                         size="sm"

@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import TabbedPage from "@/components/admin/TabbedPage";
 import dynamic from "next/dynamic";
-import { StarIcon, GiftIcon, PackageIcon } from "@/components/admin/icons/AdminIcons";
+import { StarIcon, GiftIcon } from "@/components/admin/icons/AdminIcons";
 
 const PrizeTiersContent = dynamic(() => import("@/app/admin/prize-tiers/page"), {
   ssr: false,
@@ -14,9 +14,10 @@ const PrizeAssignmentsContent = dynamic(
   () => import("@/app/admin/prize-assignments/page"),
   { ssr: false }
 );
-const ItemsContent = dynamic(() => import("@/components/admin/items/ItemsManagementContent"), {
-  ssr: false,
-});
+const FreeGachaSettingsContent = dynamic(
+  () => import("@/app/admin/free-gacha-settings/page"),
+  { ssr: false }
+);
 
 function MasterContent() {
   const searchParams = useSearchParams();
@@ -40,10 +41,10 @@ function MasterContent() {
           content: <PrizeAssignmentsContent />,
         },
         {
-          id: "items",
-          label: "アイテム設定",
-          icon: <PackageIcon className="h-4 w-4" />,
-          content: <ItemsContent />,
+          id: "free-gacha-settings",
+          label: "紹介特典設定",
+          icon: <GiftIcon className="h-4 w-4" />,
+          content: <FreeGachaSettingsContent />,
         },
       ]}
     />

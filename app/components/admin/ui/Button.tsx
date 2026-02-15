@@ -44,7 +44,7 @@ export default function Button({
     <button
       disabled={disabled || isLoading}
       className={`
-        inline-flex items-center justify-center gap-2 rounded-lg font-medium
+        inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium
         transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-offset-2
         disabled:cursor-not-allowed disabled:opacity-50

@@ -307,7 +307,7 @@ export default function PrizeTiersPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
                     状態
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-700">
+                  <th className="w-[1%] px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
                     操作
                   </th>
                 </tr>
@@ -374,9 +374,9 @@ export default function PrizeTiersPage() {
                         {tier.isActive ? "有効" : "無効"}
                       </Badge>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium">
+                    <td className="w-[1%] whitespace-nowrap px-4 py-3 text-left text-sm font-medium">
                       {editingId === tier.id ? (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="primary"
@@ -412,7 +412,7 @@ export default function PrizeTiersPage() {
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="primary"

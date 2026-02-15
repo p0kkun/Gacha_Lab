@@ -121,9 +121,10 @@ export default function AdminLayout({
         "/admin/master": [
           "/admin/prize-tiers",
           "/admin/prize-assignments",
+          "/admin/free-gacha-settings",
         ],
         "/admin/points": ["/admin/point-plans"],
-        "/admin/users": ["/admin/tags", "/admin/referrals", "/admin/free-gacha-settings"],
+        "/admin/users": ["/admin/tags", "/admin/referrals"],
         "/admin/messages": ["/admin/result-message-templates"],
         "/admin/debug": [
           "/admin/simulator",

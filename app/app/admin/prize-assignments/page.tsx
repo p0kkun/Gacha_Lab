@@ -732,7 +732,7 @@ export default function PrizeAssignmentsPage() {
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     状態
                   </th>
-                  <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     操作
                   </th>
                 </tr>
@@ -881,7 +881,7 @@ export default function PrizeAssignmentsPage() {
                         {a.isActive ? "有効" : "無効"}
                       </label>
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-left">
                       <div className="inline-flex gap-2">
                         <button
                           onClick={() => saveAssignment(a)}

@@ -562,7 +562,7 @@ export default function AdminPointPlansPage() {
                   <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     状態
                   </th>
-                  <th className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                  <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700">
                     操作
                   </th>
                 </tr>
@@ -668,7 +668,7 @@ export default function AdminPointPlansPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-left">
                       <div className="inline-flex gap-2">
                         <button
                           onClick={() => requestUpdateConfirm(p)}
