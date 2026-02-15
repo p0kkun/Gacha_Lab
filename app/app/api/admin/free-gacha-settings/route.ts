@@ -62,6 +62,9 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
+    const MIN_REWARD_POINTS = 0;
+    const MAX_REWARD_POINTS = 100000;
+
     const authContext = await getAdminAuthContext(request);
     if (!authContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -128,6 +131,38 @@ export async function PUT(request: NextRequest) {
       if (!Number.isFinite(expirationDays) || expirationDays < 0) {
         return NextResponse.json(
           { error: "有効期限は0以上の整数である必要があります" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (referrerPoints !== null && referrerPoints !== undefined) {
+      if (
+        !Number.isFinite(referrerPoints) ||
+        !Number.isInteger(referrerPoints) ||
+        referrerPoints < MIN_REWARD_POINTS ||
+        referrerPoints > MAX_REWARD_POINTS
+      ) {
+        return NextResponse.json(
+          {
+            error: `紹介者へのポイント報酬は${MIN_REWARD_POINTS}〜${MAX_REWARD_POINTS.toLocaleString()}の整数である必要があります`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (refereePoints !== null && refereePoints !== undefined) {
+      if (
+        !Number.isFinite(refereePoints) ||
+        !Number.isInteger(refereePoints) ||
+        refereePoints < MIN_REWARD_POINTS ||
+        refereePoints > MAX_REWARD_POINTS
+      ) {
+        return NextResponse.json(
+          {
+            error: `被紹介者へのポイント報酬は${MIN_REWARD_POINTS}〜${MAX_REWARD_POINTS.toLocaleString()}の整数である必要があります`,
+          },
           { status: 400 }
         );
       }

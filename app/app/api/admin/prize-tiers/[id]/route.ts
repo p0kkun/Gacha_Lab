@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminAuth } from "@/lib/admin-auth";
 
+const DISPLAY_ORDER_MIN = 0;
+const DISPLAY_ORDER_MAX = 9999;
+
+const getTierUsageCount = async (tierCode: string) => {
+  const [tierWeightsCount, assignmentsCount, historiesCount] = await Promise.all([
+    prisma.gachaTierWeight.count({ where: { tierCode } }),
+    prisma.gachaPrizeAssignment.count({ where: { tierCode } }),
+    prisma.gachaHistory.count({ where: { tierCode } }),
+  ]);
+  return tierWeightsCount + assignmentsCount + historiesCount;
+};
+
 /**
  * 等級マスタ更新
  * PUT /api/admin/prize-tiers/[id]
@@ -23,6 +35,17 @@ export async function PUT(
 
     const body = await request.json();
     const { code, label, displayOrder, isActive } = body;
+    const currentTier = await prisma.prizeTier.findUnique({
+      where: { id: tierId },
+      select: { id: true, code: true, isActive: true },
+    });
+
+    if (!currentTier) {
+      return NextResponse.json(
+        { error: "等級マスタが見つかりません" },
+        { status: 404 }
+      );
+    }
 
     const data: any = {};
     if (typeof code === "string" && code.trim()) {
@@ -42,8 +65,37 @@ export async function PUT(
       data.code = code;
     }
     if (typeof label === "string") data.label = label;
-    if (typeof displayOrder === "number") data.displayOrder = displayOrder;
-    if (typeof isActive === "boolean") data.isActive = isActive;
+    if (displayOrder !== undefined) {
+      const normalizedDisplayOrder = Number(displayOrder);
+      if (
+        !Number.isInteger(normalizedDisplayOrder) ||
+        normalizedDisplayOrder < DISPLAY_ORDER_MIN ||
+        normalizedDisplayOrder > DISPLAY_ORDER_MAX
+      ) {
+        return NextResponse.json(
+          {
+            error: `表示順は${DISPLAY_ORDER_MIN}〜${DISPLAY_ORDER_MAX}の整数で入力してください`,
+          },
+          { status: 400 }
+        );
+      }
+      data.displayOrder = normalizedDisplayOrder;
+    }
+    if (typeof isActive === "boolean") {
+      if (currentTier.isActive && !isActive) {
+        const usageCount = await getTierUsageCount(currentTier.code);
+        if (usageCount > 0) {
+          return NextResponse.json(
+            {
+              error:
+                "この等級は使用中のガチャに設定済みのため無効化できません。設定を解除してから再実行してください。",
+            },
+            { status: 400 }
+          );
+        }
+      }
+      data.isActive = isActive;
+    }
 
     const updated = await prisma.prizeTier.update({
       where: { id: tierId },
@@ -91,20 +143,6 @@ export async function DELETE(
       return NextResponse.json({ error: "無効なIDです" }, { status: 400 });
     }
 
-    // 使用されているかチェック（GachaTierWeightやGachaPrizeAssignmentなど）
-    const [tierWeightsCount, assignmentsCount, historiesCount] = await Promise.all([
-      prisma.gachaTierWeight.count({
-        where: { tierCode: { in: await prisma.prizeTier.findUnique({ where: { id: tierId }, select: { code: true } }).then(t => t ? [t.code] : []) } },
-      }),
-      prisma.gachaPrizeAssignment.count({
-        where: { tierCode: { in: await prisma.prizeTier.findUnique({ where: { id: tierId }, select: { code: true } }).then(t => t ? [t.code] : []) } },
-      }),
-      prisma.gachaHistory.count({
-        where: { tierCode: { in: await prisma.prizeTier.findUnique({ where: { id: tierId }, select: { code: true } }).then(t => t ? [t.code] : []) } },
-      }),
-    ]);
-
-    // 簡易版：tierCodeを直接取得
     const tier = await prisma.prizeTier.findUnique({
       where: { id: tierId },
       select: { code: true },
@@ -117,25 +155,14 @@ export async function DELETE(
       );
     }
 
-    const [tierWeightsCount2, assignmentsCount2, historiesCount2] = await Promise.all([
-      prisma.gachaTierWeight.count({ where: { tierCode: tier.code } }),
-      prisma.gachaPrizeAssignment.count({ where: { tierCode: tier.code } }),
-      prisma.gachaHistory.count({ where: { tierCode: tier.code } }),
-    ]);
-
-    if (tierWeightsCount2 > 0 || assignmentsCount2 > 0 || historiesCount2 > 0) {
-      // 使用されている場合は論理削除のみ
-      const updated = await prisma.prizeTier.update({
-        where: { id: tierId },
-        data: { isActive: false },
-      });
+    const usageCount = await getTierUsageCount(tier.code);
+    if (usageCount > 0) {
       return NextResponse.json({
-        tier: updated,
-        message: "この等級は使用されているため、無効化しました",
-      });
+        error:
+          "この等級は使用中のガチャに設定済みのため削除できません。設定を解除してから再実行してください。",
+      }, { status: 400 });
     }
 
-    // 使用されていない場合は物理削除（実際は論理削除推奨）
     await prisma.prizeTier.delete({
       where: { id: tierId },
     });

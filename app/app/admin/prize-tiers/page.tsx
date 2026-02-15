@@ -35,6 +35,8 @@ type ConfirmAction =
   | { type: "delete"; tierId: number };
 
 export default function PrizeTiersPage() {
+  const DISPLAY_ORDER_MIN = 0;
+  const DISPLAY_ORDER_MAX = 9999;
   const [tiers, setTiers] = useState<PrizeTier[]>([]);
   const [savedTiers, setSavedTiers] = useState<PrizeTier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,8 +250,15 @@ export default function PrizeTiersPage() {
               label="表示順"
               type="number"
               value={newTier.displayOrder.toString()}
-              onChange={(e) => setNewTier({ ...newTier, displayOrder: parseInt(e.target.value) || 0 })}
-              min="0"
+              onChange={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                const normalized = Number.isFinite(parsed)
+                  ? Math.min(DISPLAY_ORDER_MAX, Math.max(DISPLAY_ORDER_MIN, parsed))
+                  : DISPLAY_ORDER_MIN;
+                setNewTier({ ...newTier, displayOrder: normalized });
+              }}
+              min={String(DISPLAY_ORDER_MIN)}
+              max={String(DISPLAY_ORDER_MAX)}
             />
             <div className="flex items-end">
               <Button
@@ -272,6 +281,9 @@ export default function PrizeTiersPage() {
               </Button>
             </div>
           </div>
+          <p className="mt-2 text-xs text-gray-600">
+            表示順は{DISPLAY_ORDER_MIN}〜{DISPLAY_ORDER_MAX}で入力してください
+          </p>
         </Card>
 
         {/* 一覧 */}
@@ -342,11 +354,16 @@ export default function PrizeTiersPage() {
                           type="number"
                           value={tier.displayOrder}
                           onChange={(e) => {
-                            const updated = tiers.map((t) => (t.id === tier.id ? { ...t, displayOrder: parseInt(e.target.value) || 0 } : t));
+                            const parsed = parseInt(e.target.value, 10);
+                            const normalized = Number.isFinite(parsed)
+                              ? Math.min(DISPLAY_ORDER_MAX, Math.max(DISPLAY_ORDER_MIN, parsed))
+                              : DISPLAY_ORDER_MIN;
+                            const updated = tiers.map((t) => (t.id === tier.id ? { ...t, displayOrder: normalized } : t));
                             setTiers(updated);
                           }}
                           className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm"
-                          min="0"
+                          min={String(DISPLAY_ORDER_MIN)}
+                          max={String(DISPLAY_ORDER_MAX)}
                         />
                       ) : (
                         tier.displayOrder
@@ -414,7 +431,7 @@ export default function PrizeTiersPage() {
                                 isOpen: true,
                                 title: tier.isActive ? "等級マスタを無効化" : "等級マスタを有効化",
                                 message: tier.isActive
-                                  ? "この等級マスタを無効化しますか？（使用中の場合は削除できません）"
+                                  ? "この等級マスタを無効化しますか？（使用中のガチャに設定済みの場合は無効化できません）"
                                   : "この等級マスタを有効化しますか？",
                                 confirmText: tier.isActive ? "無効化" : "有効化",
                                 variant: tier.isActive ? "warning" : "info",
@@ -431,7 +448,7 @@ export default function PrizeTiersPage() {
                               setConfirmModal({
                                 isOpen: true,
                                 title: "等級マスタを削除",
-                                message: `等級マスタ「${tier.label}」を削除しますか？\n\n使用中の場合は削除できず、無効化されます。`,
+                                message: `等級マスタ「${tier.label}」を削除しますか？\n\n使用中のガチャに設定済みの場合は削除できません。`,
                                 confirmText: "削除",
                                 variant: "danger",
                                 action: { type: "delete", tierId: tier.id } });

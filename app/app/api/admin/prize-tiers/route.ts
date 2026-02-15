@@ -45,12 +45,31 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const DISPLAY_ORDER_MIN = 0;
+    const DISPLAY_ORDER_MAX = 9999;
     const body = await request.json();
     const { code, label, displayOrder, isActive } = body;
 
     if (!code || !label) {
       return NextResponse.json(
         { error: "等級コードと表示名は必須です" },
+        { status: 400 }
+      );
+    }
+
+    const normalizedDisplayOrder =
+      displayOrder === undefined || displayOrder === null
+        ? 0
+        : Number(displayOrder);
+    if (
+      !Number.isInteger(normalizedDisplayOrder) ||
+      normalizedDisplayOrder < DISPLAY_ORDER_MIN ||
+      normalizedDisplayOrder > DISPLAY_ORDER_MAX
+    ) {
+      return NextResponse.json(
+        {
+          error: `表示順は${DISPLAY_ORDER_MIN}〜${DISPLAY_ORDER_MAX}の整数で入力してください`,
+        },
         { status: 400 }
       );
     }
@@ -70,7 +89,7 @@ export async function POST(request: NextRequest) {
       data: {
         code,
         label,
-        displayOrder: displayOrder ?? 0,
+        displayOrder: normalizedDisplayOrder,
         isActive: isActive ?? true,
       },
     });

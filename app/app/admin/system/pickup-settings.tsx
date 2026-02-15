@@ -182,7 +182,7 @@ export default function PickupSettingsContent() {
               }
             />
             <p className="mt-1 text-xs text-gray-500">
-              選択したガチャが無効化されたり期間外になった場合、自動的に一覧へ誘導されます。
+              選択したガチャが無効化・期間外・未設定の場合、利用不可モーダルが表示され、マイページへ誘導されます。
             </p>
           </div>
 
@@ -212,13 +212,6 @@ export default function PickupSettingsContent() {
               variant="primary"
             >
               {saving ? '保存中...' : '保存'}
-            </Button>
-            <Button
-              onClick={fetchData}
-              disabled={loading || saving}
-              variant="secondary"
-            >
-              再読み込み
             </Button>
           </div>
         </div>

@@ -35,17 +35,21 @@ type SimulatorResult = {
 type PrizeTier = {
   code: string;
   label: string;
+  displayOrder: number;
 };
 
 export default function SimulatorPage() {
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [selectedGachaTypeId, setSelectedGachaTypeId] = useState<string>("");
   const [iterations, setIterations] = useState<number>(10000);
-  const [includeItems, setIncludeItems] = useState<boolean>(false);
+  const [includeItems, setIncludeItems] = useState<boolean>(true);
   const [result, setResult] = useState<SimulatorResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prizeTiers, setPrizeTiers] = useState<Record<string, string>>({});
+  const [prizeTierOrders, setPrizeTierOrders] = useState<Record<string, number>>(
+    {}
+  );
 
   useEffect(() => {
     fetchGachaTypes();
@@ -58,12 +62,16 @@ export default function SimulatorPage() {
       if (res.ok) {
         const data = await res.json();
         const tierMap: Record<string, string> = {};
+        const tierOrderMap: Record<string, number> = {};
         if (Array.isArray(data.tiers)) {
           data.tiers.forEach((tier: PrizeTier) => {
             tierMap[tier.code] = tier.label;
+            tierOrderMap[tier.code] =
+              tier.displayOrder ?? Number.MAX_SAFE_INTEGER;
           });
         }
         setPrizeTiers(tierMap);
+        setPrizeTierOrders(tierOrderMap);
       }
     } catch (error) {
       console.error("等級マスタ取得エラー:", error);
@@ -72,6 +80,10 @@ export default function SimulatorPage() {
 
   const getTierLabel = (tierCode: string): string => {
     return prizeTiers[tierCode] || tierCode;
+  };
+
+  const getTierOrder = (tierCode: string): number => {
+    return prizeTierOrders[tierCode] ?? Number.MAX_SAFE_INTEGER;
   };
 
   const fetchGachaTypes = async () => {
@@ -279,7 +291,15 @@ export default function SimulatorPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {Object.keys(result.results).map((rarity) => (
+                {Object.keys(result.results)
+                  .sort((a, b) => {
+                    const orderDiff = getTierOrder(a) - getTierOrder(b);
+                    if (orderDiff !== 0) return orderDiff;
+                    const rateDiff = result.expectedRates[a] - result.expectedRates[b];
+                    if (rateDiff !== 0) return rateDiff;
+                    return getTierLabel(a).localeCompare(getTierLabel(b), "ja");
+                  })
+                  .map((rarity) => (
                   <tr key={rarity} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                       {getTierLabel(rarity)}
@@ -357,7 +377,18 @@ export default function SimulatorPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {result.itemProbabilities.map((item, index) => (
+                    {[...result.itemProbabilities]
+                      .sort((a, b) => {
+                        const orderDiff =
+                          getTierOrder(a.tierCode) - getTierOrder(b.tierCode);
+                        if (orderDiff !== 0) return orderDiff;
+                        const probDiff = a.combinedProbability - b.combinedProbability;
+                        if (probDiff !== 0) return probDiff;
+                        const itemProbDiff = a.itemProbability - b.itemProbability;
+                        if (itemProbDiff !== 0) return itemProbDiff;
+                        return a.itemName.localeCompare(b.itemName, "ja");
+                      })
+                      .map((item, index) => (
                       <tr key={`${item.tierCode}-${item.itemId}-${index}`} className="hover:bg-gray-50">
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                           {getTierLabel(item.tierCode)}

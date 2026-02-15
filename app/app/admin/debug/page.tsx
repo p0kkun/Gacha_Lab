@@ -17,7 +17,7 @@ function DebugContent() {
 
   return (
     <TabbedPage
-      title="デバッグ"
+      title="ガチャシミュレータ"
       defaultTab={defaultTab}
       tabs={[
         {

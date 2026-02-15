@@ -27,6 +27,9 @@ type GachaType = {
 };
 
 export default function FreeGachaSettingsPage() {
+  const MIN_REWARD_POINTS = 0;
+  const MAX_REWARD_POINTS = 100000;
+
   const [settings, setSettings] = useState<FreeGachaSettings | null>(null);
   const [gachaTypes, setGachaTypes] = useState<GachaType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +106,22 @@ export default function FreeGachaSettingsPage() {
 
   const handleSave = () => {
     if (!settings) return;
+    if (
+      !Number.isInteger(formData.referrerPoints) ||
+      formData.referrerPoints < MIN_REWARD_POINTS ||
+      formData.referrerPoints > MAX_REWARD_POINTS
+    ) {
+      setError(`紹介者へのポイント報酬は${MIN_REWARD_POINTS}〜${MAX_REWARD_POINTS.toLocaleString()}の整数で入力してください`);
+      return;
+    }
+    if (
+      !Number.isInteger(formData.refereePoints) ||
+      formData.refereePoints < MIN_REWARD_POINTS ||
+      formData.refereePoints > MAX_REWARD_POINTS
+    ) {
+      setError(`被紹介者へのポイント報酬は${MIN_REWARD_POINTS}〜${MAX_REWARD_POINTS.toLocaleString()}の整数で入力してください`);
+      return;
+    }
 
     const changes: Array<{ label: string; from: string; to: string }> = [];
 
@@ -260,18 +279,25 @@ export default function FreeGachaSettingsPage() {
                 <Input
                   type="number"
                   min="0"
+                  max={String(MAX_REWARD_POINTS)}
                   step="1"
                   value={formData.referrerPoints}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      referrerPoints: parseInt(e.target.value) || 0,
+                    setFormData((prev) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      const safe = Number.isFinite(parsed)
+                        ? Math.min(MAX_REWARD_POINTS, Math.max(MIN_REWARD_POINTS, parsed))
+                        : 0;
+                      return {
+                        ...prev,
+                        referrerPoints: safe,
+                      };
                     })
                   }
                   placeholder="例: 100"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  紹介者が獲得できるポイント数（0の場合は付与しない）
+                  紹介者が獲得できるポイント数（0の場合は付与しない、最大{MAX_REWARD_POINTS.toLocaleString()}）
                 </p>
               </div>
 
@@ -282,18 +308,25 @@ export default function FreeGachaSettingsPage() {
                 <Input
                   type="number"
                   min="0"
+                  max={String(MAX_REWARD_POINTS)}
                   step="1"
                   value={formData.refereePoints}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      refereePoints: parseInt(e.target.value) || 0,
+                    setFormData((prev) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      const safe = Number.isFinite(parsed)
+                        ? Math.min(MAX_REWARD_POINTS, Math.max(MIN_REWARD_POINTS, parsed))
+                        : 0;
+                      return {
+                        ...prev,
+                        refereePoints: safe,
+                      };
                     })
                   }
                   placeholder="例: 100"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  被紹介者が獲得できるポイント数（0の場合は付与しない）
+                  被紹介者が獲得できるポイント数（0の場合は付与しない、最大{MAX_REWARD_POINTS.toLocaleString()}）
                 </p>
               </div>
             </div>

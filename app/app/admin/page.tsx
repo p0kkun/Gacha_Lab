@@ -463,7 +463,7 @@ export default function AdminPage() {
               設定したガチャの排出率を確認できます
             </p>
             <Link
-              href="/admin/debug?tab=simulator"
+              href="/admin/debug"
               className="block w-full rounded-md bg-blue-500 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-600 lg:inline-block lg:w-auto"
             >
               シミュレータへ

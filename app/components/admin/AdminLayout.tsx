@@ -66,7 +66,7 @@ export default function AdminLayout({
     },
     {
       href: "/admin/debug",
-      label: "デバッグ",
+      label: "ガチャシミュレータ",
       icon: <TargetIcon className="h-5 w-5" />,
     },
     {

@@ -97,7 +97,7 @@ const helpItems: HelpItem[] = [
   {
     title: 'ガチャの排出率を確認したい',
     description: '設定した確率で実際にどのような結果になるか、シミュレーションで確認できます',
-    href: '/admin/debug?tab=simulator',
+    href: '/admin/debug',
     icon: <TargetIcon className="h-5 w-5" />,
     category: 'ガチャ設定',
   },
